@@ -5,10 +5,18 @@
 
 ## Screenshots
 
-Viewer: 
+Viewer:
 
 <img src="https://i.imgur.com/VwH7Hmh.png" alt="Viewer UI">
 
 Editor:
 
 <img src="https://i.imgur.com/e0vsqUQ.png" alt="Editor UI">
+
+## Development
+
+- You can use asdf runtime version management to manage your NodeJS version
+  - [Setup asdf](http://asdf-vm.com/guide/getting-started.html#_3-install-asdf), then `asdf install`
+  - _or_ install [the recommended NodeJS version](./.tool-versions) manually.
+- `npm install`
+- `npm run start`, open [http://0.0.0.0:33444](http://0.0.0.0:33444/#17/52.47398/13.45014)
