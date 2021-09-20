@@ -61,11 +61,24 @@ const tileLayers = {
     }),
 }
 
+const layersControlMaps = {
+    Mapnik: tileLayers.mapnik,
+    'Esri Clarity': tileLayers.esri,
+}
+
+import berlinMaps from '../../luftbilder.berlin.codefor.de-config.json'
+
+berlinMaps.maps.forEach(map => {
+    const key = `berlin-${map.name.replace( /\D+/g, '')}`
+    tileLayers[key] = L.tileLayer(map.url, {
+        attribution: map.options.attribution,
+        maxZoom: 19, // map.options.maxZoom, // '20' from the JSON breaks the UI, TODO
+    })
+    layersControlMaps[key] = tileLayers[key]
+})
+
 const layersControl = L.control.layers(
-    {
-        Mapnik: tileLayers.mapnik,
-        'Esri Clarity': tileLayers.esri,
-    },
+    layersControlMaps,
     undefined,
     { position: 'bottomright' })
 
