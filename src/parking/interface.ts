@@ -48,7 +48,7 @@ let dataSource = OsmDataSource.OsmOrg
 const laneInfoControl = new LaneInfoControl({ position: 'topright' })
 const fetchControl = new FetchControl({ position: 'topright' })
 
-const tileLayers = {
+const tileLayers: Record<string, L.TileLayer> = {
     mapnik: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 18,
@@ -61,14 +61,22 @@ const tileLayers = {
     }),
 }
 
-const layersControlMaps = {
+const layersControlMaps: Record<string, L.TileLayer> = {
     Mapnik: tileLayers.mapnik,
     'Esri Clarity': tileLayers.esri,
 }
 
 import berlinMaps from '../../luftbilder.berlin.codefor.de-config.json'
+type BerlinMap = { name: string,
+    url: string,
+    options: {
+        attribution: string,
+        minZoom: number,
+        maxZoom: number,
+    }
+}
 
-berlinMaps.maps.forEach(map => {
+berlinMaps.maps.forEach((map: BerlinMap) => {
     const key = `berlin-${map.name.replace( /\D+/g, '')}`
     tileLayers[key] = L.tileLayer(map.url, {
         attribution: map.options.attribution,
