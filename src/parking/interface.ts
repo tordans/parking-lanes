@@ -96,10 +96,15 @@ export function initMap(): L.Map {
     const map = L.map(root, { fadeAnimation: false })
 
     if (!document.location.href.includes('#')) {
-        const cookieLocation = getLocationFromCookie()
+        const cookieLocation = getLocationFromCookie();
+
+        // Berlin, Rollberg Kiez
+        const defaultLocation: L.LatLng = new L.LatLng(52.47872, 13.43146);
+        const defaultZoom = 18;
+
         map.setView(
-            cookieLocation?.location ?? new L.LatLng(51.591, 24.609),
-            cookieLocation?.zoom ?? 5)
+            cookieLocation?.location ?? defaultLocation,
+            cookieLocation?.zoom ?? defaultZoom)
     }
 
     tileLayers.mapnik.addTo(map)
