@@ -66,7 +66,8 @@ const layersControlMaps: Record<string, L.TileLayer> = {
     'Esri Clarity': tileLayers.esri,
 }
 
-import berlinMaps from '../../luftbilder.berlin.codefor.de-config.json'
+import berlinMaps from './luftbilder.berlin.codefor.de-config.json'
+
 type BerlinMap = { name: string,
     url: string,
     options: {

@@ -1,9 +1,14 @@
 {
-  "lib": ["es2017"],
+  "lib": [
+    "es2017"
+  ],
   "compilerOptions": {
     "sourceMap": true,
     "moduleResolution": "node",
-    "lib": ["dom", "es2017"],
+    "lib": [
+      "dom",
+      "es2017"
+    ],
     "target": "es2017",
     "noImplicitAny": false,
     "pretty": true,
@@ -12,7 +17,12 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "strictNullChecks": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
   },
-  "include": ["src/parking/*.ts", "src/utils/*.ts", "src/utils/types/*.ts"]
+  "include": [
+    "src/parking/*.ts",
+    "src/utils/*.ts",
+    "src/utils/types/*.ts"
+  ]
 }
