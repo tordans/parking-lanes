@@ -107,7 +107,7 @@ export function initMap(): L.Map {
             cookieLocation?.zoom ?? defaultZoom)
     }
 
-    tileLayers.mapnik.addTo(map)
+    tileLayers['berlin-2020'].addTo(map)
 
     L.control.locate({ drawCircle: false, drawMarker: true }).addTo(map)
 
