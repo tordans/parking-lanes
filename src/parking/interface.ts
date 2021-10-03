@@ -129,6 +129,8 @@ export function initMap(): L.Map {
     map.on('moveend', handleMapMoveEnd)
     map.on('click', closeLaneInfo)
 
+    layersControl.addTo(map);
+
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const hash = new L.Hash(map)
@@ -297,8 +299,9 @@ async function handleEditorModeCheckboxChange(e: Event | any) {
         }
     } else {
         editorMode = false
-        // @ts-expect-error
-        layersControl.remove(map)
+
+        // @__ts-expect-error
+        // layersControl.remove(map)
         if (map.hasLayer(tileLayers.esri)) {
             map.removeLayer(tileLayers.esri)
             map.addLayer(tileLayers.mapnik)
