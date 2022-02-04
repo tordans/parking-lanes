@@ -2,7 +2,7 @@ import { hyper } from 'hyperhtml/esm'
 import { OsmWay } from '../../../utils/types/osm-data'
 import { WaysInRelation } from '../../../utils/types/osm-data-storage'
 import { OsmKeyValue } from '../../../utils/types/preset'
-import { presets } from './presets'
+import { presetCountryNames, presets } from './presets'
 import { getAllTagsBlock } from '../lane-info'
 import { parseConditionalTag, ConditionalValue } from '../../../utils/conditional-tag'
 
@@ -234,7 +234,7 @@ function getConditionalInput(osm: OsmWay, tag: string, label: string, hide: bool
     parsedConditionalTag.push({ value: '', condition: null })
 
     return hyper`
-        <tr id="${tag}" 
+        <tr id="${tag}"
             class="conditional-tag"
             style=${{ display: hide ? 'none' : null }}>
             <td colspan="2">
@@ -270,8 +270,18 @@ function getConditionalPartInput(osm: OsmWay, tag: string, part: ConditionalValu
         </tr>`
 }
 
+function getPresetScope() {
+    const params = new URLSearchParams(document.location.search)
+    const scopeFromUrl = params.get('presetCountry') ?? 'default'
+    if (presetCountryNames().includes(scopeFromUrl))
+        return scopeFromUrl
+    else
+        return 'default'
+}
+
 function getPresetSigns(osm: OsmWay, side: 'both'|'left'|'right') {
-    return presets.map(x => hyper`
+    const presetScope = getPresetScope()
+    return presets[presetScope].map(x => hyper`
         <img src=${x.img.src}
              class="sign-preset"
              height=${x.img.height}
