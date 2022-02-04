@@ -39,6 +39,7 @@ import { getUrl } from './data-url'
 import { parseParkingArea, parseParkingRelation, updateAreaColorsByDate } from './parking-area'
 import { parseParkingPoint, updatePointColorsByDate, updatePointStylesByZoom } from './parking-point'
 import { AuthState, useAppStateStore, type AppStateStore } from './state'
+import { addBoroughsLayer } from '../utils/boundaries/addBoroughsLayer'
 
 const editorName = 'PLanes'
 const version = '0.8.9'
@@ -157,6 +158,8 @@ export function initMap() {
     map.on('click', areaInfoControl.closeAreaInfo)
 
     layersControl.addTo(map)
+
+    addBoroughsLayer(map)
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
