@@ -38,6 +38,7 @@ import { ParsedOsmData } from '../utils/types/osm-data-storage'
 import { ParkingAreas, ParkingPoint, ParkingLanes } from '../utils/types/parking'
 import { parseParkingArea, updateAreaColorsByDate } from './parking-area'
 import { parseParkingPoint, updatePointStylesByZoom } from './parking-point'
+import { addBoroughsLayer } from '../utils/boundaries/addBoroughsLayer'
 
 const editorName = 'PLanes'
 const version = '0.7.2'
@@ -147,6 +148,8 @@ export function initMap(): L.Map {
     map.on('click', areaInfoControl.closeAreaInfo)
 
     layersControl.addTo(map)
+
+    addBoroughsLayer(map)
 
     // @ts-expect-error
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
