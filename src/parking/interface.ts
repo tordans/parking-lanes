@@ -63,12 +63,60 @@ const tileLayers: Record<string, L.TileLayer> = {
         maxZoom: 21,
         maxNativeZoom: 19,
     }),
+    luftbilder2022: L.tileLayer('https://tiles.codefor.de/berlin-2022-dop20rgbi/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2022_true_rgbi@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2022 (DOP20RGBI)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    luftbilder2024: L.tileLayer('https://tiles.codefor.de/berlin-2024-dop20rgbi/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2024_true_rgbi@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2024 (DOP20RGBI)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    luftbilder2023: L.tileLayer('https://tiles.codefor.de/berlin-2023-dop20rgbi/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2023_true_rgbi@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2023 (DOP20RGBI)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    luftbilder2021: L.tileLayer('https://tiles.codefor.de/berlin-2021-dop20rgbi/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2021_rgb@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2021 (DOP20RGBI)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    luftbilder2020: L.tileLayer('https://tiles.codefor.de/berlin-2020-dop20rgb/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2020_rgb@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2020 (DOP20RGB)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    luftbilder2019: L.tileLayer('https://tiles.codefor.de/berlin-2019-dop20rgb/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2019_rgb@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2019 (DOP20RGB)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
+    strasssenbefahrung: L.tileLayer('https://mapproxy.codefor.de/tiles/1.0.0/strassenbefahrung/mercator/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service_intern.jsp?id=k_StraDa@senstadt&type=WMS">Geoportal Berlin / Straßenbefahrung 2014</a>',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+    }),
+    alkis: L.tileLayer('https://mapproxy.codefor.de/tiles/1.0.0/alkis_30/mercator/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service_intern.jsp?id=wmsk_alkis@senstadt&type=WMS">Geoportal Berlin / ALKIS Berlin (Amtliches Liegenschaftskatasterinformationssystem)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+    }),
 }
 
 const layersControl = L.control.layers(
     {
         Mapnik: tileLayers.mapnik,
         'Esri Clarity': tileLayers.esri,
+        'Luftbilder 2024': tileLayers.luftbilder2024,
+        'Luftbilder 2023': tileLayers.luftbilder2023,
+        'Luftbilder 2022': tileLayers.luftbilder2022,
+        'Luftbilder 2021': tileLayers.luftbilder2021,
+        'Luftbilder 2020': tileLayers.luftbilder2020,
+        'Luftbilder 2019': tileLayers.luftbilder2019,
+        'Straßenbefahrung 2014': tileLayers.strasssenbefahrung,
+        'ALKIS Berlin': tileLayers.alkis,
     },
     undefined,
     { position: 'bottomright' })
@@ -86,7 +134,7 @@ export function initMap() {
             cookieLocation?.zoom ?? 5)
     }
 
-    tileLayers.mapnik.addTo(map)
+    tileLayers.luftbilder2024.addTo(map)
 
     L.control.locate({ drawCircle: false, drawMarker: true }).addTo(map)
 
@@ -358,11 +406,11 @@ async function handleEditorChange(state: AppStateStore, prevState: AppStateStore
             alert(err)
         }
     } else {
-        if (map.hasLayer(tileLayers.esri)) {
-            map.removeLayer(tileLayers.esri)
-            map.addLayer(tileLayers.mapnik)
-            tileLayers.mapnik.addTo(map)
-        }
+        // if (map.hasLayer(tileLayers.esri)) {
+        //     map.removeLayer(tileLayers.esri)
+        //     map.addLayer(tileLayers.mapnik)
+        //     tileLayers.mapnik.addTo(map)
+        // }
 
         state.setAuthState(AuthState.initial)
 
