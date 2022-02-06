@@ -96,6 +96,22 @@ const tileLayers = {
         maxZoom: 21,
         maxNativeZoom: 19,
     }),
+    // Docs https://docs.mapbox.com/api/maps/static-tiles/
+    // Edit Style https://studio.mapbox.com/styles/hejco/ckz8bsqbq000t15nz6ok45bid/edit/#15.61/52.495655/13.417375
+    // TODO: Lizenz / Attribution
+    // About Quota: Make sure we only pull data where avaliable and only for zoom level that are usefull.
+    //  Quota at: https://account.mapbox.com/
+    //  Docs: https://docs.mapbox.com/api/maps/static-tiles/#manage-static-tiles-api-costs
+    xhainGutachten: L.tileLayer('https://api.mapbox.com/styles/v1/hejco/ckz8bsqbq000t15nz6ok45bid/tiles/512/{z}/{x}/{y}?access_token=pk.eyJ1IjoiaGVqY28iLCJhIjoiY2piZjd2bzk2MnVsMjJybGxwOWhkbWxpNCJ9.L1UNUPutVJHWjSmqoN4h7Q', {
+        attribution: 'Daten der Parkraumgutachten der Bezirksverwaltung. OpenData. Lizenz TODO.',
+        minZoom: 16, // Quota
+        minNativeZoom: 18, // Quota
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        tileSize: 512, // Quota
+        zoomOffset: -1, // Quota
+        bounds: L.latLngBounds(L.latLng(52.5310256, 13.4914434), L.latLng(52.4827923, 13.3682291)), // Quota (outside no data is loaded for this layer)
+    }),
 }
 
 const layersControl = L.control.layers(
@@ -108,9 +124,11 @@ const layersControl = L.control.layers(
         'Luftbilder 2019': tileLayers.luftbilder2019,
         'Straßenbefahrung 2014': tileLayers.strasssenbefahrung,
         'ALKIS Berlin': tileLayers.alkis,
+        'Xhain Parkraumgutachten': tileLayers.xhainGutachten,
     },
     undefined,
-    { position: 'bottomright' })
+    { position: 'bottomright' },
+)
 
 export function initMap(): L.Map {
     const root = document.querySelector('#map') as HTMLElement
