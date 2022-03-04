@@ -115,8 +115,12 @@ function createChangeset(editorName: string, editorVersion: string): Promise<str
                 $generator: editorName,
                 tag: [
                     { $k: 'created_by', $v: `${editorName} ${editorVersion}` },
-                    { $k: 'comment', $v: 'Parking lanes' },
                     { $k: 'host', $v: `${window.location.origin}${window.location.pathname}` },
+                    {
+                        $k: 'imagery_used',
+                        $v: 'Geoportal Berlin / Digitale farbige Orthophotos; Straßenbefahrung 2014; ALKIS Berlin',
+                    },
+                    { $k: 'comment', $v: 'Parking lanes; https://wiki.openstreetmap.org/wiki/Verkehrswende-Meetup/Parkraum/Editor' },
                 ],
             },
         },
