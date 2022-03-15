@@ -53,6 +53,11 @@ const fetchControl = new FetchControl({ position: 'topright' })
 
 // Reminder: Check `maxMaxZoomFromTileLayers` in `generateStyleMapByZoom()`
 const tileLayers = {
+    openstreetmapCarto: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+    }),
     mapnik: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 21,
@@ -73,6 +78,7 @@ const tileLayers = {
 
 const layersControl = L.control.layers(
     {
+        OpenStreetMap: tileLayers.openstreetmapCarto,
         Mapnik: tileLayers.mapnik,
         'Esri Clarity': tileLayers.esri,
         'Maxar Premium Imagery': tileLayers.maxar,
