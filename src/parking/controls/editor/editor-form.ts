@@ -213,10 +213,39 @@ function getSelectInput(tag: string, value: string, values: string[]): HTMLSelec
         ['', ...values] :
         ['', value, ...values]
 
+    const translation = {
+        parallel: 'Parallel zur Straße (parallel)',
+        diagonal: '45° zur Straße (diagonal)',
+        perpendicular: '90° zur Straße (perpendicular)',
+        marked: '~nicht verwenden~ (marked)',
+        yes: '~nicht verwenden~ (yes)',
+        no: 'Parken verboten (no)',
+        separate: 'Parkraum separate gemapped (separate)',
+
+        free: 'Kostenlos (free)',
+        ticket: 'Parkschien (ticket)',
+        disc: 'Parkscheibe (disc)',
+        residents: 'Anwohnerparken (residents)',
+        customers: 'Kundenparkplatz (customers)',
+        private: 'Privat (private)',
+        disabled: 'Behindertenparkplatz (disabled)',
+        no_parking: 'Parkverbot (Verkehrsschild) (no_parking)',
+        no_standing: '~nicht verwenden~ (no_standing)',
+        no_stopping: 'Halteverbot (Verkehrsschild) (no_stopping)',
+        // no: '~nicht verwenden~ (no)',
+
+        on_street: 'Auf der Straße (on_street)',
+        street_side: 'Parkbuchten (nur 1-2 Parkstände) (street_side)',
+        on_kerb: 'Ganz auf dem Gehweg (on_kerb)',
+        half_on_kerb: 'Teils auf dem Gehweg (half_on_kerb)',
+        painted_area_only: 'Markierte flächen (painted_area_only)',
+        shoulder: '~nicht verwenden~ Seitenstreifen (shoulder)',
+    }
+
     return hyper`
         <select name=${tag}
                 class="editor-form__select-input">
-            ${options.map(o => hyper`<option value=${o} selected=${value === o}>${o}</option>`)}
+            ${options.map(o => hyper`<option value=${o} selected=${value === o}>${translation[o] || o}</option>`)}
         </select>`
 }
 
