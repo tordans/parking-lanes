@@ -9,7 +9,7 @@ export const osmProdUrl = 'https://www.openstreetmap.org'
 export const osmDevUrl = 'https://master.apis.dev.openstreetmap.org'
 
 export function mapillaryUrl(center: LatLngLiteral) {
-    return `https://www.mapillary.com/app/?lat=${center.lat}&lng=${center.lng}&z=17&focus=map&trafficSign=all`
+    return `https://www.mapillary.com/app/?lat=${center.lat}&lng=${center.lng}&z=17&focus=map&trafficSign=all&panos=true`
 }
 
 interface idEditorUrlProps {
