@@ -266,9 +266,11 @@ function getConditionalInput(osm: OsmWay, tag: string, label: string, hide: bool
         <tr id="${tag}"
             class="conditional-tag"
             style=${{ display: hide ? 'none' : null }}>
-            <td colspan="2">
+            <td style="vertical-align: top;">
+                <label title="${tag}">${label}</label>
+            </td>
+            <td>
                 <table>
-                    <tr><td><label title="${tag}">${label}</label></td></tr>
                     ${parsedConditionalTag.map((conditionalValue, i) => getConditionalPartInput(osm, tag, conditionalValue, i))}
                 </table>
             </td>
