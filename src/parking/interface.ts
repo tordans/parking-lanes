@@ -276,6 +276,7 @@ async function downloadParkingLanes(map: L.Map): Promise<void> {
             'Error: Too many requests - try again soon' :
             'Unknown error, please try again'
         fetchControl.setFetchDataBtnText(errorMessage)
+        console.log({ ERROR: e })
         return
     }
     fetchControl.setFetchDataBtnText('Fetch parking data')
