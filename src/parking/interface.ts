@@ -71,6 +71,11 @@ const tileLayers = {
         maxZoom: 21,
         maxNativeZoom: 20,
     }),
+    luftbilder2022: L.tileLayer('https://tiles.codefor.de/berlin-2022-dop20rgbi/{z}/{x}/{y}.png', {
+        attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2022_true_rgbi@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2022 (DOP20RGBI)</a>',
+        maxZoom: 21,
+        maxNativeZoom: 20,
+    }),
     luftbilder2021: L.tileLayer('https://tiles.codefor.de/berlin-2021-dop20rgbi/{z}/{x}/{y}.png', {
         attribution: '<a target="blank" href="https://fbinter.stadt-berlin.de/fb/berlin/service.jsp?id=a_luftbild2021_rgb@senstadt&type=FEED">Geoportal Berlin / Digitale farbige Orthophotos 2021 (DOP20RGBI)</a>',
         maxZoom: 21,
@@ -169,6 +174,7 @@ const layersControl = L.control.layers(
         Mapnik: tileLayers.mapnik,
         'Esri Clarity': tileLayers.esri,
         'Maxar Premium Imagery': tileLayers.maxar,
+        'Luftbilder 2022': tileLayers.luftbilder2022,
         'Luftbilder 2021': tileLayers.luftbilder2021,
         'Luftbilder 2021 (Fallback, WMS)': tileLayers.luftbilder2021Wms,
         'Luftbilder 2020': tileLayers.luftbilder2020,
@@ -196,7 +202,7 @@ export function initMap(): L.Map {
             cookieLocation?.zoom ?? 5)
     }
 
-    tileLayers.luftbilder2020.addTo(map)
+    tileLayers.luftbilder2022.addTo(map)
 
     L.control.locate({ drawCircle: false, drawMarker: true }).addTo(map)
 
