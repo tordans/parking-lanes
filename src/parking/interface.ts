@@ -5,7 +5,6 @@ import 'leaflet-hash'
 import 'leaflet-polylineoffset'
 import 'leaflet-touch-helper'
 import 'leaflet.locatecontrol'
-import '../lib/Bing.js'
 
 import 'font-awesome/css/font-awesome.min.css'
 import 'leaflet.locatecontrol/dist/L.Control.Locate.min.css'
@@ -53,7 +52,7 @@ const areaInfoControl = new AreaInfoControl({ position: 'topright' })
 const fetchControl = new FetchControl({ position: 'topright' })
 
 // Reminder: Check `maxMaxZoomFromTileLayers` in `generateStyleMapByZoom()`
-let tileLayers: Record<string, L.TileLayer> = {
+const tileLayers: Record<string, L.TileLayer> = {
     mapnik: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 21,
@@ -76,7 +75,30 @@ const layersControl = L.control.layers(
     undefined,
     { position: 'bottomright' })
 
-L.bingLayer('[YOUR_BING_MAPS_KEY]').addTo(map)
+const BingLayer = L.TileLayer.extend({
+    getTileUrl(coords) {
+        const quadkey = this.toQuadKey(coords.x, coords.y, coords.z)
+        let url = L.Util.template(this._url, {
+            q: quadkey,
+            s: this._getSubdomain(coords),
+        })
+        if (typeof this.options.style === 'string')
+            url += '&st=' + this.options.style
+
+        return url
+    },
+    toQuadKey(x: number, y: number, z: any) {
+        let index = ''
+        for (let i = z; i > 0; i--) {
+            let b = 0
+            const mask = 1 << (i - 1)
+            if ((x & mask) !== 0) b++
+            if ((y & mask) !== 0) b += 2
+            index += b.toString()
+        }
+        return index
+    },
+})
 
 async function bingAerialImagery() {
     // See https://github.com/openstreetmap/iD/blob/develop/modules/util/aes.js#L21-L28
@@ -126,33 +148,18 @@ async function bingAerialImagery() {
     //     }
     // }
 
-    // See https://github.com/digidem/leaflet-bing-layer/blob/gh-pages/leaflet-bing-layer.js#L7C1-L24C2
-    // Converts tile xyz coordinates to Quadkey
-    function toQuadKey(x: number, y: number, z: number) {
-        console.log('A', { x, y, z })
-        let index = ''
-        for (let i = z; i > 0; i--) {
-            let b = 0
-            const mask = 1 << (i - 1)
-            if ((x & mask) !== 0) b++
-            if ((y & mask) !== 0) b += 2
-            index += b.toString()
-        }
-        return index
-    }
-
     // https://dev.virtualearth.net/REST/v1/Imagery/Metadata/AerialOSM?include=ImageryProviders&uriScheme=https&key=Auk3J0jR9g1_PVQgdmL95zCOKVOc8g-FGq5Zgb5ik7w1Ri5SRyWILV-kksgbw-Gh
     // https://ecn.t{switch:0,1,2,3}.tiles.virtualearth.net/tiles/a{u}.jpeg?g=14107&pr=odbl&n=z
     console.log({ key, url, template })
 
-    tileLayers = {
-        bing: L.tileLayer(toQuadKey(template), {
-            attribution: "<a href='https://wiki.openstreetmap.org/wiki/Bing_Maps#Aerial_imagery'>Bing Maps Aerial</a>",
-            maxZoom: 21,
-            maxNativeZoom: 19,
-        }),
-    }
-    layersControl.addBaseLayer(tileLayers.bing, 'My New BaseLayer')
+    // @ts-expect-error
+    const foo = new BingLayer(template, {
+        subdomains: subDomains,
+        attribution: "<a href='https://wiki.openstreetmap.org/wiki/Bing_Maps#Aerial_imagery'>Bing Maps Aerial</a>",
+    })
+    console.log('foo', foo)
+
+    layersControl.addBaseLayer(L.tileLayer(foo), 'My New BaseLayer')
 }
 
 void bingAerialImagery()
