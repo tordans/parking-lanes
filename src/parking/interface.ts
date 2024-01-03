@@ -5,6 +5,7 @@ import 'leaflet-hash'
 import 'leaflet-polylineoffset'
 import 'leaflet-touch-helper'
 import 'leaflet.locatecontrol'
+import '../lib/Bing.js'
 
 import 'font-awesome/css/font-awesome.min.css'
 import 'leaflet.locatecontrol/dist/L.Control.Locate.min.css'
@@ -39,6 +40,8 @@ import { parseParkingArea, parseParkingRelation, updateAreaColorsByDate } from '
 import { parseParkingPoint, updatePointColorsByDate, updatePointStylesByZoom } from './parking-point'
 import { AuthState, useAppStateStore, type AppStateStore } from './state'
 
+import aesjs from 'aes-js'
+
 const editorName = 'PLanes'
 const version = '0.8.8'
 
@@ -50,7 +53,7 @@ const areaInfoControl = new AreaInfoControl({ position: 'topright' })
 const fetchControl = new FetchControl({ position: 'topright' })
 
 // Reminder: Check `maxMaxZoomFromTileLayers` in `generateStyleMapByZoom()`
-const tileLayers = {
+let tileLayers: Record<string, L.TileLayer> = {
     mapnik: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 21,
@@ -68,11 +71,94 @@ const layersControl = L.control.layers(
     {
         Mapnik: tileLayers.mapnik,
         'Esri Clarity': tileLayers.esri,
+        // Bing: tileLayers.bing,
     },
     undefined,
     { position: 'bottomright' })
 
-export function initMap(): L.Map {
+L.bingLayer('[YOUR_BING_MAPS_KEY]').addTo(map)
+
+async function bingAerialImagery() {
+    // See https://github.com/openstreetmap/iD/blob/develop/modules/util/aes.js#L21-L28
+    function utilAesDecrypt(encryptedHex: string, key?: number[]) {
+        // This default signing key is built into iD and can be used to mask/unmask sensitive values.
+        const DEFAULT_128 = [250, 157, 60, 79, 142, 134, 229, 129, 138, 126, 210, 129, 29, 71, 160, 208]
+        key = key ?? DEFAULT_128
+        const encryptedBytes = aesjs.utils.hex.toBytes(encryptedHex)
+        // eslint-disable-next-line new-cap
+        const aesCtr = new aesjs.ModeOfOperation.ctr(key)
+        const decryptedBytes = aesCtr.decrypt(encryptedBytes)
+        return aesjs.utils.utf8.fromBytes(decryptedBytes)
+    }
+
+    // See https://github.com/openstreetmap/iD/blob/develop/modules/renderer/background_source.js#L278C22-L278C22
+    const key: string = utilAesDecrypt('5c875730b09c6b422433e807e1ff060b6536c791dbfffcffc4c6b18a1bdba1f14593d151adb50e19e1be1ab19aef813bf135d0f103475e5c724dec94389e45d0')
+    const url = `https://dev.virtualearth.net/REST/v1/Imagery/Metadata/AerialOSM?include=ImageryProviders&uriScheme=https&key=${key}`
+    const metadata = await (await fetch(url)).json()
+    const imageryResource = metadata.resourceSets[0].resources[0]
+    // retrieve and prepare up to date imagery template
+    let template = imageryResource.imageUrl // https://ecn.{subdomain}.tiles.virtualearth.net/tiles/a{quadkey}.jpeg?g=10339
+    const subDomains: string[] = imageryResource.imageUrlSubdomains // ["t0, t1, t2, t3"]
+    const subDomainNumbers: string = subDomains.map((subDomain) => subDomain.substring(1)).join(',')
+    template = template.replace('{subdomain}', `t{switch:${subDomainNumbers}}`).replace('{quadkey}', '{u}')
+    /*
+    missing tile image strictness param (n=)
+    • n=f -> (Fail) returns a 404
+    • n=z -> (Empty) returns a 200 with 0 bytes (no content)
+    • n=t -> (Transparent) returns a 200 with a transparent (png) tile
+    */
+    const strictParam = 'n'
+    if (!new URLSearchParams(template).has(strictParam))
+        template += `&${strictParam}=z`
+
+    // See https://github.com/NelsonMinar/multimap/blob/master/basemaps.js#L203C1-L217C2
+    // function quadkey(url) {
+    //     function quad(column, row, zoom) {
+    //         let key = ''
+    //         for (let i = 1; i <= zoom; i++)
+    //             key += (((row >> zoom - i) & 1) << 1) | ((column >> zoom - i) & 1)
+
+    //         return key
+    //     }
+    //     return (c) => {
+    //         const quadKey = quad(c.column, c.row, c.zoom)
+    //         return url.replace('{u}', quadKey)
+    //     }
+    // }
+
+    // See https://github.com/digidem/leaflet-bing-layer/blob/gh-pages/leaflet-bing-layer.js#L7C1-L24C2
+    // Converts tile xyz coordinates to Quadkey
+    function toQuadKey(x: number, y: number, z: number) {
+        console.log('A', { x, y, z })
+        let index = ''
+        for (let i = z; i > 0; i--) {
+            let b = 0
+            const mask = 1 << (i - 1)
+            if ((x & mask) !== 0) b++
+            if ((y & mask) !== 0) b += 2
+            index += b.toString()
+        }
+        return index
+    }
+
+    // https://dev.virtualearth.net/REST/v1/Imagery/Metadata/AerialOSM?include=ImageryProviders&uriScheme=https&key=Auk3J0jR9g1_PVQgdmL95zCOKVOc8g-FGq5Zgb5ik7w1Ri5SRyWILV-kksgbw-Gh
+    // https://ecn.t{switch:0,1,2,3}.tiles.virtualearth.net/tiles/a{u}.jpeg?g=14107&pr=odbl&n=z
+    console.log({ key, url, template })
+
+    tileLayers = {
+        bing: L.tileLayer(toQuadKey(template), {
+            attribution: "<a href='https://wiki.openstreetmap.org/wiki/Bing_Maps#Aerial_imagery'>Bing Maps Aerial</a>",
+            maxZoom: 21,
+            maxNativeZoom: 19,
+        }),
+    }
+    layersControl.addBaseLayer(tileLayers.bing, 'My New BaseLayer')
+}
+
+void bingAerialImagery()
+console.log(layersControl)
+
+export function initMap() {
     const root = document.querySelector('#map') as HTMLElement
     const map = L.map(root, { fadeAnimation: false })
 
