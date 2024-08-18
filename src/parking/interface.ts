@@ -389,8 +389,6 @@ async function handleEditorChange(state: AppStateStore, prevState: AppStateStore
     if (state.editorMode === prevState.editorMode)
         return
 
-    const { map } = (window as OurWindow)
-
     if (state.editorMode) {
         try {
             await authenticate(useDevServer)
