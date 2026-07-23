@@ -6,6 +6,9 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 const webpack = require('webpack')
+const dotenv = require('dotenv')
+
+dotenv.config()
 
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -41,12 +44,18 @@ module.exports = {
         }),
         new CopyWebpackPlugin({
             patterns: [
-                { from: path.resolve(__dirname, './src/land.html') },
+                {
+                    from: path.resolve(__dirname, './src/osm-oauth-land.html'),
+                    to: 'osm-oauth-land.html',
+                },
                 { from: path.resolve(__dirname, './src/assets'), to: './assets' },
                 { from: path.resolve(__dirname, './taginfo.json') },
             ],
         }),
         new CleanWebpackPlugin(),
+        new webpack.DefinePlugin({
+            'process.env.OSM_OAUTH_CLIENT_ID': JSON.stringify(process.env.OSM_OAUTH_CLIENT_ID ?? ''),
+        }),
         new webpack.HotModuleReplacementPlugin(),
         ...(process.env.ANALYZE ? [new BundleAnalyzerPlugin()] : []),
     ],

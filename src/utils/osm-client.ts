@@ -1,75 +1,114 @@
 import * as JXON from 'jxon'
-import { osmAuth } from 'osm-auth'
-import { osmProdUrl, osmDevUrl } from './links'
+import {
+    authReady,
+    configure,
+    getAuthToken,
+    getConfig,
+    getUser,
+    isLoggedIn,
+    login as osmLogin,
+    logout as osmLogout,
+} from 'osm-api'
+import {
+    getOsmOAuthClientId,
+    getOsmOAuthRedirectUrl,
+    OSM_API_USER_AGENT,
+    OSM_OAUTH_SCOPES,
+} from '../lib/osmOAuthConfig'
+import { osmDevUrl } from './links'
 
 import { type OsmWay } from './types/osm-data'
 import { type ChangedIdMap, type ChangesStore, type JxonOsmWay } from './types/changes-store'
 
-let auth: OSMAuth.osmAuth | null = null
+const osmProdApiUrl = 'https://api.openstreetmap.org'
 
-function craeteOsmAuth(useDevServer: boolean) {
-    return useDevServer ?
-        // eslint-disable-next-line new-cap
-        new osmAuth({
-            url: osmDevUrl,
-            client_id: 'lX6vX5gKHEfLV9kybjRpy2L7BTqtwZ5c_G7sjKscVw0',
-            access_token: localStorage.getItem('https://master.apis.dev.openstreetmap.orgoauth2_access_token') ?? undefined,
-            redirect_uri: window.location.origin + window.location.pathname + 'land.html',
-            scope: 'read_prefs write_api',
-            auto: true,
-        }) :
-        // eslint-disable-next-line new-cap
-        new osmAuth({
-            url: osmProdUrl,
-            client_id: 'wwP2hKLF5LAWQgZTcd8SjYXsCzd8zYvl7muuQm1V3Jo',
-            access_token: localStorage.getItem('https://openstreetmap.orgoauth2_access_token') ?? undefined,
-            redirect_uri: window.location.origin + window.location.pathname + 'land.html',
-            scope: 'read_prefs write_api',
-            auto: true,
-        })
+let configuredForDev: boolean | null = null
+
+function getOsmApiUrl(useDevServer: boolean): string {
+    return useDevServer ? osmDevUrl : osmProdApiUrl
 }
 
-function osmXhr(options: OSMAuth.OSMAuthXHROptions): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (auth === null)
-            return
-
-        return auth.xhr(
-            options,
-            (err, details) => {
-                if (err)
-                    reject(err)
-                else
-                    resolve(details)
-            },
-        )
-    },
-    )
+function syncAuthHeader(): void {
+    const token = getAuthToken()
+    configure({ authHeader: token ? `Bearer ${token}` : undefined })
 }
 
-export function authenticate(useDevServer: boolean): Promise<any> {
-    auth ??= craeteOsmAuth(useDevServer)
-    return new Promise((resolve, reject) => {
-        if (auth === null)
-            return
-
-        return auth.authenticate((err, oauth) => err ? reject(err) : resolve(oauth))
-    })
-}
-
-export function logout() {
-    if (auth === null)
+function ensureOsmApiConfigured(useDevServer: boolean): void {
+    if (configuredForDev === useDevServer)
         return
 
-    return auth.logout()
+    configure({
+        apiUrl: getOsmApiUrl(useDevServer),
+        userAgent: OSM_API_USER_AGENT,
+    })
+    configuredForDev = useDevServer
+    syncAuthHeader()
 }
 
-export function userInfo(): Promise<any> {
-    return osmXhr({
-        method: 'GET',
-        path: '/api/0.6/user/details',
-        headers: { Accept: 'application/json' },
+export async function authenticate(useDevServer: boolean): Promise<void> {
+    ensureOsmApiConfigured(useDevServer)
+    await authReady
+    syncAuthHeader()
+
+    if (!isLoggedIn()) {
+        await osmLogin({
+            mode: 'popup',
+            clientId: getOsmOAuthClientId(),
+            redirectUrl: getOsmOAuthRedirectUrl(),
+            scopes: [...OSM_OAUTH_SCOPES],
+        })
+        syncAuthHeader()
+    }
+}
+
+export function logout(): void {
+    osmLogout()
+    syncAuthHeader()
+}
+
+export function userInfo() {
+    syncAuthHeader()
+    return getUser('me')
+}
+
+interface OsmApiRequestOptions {
+    method: string
+    path: string
+    headers?: Record<string, string>
+    content?: string
+}
+
+export class OsmApiRequestError extends Error {
+    responseText: string
+
+    constructor(responseText: string) {
+        super(responseText || 'OSM API request failed')
+        this.name = 'OsmApiRequestError'
+        this.responseText = responseText
+    }
+}
+
+async function osmApiRequest(options: OsmApiRequestOptions): Promise<string> {
+    syncAuthHeader()
+    const { apiUrl, userAgent, authHeader } = getConfig()
+    const token = getAuthToken()
+    const authorization = authHeader ?? (token ? `Bearer ${token}` : '')
+
+    const response = await fetch(`${apiUrl}${options.path}`, {
+        method: options.method,
+        headers: {
+            ...(authorization ? { Authorization: authorization } : {}),
+            'User-Agent': userAgent,
+            ...options.headers,
+        },
+        body: options.content,
     })
+
+    const text = await response.text()
+    if (!response.ok)
+        throw new OsmApiRequestError(text)
+
+    return text
 }
 
 export async function uploadChanges(editorName: string, editorVersion: string, changesStore: ChangesStore): Promise<ChangedIdMap> {
@@ -122,7 +161,7 @@ function createChangeset(editorName: string, editorVersion: string): Promise<str
         },
     }
 
-    return osmXhr({
+    return osmApiRequest({
         method: 'PUT',
         path: '/api/0.6/changeset/create',
         headers: { 'Content-Type': 'text/xml' },
@@ -146,7 +185,7 @@ function saveChangesets(changesStore: ChangesStore, changesetId: string, editorN
         },
     }
 
-    return osmXhr({
+    return osmApiRequest({
         method: 'POST',
         path: '/api/0.6/changeset/' + changesetId + '/upload',
         headers: { 'Content-Type': 'text/xml' },
@@ -155,7 +194,7 @@ function saveChangesets(changesStore: ChangesStore, changesetId: string, editorN
 }
 
 function closeChangeset(changesetId: string) {
-    return osmXhr({
+    return osmApiRequest({
         method: 'PUT',
         path: '/api/0.6/changeset/' + changesetId + '/close',
         headers: { 'Content-Type': 'text/xml' },

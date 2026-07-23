@@ -24,7 +24,7 @@ import {
 import { addChangedEntity, changesStore } from '../utils/changes-store'
 import { downloadBbox, osmData, resetLastBounds } from '../utils/data-client'
 import { getLocationFromCookie, setLocationToCookie } from '../utils/location-cookie'
-import { authenticate, logout, uploadChanges, userInfo } from '../utils/osm-client'
+import { authenticate, logout, OsmApiRequestError, uploadChanges, userInfo } from '../utils/osm-client'
 import { type OurWindow } from '../utils/types/interfaces'
 import { type OsmWay } from '../utils/types/osm-data'
 import { type ParsedOsmData } from '../utils/types/osm-data-storage'
@@ -369,8 +369,8 @@ async function handleSaveClick() {
         }
         useAppStateStore.getState().setChangesCount(0)
     } catch (err) {
-        if (err instanceof XMLHttpRequest)
-            alert(err.responseText || err)
+        if (err instanceof OsmApiRequestError)
+            alert(err.responseText || err.message)
         else
             alert(err)
     }
