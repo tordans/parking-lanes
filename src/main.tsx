@@ -5,6 +5,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { routeTree } from './routeTree.gen'
 import './styles/main.scss'
+import { redirectLegacyLeafletHash } from './utils/map-url-redirect'
+
+redirectLegacyLeafletHash()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
 

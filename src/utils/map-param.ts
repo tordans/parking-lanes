@@ -36,6 +36,12 @@ export const parseMapParam = (query: string) => {
   return { zoom, lat, lng } satisfies MapParam
 }
 
+export const parseLeafletHash = (hash: string) => {
+  const query = hash.startsWith('#') ? hash.slice(1) : hash
+  if (!query) return null
+  return parseMapParam(query)
+}
+
 export const serializeMapParam = ({ zoom, lat, lng }: MapParam) => {
   const [roundedLat, roundedLng, roundedZoom] = roundPositionForURL(lat, lng, zoom)
   return `${roundedZoom}/${roundedLat}/${roundedLng}`

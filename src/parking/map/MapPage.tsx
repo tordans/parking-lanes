@@ -85,13 +85,9 @@ export function MapPage({
       setLocationToCookie({ lat: center.lat, lng: center.lng }, zoom)
 
       void navigate({
-        search: (prev) => ({
-          ...prev,
+        search: {
           map: serializeMapParam({ zoom, lat: center.lat, lng: center.lng }),
-          lng: undefined,
-          lat: undefined,
-          zoom: undefined,
-        }),
+        },
         replace: true,
       })
 
