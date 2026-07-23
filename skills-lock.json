@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-orchestration": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/agent-orchestration/SKILL.md",
+      "computedHash": "20df31258a6dc8b7bce879973965a3a697aedf1bfed5f417d919dadcb0f7ecea"
+    },
+    "finish-work": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/finish-work/SKILL.md",
+      "computedHash": "166bd6395e34a7129d8d6f7a44aec7a692409ec3aa9bb11b8899a7ae10962cdc"
+    },
+    "playwright-skill": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-skill/SKILL.md",
+      "computedHash": "f1aa47f8a4b11ea733226f6d4d3214ca0de566bb2b08452e0a3ebdae0d52e7e2"
+    },
+    "react-dev": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/react-dev/SKILL.md",
+      "computedHash": "2bce036778415371a93903c6d7458e629587565f4152509d149b89523ce4caba"
+    },
+    "react-map-gl": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/react-map-gl/SKILL.md",
+      "computedHash": "5b7b0e880a78aab0fbab36494e6601d4c9fef67cecf1c0109753fe9bb367504b"
+    },
+    "review-dependabot": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/review-dependabot/SKILL.md",
+      "computedHash": "84e2f7f5a83f2eec5d0321412329ceebeab71c9ba94318d9f39eb9f7c382cb69"
+    },
+    "tech-stack": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/tech-stack/SKILL.md",
+      "computedHash": "1893e0db69207a69c271d6876cb7c5bf498f0032ae6b911c272fad064ddb358b"
+    },
+    "zustand-state-management": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/zustand-state-management/SKILL.md",
+      "computedHash": "7d6d64aee41189884cad34afb26214245b55d2e2118af833538c714631c467bd"
+    }
+  }
+}
