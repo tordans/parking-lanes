@@ -6,10 +6,10 @@ import { createRoot } from 'react-dom/client'
 import { createAppQueryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
 import './styles/main.scss'
-import { redirectLegacyLeafletHash } from './utils/map-url-redirect'
+import { redirectLegacyMapHash } from './utils/map-url-redirect'
 import { routerSearch } from './utils/router-search'
 
-redirectLegacyLeafletHash()
+redirectLegacyMapHash()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
 

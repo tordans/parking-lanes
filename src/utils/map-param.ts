@@ -36,10 +36,11 @@ export const parseMapParam = (query: string) => {
   return { zoom, lat, lng } satisfies MapParam
 }
 
-export const parseLeafletHash = (hash: string) => {
+/** Legacy bookmark shape: `#map=zoom/lat/lng` (redirected to `?map=` on load). */
+export const parseLegacyMapHash = (hash: string) => {
   const query = hash.startsWith('#') ? hash.slice(1) : hash
-  if (!query) return null
-  return parseMapParam(query)
+  if (!query.startsWith('map=')) return null
+  return parseMapParam(query.slice('map='.length))
 }
 
 export const serializeMapParam = ({ zoom, lat, lng }: MapParam) => {

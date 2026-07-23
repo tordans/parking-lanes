@@ -1,4 +1,4 @@
-import { parseLeafletHash, parseMapParam, serializeMapParam } from '../utils/map-param'
+import { parseLegacyMapHash, parseMapParam, serializeMapParam } from '../utils/map-param'
 
 describe('map param', () => {
   test('parseMapParam accepts zoom/lat/lng', () => {
@@ -15,18 +15,19 @@ describe('map param', () => {
     expect(parseMapParam('16/91/0')).toBeNull()
   })
 
-  test('parseLeafletHash strips leading hash', () => {
-    expect(parseLeafletHash('#16/52.4751/13.4435')).toEqual({
+  test('parseLegacyMapHash reads #map=zoom/lat/lng', () => {
+    expect(parseLegacyMapHash('#map=16/52.4751/13.4435')).toEqual({
       zoom: 16,
       lat: 52.4751,
       lng: 13.4435,
     })
   })
 
-  test('parseLeafletHash rejects empty or invalid hash', () => {
-    expect(parseLeafletHash('#')).toBeNull()
-    expect(parseLeafletHash('')).toBeNull()
-    expect(parseLeafletHash('#foo')).toBeNull()
+  test('parseLegacyMapHash rejects bare hash without map= prefix', () => {
+    expect(parseLegacyMapHash('#16/52.4751/13.4435')).toBeNull()
+    expect(parseLegacyMapHash('#')).toBeNull()
+    expect(parseLegacyMapHash('')).toBeNull()
+    expect(parseLegacyMapHash('#foo')).toBeNull()
   })
 
   test('serializeMapParam rounds coordinates', () => {

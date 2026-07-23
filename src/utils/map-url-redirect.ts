@@ -1,7 +1,7 @@
-import { parseLeafletHash, serializeMapParam } from './map-param'
+import { parseLegacyMapHash, serializeMapParam } from './map-param'
 
-export function redirectLegacyLeafletHash() {
-  const parsed = parseLeafletHash(window.location.hash)
+export function redirectLegacyMapHash() {
+  const parsed = parseLegacyMapHash(window.location.hash)
   if (!parsed) return
 
   const url = new URL(window.location.href)

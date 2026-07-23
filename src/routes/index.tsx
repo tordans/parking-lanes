@@ -2,26 +2,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { MapPage } from '../parking/map/MapPage'
 import { getLocationFromCookie } from '../utils/location-cookie'
-import { type MapParam, parseMapParam } from '../utils/map-param'
-
-const mapParamSchema = z
-  .union([
-    z.string(),
-    z.object({
-      zoom: z.number(),
-      lat: z.number(),
-      lng: z.number(),
-    }),
-  ])
-  .optional()
-  .transform((value): MapParam | undefined => {
-    if (value == null) return undefined
-    if (typeof value === 'string') return parseMapParam(value) ?? undefined
-    return value
-  })
+import { parseMapParam } from '../utils/map-param'
 
 const mapSearchSchema = z.object({
-  map: mapParamSchema,
+  map: z
+    .string()
+    .optional()
+    .transform((s) => (s ? (parseMapParam(s) ?? undefined) : undefined)),
 })
 
 export const Route = createFileRoute('/')({

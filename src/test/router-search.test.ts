@@ -19,9 +19,4 @@ describe('router search serialization', () => {
     expect(serialized).toBe('?map=16.1/52.4751/13.4436')
     expect(serialized).not.toContain('"zoom"')
   })
-
-  test('legacy JSON map param still parses', () => {
-    const parsed = routerSearch.parse('?map={"zoom":16.1,"lat":52.4751,"lng":13.4436}')
-    expect(parsed.map).toEqual({ zoom: 16.1, lat: 52.4751, lng: 13.4436 })
-  })
 })
