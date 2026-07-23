@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { type ConditionalValue, parseConditionalTag } from '../../../utils/conditional-tag'
+import { type ConditionalValue } from '../../../utils/conditional-tag'
 import { type OsmWay } from '../../../utils/types/osm-data'
+import { buildConditionalTagValue, formatConditionalValue, parseConditionalTagForEdit } from '../../domain/editor/conditional-tag-edit'
 import { SelectInput } from './SelectInput'
 import { TextInput } from './TextInput'
 import { type TagValue } from '../../../utils/types/parking'
@@ -13,15 +14,10 @@ export function ConditionalInput(props: {
     values?: TagValue[]
     onChange: (tagValue: string) => void
 }) {
-    const parsedConditionalTag = props.osm.tags[props.tag] ? parseConditionalTag(props.osm.tags[props.tag]) : []
-    parsedConditionalTag.push({ value: '', condition: null })
+    const parsedConditionalTag = parseConditionalTagForEdit(props.osm.tags[props.tag])
 
     const buildTagValue = (newConditionalValue: ConditionalValue, index: number) => {
-        return parsedConditionalTag
-            .map((cv, i) => index === i ? newConditionalValue : cv)
-            .filter(cv => cv.value && cv.condition)
-            .map(cv => buildConditionalValue(cv.value, cv.condition))
-            .join('; ')
+        return buildConditionalTagValue(parsedConditionalTag, newConditionalValue, index)
     }
 
     return (
@@ -44,10 +40,6 @@ export function ConditionalInput(props: {
             </td>
         </tr>
     )
-
-    function buildConditionalValue(value: string, condition: string | null) {
-        return condition == null || condition === '' ? value : `${value} @ (${condition})`
-    }
 }
 
 function ConditionalPartInput(props: {

@@ -4,7 +4,7 @@ import { ConditionalInput } from './ConditionalInput'
 import { SimpleTagInput } from './SimpleTagInput'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PresetSigns } from './PresetSigns'
-import { parkingLaneTags } from './lane-tags'
+import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
 
 export function SideGroup(props: {
     osm: OsmWay
@@ -54,11 +54,9 @@ function TagInput(props: {
     tagInfo: ParkingTagInfo
     onChange: (key: string, value: string) => void
 }) {
-    const tag = props.tagInfo.template.replace('{side}', props.side)
-    const label = props.tagInfo.template.startsWith('parking:{side}') ?
-        props.tagInfo.template.replace('parking:{side}', '').slice(1) || props.side :
-        tag
-    const hide = !props.tagInfo.checkForNeedShowing(props.osm.tags, props.side)
+    const tag = resolveTagKey(props.tagInfo.template, props.side)
+    const label = getTagLabel(props.tagInfo.template, props.side, tag)
+    const hide = !shouldShowTag(props.tagInfo, props.osm.tags, props.side)
     return tag.endsWith(':conditional') ?
         <ConditionalInput osm={props.osm} tag={tag} label={label} hide={hide} values={props.tagInfo.values} onChange={v => props.onChange(tag, v)} /> :
         <SimpleTagInput osm={props.osm} tag={tag} label={label} hide={hide} values={props.tagInfo.values} onChange={v => props.onChange(tag, v)} />

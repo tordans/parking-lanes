@@ -1,4 +1,4 @@
-import { transpose } from 'osm-parking-tag-updater/src/components/Tool/transpose'
+import { getTagMigrationInfo } from '../../domain/editor/tag-migration'
 import { type OsmWay } from '../../../utils/types/osm-data'
 
 export function TagUpdaterModal(props: {
@@ -6,7 +6,7 @@ export function TagUpdaterModal(props: {
     onUpdate: () => void
     onClose: () => void
 }) {
-    const updateInfo = transpose(Object.entries(props.osm.tags).map(x => `${x[0]}=${x[1]}`))
+    const updateInfo = getTagMigrationInfo(props.osm.tags)
 
     return (
         <div id="tag-updater-modal" className="modal">

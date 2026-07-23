@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { type OsmTags, type OsmWay } from '../../../utils/types/osm-data'
 import { type WaysInRelation } from '../../../utils/types/osm-data-storage'
 import { AllTagsBlock } from '../LaneInfo'
-import { transpose } from 'osm-parking-tag-updater/src/components/Tool/transpose/transpose'
+import { applyTagMigration, hasTagMigration } from '../../domain/editor/tag-migration'
 import { SideGroup } from './SideGroup'
 import { TagUpdaterModal } from './TagUpdaterModal'
 
@@ -87,18 +87,12 @@ export function LaneEditForm(props: {
     }
 
     function handleUpdateTagsClick() {
-        const way = props.osm
-        const updateInfo = transpose(Object.entries(way.tags).map(x => `${x[0]}=${x[1]}`))
-
-        for (const tagMap of Object.entries(updateInfo.newTagObjects)) {
-            const oldKey = tagMap[0].split('=')[0]
+        const migratedTags = applyTagMigration(props.osm.tags)
+        for (const key of Object.keys(props.osm.tags)) {
             // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-            delete way.tags[oldKey]
-            for (const newTag of tagMap[1].newTags) {
-                const [newKey, newValue] = newTag.split('=')
-                way.tags[newKey] = newValue
-            }
+            delete props.osm.tags[key]
         }
+        Object.assign(props.osm.tags, migratedTags)
     }
 }
 
@@ -113,6 +107,5 @@ function existsSideTags(tags: OsmTags, side: string) {
 }
 
 function canUpdateTags(way: OsmWay) {
-    const updateInfo = transpose(Object.entries(way.tags).map(x => `${x[0]}=${x[1]}`))
-    return Object.keys(updateInfo.newTagObjects).length > 0
+    return hasTagMigration(way.tags)
 }
