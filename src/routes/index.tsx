@@ -5,7 +5,10 @@ import { getLocationFromCookie } from '../utils/location-cookie'
 import { parseMapParam } from '../utils/map-param'
 
 const mapSearchSchema = z.object({
-  map: z.string().optional(),
+  map: z
+    .string()
+    .optional()
+    .transform((s) => (s ? (parseMapParam(s) ?? undefined) : undefined)),
 })
 
 export const Route = createFileRoute('/')({
@@ -17,12 +20,10 @@ function IndexPage() {
   const search = Route.useSearch()
   const cookieLocation = getLocationFromCookie()
 
-  const mapFromParam = search.map ? parseMapParam(search.map) : null
-
   const initialView = {
-    longitude: mapFromParam?.lng ?? cookieLocation?.location.lng ?? 24.609,
-    latitude: mapFromParam?.lat ?? cookieLocation?.location.lat ?? 51.591,
-    zoom: mapFromParam?.zoom ?? cookieLocation?.zoom ?? 5,
+    longitude: search.map?.lng ?? cookieLocation?.location.lng ?? 24.609,
+    latitude: search.map?.lat ?? cookieLocation?.location.lat ?? 51.591,
+    zoom: search.map?.zoom ?? cookieLocation?.zoom ?? 5,
   }
 
   return <MapPage initialView={initialView} />

@@ -6,12 +6,19 @@ import { createRoot } from 'react-dom/client'
 import { routeTree } from './routeTree.gen'
 import './styles/main.scss'
 import { redirectLegacyLeafletHash } from './utils/map-url-redirect'
+import { routerSearch } from './utils/router-search'
 
 redirectLegacyLeafletHash()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
 
-const router = createRouter({ routeTree, basepath })
+const router = createRouter({
+  routeTree,
+  basepath,
+  trailingSlash: 'never',
+  parseSearch: routerSearch.parse,
+  stringifySearch: routerSearch.stringify,
+})
 
 declare module '@tanstack/react-router' {
   interface Register {
