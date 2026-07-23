@@ -14,11 +14,10 @@ import {
 import { getUrl } from '../data-url'
 import {
   getLaneFeatureByOsmId,
-  useAreaFeatures,
   useCutMarkerFeatures,
   useLaneFeatures,
   useParkingMapActions,
-  usePointFeatures,
+  useParkingMapStore,
 } from './parking-map-store'
 import {
   parseParkingAreaFeatures,
@@ -40,9 +39,70 @@ import type { MapBounds, ParkingFeature, ParkingFeatureCollection } from './type
 const useDevServer = false
 export const viewMinZoom = 15
 
+function parkingFeatureVisualsChanged(prev: ParkingFeature[], next: ParkingFeature[]): boolean {
+  if (prev.length !== next.length) return true
+  for (let i = 0; i < prev.length; i++) {
+    if (
+      prev[i]!.properties.color !== next[i]!.properties.color ||
+      prev[i]!.properties.weight !== next[i]!.properties.weight
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+function buildOsmTagMaps() {
+  const wayTags: Record<number, OsmWay['tags']> = {}
+  for (const way of Object.values(osmData.ways)) wayTags[way.id] = way.tags
+
+  const nodeTags: Record<number, OsmWay['tags']> = {}
+  for (const node of Object.values(osmData.nodes)) nodeTags[node.id] = node.tags
+
+  const relationTags: Record<number, OsmWay['tags']> = {}
+  for (const relation of Object.values(osmData.relations)) relationTags[relation.id] = relation.tags
+
+  return { wayTags, nodeTags, relationTags }
+}
+
+export function syncDatetimeColors(datetime: Date) {
+  const { lanes, areas, points, actions } = useParkingMapStore.getState()
+  const { wayTags, nodeTags, relationTags } = buildOsmTagMaps()
+
+  const updatedLanes = updateLaneFeatureColors(lanes.features, datetime, wayTags)
+  if (parkingFeatureVisualsChanged(lanes.features, updatedLanes)) {
+    actions.updateLaneFeatures(updatedLanes)
+  }
+
+  const updatedAreas = updateAreaFeatureColors(areas.features, datetime, wayTags, relationTags)
+  if (parkingFeatureVisualsChanged(areas.features, updatedAreas)) {
+    actions.setAreas({ type: 'FeatureCollection', features: updatedAreas })
+  }
+
+  const updatedPoints = updatePointFeatureColors(points.features, datetime, nodeTags)
+  if (parkingFeatureVisualsChanged(points.features, updatedPoints)) {
+    actions.setPoints({ type: 'FeatureCollection', features: updatedPoints })
+  }
+}
+
+export function syncZoomStyles(zoom: number) {
+  const { lanes, points, actions } = useParkingMapStore.getState()
+
+  const updatedLanes = updateLaneFeatureStyles(lanes.features, zoom)
+  if (parkingFeatureVisualsChanged(lanes.features, updatedLanes)) {
+    actions.updateLaneFeatures(updatedLanes)
+  }
+
+  const updatedPoints = updatePointFeatureStyles(points.features, zoom)
+  if (parkingFeatureVisualsChanged(points.features, updatedPoints)) {
+    actions.setPoints({ type: 'FeatureCollection', features: updatedPoints })
+  }
+}
+
 export function useParkingDataLoader() {
   const editorMode = useEditorMode()
   const osmDataSource = useOsmDataSource()
+  const datetime = useDatetime()
   const { setFetchButtonText } = useAppActions()
   const mapActions = useParkingMapActions()
 
@@ -98,8 +158,12 @@ export function useParkingDataLoader() {
       if (newLanes.length) mapActions.addLanes(newLanes)
       if (newAreas.length) mapActions.addAreas(newAreas)
       if (newPoints.length) mapActions.addPoints(newPoints)
+
+      if (newLanes.length || newAreas.length || newPoints.length) {
+        syncDatetimeColors(datetime)
+      }
     },
-    [editorMode, mapActions, osmDataSource, setFetchButtonText],
+    [datetime, editorMode, mapActions, osmDataSource, setFetchButtonText],
   )
 
   return loadParkingData
@@ -107,54 +171,16 @@ export function useParkingDataLoader() {
 
 export function useDatetimeColorSync() {
   const datetime = useDatetime()
-  const lanes = useLaneFeatures()
-  const areas = useAreaFeatures()
-  const points = usePointFeatures()
-  const { updateLaneFeatures, setAreas, setPoints } = useParkingMapActions()
 
   useEffect(() => {
-    const wayTags: Record<number, OsmWay['tags']> = {}
-    for (const way of Object.values(osmData.ways)) wayTags[way.id] = way.tags
-
-    const nodeTags: Record<number, OsmWay['tags']> = {}
-    for (const node of Object.values(osmData.nodes)) nodeTags[node.id] = node.tags
-
-    const relationTags: Record<number, OsmWay['tags']> = {}
-    for (const relation of Object.values(osmData.relations))
-      relationTags[relation.id] = relation.tags
-
-    updateLaneFeatures(updateLaneFeatureColors(lanes.features, datetime, wayTags))
-    setAreas({
-      type: 'FeatureCollection',
-      features: updateAreaFeatureColors(areas.features, datetime, wayTags, relationTags),
-    })
-    setPoints({
-      type: 'FeatureCollection',
-      features: updatePointFeatureColors(points.features, datetime, nodeTags),
-    })
-  }, [
-    areas.features,
-    datetime,
-    lanes.features,
-    points.features,
-    setAreas,
-    setPoints,
-    updateLaneFeatures,
-  ])
+    syncDatetimeColors(datetime)
+  }, [datetime])
 }
 
 export function useZoomStyleSync(zoom: number) {
-  const lanes = useLaneFeatures()
-  const points = usePointFeatures()
-  const { updateLaneFeatures, setPoints } = useParkingMapActions()
-
   useEffect(() => {
-    updateLaneFeatures(updateLaneFeatureStyles(lanes.features, zoom))
-    setPoints({
-      type: 'FeatureCollection',
-      features: updatePointFeatureStyles(points.features, zoom),
-    })
-  }, [lanes.features, points.features, setPoints, updateLaneFeatures, zoom])
+    syncZoomStyles(zoom)
+  }, [zoom])
 }
 
 export function useOsmChangeHandler(zoom: number) {

@@ -26,7 +26,8 @@ export default defineConfig({
   },
   server: {
     port: 33444,
-    host: '0.0.0.0',
+    // Localhost only — one dev URL (OAuth callback used 127.0.0.1). Set a LAN IP here for other devices.
+    host: '127.0.0.1',
     fs: {
       allow: [projectRoot, bunLinksCache],
     },

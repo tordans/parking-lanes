@@ -40,7 +40,7 @@ function mergeFeatures(
   return { type: 'FeatureCollection', features: [...byId.values()] }
 }
 
-const useParkingMapStore = create<ParkingMapStore>()((set, get) => ({
+export const useParkingMapStore = create<ParkingMapStore>()((set, get) => ({
   lanes: emptyCollection(),
   areas: emptyCollection(),
   points: emptyCollection(),
