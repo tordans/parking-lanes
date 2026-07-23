@@ -1,17 +1,17 @@
 ---
 name: agent-orchestration
 description: >-
-  Orchestrator (Grok 4.5, Fable 5, Sonnet 5, or GPT-5.6 Sol) with Composer 2.5
-  workers. Two separate setups: Cursor IDE (subagents in .cursor/agents) or Claude
-  Code (cursor-agent CLI + .claude/skills). Use when configuring orchestration;
-  pick the guide for your host.
+  Orchestrator (default Grok 4.5) with Composer 2.5 slow workers. Two separate
+  setups: Cursor IDE (subagents in .cursor/agents) or Claude Code (cursor-agent
+  CLI + .claude/skills). Use when configuring orchestration; pick the guide for
+  your host.
 user-invocable: true
 disable-model-invocation: true
 ---
 
 # Agent orchestration
 
-**Goal:** A premium orchestrator plans; **Composer 2.5** executes bulk work cheaper.
+**Goal:** **Grok 4.5** (default orchestrator) plans; **Composer 2.5 slow** executes bulk work cheaper.
 
 Install once, then run **only** the init for your host from `.agents/skills/agent-orchestration/`:
 

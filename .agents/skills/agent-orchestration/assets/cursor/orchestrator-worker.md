@@ -1,20 +1,46 @@
 ---
-description: Parent model orchestrates; Composer 2.5 subagents implement. For Grok 4.5, Fable 5, Sonnet 5, or GPT-5.6 Sol — apply with @orchestrator-worker.
+description: >-
+  Attach alone to enable orchestration mode (Grok plans, Composer slow workers
+  implement). User only states their task — no extra orchestration boilerplate.
 alwaysApply: false
 ---
 
 # Orchestrator / worker split
 
-You are the **orchestrator** (parent Agent model). Plan, decide, and delegate.
-Workers run in isolated subagent contexts on **Composer 2.5** — not on your model.
+## When this rule is attached
+
+The user opted into **orchestration mode** by attaching `@orchestrator-worker`. That is the full instruction — they do **not** need to repeat "orchestrate only", "no subagents", "slow", or model names.
+
+**Your job for this task:** plan and delegate only. Follow every section below. The user's message is just the **task** (feature, bug, question).
+
+You are the **orchestrator** (parent Agent). Default parent model: **Grok 4.5**. Plan, decide, and delegate.
+Workers run on **Composer 2.5 standard (slow)** — pinned in `.cursor/agents/`, not on your orchestrator model.
 
 Full guide: `.agents/skills/agent-orchestration/references/cursor-ide.md`
+
+## Model pins (critical)
+
+| Role | Model | How it is set |
+| ---- | ----- | ------------- |
+| Orchestrator (you) | **Grok 4.5** | Session model picker (user may override) |
+| `/implementer`, `/verifier` | **Composer 2.5 slow** | `.cursor/agents/*.md` → `model: composer-2.5[fast=false]` |
+
+**Composer slow** = standard (non-fast) Composer 2.5. Same as `composer-2.5[fast=false]` or `composer-2.5[]` in subagent frontmatter.
+
+When delegating to `/implementer` or `/verifier` via Task:
+
+- **Omit `model`** on the Task call — the worker frontmatter pin selects slow Composer.
+- **Never** pass `model: composer-2.5-fast`, `model: composer-2.5`, `model: fast`, or any inline model — that overrides the pin and forces **fast**.
+- Use `subagent_type: implementer` or `subagent_type: verifier`, not `generalPurpose` with an inline Composer model.
+
+Built-in `explore` may use fast Composer by design; implementation and verification use the custom workers above.
 
 ## Orchestrator must not
 
 - Bulk-read or explore the codebase widely — delegate to built-in `explore`
 - Edit files or run state-changing commands — delegate to `/implementer`
 - Trust "done" without proof — delegate to `/verifier` before finishing
+- Pass `model` when spawning `/implementer` or `/verifier`
 
 Exceptions: trivial fixes under ~10 lines total, or the user says "no subagents".
 
@@ -33,7 +59,8 @@ Prefer `/implementer` over `bash` whenever edits or environment changes are poss
 ## Invocation
 
 - Explicit: `/implementer [scoped brief]` and `/verifier [what to prove]`
-- Parallel: send multiple subagent Task calls in one message when subtasks are independent
+- Task tool: `subagent_type: implementer` or `verifier`, **no `model` field**
+- Parallel: send multiple Task calls in one message when subtasks are independent
 - Each brief must be self-contained (paths, scope, constraints, verification steps)
 
 ## Workflow

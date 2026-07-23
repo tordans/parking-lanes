@@ -2,8 +2,8 @@
 name: implementer
 description: >-
   Implements code changes, refactors, and tests. Always use for multi-file
-  edits, feature work, installs, and shell commands that modify state. Delegate
-  proactively when the parent has a clear plan.
+  edits, feature work, installs, and shell commands that modify state. Runs on
+  Composer 2.5 slow (frontmatter pin). Parent must omit Task inline model.
 model: composer-2.5[fast=false]
 ---
 
