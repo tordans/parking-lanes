@@ -6,8 +6,22 @@ describe('router search serialization', () => {
     const serialized = routerSearch.stringify({ map })
     expect(serialized).not.toContain('%2F')
     expect(serialized).toContain('map=16.1/52.4751/13.4436')
+    expect(serialized).not.toContain('{')
 
     const parsed = routerSearch.parse(serialized)
     expect(parsed.map).toBe(map)
+  })
+
+  test('map object serializes as zoom/lat/lng not JSON', () => {
+    const serialized = routerSearch.stringify({
+      map: { zoom: 16.1, lat: 52.4751, lng: 13.4436 },
+    })
+    expect(serialized).toBe('?map=16.1/52.4751/13.4436')
+    expect(serialized).not.toContain('"zoom"')
+  })
+
+  test('legacy JSON map param still parses', () => {
+    const parsed = routerSearch.parse('?map={"zoom":16.1,"lat":52.4751,"lng":13.4436}')
+    expect(parsed.map).toEqual({ zoom: 16.1, lat: 52.4751, lng: 13.4436 })
   })
 })
