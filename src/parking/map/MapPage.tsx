@@ -1,6 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useMemo, useState } from 'react'
-import type { MapLayerMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
+import {
+  AttributionControl,
+  type MapLayerMouseEvent,
+  type ViewStateChangeEvent,
+} from 'react-map-gl/maplibre'
 import { changesStore } from '../../utils/changes-store'
 import { osmData } from '../../utils/data-client'
 import { setLocationToCookie } from '../../utils/location-cookie'
@@ -191,6 +195,7 @@ export function MapPage({
           mapStyle={OPENFREEMAP_STYLE}
           initialViewState={initialViewState}
           style={{ width: '100%', height: '100%' }}
+          attributionControl={false}
           interactiveLayerIds={interactiveLayerIds}
           onLoad={onMapLoad}
           onMoveEnd={onMoveEnd}
@@ -204,6 +209,7 @@ export function MapPage({
           onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
           onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
         >
+          <AttributionControl compact position="bottom-left" />
           <ParkingLayers
             lanes={lanes}
             areas={areas}
