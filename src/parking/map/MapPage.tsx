@@ -8,6 +8,7 @@ import {
 import { changesStore } from '../../utils/changes-store'
 import { osmData } from '../../utils/data-client'
 import { setLocationToCookie } from '../../utils/location-cookie'
+import { serializeMapParam } from '../../utils/map-param'
 import { OsmApiRequestError, uploadChanges } from '../../utils/osm-client'
 import type { OsmWay } from '../../utils/types/osm-data'
 import { useAppActions, useMapState } from '../app-store'
@@ -23,7 +24,7 @@ import {
   useParkingMapActions,
   usePointFeatures,
 } from './parking-map-store'
-import { MapGL, MapProvider, OPENFREEMAP_STYLE, ParkingLayers } from './ParkingLayers'
+import { MapGL, MapProvider, MAP_STYLE, ParkingLayers } from './ParkingLayers'
 import {
   interactiveLayerIds,
   toBounds,
@@ -57,6 +58,7 @@ export function MapPage({
   const cutMarkers = useCutMarkerFeatures()
 
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
+  const [cursorStyle, setCursorStyle] = useState('grab')
 
   const loadParkingData = useParkingDataLoader()
   const handleOsmChange = useOsmChangeHandler(mapZoom)
@@ -85,9 +87,10 @@ export function MapPage({
       void navigate({
         search: (prev) => ({
           ...prev,
-          lng: Number(center.lng.toFixed(5)),
-          lat: Number(center.lat.toFixed(5)),
-          zoom: Number(zoom.toFixed(2)),
+          map: serializeMapParam({ zoom, lat: center.lat, lng: center.lng }),
+          lng: undefined,
+          lat: undefined,
+          zoom: undefined,
         }),
         replace: true,
       })
@@ -124,7 +127,7 @@ export function MapPage({
   const onLayerClick = useCallback(
     (event: Parameters<typeof handleLaneClick>[0]) => {
       const layerId = event.features?.[0]?.layer?.id
-      if (layerId === 'parking-cut-markers-layer') {
+      if (layerId === 'parking-cut-markers-hitarea-layer') {
         handleCutMarkerClick(event)
         return
       }
@@ -192,13 +195,25 @@ export function MapPage({
       <MapProvider>
         <MapGL
           id="main-map"
-          mapStyle={OPENFREEMAP_STYLE}
+          mapStyle={MAP_STYLE}
           initialViewState={initialViewState}
           style={{ width: '100%', height: '100%' }}
           attributionControl={false}
+          cursor={cursorStyle}
           interactiveLayerIds={interactiveLayerIds}
           onLoad={onMapLoad}
           onMoveEnd={onMoveEnd}
+          onMouseMove={(event: MapLayerMouseEvent) => {
+            const layerId = event.features?.[0]?.layer?.id
+            if (layerId && interactiveLayerIds.includes(layerId)) {
+              setCursorStyle('pointer')
+            } else {
+              setCursorStyle('grab')
+            }
+          }}
+          onMouseLeave={() => {
+            setCursorStyle('grab')
+          }}
           onClick={(event: MapLayerMouseEvent) => {
             if (event.features?.length) {
               onLayerClick(event)

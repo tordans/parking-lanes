@@ -391,10 +391,10 @@ export function useEditorModeAuth() {
 }
 
 export const interactiveLayerIds = [
-  'parking-lanes-layer',
+  'parking-lanes-hitarea-layer',
   'parking-areas-layer',
-  'parking-points-layer',
-  'parking-cut-markers-layer',
+  'parking-points-hitarea-layer',
+  'parking-cut-markers-hitarea-layer',
 ]
 
 export function toBounds(mapBounds: {
