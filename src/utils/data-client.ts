@@ -11,16 +11,60 @@ export const osmData: ParsedOsmData = {
   waysInRelation: {},
 }
 
-let lastBounds: MapBounds | undefined
+let fetchedEnvelope: MapBounds | undefined
+
+export function isViewportFetched(bounds: MapBounds): boolean {
+  if (!fetchedEnvelope) return false
+  return (
+    bounds.west >= fetchedEnvelope.west &&
+    bounds.south >= fetchedEnvelope.south &&
+    bounds.east <= fetchedEnvelope.east &&
+    bounds.north <= fetchedEnvelope.north
+  )
+}
+
+export function expandFetchedEnvelope(
+  envelope: MapBounds | undefined,
+  viewport: MapBounds,
+): MapBounds {
+  if (!envelope) return { ...viewport }
+  return {
+    west: Math.min(envelope.west, viewport.west),
+    south: Math.min(envelope.south, viewport.south),
+    east: Math.max(envelope.east, viewport.east),
+    north: Math.max(envelope.north, viewport.north),
+  }
+}
+
+export function resetFetchedEnvelope(): void {
+  fetchedEnvelope = undefined
+}
+
+/** @internal test helper */
+export function setFetchedEnvelopeForTest(envelope: MapBounds | undefined): void {
+  fetchedEnvelope = envelope
+}
+
+export type DownloadBboxResult = {
+  newData: ParsedOsmData | null
+  skipped: boolean
+}
 
 /**
- * Get OSM data within specified bounds
+ * Fetch OSM data for viewport bounds. Skips the network when the viewport is
+ * already covered by a previous fetch unless `force` is set.
  * @throws {Error} Throws error when HTTP request fails (eg. HTTP 429 when too many requests)
  */
-export async function downloadBbox(bounds: MapBounds, url: string): Promise<ParsedOsmData | null> {
-  if (lastBounds !== undefined && withinLastBounds(bounds, lastBounds)) return null
+export async function downloadBbox(
+  bounds: MapBounds,
+  url: string,
+  options?: { force?: boolean },
+): Promise<DownloadBboxResult> {
+  if (!options?.force && isViewportFetched(bounds)) {
+    return { newData: null, skipped: true }
+  }
 
-  lastBounds = bounds
+  fetchedEnvelope = expandFetchedEnvelope(fetchedEnvelope, bounds)
 
   const osmResp: RawOsmData = await downloadContent(url)
   const newData = parseOsmResp(osmResp)
@@ -32,29 +76,16 @@ export async function downloadBbox(bounds: MapBounds, url: string): Promise<Pars
 
     for (const wayId in newData.ways) {
       if (osmData.ways[wayId]?.version >= newData.ways[wayId].version) continue
-      else osmData.ways[wayId] = newData.ways[wayId]
+      osmData.ways[wayId] = newData.ways[wayId]
     }
 
     for (const relationId in newData.relations) {
       if (osmData.relations[relationId]?.version >= newData.relations[relationId].version) continue
-      else osmData.relations[relationId] = newData.relations[relationId]
+      osmData.relations[relationId] = newData.relations[relationId]
     }
   }
 
-  return newData
-}
-
-function withinLastBounds(newBounds: MapBounds, oldBounds: MapBounds) {
-  return (
-    newBounds.west > oldBounds.west &&
-    newBounds.south > oldBounds.south &&
-    newBounds.east < oldBounds.east &&
-    newBounds.north < oldBounds.north
-  )
-}
-
-export function resetLastBounds(): void {
-  lastBounds = undefined
+  return { newData, skipped: false }
 }
 
 async function downloadContent(url: string): Promise<RawOsmData> {

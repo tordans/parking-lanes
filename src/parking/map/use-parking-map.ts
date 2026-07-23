@@ -1,18 +1,11 @@
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback, useEffect, useRef } from 'react'
 import { addChangedEntity } from '../../utils/changes-store'
-import { downloadBbox, osmData, resetLastBounds } from '../../utils/data-client'
+import { osmData, resetFetchedEnvelope } from '../../utils/data-client'
 import { authenticate, logout, userInfo } from '../../utils/osm-client'
 import type { OsmWay } from '../../utils/types/osm-data'
-import {
-  AuthState,
-  useAppActions,
-  useDatetime,
-  useEditorMode,
-  useMapState,
-  useOsmDataSource,
-} from '../app-store'
-import { getUrl } from '../data-url'
+import { AuthState, useAppActions, useDatetime, useEditorMode, useMapState } from '../app-store'
+import { viewMinZoom } from './constants'
 import {
   getLaneFeatureByOsmId,
   getParkingMapState,
@@ -20,175 +13,15 @@ import {
   useLaneFeatures,
   useParkingMapActions,
 } from './parking-map-store'
-import {
-  parseParkingAreaFeatures,
-  parseParkingPointFeatures,
-  parseParkingRelationFeatures,
-  updateAreaFeatureColors,
-  updatePointFeatureColors,
-  updatePointFeatureStyles,
-} from './parse-areas-points'
-import {
-  applyChangedWayToFeatures,
-  createBacklightFeatures,
-  parseParkingLaneFeatures,
-  updateLaneFeatureColors,
-  updateLaneFeatureStyles,
-} from './parse-lanes'
+import { applyChangedWayToFeatures, createBacklightFeatures } from './parse-lanes'
 import type { MapBounds, ParkingFeature, ParkingFeatureCollection } from './types'
+import { useParkingOsmFetch } from './use-parking-osm-fetch'
+
+export { viewMinZoom } from './constants'
+export { useDatetimeColorSync, useZoomStyleSync } from './parking-map-sync'
+export { useParkingOsmFetch } from './use-parking-osm-fetch'
 
 const useDevServer = false
-export const viewMinZoom = 15
-
-function parkingFeatureVisualsChanged(prev: ParkingFeature[], next: ParkingFeature[]): boolean {
-  if (prev.length !== next.length) return true
-  for (let i = 0; i < prev.length; i++) {
-    if (
-      prev[i]!.properties.color !== next[i]!.properties.color ||
-      prev[i]!.properties.weight !== next[i]!.properties.weight
-    ) {
-      return true
-    }
-  }
-  return false
-}
-
-function buildOsmTagMaps() {
-  const wayTags: Record<number, OsmWay['tags']> = {}
-  for (const way of Object.values(osmData.ways)) wayTags[way.id] = way.tags
-
-  const nodeTags: Record<number, OsmWay['tags']> = {}
-  for (const node of Object.values(osmData.nodes)) nodeTags[node.id] = node.tags
-
-  const relationTags: Record<number, OsmWay['tags']> = {}
-  for (const relation of Object.values(osmData.relations)) relationTags[relation.id] = relation.tags
-
-  return { wayTags, nodeTags, relationTags }
-}
-
-export function syncDatetimeColors(datetime: Date) {
-  const { lanes, areas, points, actions } = getParkingMapState()
-  const { wayTags, nodeTags, relationTags } = buildOsmTagMaps()
-
-  const updatedLanes = updateLaneFeatureColors(lanes.features, datetime, wayTags)
-  if (parkingFeatureVisualsChanged(lanes.features, updatedLanes)) {
-    actions.updateLaneFeatures(updatedLanes)
-  }
-
-  const updatedAreas = updateAreaFeatureColors(areas.features, datetime, wayTags, relationTags)
-  if (parkingFeatureVisualsChanged(areas.features, updatedAreas)) {
-    actions.setAreas({ type: 'FeatureCollection', features: updatedAreas })
-  }
-
-  const updatedPoints = updatePointFeatureColors(points.features, datetime, nodeTags)
-  if (parkingFeatureVisualsChanged(points.features, updatedPoints)) {
-    actions.setPoints({ type: 'FeatureCollection', features: updatedPoints })
-  }
-}
-
-export function syncZoomStyles(zoom: number) {
-  const { lanes, points, actions } = getParkingMapState()
-
-  const updatedLanes = updateLaneFeatureStyles(lanes.features, zoom)
-  if (parkingFeatureVisualsChanged(lanes.features, updatedLanes)) {
-    actions.updateLaneFeatures(updatedLanes)
-  }
-
-  const updatedPoints = updatePointFeatureStyles(points.features, zoom)
-  if (parkingFeatureVisualsChanged(points.features, updatedPoints)) {
-    actions.setPoints({ type: 'FeatureCollection', features: updatedPoints })
-  }
-}
-
-export function useParkingDataLoader() {
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
-  const datetime = useDatetime()
-  const { setFetchButtonText } = useAppActions()
-  const mapActions = useParkingMapActions()
-
-  const loadParkingData = useCallback(
-    async (bounds: MapBounds, zoom: number) => {
-      if (zoom < viewMinZoom) return
-
-      setFetchButtonText('Fetching data...')
-      const url = getUrl(bounds, editorMode, useDevServer, osmDataSource)
-
-      let newData
-      try {
-        newData = await downloadBbox(bounds, url)
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : ''
-        const errorMessage =
-          message === 'Request failed with status code 429'
-            ? 'Error: Too many requests - try again soon'
-            : 'Unknown error, please try again'
-        setFetchButtonText(errorMessage)
-        return
-      }
-      setFetchButtonText('Fetch parking data')
-
-      if (!newData) return
-
-      const newLanes: ParkingFeature[] = []
-      const newAreas: ParkingFeature[] = []
-      const newPoints: ParkingFeature[] = []
-
-      for (const relation of Object.values(newData.relations)) {
-        if (relation.tags?.amenity === 'parking') {
-          newAreas.push(
-            ...parseParkingRelationFeatures(relation, newData.nodeCoords, newData.ways, zoom),
-          )
-        }
-      }
-
-      for (const way of Object.values(newData.ways)) {
-        if (way.tags?.highway) {
-          newLanes.push(...parseParkingLaneFeatures(way, newData.nodeCoords, zoom, editorMode))
-        } else if (way.tags?.amenity === 'parking') {
-          newAreas.push(...parseParkingAreaFeatures(way, newData.nodeCoords, zoom))
-        }
-      }
-
-      for (const node of Object.values(newData.nodes)) {
-        if (node.tags?.amenity === 'parking_entrance' || node.tags?.amenity === 'parking') {
-          newPoints.push(...parseParkingPointFeatures(node, zoom))
-        }
-      }
-
-      if (newLanes.length) mapActions.addLanes(newLanes)
-      if (newAreas.length) mapActions.addAreas(newAreas)
-      if (newPoints.length) mapActions.addPoints(newPoints)
-
-      if (newLanes.length || newAreas.length || newPoints.length) {
-        syncDatetimeColors(datetime)
-      }
-    },
-    [datetime, editorMode, mapActions, osmDataSource, setFetchButtonText],
-  )
-
-  return loadParkingData
-}
-
-export function useDatetimeColorSync() {
-  const datetime = useDatetime()
-
-  useEffect(
-    function syncDatetimeColorsEffect() {
-      syncDatetimeColors(datetime)
-    },
-    [datetime],
-  )
-}
-
-export function useZoomStyleSync(zoom: number) {
-  useEffect(
-    function syncZoomStylesEffect() {
-      syncZoomStyles(zoom)
-    },
-    [zoom],
-  )
-}
 
 export function useOsmChangeHandler(zoom: number) {
   const datetime = useDatetime()
@@ -345,7 +178,7 @@ export function useCutWayHandler(zoom: number) {
 export function useEditorModeAuth() {
   const editorMode = useEditorMode()
   const mapState = useMapState()
-  const loadParkingData = useParkingDataLoader()
+  const { loadParkingData } = useParkingOsmFetch()
   const { setAuthState, setEditorMode } = useAppActions()
   const { removeEmptyLanes } = useParkingMapActions()
 
@@ -370,7 +203,7 @@ export function useEditorModeAuth() {
           }
           if (cancelled) return
           setAuthState(AuthState.success)
-          resetLastBounds()
+          resetFetchedEnvelope()
           if (mapState?.bounds && mapState.zoom >= viewMinZoom) {
             await loadParkingData(mapState.bounds, mapState.zoom)
           }

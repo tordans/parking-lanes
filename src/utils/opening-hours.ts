@@ -11,7 +11,6 @@ export function parseOpeningHours(value: string | null): OpeningHours | 'even' |
   try {
     return new OpeningHours(value, null, 0)
   } catch {
-    console.error('Invalid time interval: ' + value)
     return null
   }
 }

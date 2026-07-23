@@ -24,7 +24,8 @@ import {
   useParkingMapActions,
   usePointFeatures,
 } from './parking-map-store'
-import { MapGL, MapProvider, MAP_STYLE, ParkingLayers } from './ParkingLayers'
+import { MapGL, MapProvider, ParkingLayers } from './ParkingLayers'
+import { useMapStyle } from './use-map-style'
 import {
   interactiveLayerIds,
   toBounds,
@@ -33,7 +34,7 @@ import {
   useEditorModeAuth,
   useLaneClickHandler,
   useOsmChangeHandler,
-  useParkingDataLoader,
+  useParkingOsmFetch,
   useZoomStyleSync,
   viewMinZoom,
 } from './use-parking-map'
@@ -57,10 +58,12 @@ export function MapPage({
   const backlights = useBacklightFeatures()
   const cutMarkers = useCutMarkerFeatures()
 
+  const { data: mapStyle } = useMapStyle()
+
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
   const [cursorStyle, setCursorStyle] = useState('grab')
 
-  const loadParkingData = useParkingDataLoader()
+  const { loadParkingData, refetchAfterSave } = useParkingOsmFetch()
   const handleOsmChange = useOsmChangeHandler(mapZoom)
   const handleLaneClick = useLaneClickHandler(mapZoom)
   const { showCutMarkers, handleCutMarkerClick } = useCutWayHandler(mapZoom)
@@ -164,11 +167,16 @@ export function MapPage({
         }
       }
       setChangesCount(0)
+
+      const currentMapState = mapState
+      if (currentMapState?.bounds && currentMapState.zoom >= viewMinZoom) {
+        await refetchAfterSave(currentMapState.bounds, currentMapState.zoom)
+      }
     } catch (err) {
       if (err instanceof OsmApiRequestError) alert(err.responseText || err.message)
       else alert(err)
     }
-  }, [lanes.features, mapActions, setChangesCount])
+  }, [lanes.features, mapActions, mapState, refetchAfterSave, setChangesCount])
 
   const handleCutLane = useCallback(
     (way: OsmWay) => {
@@ -189,46 +197,48 @@ export function MapPage({
   return (
     <div className="app">
       <MapProvider>
-        <MapGL
-          id="main-map"
-          mapStyle={MAP_STYLE}
-          initialViewState={initialViewState}
-          style={{ width: '100%', height: '100%' }}
-          attributionControl={false}
-          cursor={cursorStyle}
-          interactiveLayerIds={interactiveLayerIds}
-          onLoad={onMapLoad}
-          onMoveEnd={onMoveEnd}
-          onMouseMove={(event: MapLayerMouseEvent) => {
-            const layerId = event.features?.[0]?.layer?.id
-            if (layerId && interactiveLayerIds.includes(layerId)) {
-              setCursorStyle('pointer')
-            } else {
+        {mapStyle ? (
+          <MapGL
+            id="main-map"
+            mapStyle={mapStyle}
+            initialViewState={initialViewState}
+            style={{ width: '100%', height: '100%' }}
+            attributionControl={false}
+            cursor={cursorStyle}
+            interactiveLayerIds={interactiveLayerIds}
+            onLoad={onMapLoad}
+            onMoveEnd={onMoveEnd}
+            onMouseMove={(event: MapLayerMouseEvent) => {
+              const layerId = event.features?.[0]?.layer?.id
+              if (layerId && interactiveLayerIds.includes(layerId)) {
+                setCursorStyle('pointer')
+              } else {
+                setCursorStyle('grab')
+              }
+            }}
+            onMouseLeave={() => {
               setCursorStyle('grab')
-            }
-          }}
-          onMouseLeave={() => {
-            setCursorStyle('grab')
-          }}
-          onClick={(event: MapLayerMouseEvent) => {
-            if (event.features?.length) {
-              onLayerClick(event)
-              return
-            }
-            onMapClick()
-          }}
-          onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-          onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-        >
-          <AttributionControl compact position="bottom-left" />
-          <ParkingLayers
-            lanes={lanes}
-            areas={areas}
-            points={points}
-            backlights={backlights}
-            cutMarkers={cutMarkers}
-          />
-        </MapGL>
+            }}
+            onClick={(event: MapLayerMouseEvent) => {
+              if (event.features?.length) {
+                onLayerClick(event)
+                return
+              }
+              onMapClick()
+            }}
+            onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+            onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+          >
+            <AttributionControl compact position="bottom-left" />
+            <ParkingLayers
+              lanes={lanes}
+              areas={areas}
+              points={points}
+              backlights={backlights}
+              cutMarkers={cutMarkers}
+            />
+          </MapGL>
+        ) : null}
       </MapProvider>
 
       <div className="map-overlay map-overlay--bottom-left">

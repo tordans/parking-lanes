@@ -1,13 +1,12 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Layer, Map as MapGL, MapProvider, Source } from 'react-map-gl/maplibre'
+import { OPENFREEMAP_POSITRON_STYLE_URL } from '../../utils/openfreemap-style'
 import type { ParkingFeatureCollection } from './types'
-
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron'
 
 const laneLayerPaint = {
   'line-color': ['get', 'color'],
-  'line-width': ['get', 'weight'],
-  'line-offset': ['get', 'offset'],
+  'line-width': ['coalesce', ['get', 'weight'], 2],
+  'line-offset': ['coalesce', ['get', 'offset'], 0],
 } as Record<string, unknown>
 
 const hitAreaLinePaint = {
@@ -24,7 +23,7 @@ const areaLayerPaint = {
 
 const pointLayerPaint = {
   'circle-color': ['get', 'color'],
-  'circle-radius': ['get', 'weight'],
+  'circle-radius': ['coalesce', ['get', 'weight'], 4],
   'circle-opacity': 0.6,
   'circle-stroke-width': 0,
 } as Record<string, unknown>
@@ -38,8 +37,8 @@ const hitAreaCirclePaint = {
 
 const backlightPaint = {
   'line-color': ['get', 'color'],
-  'line-width': ['get', 'weight'],
-  'line-offset': ['get', 'offset'],
+  'line-width': ['coalesce', ['get', 'weight'], 2],
+  'line-offset': ['coalesce', ['get', 'offset'], 0],
   'line-opacity': 0.4,
 } as Record<string, unknown>
 
@@ -118,4 +117,4 @@ export function ParkingLayers({
   )
 }
 
-export { MapGL, MapProvider, MAP_STYLE }
+export { MapGL, MapProvider, OPENFREEMAP_POSITRON_STYLE_URL as MAP_STYLE }
