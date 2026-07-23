@@ -1,3 +1,4 @@
+import { Select } from '../../../components/catalyst/select'
 import { type TagValue } from '../../../utils/types/parking'
 
 export function SelectInput(props: {
@@ -11,10 +12,10 @@ export function SelectInput(props: {
     !props.value || values.includes(props.value) ? ['', ...values] : ['', props.value, ...values]
 
   return (
-    <select
+    <Select
       name={props.tag}
       value={props.value}
-      className="tag-editor__select"
+      className="min-w-0"
       onChange={(e) => props.onChange(e.target.value)}
     >
       {options.map((o) => (
@@ -22,6 +23,6 @@ export function SelectInput(props: {
           {o}
         </option>
       ))}
-    </select>
+    </Select>
   )
 }

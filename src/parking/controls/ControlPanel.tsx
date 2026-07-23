@@ -12,15 +12,15 @@ export function ControlPanel(props: {
   onClose: () => void
 }) {
   return (
-    <div className="panel control-padding control-bigfont">
-      <div>
-        <div className="data-controls">
-          <DatetimeInput />
-          <div className="data-controls__right">
-            <FetchButton onClick={props.onFetch} />
-            <SaveButton onClick={props.onSave} />
-          </div>
+    <div className="flex h-full flex-col overflow-hidden p-2 text-sm">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <DatetimeInput />
+        <div className="flex items-center gap-2">
+          <FetchButton onClick={props.onFetch} />
+          <SaveButton onClick={props.onSave} />
         </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
         <OsmObjectPanel
           onCutLane={props.onCutLane}
           onChange={props.onOsmChange}

@@ -43,7 +43,8 @@ const useAppStore = create<AppStore>()((set) => ({
     setOsmDataSource: (osmDataSource) => set({ osmDataSource }),
     setDatetime: (datetime) => set({ datetime }),
     setEditorMode: (editorMode) => set({ editorMode }),
-    setAuthState: (authState) => set({ authState }),
+    setAuthState: (authState) =>
+      set((state) => (state.authState === authState ? state : { authState })),
     setMapState: (mapState) => set({ mapState }),
     setChangesCount: (changesCount) => set({ changesCount }),
   },

@@ -1,6 +1,9 @@
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { z } from 'zod'
+import { Button } from '../../../components/catalyst/button'
+import { Checkbox, CheckboxField } from '../../../components/catalyst/checkbox'
+import { Label } from '../../../components/catalyst/fieldset'
 import { type OsmTags, type OsmWay } from '../../../utils/types/osm-data'
 import { type WaysInRelation } from '../../../utils/types/osm-data-storage'
 import { applyTagMigration, hasTagMigration } from '../../domain/editor/tag-migration'
@@ -43,40 +46,38 @@ export function LaneEditForm(props: {
       key={props.osm.type + props.osm.id}
       className="editor-form"
     >
-      <div className="editor-form__header">
-        <label className="editor-form__side-switcher">
+      <div className="mb-2 flex items-center justify-between">
+        <CheckboxField className="grid-cols-[auto_auto]! gap-x-2!">
           <form.Field name="bothBlockShown">
             {(field) => (
-              <input
+              <Checkbox
                 id="side-switcher"
-                type="checkbox"
-                className="editor-form__side-switcher-checkbox"
                 checked={field.state.value}
-                onChange={(e) => field.handleChange(e.target.checked)}
+                onChange={field.handleChange}
               />
             )}
           </form.Field>
-          Both
-        </label>
-        <div className="editor-form__utils">
-          <button
+          <Label htmlFor="side-switcher">Both</Label>
+        </CheckboxField>
+        <div className="flex gap-1">
+          <Button
             title="Cut lane"
             type="button"
-            className="editor-form__cut-button"
-            style={{ display: props.waysInRelation[props.osm.id] ? 'none' : undefined }}
+            plain
+            className={props.waysInRelation[props.osm.id] ? 'hidden' : ''}
             onClick={() => props.onCutLane(props.osm)}
           >
             ✂
-          </button>
-          <button
+          </Button>
+          <Button
             title="Update tags"
             type="button"
-            className="editor-form__cut-button"
-            style={{ display: canUpdateTags(props.osm) ? undefined : 'none' }}
+            plain
+            className={canUpdateTags(props.osm) ? '' : 'hidden'}
             onClick={() => setTagUpdaterModalShown(true)}
           >
             🔄
-          </button>
+          </Button>
         </div>
       </div>
       <div id="tags-block">
@@ -101,13 +102,12 @@ export function LaneEditForm(props: {
         <AllTagsBlock tags={props.osm.tags} />
       </div>
 
-      {tagUpdaterModalShown ? (
-        <TagUpdaterModal
-          osm={props.osm}
-          onUpdate={() => handleUpdateTagsClick()}
-          onClose={() => setTagUpdaterModalShown(false)}
-        />
-      ) : null}
+      <TagUpdaterModal
+        open={tagUpdaterModalShown}
+        osm={props.osm}
+        onUpdate={() => handleUpdateTagsClick()}
+        onClose={() => setTagUpdaterModalShown(false)}
+      />
     </form>
   )
 

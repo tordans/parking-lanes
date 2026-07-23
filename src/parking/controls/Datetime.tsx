@@ -1,4 +1,6 @@
 import dayjs from 'dayjs'
+import { Field, Label } from '../../components/catalyst/fieldset'
+import { Input } from '../../components/catalyst/input'
 import { useAppActions, useDatetime } from '../app-store'
 
 export function DatetimeInput() {
@@ -6,13 +8,16 @@ export function DatetimeInput() {
   const { setDatetime } = useAppActions()
 
   return (
-    <input
-      id="datetime-input"
-      value={dayjs(datetime).format('YYYY-MM-DDTHH:mm')}
-      className="datetime"
-      type="datetime-local"
-      title="If parking:condition present, show kind of parking at this time of day and day of week."
-      onChange={(e) => setDatetime(new Date(e.target.value))}
-    />
+    <Field className="min-w-0 shrink">
+      <Label className="sr-only">Date and time</Label>
+      <Input
+        id="datetime-input"
+        value={dayjs(datetime).format('YYYY-MM-DDTHH:mm')}
+        className="max-w-40"
+        type="datetime-local"
+        title="If parking:condition present, show kind of parking at this time of day and day of week."
+        onChange={(e) => setDatetime(new Date(e.target.value))}
+      />
+    </Field>
   )
 }

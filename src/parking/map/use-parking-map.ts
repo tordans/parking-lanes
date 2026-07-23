@@ -183,12 +183,17 @@ export function useEditorModeAuth() {
   const { removeEmptyLanes } = useParkingMapActions()
 
   useEffect(
-    function syncEditorModeAuth() {
-      if (!editorMode) {
-        setAuthState(AuthState.initial)
-        removeEmptyLanes()
-        return
-      }
+    function resetWhenEditorOff() {
+      if (editorMode) return
+      setAuthState(AuthState.initial)
+      removeEmptyLanes()
+    },
+    [editorMode, removeEmptyLanes, setAuthState],
+  )
+
+  useEffect(
+    function authenticateWhenEditorOn() {
+      if (!editorMode) return
 
       let cancelled = false
 
@@ -219,7 +224,7 @@ export function useEditorModeAuth() {
         cancelled = true
       }
     },
-    [editorMode, loadParkingData, mapState, removeEmptyLanes, setAuthState, setEditorMode],
+    [editorMode, loadParkingData, mapState, setAuthState, setEditorMode],
   )
 }
 

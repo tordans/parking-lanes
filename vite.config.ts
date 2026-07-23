@@ -1,6 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
@@ -12,6 +13,7 @@ const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
 export default defineConfig({
   base: '/street-parking-editor/',
   plugins: [
+    tailwindcss(),
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react({
       babel: {

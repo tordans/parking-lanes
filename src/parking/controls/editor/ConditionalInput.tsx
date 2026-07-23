@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Label } from '../../../components/catalyst/fieldset'
+import { Input } from '../../../components/catalyst/input'
 import { type ConditionalValue } from '../../../utils/conditional-tag'
 import { type OsmWay } from '../../../utils/types/osm-data'
 import { type TagValue } from '../../../utils/types/parking'
@@ -25,10 +27,10 @@ export function ConditionalInput(props: {
 
   return (
     <tr id={props.tag} className="tag-editor" style={{ display: props.hide ? 'none' : undefined }}>
-      <td className="tag-editor__key">
-        <label title={props.tag}>{props.label}</label>
+      <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
+        <Label title={props.tag}>{props.label}</Label>
       </td>
-      <td className="tag-editor__inputs tag-editor__inputs--conditional">
+      <td className="flex flex-col items-start gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
         {parsedConditionalTag.map((conditionalValue, index) => (
           <ConditionalPartInput
             key={index}
@@ -63,8 +65,8 @@ function ConditionalPartInput(props: {
   }
 
   return (
-    <div className="conditional-tag-part">
-      <div className="conditional-tag-part__value">
+    <div className="flex flex-nowrap gap-1.5">
+      <div>
         {props.values ? (
           <SelectInput
             tag={props.tag}
@@ -76,13 +78,14 @@ function ConditionalPartInput(props: {
           <TextInput tag={props.tag} value={value} onChange={handleChangeValue} />
         )}
       </div>
-      <div className="conditional-tag-part__condition">
+      <div className="flex flex-nowrap items-center gap-1.5">
         @
-        <input
+        <Input
           type="text"
+          className="min-w-0 max-sm:max-w-[30vw]"
           placeholder="time interval"
           name={props.tag}
-          value={condition ?? undefined}
+          value={condition ?? ''}
           onChange={(e) => handleChangeCondition(e.currentTarget.value)}
         />
       </div>

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
+import { Label } from '../../components/catalyst/fieldset'
 import { handleJosmLinkClick } from '../../utils/josm'
 import { idEditorUrl, josmUrl, overpassDeUrl } from '../../utils/links'
 import { AuthState, useAppActions, useAuthState, useEditorMode, useMapState } from '../app-store'
@@ -11,19 +13,24 @@ export function AppInfoPanel() {
   const mapState = useMapState()
 
   const editorModeLabelColor =
-    authState === AuthState.initial ? 'black' : authState === AuthState.fail ? 'red' : 'green'
+    authState === AuthState.initial
+      ? 'text-zinc-950'
+      : authState === AuthState.fail
+        ? 'text-red-600'
+        : 'text-green-600'
 
   return (
     <div
-      className="leaflet-control-layers control-padding control-bigfont"
+      className="rounded-lg bg-white/90 px-2 py-1 text-sm shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm"
       onMouseEnter={() => setEditorLinkShown(true)}
       onMouseLeave={() => setEditorLinkShown(false)}
     >
-      <span style={{ display: editorLinkShown ? '' : 'none' }}>
+      <span className={editorLinkShown ? '' : 'hidden'}>
         <a
           href="https://wiki.openstreetmap.org/wiki/Street_parking"
           target="_blank"
           rel="noreferrer"
+          className="text-blue-600 hover:underline"
         >
           Tagging
         </a>
@@ -34,6 +41,7 @@ export function AppInfoPanel() {
               href={idEditorUrl({ zoom: mapState.zoom, center: mapState.center })}
               target="_blank"
               rel="noreferrer"
+              className="text-blue-600 hover:underline"
             >
               iD
             </a>
@@ -42,6 +50,7 @@ export function AppInfoPanel() {
               href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapState.bounds)}
               target="_blank"
               rel="noreferrer"
+              className="text-blue-600 hover:underline"
               onClick={(e) => void handleJosmLinkClick(e.nativeEvent)}
             >
               Josm
@@ -50,17 +59,17 @@ export function AppInfoPanel() {
           </>
         )}
       </span>
-      <label className="editor-mode" style={{ color: editorModeLabelColor }}>
-        <input
-          checked={editorMode}
-          type="checkbox"
-          className="editor-mode__checkbox"
-          onChange={(e) => setEditorMode(e.target.checked)}
-        />
-        Editor
-      </label>
+      <CheckboxField className="inline-grid! grid-cols-[auto_auto]! gap-x-1.5!">
+        <Checkbox checked={editorMode} onChange={setEditorMode} className={editorModeLabelColor} />
+        <Label className={editorModeLabelColor}>Editor</Label>
+      </CheckboxField>
       <span> | </span>
-      <a href="https://github.com/osmberlin/street-parking-editor" target="_blank" rel="noreferrer">
+      <a
+        href="https://github.com/osmberlin/street-parking-editor"
+        target="_blank"
+        rel="noreferrer"
+        className="text-blue-600 hover:underline"
+      >
         GitHub
       </a>
     </div>
@@ -77,7 +86,7 @@ function getHighwaysOverpassQuery(bounds: {
   const tag =
     'highway~"^motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street"'
   return `
-[out:xml];
+    [out:xml];
 (
     way[${tag}](${bbox});
     >;

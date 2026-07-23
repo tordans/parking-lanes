@@ -59,13 +59,12 @@ const useParkingMapStore = create<ParkingMapStore>()((set, get) => ({
     setCutMarkers: (cutMarkers) => set({ cutMarkers }),
     clearCutMarkers: () => set({ cutMarkers: emptyCollection() }),
     setSelectedOsmObject: (selectedOsmObject) => set({ selectedOsmObject }),
-    removeEmptyLanes: () =>
-      set({
-        lanes: {
-          type: 'FeatureCollection',
-          features: get().lanes.features.filter((f) => !f.properties.featureId.startsWith('empty')),
-        },
-      }),
+    removeEmptyLanes: () => {
+      const { lanes } = get()
+      const features = lanes.features.filter((f) => !f.properties.featureId.startsWith('empty'))
+      if (features.length === lanes.features.length) return
+      set({ lanes: { type: 'FeatureCollection', features } })
+    },
     updateLaneFeatures: (features) => set({ lanes: { type: 'FeatureCollection', features } }),
   },
 }))

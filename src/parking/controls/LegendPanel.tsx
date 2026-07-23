@@ -7,7 +7,7 @@ export function LegendPanel() {
 
   return (
     <div
-      className="leaflet-control-layers control-padding control-bigfont"
+      className="cursor-pointer rounded-lg bg-white/90 px-2 py-1 text-sm shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm"
       onMouseEnter={() => !pinned && setShown(true)}
       onMouseLeave={() => !pinned && setShown(false)}
       onClick={() => {
@@ -18,8 +18,8 @@ export function LegendPanel() {
     >
       {shown ? (
         legend.map((x) => (
-          <div key={x.condition} className="legend__element">
-            <div className="legend__line" style={{ backgroundColor: x.color }} />
+          <div key={x.condition} className="flex items-center gap-2">
+            <div className="h-0.5 w-7" style={{ backgroundColor: x.color }} />
             <span>{x.text}</span>
           </div>
         ))

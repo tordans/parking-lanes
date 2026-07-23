@@ -1,3 +1,4 @@
+import { Label } from '../../../components/catalyst/fieldset'
 import { type OsmWay } from '../../../utils/types/osm-data'
 import { type TagValue } from '../../../utils/types/parking'
 import { SelectInput } from './SelectInput'
@@ -20,16 +21,8 @@ export function SimpleTagInput(props: {
         type="button"
         key={v.value}
         title={v.value}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          border: '2px solid',
-          borderRadius: 3,
-          padding: 0,
-          background: 'none',
-          cursor: 'pointer',
-          borderColor: v.value === value ? 'dodgerblue' : 'transparent',
-        }}
+        className="flex cursor-pointer items-center rounded border-2 bg-transparent p-0"
+        style={{ borderColor: v.value === value ? 'dodgerblue' : 'transparent' }}
         onClick={(_e) => props.onChange(v.value)}
       >
         <img src={v.imgSrc} height="15" alt={v.value} />
@@ -42,10 +35,10 @@ export function SimpleTagInput(props: {
       className="tag-editor"
       style={{ display: props.hide && !value ? 'none' : undefined }}
     >
-      <td className="tag-editor__key">
-        <label title={props.tag}>{props.label}</label>
+      <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
+        <Label title={props.tag}>{props.label}</Label>
       </td>
-      <td className="tag-editor__inputs">
+      <td className="flex items-center gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
         {props.values ? (
           <SelectInput
             tag={props.tag}

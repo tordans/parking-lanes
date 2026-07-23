@@ -1,3 +1,4 @@
+import { Button } from '../../components/catalyst/button'
 import { osmData } from '../../utils/data-client'
 import { handleJosmLinkClick } from '../../utils/josm'
 import { idEditorUrl, josmUrl, mapillaryUrl, overpassDeUrl } from '../../utils/links'
@@ -21,21 +22,16 @@ export function OsmObjectPanel(props: {
     selectedOsmObject.tags.highway && selectedOsmObject.tags.amenity !== 'parking'
 
   return (
-    <div className="osm-entity">
-      <hr className="osm-entity__top-hr" />
-      <div
-        style={{
-          minWidth: '250px',
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span>
+    <div className="mt-2 border-t border-zinc-950/5 pt-2 max-sm:fixed max-sm:right-0 max-sm:bottom-0 max-sm:left-0 max-sm:z-50 max-sm:mt-0 max-sm:max-h-[50vh] max-sm:overflow-auto max-sm:rounded-t-lg max-sm:border-t max-sm:bg-white max-sm:px-2 max-sm:pt-3.5 max-sm:pb-1 max-sm:shadow-lg">
+      <hr className="max-sm:hidden" />
+      <div className="flex min-w-[250px] items-start justify-between gap-2">
+        <span className="text-sm">
           <span>View: </span>
           <a
             href={`https://openstreetmap.org/way/${selectedOsmObject.id}`}
             target="_blank"
             rel="noreferrer"
+            className="text-blue-600 hover:underline"
           >
             OSM
           </a>
@@ -44,16 +40,18 @@ export function OsmObjectPanel(props: {
             href={`${mapillaryUrl(mapState?.center ?? { lat: 0, lng: 0 })}`}
             target="_blank"
             rel="noreferrer"
+            className="text-blue-600 hover:underline"
           >
             Mapillary
           </a>
         </span>
-        <span className="osm-entity__editors">
+        <span className="max-sm:hidden text-sm">
           <span>Edit: </span>
           <a
             href={`${josmUrl + overpassDeUrl + getWayWithRelationsOverpassQuery(selectedOsmObject.id).replace(/\s+/g, ' ')}`}
             target="_blank"
             rel="noreferrer"
+            className="text-blue-600 hover:underline"
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             onClick={(e) => handleJosmLinkClick(e.nativeEvent)}
           >
@@ -64,15 +62,21 @@ export function OsmObjectPanel(props: {
             href={`${idEditorUrl({ osmObjectType: 'way', osmObjectId: selectedOsmObject.id })}`}
             target="_blank"
             rel="noreferrer"
+            className="text-blue-600 hover:underline"
           >
             iD
           </a>
         </span>
-        <button className="osm-entity__close" onClick={props.onClose}>
+        <Button
+          plain
+          className="hidden max-sm:inline-flex"
+          aria-label="Close"
+          onClick={props.onClose}
+        >
           +
-        </button>
+        </Button>
       </div>
-      <hr />
+      <hr className="my-2" />
       {isStreetParking ? (
         editorMode ? (
           <LaneEditForm
@@ -115,12 +119,12 @@ function LaneInfo(props: { osm: OsmWay }) {
 
 function OsmObjectInfo(props: { osm: OsmObject }) {
   return (
-    <table>
+    <table className="w-full text-sm">
       <tbody>
         {Object.keys(props.osm.tags).map((tag) => (
           <tr key={tag}>
-            <td>{tag}</td>
-            <td>{props.osm.tags[tag]}</td>
+            <td className="pr-2 align-top">{tag}</td>
+            <td className="break-words">{props.osm.tags[tag]}</td>
           </tr>
         ))}
       </tbody>
@@ -135,24 +139,31 @@ function SideBlock(props: { tags: OsmTags; side: 'right' | 'left' }) {
     .filter((tag) => regex.test(tag))
     .map((tag) => tag + ' = ' + props.tags[tag])
     .map((tag) => (
-      <p key={tag} className="tags-block__tag">
+      <p key={tag} className="m-0">
         {tag}
       </p>
     ))
 
-  return <div className={`tags-block tags-block_${props.side}`}>{filteredTags}</div>
+  return (
+    <div className={`p-1.5 ${props.side === 'right' ? 'bg-orange-100' : 'bg-violet-100'}`}>
+      {filteredTags}
+    </div>
+  )
 }
 
 export function AllTagsBlock(props: { tags: OsmTags }) {
   return (
-    <details className="all-tags">
-      <summary className="all-tags__summary">All tags</summary>
-      <table>
+    <details className="pt-1.5 text-sm text-zinc-600">
+      <summary className="cursor-pointer">All tags</summary>
+      <table className="w-full">
         <tbody>
           {Object.keys(props.tags).map((tag) => (
-            <tr key={tag} className={tag.startsWith('parking:') ? 'all-tags__tag--highlight' : ''}>
-              <td>{tag}</td>
-              <td>{props.tags[tag]}</td>
+            <tr
+              key={tag}
+              className={`hover:bg-zinc-950/5 ${tag.startsWith('parking:') ? 'font-semibold' : ''}`}
+            >
+              <td className="max-w-[250px] break-words pr-2 align-top">{tag}</td>
+              <td className="max-w-[250px] break-words">{props.tags[tag]}</td>
             </tr>
           ))}
         </tbody>

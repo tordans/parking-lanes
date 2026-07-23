@@ -1,10 +1,11 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   AttributionControl,
   type MapLayerMouseEvent,
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre'
+import { AppShell } from '../../components/AppShell'
 import { changesStore } from '../../utils/changes-store'
 import { osmData } from '../../utils/data-client'
 import { setLocationToCookie } from '../../utils/location-cookie'
@@ -15,6 +16,7 @@ import { useAppActions, useMapState } from '../app-store'
 import { AppInfoPanel } from '../controls/AppInfoPanel'
 import { ControlPanel } from '../controls/ControlPanel'
 import { LegendPanel } from '../controls/LegendPanel'
+import { MapResizeHandler } from './MapResizeHandler'
 import {
   useAreaFeatures,
   useBacklightFeatures,
@@ -48,6 +50,7 @@ export function MapPage({
   initialView: { longitude: number; latitude: number; zoom: number }
 }) {
   const navigate = useNavigate({ from: '/' })
+  const mapContainerRef = useRef<HTMLDivElement>(null)
 
   const { setMapState, setChangesCount } = useAppActions()
   const mapState = useMapState()
@@ -195,59 +198,64 @@ export function MapPage({
   )
 
   return (
-    <div className="app">
-      <MapProvider>
-        {mapStyle ? (
-          <MapGL
-            id="main-map"
-            mapStyle={mapStyle}
-            initialViewState={initialViewState}
-            style={{ width: '100%', height: '100%' }}
-            attributionControl={false}
-            cursor={cursorStyle}
-            interactiveLayerIds={interactiveLayerIds}
-            onLoad={onMapLoad}
-            onMoveEnd={onMoveEnd}
-            onMouseMove={(event: MapLayerMouseEvent) => {
-              const layerId = event.features?.[0]?.layer?.id
-              if (layerId && interactiveLayerIds.includes(layerId)) {
-                setCursorStyle('pointer')
-              } else {
-                setCursorStyle('grab')
-              }
-            }}
-            onMouseLeave={() => {
-              setCursorStyle('grab')
-            }}
-            onClick={(event: MapLayerMouseEvent) => {
-              if (event.features?.length) {
-                onLayerClick(event)
-                return
-              }
-              onMapClick()
-            }}
-            onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-            onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-          >
-            <AttributionControl compact position="bottom-left" />
-            <ParkingLayers
-              lanes={lanes}
-              areas={areas}
-              points={points}
-              backlights={backlights}
-              cutMarkers={cutMarkers}
-            />
-          </MapGL>
-        ) : null}
-      </MapProvider>
+    <AppShell
+      map={
+        <div ref={mapContainerRef} className="relative h-full w-full">
+          <MapProvider>
+            {mapStyle ? (
+              <MapGL
+                id="main-map"
+                mapStyle={mapStyle}
+                initialViewState={initialViewState}
+                style={{ width: '100%', height: '100%' }}
+                attributionControl={false}
+                cursor={cursorStyle}
+                interactiveLayerIds={interactiveLayerIds}
+                onLoad={onMapLoad}
+                onMoveEnd={onMoveEnd}
+                onMouseMove={(event: MapLayerMouseEvent) => {
+                  const layerId = event.features?.[0]?.layer?.id
+                  if (layerId && interactiveLayerIds.includes(layerId)) {
+                    setCursorStyle('pointer')
+                  } else {
+                    setCursorStyle('grab')
+                  }
+                }}
+                onMouseLeave={() => {
+                  setCursorStyle('grab')
+                }}
+                onClick={(event: MapLayerMouseEvent) => {
+                  if (event.features?.length) {
+                    onLayerClick(event)
+                    return
+                  }
+                  onMapClick()
+                }}
+                onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+                onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+              >
+                <MapResizeHandler containerRef={mapContainerRef} />
+                <AttributionControl compact position="bottom-left" />
+                <ParkingLayers
+                  lanes={lanes}
+                  areas={areas}
+                  points={points}
+                  backlights={backlights}
+                  cutMarkers={cutMarkers}
+                />
+              </MapGL>
+            ) : null}
+          </MapProvider>
 
-      <div className="map-overlay map-overlay--bottom-left">
-        <LegendPanel />
-      </div>
-      <div className="map-overlay map-overlay--bottom-right">
-        <AppInfoPanel />
-      </div>
-      <div id="panel" className="panel">
+          <div className="pointer-events-auto absolute bottom-8 left-2.5 z-10">
+            <LegendPanel />
+          </div>
+          <div className="pointer-events-auto absolute right-2.5 bottom-2.5 z-10">
+            <AppInfoPanel />
+          </div>
+        </div>
+      }
+      panel={
         <ControlPanel
           onFetch={() => {
             if (mapState?.bounds) void loadParkingData(mapState.bounds, mapState.zoom)
@@ -260,7 +268,7 @@ export function MapPage({
             mapActions.setSelectedOsmObject(null)
           }}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, TouchTarget } from '../../components/catalyst/button'
 import { assetUrl } from '../../utils/asset-url'
 import { OsmDataSource } from '../../utils/types/osm-data'
 import { useAppActions, useFetchButtonText, useOsmDataSource } from '../app-store'
@@ -11,18 +12,33 @@ export function FetchButton(props: { onClick: () => void }) {
 
   return (
     <div
-      className={`fetch-control ${sourcesShown ? 'opened' : ''}`}
+      className="relative"
       tabIndex={-1}
-      onBlur={() => setSourcesShown(false)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setSourcesShown(false)
+        }
+      }}
     >
-      <div className="control-bigfont control-button">
-        <div className="fetch-control_wrapper">
-          <button className="fetch-control_button" onClick={props.onClick}>
-            <img src={assetUrl('assets/icons/download.svg')} width={16} height={16} />
-            <span className="fetch-control_button-text">{fetchButtonText}</span>
-          </button>
-          <div className="fetch-control_toggle" onClick={() => setSourcesShown(!sourcesShown)} />
-        </div>
+      <div className="flex overflow-hidden rounded-lg ring-1 ring-zinc-950/10">
+        <Button color="light" className="rounded-none! border-0!" onClick={props.onClick}>
+          <img
+            data-slot="icon"
+            src={assetUrl('assets/icons/download.svg')}
+            width={16}
+            height={16}
+            alt=""
+          />
+          <span className="max-sm:hidden">{fetchButtonText}</span>
+        </Button>
+        <Button
+          color="light"
+          className="rounded-none! border-0! border-l! border-zinc-950/10!"
+          aria-label="Select data source"
+          onClick={() => setSourcesShown(!sourcesShown)}
+        >
+          <TouchTarget>{sourcesShown ? '△' : '▽'}</TouchTarget>
+        </Button>
       </div>
       {sourcesShown && (
         <Sources
@@ -46,16 +62,21 @@ function Sources(props: {
     { source: OsmDataSource.OsmOrg, label: 'osm.org' },
     { source: OsmDataSource.OverpassVk, label: 'overpass-vk' },
   ]
-  const items = sources.map((x) => (
-    <div
-      key={x.source}
-      data-value={x.source}
-      className={`fetch-control_item ${x.source === props.source ? 'fetch-control_item--selected' : ''}`}
-      onClick={() => props.onChangeSource(x.source)}
-    >
-      From {x.label}
-    </div>
-  ))
 
-  return <div className="fetch-control_items">{items}</div>
+  return (
+    <div className="absolute top-full right-0 z-20 mt-1 min-w-full overflow-hidden rounded-lg bg-white py-1 shadow-lg ring-1 ring-zinc-950/10">
+      {sources.map((x) => (
+        <button
+          key={x.source}
+          type="button"
+          className={`block w-full cursor-pointer px-3 py-1.5 text-left text-sm whitespace-nowrap hover:bg-zinc-950/5 ${
+            x.source === props.source ? 'bg-zinc-950/5 font-medium' : ''
+          }`}
+          onClick={() => props.onChangeSource(x.source)}
+        >
+          From {x.label}
+        </button>
+      ))}
+    </div>
+  )
 }

@@ -1,3 +1,4 @@
+import { Button } from '../../components/catalyst/button'
 import { assetUrl } from '../../utils/asset-url'
 import { useChangesCount } from '../app-store'
 
@@ -7,11 +8,17 @@ export function SaveButton(props: { onClick: () => void }) {
   if (!changesCount) return null
 
   return (
-    <button className="save-control" onClick={props.onClick}>
-      <img src={assetUrl('assets/icons/upload.svg')} width={16} height={16} />
+    <Button color="yellow" onClick={props.onClick}>
+      <img
+        data-slot="icon"
+        src={assetUrl('assets/icons/upload.svg')}
+        width={16}
+        height={16}
+        alt=""
+      />
       <span>
-        <span className="save-control_button-text">Save</span>({changesCount})
+        <span className="max-sm:hidden">Save</span>({changesCount})
       </span>
-    </button>
+    </Button>
   )
 }
