@@ -70,9 +70,7 @@ const useParkingMapStore = create<ParkingMapStore>()((set, get) => ({
   },
 }))
 
-export function getParkingMapState() {
-  return useParkingMapStore.getState()
-}
+export const getParkingMapState = () => useParkingMapStore.getState()
 
 export const useLaneFeatures = () => useParkingMapStore((s) => s.lanes)
 export const useAreaFeatures = () => useParkingMapStore((s) => s.areas)
