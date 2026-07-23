@@ -1,11 +1,11 @@
 {
   "data_format": 1,
-  "data_url": "https://zlant.github.io/parking-lanes/taginfo.json",
+  "data_url": "https://osmberlin.github.io/street-parking-editor/taginfo.json",
   "project": {
     "name": "Parking lanes viewer",
     "description": "Parking lanes viewer from OpenStreetMap",
-    "project_url": "https://zlant.github.io/parking-lanes/",
-    "icon_url": "https://zlant.github.io/parking-lanes/assets/free_parking/free_parking_russia.svg"
+    "project_url": "https://osmberlin.github.io/street-parking-editor/",
+    "icon_url": "https://osmberlin.github.io/street-parking-editor/assets/free_parking/free_parking_russia.svg"
   },
   "tags": [
     { "key": "amenity", "value": "parking", "object_types": ["node", "way"] },

@@ -60,7 +60,7 @@ export function AppInfoPanel() {
         Editor
       </label>
       <span> | </span>
-      <a href="https://github.com/zlant/parking-lanes" target="_blank" rel="noreferrer">
+      <a href="https://github.com/osmberlin/street-parking-editor" target="_blank" rel="noreferrer">
         GitHub
       </a>
     </div>

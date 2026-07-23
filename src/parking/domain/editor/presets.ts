@@ -1,3 +1,4 @@
+import { assetUrl } from '../../../utils/asset-url'
 import { type Preset } from '../../../utils/types/preset'
 
 export const presets: Preset[] = [
@@ -18,7 +19,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/no_stopping/no_stopping.svg',
+      src: assetUrl('assets/no_stopping/no_stopping.svg'),
       height: 20,
       width: 20,
       alt: 'No Stopping Sign',
@@ -42,7 +43,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/no_parking/no_parking.svg',
+      src: assetUrl('assets/no_parking/no_parking.svg'),
       height: 20,
       width: 20,
       alt: 'No Parking Sign',
@@ -66,7 +67,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/no_parking/no_parking_on_odd_days.svg',
+      src: assetUrl('assets/no_parking/no_parking_on_odd_days.svg'),
       height: 20,
       width: 20,
       alt: 'No Parking on Odd Days Sign',
@@ -92,7 +93,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/no_parking/no_parking_on_even_days.svg',
+      src: assetUrl('assets/no_parking/no_parking_on_even_days.svg'),
       height: 20,
       width: 20,
       alt: 'No Parking on Even Days Sign',
@@ -116,7 +117,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/free_parking/free_parking_russia.svg',
+      src: assetUrl('assets/free_parking/free_parking_russia.svg'),
       height: 20,
       width: 20,
       alt: 'Free Parking Sign',
@@ -140,7 +141,7 @@ export const presets: Preset[] = [
       { k: 'parking:{side}:restriction:reason', v: '' },
     ],
     img: {
-      src: './assets/paid_parking/paid_parking_russia.svg',
+      src: assetUrl('assets/paid_parking/paid_parking_russia.svg'),
       height: 20,
       width: 40,
       alt: 'Paid Parking Sign',

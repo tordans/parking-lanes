@@ -2,10 +2,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useMemo, useState } from 'react'
 import type { MapLayerMouseEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { changesStore } from '../../utils/changes-store'
+import { osmData } from '../../utils/data-client'
 import { setLocationToCookie } from '../../utils/location-cookie'
 import { OsmApiRequestError, uploadChanges } from '../../utils/osm-client'
 import type { OsmWay } from '../../utils/types/osm-data'
-import { useAppActions } from '../app-store'
+import { useAppActions, useMapState } from '../app-store'
 import { AppInfoPanel } from '../controls/AppInfoPanel'
 import { ControlPanel } from '../controls/ControlPanel'
 import { LegendPanel } from '../controls/LegendPanel'
@@ -18,7 +19,6 @@ import {
   usePointFeatures,
 } from './parking-map-store'
 import { MapGL, MapProvider, OPENFREEMAP_STYLE, ParkingLayers } from './ParkingLayers'
-import type { MapBounds } from './types'
 import {
   interactiveLayerIds,
   toBounds,
@@ -43,6 +43,7 @@ export function MapPage({
   const navigate = useNavigate({ from: '/' })
 
   const { setMapState, setChangesCount } = useAppActions()
+  const mapState = useMapState()
   const mapActions = useParkingMapActions()
   const lanes = useLaneFeatures()
   const areas = useAreaFeatures()
@@ -51,9 +52,8 @@ export function MapPage({
   const cutMarkers = useCutMarkerFeatures()
 
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
-  const [mapBounds, setMapBounds] = useState<MapBounds | undefined>(undefined)
 
-  const loadParkingData = useParkingDataLoader(mapBounds, mapZoom)
+  const loadParkingData = useParkingDataLoader()
   const handleOsmChange = useOsmChangeHandler(mapZoom)
   const handleLaneClick = useLaneClickHandler(mapZoom)
   const { showCutMarkers, handleCutMarkerClick } = useCutWayHandler(mapZoom)
@@ -68,7 +68,6 @@ export function MapPage({
       const zoom = map.getZoom()
       const center = map.getCenter()
       const bounds = toBounds(map.getBounds())
-      setMapBounds(bounds)
       setMapZoom(zoom)
 
       setMapState({
@@ -88,9 +87,28 @@ export function MapPage({
         replace: true,
       })
 
-      if (zoom >= viewMinZoom) void loadParkingData()
+      if (zoom >= viewMinZoom) void loadParkingData(bounds, zoom)
     },
     [loadParkingData, navigate, setMapState],
+  )
+
+  const onMapLoad = useCallback(
+    (event: ViewStateChangeEvent) => {
+      const map = event.target
+      const zoom = map.getZoom()
+      const center = map.getCenter()
+      const bounds = toBounds(map.getBounds())
+      setMapZoom(zoom)
+
+      setMapState({
+        zoom,
+        center: { lat: center.lat, lng: center.lng },
+        bounds,
+      })
+
+      if (zoom >= viewMinZoom) void loadParkingData(bounds, zoom)
+    },
+    [loadParkingData, setMapState],
   )
 
   const onMapClick = useCallback(() => {
@@ -115,6 +133,13 @@ export function MapPage({
       const changedIdMap = await uploadChanges(editorName, version, changesStore)
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]
+        const oldWay = osmData.ways[Number(oldId)]
+        if (oldWay) {
+          delete osmData.ways[Number(oldId)]
+          oldWay.id = Number(newId)
+          osmData.ways[Number(newId)] = oldWay
+        }
+
         const updated = lanes.features.map((feature) => {
           if (feature.properties.osmId !== Number(oldId)) return feature
           const side = feature.properties.featureId.replace(String(oldId), '')
@@ -161,6 +186,7 @@ export function MapPage({
           initialViewState={initialViewState}
           style={{ width: '100%', height: '100%' }}
           interactiveLayerIds={interactiveLayerIds}
+          onLoad={onMapLoad}
           onMoveEnd={onMoveEnd}
           onClick={(event: MapLayerMouseEvent) => {
             if (event.features?.length) {
@@ -190,7 +216,9 @@ export function MapPage({
       </div>
       <div id="panel" className="panel">
         <ControlPanel
-          onFetch={() => void loadParkingData()}
+          onFetch={() => {
+            if (mapState?.bounds) void loadParkingData(mapState.bounds, mapState.zoom)
+          }}
           onSave={() => void handleSave()}
           onCutLane={handleCutLane}
           onOsmChange={handleOsmChange}

@@ -40,7 +40,11 @@ export function OsmObjectPanel(props: {
             OSM
           </a>
           <span>, </span>
-          <a href={`${mapillaryUrl(mapState!.center)}`} target="_blank" rel="noreferrer">
+          <a
+            href={`${mapillaryUrl(mapState?.center ?? { lat: 0, lng: 0 })}`}
+            target="_blank"
+            rel="noreferrer"
+          >
             Mapillary
           </a>
         </span>

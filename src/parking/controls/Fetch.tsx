@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { assetUrl } from '../../utils/asset-url'
 import { OsmDataSource } from '../../utils/types/osm-data'
 import { useAppActions, useFetchButtonText, useOsmDataSource } from '../app-store'
 
@@ -17,7 +18,7 @@ export function FetchButton(props: { onClick: () => void }) {
       <div className="control-bigfont control-button">
         <div className="fetch-control_wrapper">
           <button className="fetch-control_button" onClick={props.onClick}>
-            <img src="./assets/icons/download.svg" width={16} height={16} />
+            <img src={assetUrl('assets/icons/download.svg')} width={16} height={16} />
             <span className="fetch-control_button-text">{fetchButtonText}</span>
           </button>
           <div className="fetch-control_toggle" onClick={() => setSourcesShown(!sourcesShown)} />

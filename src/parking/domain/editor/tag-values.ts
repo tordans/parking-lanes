@@ -1,3 +1,4 @@
+import { assetUrl } from '../../../utils/asset-url'
 import { type TagValue } from '../../../utils/types/parking'
 
 export const laneValues: TagValue[] = [
@@ -57,9 +58,9 @@ export const reasonValues: TagValue[] = [
 ]
 
 export const restrictionValues: TagValue[] = [
-  { value: 'no_parking', imgSrc: './assets/no_parking/no_parking.svg' },
+  { value: 'no_parking', imgSrc: assetUrl('assets/no_parking/no_parking.svg') },
   { value: 'no_standing' },
-  { value: 'no_stopping', imgSrc: './assets/no_stopping/no_stopping.svg' },
+  { value: 'no_stopping', imgSrc: assetUrl('assets/no_stopping/no_stopping.svg') },
   { value: 'loading_only' },
   { value: 'charging_only' },
 ]

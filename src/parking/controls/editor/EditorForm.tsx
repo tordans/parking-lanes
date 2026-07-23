@@ -1,10 +1,14 @@
+import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
+import { z } from 'zod'
 import { type OsmTags, type OsmWay } from '../../../utils/types/osm-data'
 import { type WaysInRelation } from '../../../utils/types/osm-data-storage'
 import { applyTagMigration, hasTagMigration } from '../../domain/editor/tag-migration'
 import { AllTagsBlock } from '../LaneInfo'
 import { SideGroup } from './SideGroup'
 import { TagUpdaterModal } from './TagUpdaterModal'
+
+const tagsSchema = z.record(z.string(), z.string())
 
 export function LaneEditForm(props: {
   osm: OsmWay
@@ -16,12 +20,22 @@ export function LaneEditForm(props: {
   const existsLeftTags = existsSideTags(props.osm.tags, 'left')
   const existsBothTags = existsSideTags(props.osm.tags, 'both')
 
-  const [bothBlockShown, setBothBlockShown] = useState(
-    !existsRightTags && !existsLeftTags && existsBothTags,
-  )
-  const [tagUpdaterModalShown, setTagUpdaterModalShown] = useState(false)
+  const form = useForm({
+    defaultValues: {
+      bothBlockShown: !existsRightTags && !existsLeftTags && existsBothTags,
+      tags: { ...props.osm.tags },
+    },
+    validators: {
+      onChange: z.object({
+        bothBlockShown: z.boolean(),
+        tags: tagsSchema,
+      }),
+    },
+    onSubmit: () => undefined,
+  })
 
-  const forceUpdate = useForceUpdate()
+  const bothBlockShown = useStore(form.store, (state) => state.values.bothBlockShown)
+  const [tagUpdaterModalShown, setTagUpdaterModalShown] = useState(false)
 
   return (
     <form
@@ -31,12 +45,17 @@ export function LaneEditForm(props: {
     >
       <div className="editor-form__header">
         <label className="editor-form__side-switcher">
-          <input
-            id="side-switcher"
-            type="checkbox"
-            className="editor-form__side-switcher-checkbox"
-            onChange={() => setBothBlockShown(!bothBlockShown)}
-          />
+          <form.Field name="bothBlockShown">
+            {(field) => (
+              <input
+                id="side-switcher"
+                type="checkbox"
+                className="editor-form__side-switcher-checkbox"
+                checked={field.state.value}
+                onChange={(e) => field.handleChange(e.target.checked)}
+              />
+            )}
+          </form.Field>
           Both
         </label>
         <div className="editor-form__utils">
@@ -93,13 +112,18 @@ export function LaneEditForm(props: {
   )
 
   function handleInputChange(key: string, value: string) {
+    const nextTags = { ...form.getFieldValue('tags') }
+    if (value) nextTags[key] = value
+    else
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete nextTags[key]
+
+    form.setFieldValue('tags', nextTags)
     if (value) props.osm.tags[key] = value
     else
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete props.osm.tags[key]
     props.onChange(props.osm)
-
-    forceUpdate()
   }
 
   function handleUpdateTagsClick() {
@@ -109,12 +133,8 @@ export function LaneEditForm(props: {
       delete props.osm.tags[key]
     }
     Object.assign(props.osm.tags, migratedTags)
+    form.setFieldValue('tags', { ...migratedTags })
   }
-}
-
-function useForceUpdate() {
-  const [, setValue] = useState(0)
-  return () => setValue((value) => value + 1)
 }
 
 function existsSideTags(tags: OsmTags, side: string) {

@@ -1,20 +1,6 @@
 {
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/test/**",
-    "src/index.ts",
-    "src/parking/interface.ts",
-    "src/parking/bing-imagery.ts",
-    "src/parking/parking-lane.ts",
-    "src/parking/parking-area.ts",
-    "src/parking/parking-point.ts",
-    "src/parking/controls/AppInfo.tsx",
-    "src/parking/controls/Legend.tsx",
-    "src/utils/types/leaflet.ts",
-    "node_modules/osm-parking-tag-updater/**"
-  ],
+  "exclude": ["node_modules", "dist", "src/test/**", "node_modules/osm-parking-tag-updater/**"],
   "compilerOptions": {
     "target": "ES2025",
     "lib": ["ES2025", "DOM", "DOM.Iterable"],

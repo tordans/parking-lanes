@@ -6,7 +6,9 @@ import { createRoot } from 'react-dom/client'
 import { routeTree } from './routeTree.gen'
 import './styles/main.scss'
 
-const router = createRouter({ routeTree })
+const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
+
+const router = createRouter({ routeTree, basepath })
 
 declare module '@tanstack/react-router' {
   interface Register {

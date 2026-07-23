@@ -1,6 +1,6 @@
 import type { OsmNode, OsmRelation, OsmWay } from '../../utils/types/osm-data'
 import { getConditions } from '../domain/access-condition'
-import { getColor } from '../domain/condition-color'
+import { getColor, getColorByDate } from '../domain/condition-color'
 import type { ParkingFeature } from './types'
 
 function toPolygonCoords(nodeCoords: Record<number, number[]>, way: OsmWay): [number, number][][] {
@@ -135,21 +135,49 @@ export function parseParkingPointFeatures(node: OsmNode, zoom: number): ParkingF
 
 export function updateAreaFeatureColors(
   features: ParkingFeature[],
-  _datetime: Date,
+  datetime: Date,
+  wayTags: Record<number, OsmWay['tags']>,
+  relationTags: Record<number, OsmRelation['tags']>,
 ): ParkingFeature[] {
   return features.map((feature) => {
     if (feature.properties.kind !== 'area') return feature
-    return feature
+
+    const tags =
+      feature.properties.osmType === 'relation'
+        ? relationTags[feature.properties.osmId]
+        : wayTags[feature.properties.osmId]
+    if (!tags) return feature
+
+    const conditions = getConditions(tags)
+    return {
+      ...feature,
+      properties: {
+        ...feature.properties,
+        color: getColorByDate(conditions, datetime) ?? '#888888',
+      },
+    }
   })
 }
 
 export function updatePointFeatureColors(
   features: ParkingFeature[],
-  _datetime: Date,
+  datetime: Date,
+  nodeTags: Record<number, OsmNode['tags']>,
 ): ParkingFeature[] {
   return features.map((feature) => {
     if (feature.properties.kind !== 'point') return feature
-    return feature
+
+    const tags = nodeTags[feature.properties.osmId]
+    if (!tags) return feature
+
+    const conditions = getConditions(tags)
+    return {
+      ...feature,
+      properties: {
+        ...feature.properties,
+        color: getColorByDate(conditions, datetime) ?? '#888888',
+      },
+    }
   })
 }
 
@@ -173,18 +201,4 @@ function getRadius(zoom: number) {
   if (zoom < 15) return 3
   if (zoom < 17) return 4
   return 5
-}
-
-export function updateAreaColorsByDate(
-  features: ParkingFeature[],
-  datetime: Date,
-): ParkingFeature[] {
-  return updateAreaFeatureColors(features, datetime)
-}
-
-export function updatePointColorsByDate(
-  features: ParkingFeature[],
-  datetime: Date,
-): ParkingFeature[] {
-  return updatePointFeatureColors(features, datetime)
 }

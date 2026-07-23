@@ -1,6 +1,6 @@
 # Parking lanes viewer for OpenStreetMap
 
-- [Open the viewer](https://zlant.github.io/parking-lanes/#16/52.4751/13.4435)
+- [Open the viewer](https://osmberlin.github.io/street-parking-editor/?zoom=16&lat=52.4751&lng=13.4435)
 - Learn more about the project [in the launch post](https://www.openstreetmap.org/user/acsd/diary/45026).
 
 ## Screenshots

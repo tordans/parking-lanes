@@ -24,6 +24,8 @@ import {
   parseParkingAreaFeatures,
   parseParkingPointFeatures,
   parseParkingRelationFeatures,
+  updateAreaFeatureColors,
+  updatePointFeatureColors,
   updatePointFeatureStyles,
 } from './parse-areas-points'
 import {
@@ -38,64 +40,67 @@ import type { MapBounds, ParkingFeature, ParkingFeatureCollection } from './type
 const useDevServer = false
 export const viewMinZoom = 15
 
-export function useParkingDataLoader(bounds: MapBounds | undefined, zoom: number) {
+export function useParkingDataLoader() {
   const editorMode = useEditorMode()
   const osmDataSource = useOsmDataSource()
   const { setFetchButtonText } = useAppActions()
   const mapActions = useParkingMapActions()
 
-  const loadParkingData = useCallback(async () => {
-    if (!bounds || zoom < viewMinZoom) return
+  const loadParkingData = useCallback(
+    async (bounds: MapBounds, zoom: number) => {
+      if (zoom < viewMinZoom) return
 
-    setFetchButtonText('Fetching data...')
-    const url = getUrl(bounds, editorMode, useDevServer, osmDataSource)
+      setFetchButtonText('Fetching data...')
+      const url = getUrl(bounds, editorMode, useDevServer, osmDataSource)
 
-    let newData
-    try {
-      newData = await downloadBbox(bounds, url)
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : ''
-      const errorMessage =
-        message === 'Request failed with status code 429'
-          ? 'Error: Too many requests - try again soon'
-          : 'Unknown error, please try again'
-      setFetchButtonText(errorMessage)
-      return
-    }
-    setFetchButtonText('Fetch parking data')
-
-    if (!newData) return
-
-    const newLanes: ParkingFeature[] = []
-    const newAreas: ParkingFeature[] = []
-    const newPoints: ParkingFeature[] = []
-
-    for (const relation of Object.values(newData.relations)) {
-      if (relation.tags?.amenity === 'parking') {
-        newAreas.push(
-          ...parseParkingRelationFeatures(relation, newData.nodeCoords, newData.ways, zoom),
-        )
+      let newData
+      try {
+        newData = await downloadBbox(bounds, url)
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : ''
+        const errorMessage =
+          message === 'Request failed with status code 429'
+            ? 'Error: Too many requests - try again soon'
+            : 'Unknown error, please try again'
+        setFetchButtonText(errorMessage)
+        return
       }
-    }
+      setFetchButtonText('Fetch parking data')
 
-    for (const way of Object.values(newData.ways)) {
-      if (way.tags?.highway) {
-        newLanes.push(...parseParkingLaneFeatures(way, newData.nodeCoords, zoom, editorMode))
-      } else if (way.tags?.amenity === 'parking') {
-        newAreas.push(...parseParkingAreaFeatures(way, newData.nodeCoords, zoom))
+      if (!newData) return
+
+      const newLanes: ParkingFeature[] = []
+      const newAreas: ParkingFeature[] = []
+      const newPoints: ParkingFeature[] = []
+
+      for (const relation of Object.values(newData.relations)) {
+        if (relation.tags?.amenity === 'parking') {
+          newAreas.push(
+            ...parseParkingRelationFeatures(relation, newData.nodeCoords, newData.ways, zoom),
+          )
+        }
       }
-    }
 
-    for (const node of Object.values(newData.nodes)) {
-      if (node.tags?.amenity === 'parking_entrance' || node.tags?.amenity === 'parking') {
-        newPoints.push(...parseParkingPointFeatures(node, zoom))
+      for (const way of Object.values(newData.ways)) {
+        if (way.tags?.highway) {
+          newLanes.push(...parseParkingLaneFeatures(way, newData.nodeCoords, zoom, editorMode))
+        } else if (way.tags?.amenity === 'parking') {
+          newAreas.push(...parseParkingAreaFeatures(way, newData.nodeCoords, zoom))
+        }
       }
-    }
 
-    if (newLanes.length) mapActions.addLanes(newLanes)
-    if (newAreas.length) mapActions.addAreas(newAreas)
-    if (newPoints.length) mapActions.addPoints(newPoints)
-  }, [bounds, editorMode, mapActions, osmDataSource, setFetchButtonText, zoom])
+      for (const node of Object.values(newData.nodes)) {
+        if (node.tags?.amenity === 'parking_entrance' || node.tags?.amenity === 'parking') {
+          newPoints.push(...parseParkingPointFeatures(node, zoom))
+        }
+      }
+
+      if (newLanes.length) mapActions.addLanes(newLanes)
+      if (newAreas.length) mapActions.addAreas(newAreas)
+      if (newPoints.length) mapActions.addPoints(newPoints)
+    },
+    [editorMode, mapActions, osmDataSource, setFetchButtonText],
+  )
 
   return loadParkingData
 }
@@ -111,9 +116,22 @@ export function useDatetimeColorSync() {
     const wayTags: Record<number, OsmWay['tags']> = {}
     for (const way of Object.values(osmData.ways)) wayTags[way.id] = way.tags
 
+    const nodeTags: Record<number, OsmWay['tags']> = {}
+    for (const node of Object.values(osmData.nodes)) nodeTags[node.id] = node.tags
+
+    const relationTags: Record<number, OsmWay['tags']> = {}
+    for (const relation of Object.values(osmData.relations))
+      relationTags[relation.id] = relation.tags
+
     updateLaneFeatures(updateLaneFeatureColors(lanes.features, datetime, wayTags))
-    setAreas({ type: 'FeatureCollection', features: areas.features })
-    setPoints({ type: 'FeatureCollection', features: points.features })
+    setAreas({
+      type: 'FeatureCollection',
+      features: updateAreaFeatureColors(areas.features, datetime, wayTags, relationTags),
+    })
+    setPoints({
+      type: 'FeatureCollection',
+      features: updatePointFeatureColors(points.features, datetime, nodeTags),
+    })
   }, [
     areas.features,
     datetime,

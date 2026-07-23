@@ -58,7 +58,4 @@ export const useMapState = () => useAppStore((s) => s.mapState)
 export const useChangesCount = () => useAppStore((s) => s.changesCount)
 export const useAppActions = () => useAppStore((s) => s.actions)
 
-/** @deprecated Use atomic selectors from app-store.ts */
-export const useAppStateStore = useAppStore
-
 export { AuthState as AppAuthState }

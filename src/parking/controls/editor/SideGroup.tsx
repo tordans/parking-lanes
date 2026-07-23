@@ -2,7 +2,6 @@ import { type OsmWay } from '../../../utils/types/osm-data'
 import { type ParkingTagInfo } from '../../../utils/types/parking'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PresetSigns } from './PresetSigns'
 import { SimpleTagInput } from './SimpleTagInput'
 
@@ -18,6 +17,7 @@ export function SideGroup(props: {
       className={`tags-block tags-block_${props.side}`}
       style={{ display: props.shown ? undefined : 'none' }}
     >
+      <PresetSigns osm={props.osm} side={props.side} onChange={props.onChange} />
       <table className="tags-inputs-table">
         <TagInputs osm={props.osm} side={props.side} onChange={props.onChange} />
       </table>

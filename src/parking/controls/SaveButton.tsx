@@ -1,3 +1,4 @@
+import { assetUrl } from '../../utils/asset-url'
 import { useChangesCount } from '../app-store'
 
 export function SaveButton(props: { onClick: () => void }) {
@@ -7,7 +8,7 @@ export function SaveButton(props: { onClick: () => void }) {
 
   return (
     <button className="save-control" onClick={props.onClick}>
-      <img src="./assets/icons/upload.svg" width={16} height={16} />
+      <img src={assetUrl('assets/icons/upload.svg')} width={16} height={16} />
       <span>
         <span className="save-control_button-text">Save</span>({changesCount})
       </span>

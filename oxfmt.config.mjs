@@ -17,13 +17,5 @@ export default defineConfig({
     newlinesBetween: false,
   },
   sortPackageJson: true,
-  ignorePatterns: [
-    '.agents/**',
-    '.cursor/**',
-    'dist/**',
-    'src/routeTree.gen.ts',
-    'src/parking/interface.ts',
-    'src/parking/controls/Legend.tsx',
-    'src/parking/controls/AppInfo.tsx',
-  ],
+  ignorePatterns: ['.agents/**', '.cursor/**', 'dist/**', 'src/routeTree.gen.ts'],
 })
