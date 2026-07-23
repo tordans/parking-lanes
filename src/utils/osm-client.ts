@@ -53,7 +53,7 @@ export async function authenticate(useDevServer: boolean): Promise<void> {
     if (!isLoggedIn()) {
         await osmLogin({
             mode: 'popup',
-            clientId: getOsmOAuthClientId(),
+            clientId: getOsmOAuthClientId(useDevServer),
             redirectUrl: getOsmOAuthRedirectUrl(),
             scopes: [...OSM_OAUTH_SCOPES],
         })
