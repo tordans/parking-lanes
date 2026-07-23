@@ -1,0 +1,92 @@
+# Phase 1b — Domain logic gap report
+
+Audit date: 2026-07-23  
+Scope: `src/parking/domain/` and `src/test/` (read-only review; no production behavior changes)  
+Baseline commit: `fa997d7` (Phase 1 domain extraction)
+
+---
+
+## 1. Summary of what the domain covers today
+
+The Phase 1 domain layer models **how OSM way tags are interpreted into a normalized `ParkingConditions` object** (`default` + `conditionalValues[]`) for map coloring and editing. It spans three evaluation paths merged by `getSideConditions`:
+
+| Module | Responsibility |
+|--------|----------------|
+| `access-condition.ts` | New `parking:{side}:*` scheme: position (`parking:{side}`), `fee`, `fee:conditional`, `maxstay`, `maxstay:conditional`, `access`, `access:conditional`, `restriction`, `restriction:conditional`, `opening_hours`, plus top-level tags when no side is passed. Maps raw tag values into legend condition names (`free`, `ticket`, `disc`, `residents`, etc.). |
+| `lane-scheme-conditions.ts` | Legacy `parking:lane:{side}` / `parking:condition:{side}` scheme: v2 (`parking:condition:{side}:conditional` + `:default`) and v1 (indexed `:2`, `:time_interval`). Falls back to `free` for orientation-like lane values (`parallel`, `diagonal`, …). |
+| `side-conditions.ts` | Orchestrator: run access scheme first; if `default` is truthy, return it (dropping lane-scheme intervals); otherwise fall back to lane scheme. |
+| `condition-color.ts` | Resolve legend colors by condition name; pick active interval via `opening_hours` / odd-even parsing at a given `Date`. **Coupled to `src/parking/legend.ts`.** |
+| `editor/tag-schema.ts` | Declarative editor field list for new-scheme tags (`parking:{side}`, fee, maxstay, access, restriction, reason, orientation, surface). |
+| `editor/tag-values.ts` | Allowed enum values for lane position, orientation, reason, restriction. |
+| `editor/presets.ts` | Quick-add sign presets (no stopping, no parking, odd/even, free, paid). |
+| `editor/tag-migration.ts` | Thin wrapper around `osm-parking-tag-updater` transpose for legacy → new tag rewrite. |
+| `editor/conditional-tag-edit.ts` | Parse/format/edit `value @ (condition)` conditional tag strings. |
+| `editor/changes.ts` | OSM changeset upsert helpers (not tag semantics). |
+
+**Side resolution:** `getValue()` in `access-condition.ts` prefers `parking:{side}:*` over `parking:both:*` (`[side, 'both']`). Lane-scheme v1 interval parsing processes `both` then side-specific, so side-specific overwrites `both` in the same slot — consistent end result.
+
+**Out of evaluation scope (still in app):** `parking-lane.ts` rendering, `parking-area.ts` / `parking-point.ts` (call `getConditions` without side), UI controls.
+
+---
+
+## 2. Gaps table
+
+| Gap | Severity | Evidence | Recommended follow-up |
+|-----|----------|----------|----------------------|
+| **New-scheme `default` suppresses legacy `parking:condition:*` intervals** — any truthy access-scheme default (e.g. `parking:right=yes` → `free`, or `parking:right:fee=yes` → `ticket`) prevents `getLaneSchemeConditions` from running, so coexisting legacy conditional tags are ignored. Common during migration. | **High** | `side-conditions.ts` `getSideConditions` (`if (conditions.default) return conditions`); confirmed by probe: `parking:right=yes` + `parking:condition:right:conditional` yields `conditionalValues: []`. Test `prefers new parking scheme over legacy lane scheme` encodes this as intended but migration overlap is unaddressed. | Define merge policy (e.g. prefer new scheme only when `parking:condition:*` absent, or merge intervals with explicit precedence). Add fixtures for transitional tagging. |
+| **Time-based conditionals effectively inert in Jest / likely untested at runtime** — `parseOpeningHours('Mo-Fr 08:00-18:00')` logs `Invalid time interval` under Jest and returns `null`; tests assert `condition: null`, so `getColorByDate` never exercises weekday intervals. Odd/even (`1-31/2`) paths work. | **High** | `src/utils/opening-hours.ts` `parseOpeningHours`; `parking-conditions.test.ts`, `lane-scheme-conditions.test.ts` (all Mo-Fr fixtures expect `null`); Jest run emits `console.error` for every Mo-Fr case. | Fix `opening_hours` initialization for test/runtime env (locale/options); update tests to assert real `OpeningHours` objects and `getColorByDate` behavior for Mo-Fr. |
+| **Legend gaps for editor-exposed restriction values** — `no_standing` and `charging_only` are in `restrictionValues` but absent from `legend.ts`; `getColor` returns `undefined`, so map polylines get no color for these conditions. | **High** | `editor/tag-values.ts` `restrictionValues`; `legend.ts` (no entries); `access-condition.ts` passes restriction through as `default`; probe: `no_standing` / `charging_only` → `getColor` undefined. | Add legend entries + colors, or map `no_standing` → `no_stopping` and document `charging_only` handling. |
+| **`opening_hours` handling sets default to `no` (not applicable)** — when `parking:{side}:opening_hours` is present, code pushes the prior default as a conditional interval and sets `default = 'no'`. Semantics differ from typical “open during hours” interpretations and are untested. | **Medium** | `access-condition.ts` lines 88–95 | Confirm against [Street parking](https://wiki.openstreetmap.org/wiki/Street_parking) wiki; add tests for inside/outside hours coloring; consider wiki-aligned default outside hours (`no_parking` vs `no`). |
+| **`fee:conditional=no` inverts default to `ticket` when `access` unset** — e.g. `no @ (Mo-Fr …)` sets `default: 'ticket'` (paid outside free window). Logic is implicit and only partially tested. | **Medium** | `access-condition.ts` lines 29–30; `parking-conditions.test.ts` `fee:conditional=no @ ({time_interval})` expects `default: 'ticket'` | Document inversion rules; add paired test for `fee:conditional=yes` default behavior; validate against real-world tagging examples. |
+| **`fee` as opening-hours string only adds conditional, not default** — `fee=Mo-Fr 08:00-19:00` pushes `ticket` interval but leaves `default: free` (implicit “free outside paid hours”). No test for outside-hours color. | **Medium** | `access-condition.ts` lines 12–17; `parking-conditions.test.ts` `fee={time_interval}` | Explicitly document/compute inverse default; test `getColorByDate` outside interval. |
+| **`maxstay:conditional` only emits `disc` intervals** — does not adjust default when unconditional `maxstay` absent; multiple overlapping conditionals from fee/maxstay/access/restriction are concatenated without priority. | **Medium** | `access-condition.ts` lines 36–44, 119–136 | Define conflict resolution (first-match vs most-specific); add combined fixture tests. |
+| **Legacy v1 parser requires `time_interval` on first slot** — `parking:condition:right=free` alone yields no intervals (`break` at `i === 1`). Indexed slots capped at 9 (`i < 10`). | **Medium** | `lane-scheme-conditions.ts` `parseConditionsBySchemeV1` lines 67–96 | Document v1 limitations; consider treating unqualified `parking:condition:{side}` as default not interval. |
+| **Legacy lane scheme not in editor schema** — `parking:lane:*`, `parking:condition:*` (v1/v2) are not in `parkingLaneTags`; they appear only as dynamic “unsupported” inputs if key contains side string. No structured editing for legacy conditionals. | **Medium** | `editor/tag-schema.ts`; `SideGroup.tsx` unsupported-tag fallback | Phase 2/3 editor: add legacy fields or steer users through migration modal only. |
+| **Editor schema missing tags used by evaluation** — `zone`, `disabled`, `opening_hours` affect `mapAccessValue` / `getConditions` but have no schema entries. `orientation` enum omits `marked` while `parseDefaultCondition` treats `marked` as free-parking lane value. | **Medium** | `access-condition.ts` `mapAccessValue`; `lane-scheme-conditions.ts` line 40; `tag-values.ts` `orientationValues` | Extend schema or document as read-only; align orientation enums. |
+| **No tag value validation in domain** — schema lists suggested values but domain accepts any string; unknown access → `no_parking`, unknown condition → `unsupported` only in lane-scheme default path. | **Low** | `access-condition.ts` `mapAccessValue` default; `lane-scheme-conditions.ts` `parseDefaultCondition` | Optional validation layer for editor save; surface warnings in UI. |
+| **Domain ↔ legend coupling** — condition names and colors are duplicated between parsing logic and `legend.ts`; `lane-scheme-conditions.ts` imports legend to detect known conditions. New conditions require legend + parser + tests. | **Low** | `lane-scheme-conditions.ts` lines 28–34, 78; `condition-color.ts` | Single source of truth for condition registry (name, color, aliases). |
+| **`presets.ts` `noParkingEven` duplicate `restriction` key** — last entry clears `parking:{side}:restriction` to `''`, likely unintentional vs `noParkingOdd`. | **Low** | `editor/presets.ts` `noParkingEven` tags array (lines 79–92) | Fix preset tag list; add preset snapshot test. |
+| **`getConditions()` without side defaults to `free` on empty tags** — used by `parking-area.ts` / `parking-point.ts`; may not match area/point tagging conventions. | **Low** | `access-condition.ts` line 9; `parking-area.ts`, `parking-point.ts` | Audit non-way features separately; document assumption. |
+| **`permit` / `permissive` access mapped to `no_stopping`** — may misrepresent permit parking (often resident/customer). | **Low** | `access-condition.ts` `mapAccessValue` lines 113–115 | Wiki review; map to `residents` or new condition if appropriate. |
+| **`buildConditionalTagValue` drops parts missing condition** — cannot round-trip value-only conditional clauses (`ticket` without `@`). | **Low** | `editor/conditional-tag-edit.ts` lines 12–16; `conditional-tag.test.ts` parses value-only | Document limitation or preserve value-only segments. |
+| **Tag migration rules live in external package** — domain does not document or test full transpose matrix. | **Low** | `editor/tag-migration.ts` → `osm-parking-tag-updater` | Re-export or snapshot migration cases critical to this app. |
+
+---
+
+## 3. Test coverage gaps
+
+| Area | Current state | Gap |
+|------|---------------|-----|
+| **Opening hours (Mo–Fr, Sa, etc.)** | All fixtures in `parking-conditions.test.ts` and most in `lane-scheme-conditions.test.ts` expect `condition: null` with commented-out `OpeningHours` constructors. Jest run shows parse failures for every `Mo-Fr …` string. | No test proves weekday time conditionals affect `getColorByDate`. |
+| **`getColorByDate` time matching** | Covered for odd/even fee conditionals and static defaults; one legacy lane-scheme weekend default color test. | No Mo–Fr interval match/mismatch cases. |
+| **`opening_hours` tag** | Not tested. | Inside/outside hours behavior unknown. |
+| **`parking:both` fallback (access path)** | Lane scheme v2 has `prefers both-side scheme v2 tag`. | No test for `parking:both:fee` / `parking:both:access` with `getConditions(tags, 'left'|'right')`. |
+| **Scheme coexistence / migration** | One test asserts legacy ignored when new scheme has default. | No test for legacy-only, new-only partial tags, or post-migration cleanup. |
+| **Restriction colors** | `loading_only` color tested; `no_standing`, `charging_only` not tested. | Would catch legend holes. |
+| **Editor domain** | `tag-schema`, `conditional-tag-edit`, `changes`, `tag-migration` have smoke tests. | No tests for `presets.ts` tag output; no validation tests. |
+| **`side-conditions` falsy default** | Not tested: access path returns `default: null` with populated `conditionalValues` (e.g. fee as hours only) → should fall through to lane scheme. | Edge case for merge policy. |
+| **`parseDefaultCondition` / v1** | Good coverage for odd/even, parallel→free, unsupported. | No test for `parking:lane:both` vs side-specific precedence on default. |
+| **Global `getConditions` (no side)** | Several tests in `parking-conditions.test.ts`. | Side-specific tags in those tests only; no parity matrix with `getSideConditions`. |
+
+---
+
+## 4. Explicit non-goals / out of scope
+
+- **Phase 2/3 UI work** — editor layout, map rendering, save/upload, relation handling.
+- **Fixing gaps in this phase** — report-only unless critical; no commits in 1b.
+- **`parking-area.ts` / `parking-point.ts` deep audit** — only noted where they call domain APIs without side.
+- **Full OSM wiki enumeration** — every global parking extension tag; focus is street-parking schemes the code claims to support.
+- **`osm-parking-tag-updater` internals** — owned by dependency; only boundary tested.
+- **Performance, i18n, accessibility** — not domain-logic concerns.
+- **Browser visual verification** — runtime `opening_hours` in browser bundle not exercised in this audit.
+- **Rendering** — polyline offset, zoom styles, editor mode empty-way behavior (`parking-lane.ts`).
+
+---
+
+## Appendix: Top gaps by severity (quick reference)
+
+1. **High** — New-scheme default suppresses legacy `parking:condition:*` intervals (`side-conditions.ts`).
+2. **High** — Mo–Fr opening-hours parsing untested / null in Jest (`opening-hours.ts`, tests).
+3. **High** — `no_standing` / `charging_only` lack legend colors (`legend.ts`, `tag-values.ts`).
+4. **Medium** — `opening_hours` forces `default: 'no'` semantics unclear (`access-condition.ts`).
+5. **Medium** — Legacy v1/v2 and incomplete editor schema for legacy + auxiliary tags (`tag-schema.ts`, `lane-scheme-conditions.ts`).
