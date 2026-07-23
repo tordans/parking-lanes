@@ -119,22 +119,13 @@ export function LaneEditForm(props: {
       delete nextTags[key]
 
     form.setFieldValue('tags', nextTags)
-    if (value) props.osm.tags[key] = value
-    else
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete props.osm.tags[key]
-    props.onChange(props.osm)
+    props.onChange({ ...props.osm, tags: nextTags })
   }
 
   function handleUpdateTagsClick() {
-    const migratedTags = applyTagMigration(props.osm.tags)
-    for (const key of Object.keys(props.osm.tags)) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete props.osm.tags[key]
-    }
-    Object.assign(props.osm.tags, migratedTags)
+    const migratedTags = applyTagMigration(form.getFieldValue('tags'))
     form.setFieldValue('tags', { ...migratedTags })
-    props.onChange(props.osm)
+    props.onChange({ ...props.osm, tags: migratedTags })
   }
 }
 

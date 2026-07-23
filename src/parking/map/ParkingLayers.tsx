@@ -9,10 +9,19 @@ const laneLayerPaint = {
   'line-offset': ['coalesce', ['get', 'offset'], 0],
 } as Record<string, unknown>
 
+/** Extra px beyond painted lane span for forgiving hover/click. */
+const HIT_AREA_PADDING = 3
+
 const hitAreaLinePaint = {
   'line-color': '#000',
   'line-opacity': 0,
-  'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 14.1, 10, 22, 12],
+  // Centerline hit strip: 2×|offset| spans left+right strips, +weight for line thickness, +padding.
+  'line-width': [
+    '+',
+    ['*', 2, ['abs', ['coalesce', ['get', 'offset'], 0]]],
+    ['coalesce', ['get', 'weight'], 2],
+    HIT_AREA_PADDING,
+  ],
 } as Record<string, unknown>
 
 const areaLayerPaint = {

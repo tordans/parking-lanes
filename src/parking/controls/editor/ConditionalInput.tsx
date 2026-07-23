@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Label } from '../../../components/catalyst/fieldset'
 import { Input } from '../../../components/catalyst/input'
 import { type ConditionalValue } from '../../../utils/conditional-tag'
 import { type OsmWay } from '../../../utils/types/osm-data'
@@ -28,7 +27,12 @@ export function ConditionalInput(props: {
   return (
     <tr id={props.tag} className="tag-editor" style={{ display: props.hide ? 'none' : undefined }}>
       <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
-        <Label title={props.tag}>{props.label}</Label>
+        <label
+          title={props.tag}
+          className="text-base/6 text-zinc-950 select-none sm:text-sm/6 dark:text-white"
+        >
+          {props.label}
+        </label>
       </td>
       <td className="flex flex-col items-start gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
         {parsedConditionalTag.map((conditionalValue, index) => (

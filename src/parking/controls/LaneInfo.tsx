@@ -1,10 +1,10 @@
 import { Button } from '../../components/catalyst/button'
-import { osmData } from '../../utils/data-client'
 import { handleJosmLinkClick } from '../../utils/josm'
 import { idEditorUrl, josmUrl, mapillaryUrl, overpassDeUrl } from '../../utils/links'
 import { type OsmObject, type OsmTags, type OsmWay } from '../../utils/types/osm-data'
 import { useEditorMode, useMapState } from '../app-store'
-import { useSelectedOsmObject } from '../map/parking-map-store'
+import { useSelectedOsmId } from '../map/parking-map-store'
+import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { LaneEditForm } from './editor/EditorForm'
 
 export function OsmObjectPanel(props: {
@@ -13,8 +13,20 @@ export function OsmObjectPanel(props: {
   onClose?: () => void
 }) {
   const mapState = useMapState()
-  const selectedOsmObject = useSelectedOsmObject()
+  const selectedOsmId = useSelectedOsmId()
+  const { data: graph } = useParkingOsmQuery({ select: (osmData) => osmData.graph })
+  const { data: waysInRelation = {} } = useParkingOsmQuery({
+    select: (osmData) => osmData.graph.waysInRelation,
+  })
   const editorMode = useEditorMode()
+
+  const selectedOsmObject =
+    selectedOsmId == null
+      ? null
+      : (graph?.ways[selectedOsmId] ??
+        graph?.nodes[selectedOsmId] ??
+        graph?.relations[selectedOsmId] ??
+        null)
 
   if (!selectedOsmObject) return null
 
@@ -81,7 +93,7 @@ export function OsmObjectPanel(props: {
         editorMode ? (
           <LaneEditForm
             osm={selectedOsmObject as OsmWay}
-            waysInRelation={osmData.waysInRelation}
+            waysInRelation={waysInRelation}
             onCutLane={props.onCutLane!}
             onChange={props.onChange!}
           />

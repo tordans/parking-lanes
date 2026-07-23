@@ -3,28 +3,31 @@ import type { MapBounds } from '../parking/map/types'
 import { type RawOsmData } from './types/osm-data'
 import { type ParsedOsmData } from './types/osm-data-storage'
 
-export const osmData: ParsedOsmData = {
-  relations: {},
-  ways: {},
-  nodes: {},
-  nodeCoords: {},
-  waysInRelation: {},
+export function emptyParsedOsmData(): ParsedOsmData {
+  return {
+    relations: {},
+    ways: {},
+    nodes: {},
+    nodeCoords: {},
+    waysInRelation: {},
+  }
 }
 
-let fetchedEnvelope: MapBounds | undefined
-
-export function isViewportFetched(bounds: MapBounds): boolean {
-  if (!fetchedEnvelope) return false
+export function isViewportFetched(
+  bounds: MapBounds,
+  envelope: MapBounds | null | undefined,
+): boolean {
+  if (!envelope) return false
   return (
-    bounds.west >= fetchedEnvelope.west &&
-    bounds.south >= fetchedEnvelope.south &&
-    bounds.east <= fetchedEnvelope.east &&
-    bounds.north <= fetchedEnvelope.north
+    bounds.west >= envelope.west &&
+    bounds.south >= envelope.south &&
+    bounds.east <= envelope.east &&
+    bounds.north <= envelope.north
   )
 }
 
 export function expandFetchedEnvelope(
-  envelope: MapBounds | undefined,
+  envelope: MapBounds | null | undefined,
   viewport: MapBounds,
 ): MapBounds {
   if (!envelope) return { ...viewport }
@@ -36,56 +39,41 @@ export function expandFetchedEnvelope(
   }
 }
 
-export function resetFetchedEnvelope(): void {
-  fetchedEnvelope = undefined
-}
+export function mergeParsedOsm(existing: ParsedOsmData, incoming: ParsedOsmData): ParsedOsmData {
+  const merged: ParsedOsmData = {
+    relations: { ...existing.relations },
+    ways: { ...existing.ways },
+    nodes: { ...existing.nodes },
+    nodeCoords: { ...existing.nodeCoords },
+    waysInRelation: { ...existing.waysInRelation },
+  }
 
-/** @internal test helper */
-export function setFetchedEnvelopeForTest(envelope: MapBounds | undefined): void {
-  fetchedEnvelope = envelope
-}
+  Object.assign(merged.nodes, incoming.nodes)
+  Object.assign(merged.nodeCoords, incoming.nodeCoords)
+  Object.assign(merged.waysInRelation, incoming.waysInRelation)
 
-export type DownloadBboxResult = {
-  newData: ParsedOsmData | null
-  skipped: boolean
+  for (const wayId in incoming.ways) {
+    const incomingWay = incoming.ways[wayId]!
+    if (merged.ways[wayId]?.version >= incomingWay.version) continue
+    merged.ways[wayId] = incomingWay
+  }
+
+  for (const relationId in incoming.relations) {
+    const incomingRelation = incoming.relations[relationId]!
+    if (merged.relations[relationId]?.version >= incomingRelation.version) continue
+    merged.relations[relationId] = incomingRelation
+  }
+
+  return merged
 }
 
 /**
- * Fetch OSM data for viewport bounds. Skips the network when the viewport is
- * already covered by a previous fetch unless `force` is set.
+ * Download and parse OSM data from a URL.
  * @throws {Error} Throws error when HTTP request fails (eg. HTTP 429 when too many requests)
  */
-export async function downloadBbox(
-  bounds: MapBounds,
-  url: string,
-  options?: { force?: boolean },
-): Promise<DownloadBboxResult> {
-  if (!options?.force && isViewportFetched(bounds)) {
-    return { newData: null, skipped: true }
-  }
-
-  fetchedEnvelope = expandFetchedEnvelope(fetchedEnvelope, bounds)
-
+export async function downloadOsmData(url: string): Promise<ParsedOsmData> {
   const osmResp: RawOsmData = await downloadContent(url)
-  const newData = parseOsmResp(osmResp)
-
-  if (newData) {
-    Object.assign(osmData.nodes, newData.nodes)
-    Object.assign(osmData.nodeCoords, newData.nodeCoords)
-    Object.assign(osmData.waysInRelation, newData.waysInRelation)
-
-    for (const wayId in newData.ways) {
-      if (osmData.ways[wayId]?.version >= newData.ways[wayId].version) continue
-      osmData.ways[wayId] = newData.ways[wayId]
-    }
-
-    for (const relationId in newData.relations) {
-      if (osmData.relations[relationId]?.version >= newData.relations[relationId].version) continue
-      osmData.relations[relationId] = newData.relations[relationId]
-    }
-  }
-
-  return { newData, skipped: false }
+  return parseOsmResp(osmResp)
 }
 
 async function downloadContent(url: string): Promise<RawOsmData> {
@@ -97,14 +85,8 @@ async function downloadContent(url: string): Promise<RawOsmData> {
   return resp.data
 }
 
-function parseOsmResp(osmResp: RawOsmData): ParsedOsmData {
-  const newData: ParsedOsmData = {
-    relations: {},
-    ways: {},
-    nodes: {},
-    nodeCoords: {},
-    waysInRelation: {},
-  }
+export function parseOsmResp(osmResp: RawOsmData): ParsedOsmData {
+  const newData = emptyParsedOsmData()
 
   for (const el of osmResp.elements) {
     switch (el.type) {

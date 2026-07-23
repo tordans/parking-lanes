@@ -1,4 +1,3 @@
-import { Label } from '../../../components/catalyst/fieldset'
 import { type OsmWay } from '../../../utils/types/osm-data'
 import { type TagValue } from '../../../utils/types/parking'
 import { SelectInput } from './SelectInput'
@@ -36,7 +35,12 @@ export function SimpleTagInput(props: {
       style={{ display: props.hide && !value ? 'none' : undefined }}
     >
       <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
-        <Label title={props.tag}>{props.label}</Label>
+        <label
+          title={props.tag}
+          className="text-base/6 text-zinc-950 select-none sm:text-sm/6 dark:text-white"
+        >
+          {props.label}
+        </label>
       </td>
       <td className="flex items-center gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
         {props.values ? (
