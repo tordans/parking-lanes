@@ -9,15 +9,16 @@ import {
   useAppActions,
   useDatetime,
   useEditorMode,
+  useMapState,
   useOsmDataSource,
 } from '../app-store'
 import { getUrl } from '../data-url'
 import {
   getLaneFeatureByOsmId,
+  getParkingMapState,
   useCutMarkerFeatures,
   useLaneFeatures,
   useParkingMapActions,
-  useParkingMapStore,
 } from './parking-map-store'
 import {
   parseParkingAreaFeatures,
@@ -66,7 +67,7 @@ function buildOsmTagMaps() {
 }
 
 export function syncDatetimeColors(datetime: Date) {
-  const { lanes, areas, points, actions } = useParkingMapStore.getState()
+  const { lanes, areas, points, actions } = getParkingMapState()
   const { wayTags, nodeTags, relationTags } = buildOsmTagMaps()
 
   const updatedLanes = updateLaneFeatureColors(lanes.features, datetime, wayTags)
@@ -86,7 +87,7 @@ export function syncDatetimeColors(datetime: Date) {
 }
 
 export function syncZoomStyles(zoom: number) {
-  const { lanes, points, actions } = useParkingMapStore.getState()
+  const { lanes, points, actions } = getParkingMapState()
 
   const updatedLanes = updateLaneFeatureStyles(lanes.features, zoom)
   if (parkingFeatureVisualsChanged(lanes.features, updatedLanes)) {
@@ -172,15 +173,21 @@ export function useParkingDataLoader() {
 export function useDatetimeColorSync() {
   const datetime = useDatetime()
 
-  useEffect(() => {
-    syncDatetimeColors(datetime)
-  }, [datetime])
+  useEffect(
+    function syncDatetimeColorsEffect() {
+      syncDatetimeColors(datetime)
+    },
+    [datetime],
+  )
 }
 
 export function useZoomStyleSync(zoom: number) {
-  useEffect(() => {
-    syncZoomStyles(zoom)
-  }, [zoom])
+  useEffect(
+    function syncZoomStylesEffect() {
+      syncZoomStyles(zoom)
+    },
+    [zoom],
+  )
 }
 
 export function useOsmChangeHandler(zoom: number) {
@@ -236,8 +243,9 @@ export function useLaneClickHandler(zoom: number) {
 }
 
 export function useCutWayHandler(zoom: number) {
+  const datetime = useDatetime()
   const cutMarkers = useCutMarkerFeatures()
-  const { setCutMarkers, clearCutMarkers } = useParkingMapActions()
+  const { setCutMarkers, clearCutMarkers, setSelectedOsmObject } = useParkingMapActions()
   const { setChangesCount } = useAppActions()
   const lanes = useLaneFeatures()
   const { updateLaneFeatures } = useParkingMapActions()
@@ -294,15 +302,41 @@ export function useCutWayHandler(zoom: number) {
       clearCutMarkers()
 
       osmData.ways[newWay.id] = newWay
-      const editorMode = true
-      const newLaneFeatures = parseParkingLaneFeatures(newWay, osmData.nodeCoords, zoom, editorMode)
-      if (newLaneFeatures.length) updateLaneFeatures([...lanes.features, ...newLaneFeatures])
+
+      const { features: featuresWithOldWay } = applyChangedWayToFeatures(
+        lanes.features,
+        oldWay,
+        osmData.nodeCoords,
+        datetime,
+        zoom,
+      )
+      const { features: allFeatures } = applyChangedWayToFeatures(
+        featuresWithOldWay,
+        newWay,
+        osmData.nodeCoords,
+        datetime,
+        zoom,
+      )
+      updateLaneFeatures(allFeatures)
+
+      const selected = getParkingMapState().selectedOsmObject
+      if (selected?.id === wayId) {
+        setSelectedOsmObject(oldWay)
+      }
 
       addChangedEntity(newWay)
       const changesCount = addChangedEntity(oldWay)
       setChangesCount(changesCount)
     },
-    [clearCutMarkers, lanes.features, setChangesCount, updateLaneFeatures, zoom],
+    [
+      clearCutMarkers,
+      datetime,
+      lanes.features,
+      setChangesCount,
+      setSelectedOsmObject,
+      updateLaneFeatures,
+      zoom,
+    ],
   )
 
   return { showCutMarkers, handleCutMarkerClick }
@@ -310,34 +344,50 @@ export function useCutWayHandler(zoom: number) {
 
 export function useEditorModeAuth() {
   const editorMode = useEditorMode()
+  const mapState = useMapState()
+  const loadParkingData = useParkingDataLoader()
   const { setAuthState, setEditorMode } = useAppActions()
   const { removeEmptyLanes } = useParkingMapActions()
 
-  useEffect(() => {
-    if (!editorMode) {
-      setAuthState(AuthState.initial)
-      removeEmptyLanes()
-      return
-    }
-
-    void (async () => {
-      try {
-        await authenticate(useDevServer)
-        try {
-          await userInfo()
-        } catch {
-          logout()
-          await authenticate(useDevServer)
-        }
-        setAuthState(AuthState.success)
-        resetLastBounds()
-      } catch (err) {
-        setAuthState(AuthState.fail)
-        setEditorMode(false)
-        alert(err)
+  useEffect(
+    function syncEditorModeAuth() {
+      if (!editorMode) {
+        setAuthState(AuthState.initial)
+        removeEmptyLanes()
+        return
       }
-    })()
-  }, [editorMode, removeEmptyLanes, setAuthState, setEditorMode])
+
+      let cancelled = false
+
+      void (async function authenticateEditor() {
+        try {
+          await authenticate(useDevServer)
+          try {
+            await userInfo()
+          } catch {
+            logout()
+            await authenticate(useDevServer)
+          }
+          if (cancelled) return
+          setAuthState(AuthState.success)
+          resetLastBounds()
+          if (mapState?.bounds && mapState.zoom >= viewMinZoom) {
+            await loadParkingData(mapState.bounds, mapState.zoom)
+          }
+        } catch (err) {
+          if (cancelled) return
+          setAuthState(AuthState.fail)
+          setEditorMode(false)
+          alert(err)
+        }
+      })()
+
+      return () => {
+        cancelled = true
+      }
+    },
+    [editorMode, loadParkingData, mapState, removeEmptyLanes, setAuthState, setEditorMode],
+  )
 }
 
 export const interactiveLayerIds = [

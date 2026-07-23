@@ -134,6 +134,7 @@ export function LaneEditForm(props: {
     }
     Object.assign(props.osm.tags, migratedTags)
     form.setFieldValue('tags', { ...migratedTags })
+    props.onChange(props.osm)
   }
 }
 

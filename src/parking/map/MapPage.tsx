@@ -15,6 +15,7 @@ import {
   useBacklightFeatures,
   useCutMarkerFeatures,
   useLaneFeatures,
+  getParkingMapState,
   useParkingMapActions,
   usePointFeatures,
 } from './parking-map-store'
@@ -153,6 +154,11 @@ export function MapPage({
           }
         })
         mapActions.updateLaneFeatures(updated)
+
+        const selected = getParkingMapState().selectedOsmObject
+        if (selected && selected.id === Number(oldId) && oldWay) {
+          mapActions.setSelectedOsmObject(oldWay)
+        }
       }
       setChangesCount(0)
     } catch (err) {

@@ -7,7 +7,7 @@ import { useSelectedOsmObject } from '../map/parking-map-store'
 import { LaneEditForm } from './editor/EditorForm'
 
 export function OsmObjectPanel(props: {
-  onCutLane?: any
+  onCutLane?: (way: OsmWay) => void
   onChange?: (way: OsmWay) => void
   onClose?: () => void
 }) {
@@ -78,7 +78,7 @@ export function OsmObjectPanel(props: {
           <LaneEditForm
             osm={selectedOsmObject as OsmWay}
             waysInRelation={osmData.waysInRelation}
-            onCutLane={props.onCutLane}
+            onCutLane={props.onCutLane!}
             onChange={props.onChange!}
           />
         ) : (
