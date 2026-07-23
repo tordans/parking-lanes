@@ -1,13 +1,12 @@
-import * as JXON from 'jxon'
 import {
     authReady,
     configure,
     getAuthToken,
-    getConfig,
     getUser,
     isLoggedIn,
     login as osmLogin,
     logout as osmLogout,
+    uploadChangeset,
 } from 'osm-api'
 import {
     getOsmOAuthClientId,
@@ -17,8 +16,9 @@ import {
 } from '../lib/osmOAuthConfig'
 import { osmDevUrl } from './links'
 
-import { type OsmWay } from './types/osm-data'
-import { type ChangedIdMap, type ChangesStore, type JxonOsmWay } from './types/changes-store'
+import { applyUploadResult, changesStoreToOsmChange } from './changeset-upload'
+import { buildChangesetTags } from './osmUploadChangeset'
+import { type ChangedIdMap, type ChangesStore } from './types/changes-store'
 
 const osmProdApiUrl = 'https://api.openstreetmap.org'
 
@@ -71,13 +71,6 @@ export function userInfo() {
     return getUser('me')
 }
 
-interface OsmApiRequestOptions {
-    method: string
-    path: string
-    headers?: Record<string, string>
-    content?: string
-}
-
 export class OsmApiRequestError extends Error {
     responseText: string
 
@@ -88,131 +81,22 @@ export class OsmApiRequestError extends Error {
     }
 }
 
-async function osmApiRequest(options: OsmApiRequestOptions): Promise<string> {
-    syncAuthHeader()
-    const { apiUrl, userAgent, authHeader } = getConfig()
-    const token = getAuthToken()
-    const authorization = authHeader ?? (token ? `Bearer ${token}` : '')
+function wrapOsmApiError(err: unknown): never {
+    if (err instanceof Error && err.message.startsWith('OSM API: '))
+        throw new OsmApiRequestError(err.message.slice('OSM API: '.length))
 
-    const response = await fetch(`${apiUrl}${options.path}`, {
-        method: options.method,
-        headers: {
-            ...(authorization ? { Authorization: authorization } : {}),
-            'User-Agent': userAgent,
-            ...options.headers,
-        },
-        body: options.content,
-    })
-
-    const text = await response.text()
-    if (!response.ok)
-        throw new OsmApiRequestError(text)
-
-    return text
+    throw err
 }
 
 export async function uploadChanges(editorName: string, editorVersion: string, changesStore: ChangesStore): Promise<ChangedIdMap> {
     try {
-        const changesetId = await createChangeset(editorName, editorVersion)
-        const diffResult = await saveChangesets(changesStore, changesetId, editorName)
-        await closeChangeset(changesetId)
+        const tags = buildChangesetTags(editorName, editorVersion)
+        const diff = changesStoreToOsmChange(changesStore)
+        const result = await uploadChangeset(tags, diff)
 
-        const diffResultJxon: any = JXON.xmlToJs(diffResult)
-
-        const diffWays = Array.isArray(diffResultJxon.diffResult.way) ?
-            diffResultJxon.diffResult.way :
-            [diffResultJxon.diffResult.way]
-
-        const changedIdMap: ChangedIdMap = {}
-
-        for (const diffWay of diffWays) {
-            const oldId = parseInt(diffWay.$old_id)
-            const way = changesStore.modify.way.find(x => x.id === oldId) ??
-                        changesStore.create.way.find(x => x.id === oldId)
-            way!.id = parseInt(diffWay.$new_id)
-            way!.version = parseInt(diffWay.$new_version)
-
-            if (diffWay.$old_id !== diffWay.$new_id)
-                changedIdMap[diffWay.$old_id] = diffWay.$new_id
-        }
-
-        changesStore.modify.way = []
-        changesStore.create.way = []
-
-        return changedIdMap
+        return applyUploadResult(changesStore, result)
     } catch (err) {
         console.error(err)
-        throw err
+        wrapOsmApiError(err)
     }
-}
-
-function createChangeset(editorName: string, editorVersion: string): Promise<string> {
-    const change = {
-        osm: {
-            changeset: {
-                $version: '0.6',
-                $generator: editorName,
-                tag: [
-                    { $k: 'created_by', $v: `${editorName} ${editorVersion}` },
-                    { $k: 'comment', $v: 'Parking lanes' },
-                    { $k: 'host', $v: `${window.location.origin}${window.location.pathname}` },
-                ],
-            },
-        },
-    }
-
-    return osmApiRequest({
-        method: 'PUT',
-        path: '/api/0.6/changeset/create',
-        headers: { 'Content-Type': 'text/xml' },
-        content: JXON.jsToString(change),
-    })
-}
-
-function saveChangesets(changesStore: ChangesStore, changesetId: string, editorName: string) {
-    const change = {
-        osmChange: {
-            $version: '0.6',
-            $generator: editorName,
-            modify: {
-                way: changesStore.modify.way
-                    .map(x => wayToJxon(x, changesetId)),
-            },
-            create: {
-                way: changesStore.create.way
-                    .map(x => wayToJxon(x, changesetId)),
-            },
-        },
-    }
-
-    return osmApiRequest({
-        method: 'POST',
-        path: '/api/0.6/changeset/' + changesetId + '/upload',
-        headers: { 'Content-Type': 'text/xml' },
-        content: JXON.jsToString(change),
-    })
-}
-
-function closeChangeset(changesetId: string) {
-    return osmApiRequest({
-        method: 'PUT',
-        path: '/api/0.6/changeset/' + changesetId + '/close',
-        headers: { 'Content-Type': 'text/xml' },
-    })
-}
-
-function wayToJxon(osm: OsmWay, changesetId: string): JxonOsmWay {
-    const jxonWay: JxonOsmWay = {
-        $id: osm.id,
-        $version: osm.version || 0,
-        tag: Object.keys(osm.tags)
-            .map(k => ({ $k: k, $v: osm.tags[k] })),
-        nd: osm.nodes
-            .map(id => ({ $ref: id })),
-    }
-
-    if (changesetId)
-        jxonWay.$changeset = changesetId
-
-    return jxonWay
 }
