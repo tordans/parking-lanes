@@ -1,6 +1,4 @@
 module.exports = {
-    preset: 'ts-jest',
-    transformIgnorePatterns: [
-        '/node_modules/(?!osm-parking-tag-updater)',
-    ],
+  preset: 'ts-jest',
+  transformIgnorePatterns: ['/node_modules/(?!osm-parking-tag-updater)'],
 }

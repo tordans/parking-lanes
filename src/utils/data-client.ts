@@ -1,118 +1,105 @@
 import axios from 'axios'
+import type { MapBounds } from '../parking/map/types'
 import { type RawOsmData } from './types/osm-data'
 import { type ParsedOsmData } from './types/osm-data-storage'
 
 export const osmData: ParsedOsmData = {
+  relations: {},
+  ways: {},
+  nodes: {},
+  nodeCoords: {},
+  waysInRelation: {},
+}
+
+let lastBounds: MapBounds | undefined
+
+/**
+ * Get OSM data within specified bounds
+ * @throws {Error} Throws error when HTTP request fails (eg. HTTP 429 when too many requests)
+ */
+export async function downloadBbox(bounds: MapBounds, url: string): Promise<ParsedOsmData | null> {
+  if (lastBounds !== undefined && withinLastBounds(bounds, lastBounds)) return null
+
+  lastBounds = bounds
+
+  const osmResp: RawOsmData = await downloadContent(url)
+  const newData = parseOsmResp(osmResp)
+
+  if (newData) {
+    Object.assign(osmData.nodes, newData.nodes)
+    Object.assign(osmData.nodeCoords, newData.nodeCoords)
+    Object.assign(osmData.waysInRelation, newData.waysInRelation)
+
+    for (const wayId in newData.ways) {
+      if (osmData.ways[wayId]?.version >= newData.ways[wayId].version) continue
+      else osmData.ways[wayId] = newData.ways[wayId]
+    }
+
+    for (const relationId in newData.relations) {
+      if (osmData.relations[relationId]?.version >= newData.relations[relationId].version) continue
+      else osmData.relations[relationId] = newData.relations[relationId]
+    }
+  }
+
+  return newData
+}
+
+function withinLastBounds(newBounds: MapBounds, oldBounds: MapBounds) {
+  return (
+    newBounds.west > oldBounds.west &&
+    newBounds.south > oldBounds.south &&
+    newBounds.east < oldBounds.east &&
+    newBounds.north < oldBounds.north
+  )
+}
+
+export function resetLastBounds(): void {
+  lastBounds = undefined
+}
+
+async function downloadContent(url: string): Promise<RawOsmData> {
+  const resp = await axios.get(url, {
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+  return resp.data
+}
+
+function parseOsmResp(osmResp: RawOsmData): ParsedOsmData {
+  const newData: ParsedOsmData = {
     relations: {},
     ways: {},
     nodes: {},
     nodeCoords: {},
     waysInRelation: {},
-}
+  }
 
-let lastBounds: L.LatLngBounds | undefined
+  for (const el of osmResp.elements) {
+    switch (el.type) {
+      case 'node':
+        newData.nodeCoords[el.id] = [el.lat, el.lon]
 
-/**
- * Get OSM data within specified bounds
- * @throws {Error} Throws error when HTTP request fails (eg. HTTP 429 when too many requests)
- * @param bounds Which area do we search, to check if we've already searched here
- * @param url Overpass Turbo request URL
- * @returns Object containing nodes, ways and ways in relation
- */
-export async function downloadBbox(bounds: L.LatLngBounds, url: string): Promise<ParsedOsmData | null> {
-    if (lastBounds !== undefined && withinLastBounds(bounds, lastBounds))
-        return null
+        if (el.tags) newData.nodes[el.id] = el
 
-    lastBounds = bounds
+        break
 
-    // This may throw - if it does we handle in calling function
-    const osmResp: RawOsmData = await downloadContent(url)
+      case 'way':
+        newData.ways[el.id] = el
+        break
 
-    const newData = parseOsmResp(osmResp)
+      case 'relation':
+        newData.relations[el.id] = el
 
-    if (newData) {
-        Object.assign(osmData.nodes, newData.nodes)
-        Object.assign(osmData.nodeCoords, newData.nodeCoords)
-        Object.assign(osmData.waysInRelation, newData.waysInRelation)
-
-        for (const wayId in newData.ways) {
-            if (osmData.ways[wayId]?.version >= newData.ways[wayId].version)
-                continue
-            else
-                osmData.ways[wayId] = newData.ways[wayId]
+        for (const member of el.members) {
+          if (member.type === 'way' && newData.ways[member.ref])
+            newData.waysInRelation[member.ref] = true
         }
+        break
 
-        for (const relationId in newData.relations) {
-            if (osmData.relations[relationId]?.version >= newData.relations[relationId].version)
-                continue
-            else
-                osmData.relations[relationId] = newData.relations[relationId]
-        }
+      default:
+        throw new Error('Not supported osm type ' + (el as { type: string }).type)
     }
-
-    return newData
-}
-
-/** Check if the new bounds (lat/lng + zoom) is contained within the old bounds */
-function withinLastBounds(newBounds: L.LatLngBounds, oldBounds: L.LatLngBounds) {
-    return newBounds.getWest() > oldBounds.getWest() && newBounds.getSouth() > oldBounds.getSouth() &&
-           newBounds.getEast() < oldBounds.getEast() && newBounds.getNorth() < oldBounds.getNorth()
-}
-
-export function resetLastBounds(): void {
-    lastBounds = undefined
-}
-
-/**
- * Make a GET request to the specified URL.
- * @throws {Error}
- */
-async function downloadContent(url: string): Promise<RawOsmData> {
-    const resp = await axios.get(url, {
-        headers: {
-            Accept: 'application/json',
-        },
-    })
-    return resp.data
-}
-
-function parseOsmResp(osmResp: RawOsmData): ParsedOsmData {
-    const newData: ParsedOsmData = {
-        relations: {},
-        ways: {},
-        nodes: {},
-        nodeCoords: {},
-        waysInRelation: {},
-    }
-
-    for (const el of osmResp.elements) {
-        switch (el.type) {
-            case 'node':
-                newData.nodeCoords[el.id] = [el.lat, el.lon]
-
-                if (el.tags)
-                    newData.nodes[el.id] = el
-
-                break
-
-            case 'way':
-                newData.ways[el.id] = el
-                break
-
-            case 'relation':
-                newData.relations[el.id] = el
-
-                for (const member of el.members) {
-                    if (member.type === 'way' && newData.ways[member.ref])
-                        newData.waysInRelation[member.ref] = true
-                }
-                break
-
-            default:
-                // This shouldn't happen, but in case.
-                // @ts-expect-error
-                throw new Error('Not supported osm type ' + el.type)
-        }
-    }
-    return newData
+  }
+  return newData
 }

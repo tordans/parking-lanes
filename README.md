@@ -5,7 +5,7 @@
 
 ## Screenshots
 
-Viewer: 
+Viewer:
 
 <img src="https://i.imgur.com/VwH7Hmh.png" alt="Viewer UI">
 
@@ -13,8 +13,8 @@ Editor:
 
 <img src="https://i.imgur.com/e0vsqUQ.png" alt="Editor UI">
 
-
 # Using correct Node version
+
 The correct Node version is specified in `.nvmrc`.
 
 For an easy way to automatically use this Node version just for your current shell:

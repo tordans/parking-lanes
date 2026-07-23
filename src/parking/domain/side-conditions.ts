@@ -4,9 +4,8 @@ import { getConditions as getAccessConditions } from './access-condition'
 import { getLaneSchemeConditions } from './lane-scheme-conditions'
 
 export function getSideConditions(side: 'left' | 'right', tags: OsmTags): ParkingConditions {
-    const conditions = getAccessConditions(tags, side)
-    if (conditions.default)
-        return conditions
+  const conditions = getAccessConditions(tags, side)
+  if (conditions.default) return conditions
 
-    return getLaneSchemeConditions(side, tags)
+  return getLaneSchemeConditions(side, tags)
 }

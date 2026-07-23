@@ -1,7 +1,5 @@
-import type L from 'leaflet'
-
-interface GlobalState {
-    map: L.Map
-}
-
-export type OurWindow = Window & GlobalState & typeof globalThis
+/** @deprecated Legacy window typing from Leaflet era */
+export type OurWindow = Window &
+  typeof globalThis & {
+    map?: unknown
+  }

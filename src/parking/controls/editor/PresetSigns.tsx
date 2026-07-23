@@ -3,15 +3,18 @@ import { type OsmKeyValue } from '../../../utils/types/preset'
 import { presets } from './presets'
 
 export function PresetSigns(osm: OsmWay, side: 'both' | 'left' | 'right') {
-    return presets.map(x => (
-        <img src={x.img.src}
-            key={x.img.src}
-            className="sign-preset"
-            height={x.img.height}
-            width={x.img.width}
-            alt={x.img.alt}
-            title={x.img.title}
-            onClick={() => handlePresetClick(x.tags, osm, side)} />))
+  return presets.map((x) => (
+    <img
+      src={x.img.src}
+      key={x.img.src}
+      className="sign-preset"
+      height={x.img.height}
+      width={x.img.width}
+      alt={x.img.alt}
+      title={x.img.title}
+      onClick={() => handlePresetClick(x.tags, osm, side)}
+    />
+  ))
 }
 
 /**
@@ -21,22 +24,25 @@ export function PresetSigns(osm: OsmWay, side: 'both' | 'left' | 'right') {
  * @param side What side of the OSM way we are applying this preset to
  */
 function handlePresetClick(
-    tags: OsmKeyValue[], osm: OsmWay, side: 'both' | 'left' | 'right',
+  tags: OsmKeyValue[],
+  osm: OsmWay,
+  side: 'both' | 'left' | 'right',
 ): void {
-    for (const tag of tags) {
-        // Replace the placeholder `{side}` in the key with the actual side
-        const osmTagKey = tag.k.replace('{side}', side)
+  for (const tag of tags) {
+    // Replace the placeholder `{side}` in the key with the actual side
+    const osmTagKey = tag.k.replace('{side}', side)
 
-        // Some controls are selects, some are textboxes
-        const inputSelector = `form[id='${osm.id}'] [name='${osmTagKey}']`
-        const currentInput = document.querySelector(inputSelector) as
-            HTMLInputElement | HTMLSelectElement
+    // Some controls are selects, some are textboxes
+    const inputSelector = `form[id='${osm.id}'] [name='${osmTagKey}']`
+    const currentInput = document.querySelector(inputSelector) as
+      | HTMLInputElement
+      | HTMLSelectElement
 
-        // Set the textbox/select content
-        currentInput.value = tag.v
-    }
+    // Set the textbox/select content
+    currentInput.value = tag.v
+  }
 
-    const inputSelector = `form[id='${osm.id}'] [name='${`parking:${side}`}']`
-    const element = document.querySelector(inputSelector) as HTMLInputElement | HTMLSelectElement
-    element.dispatchEvent(new Event('change'))
+  const inputSelector = `form[id='${osm.id}'] [name='${`parking:${side}`}']`
+  const element = document.querySelector(inputSelector) as HTMLInputElement | HTMLSelectElement
+  element.dispatchEvent(new Event('change'))
 }

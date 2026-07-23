@@ -1,0 +1,15 @@
+# @see .agents/skills/tech-stack/references/bun-install.md
+
+[install]
+minimumReleaseAge = 432000
+minimumReleaseAgeExcludes = [
+  "typescript",
+  "@typescript/typescript-darwin-arm64",
+  "@typescript/typescript-linux-x64",
+  "oxfmt",
+  "oxlint",
+  "oxlint-config-react-hooks-js",
+]
+
+linker = "isolated"
+globalStore = true
