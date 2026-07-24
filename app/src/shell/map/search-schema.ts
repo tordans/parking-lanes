@@ -1,4 +1,9 @@
-import { parseMapParam } from '@osm-editor-kit/osm-map-url'
+import {
+  parseFeatureParam,
+  parseMapParam,
+  serializeFeatureParam,
+  serializeMapParam,
+} from '@osm-editor-kit/osm-map-url'
 import { z } from 'zod'
 import { parseDebugSearch } from '../debug'
 
@@ -7,6 +12,10 @@ export const mapSearchSchema = z.object({
     .string()
     .optional()
     .transform((s) => (s ? (parseMapParam(s) ?? undefined) : undefined)),
+  f: z
+    .string()
+    .optional()
+    .transform((s) => (s ? (parseFeatureParam(s) ?? undefined) : undefined)),
   debug: z
     .union([
       z.boolean(),
@@ -22,3 +31,13 @@ export const mapSearchSchema = z.object({
 })
 
 export type MapSearch = z.infer<typeof mapSearchSchema>
+
+export function serializeMapSearch(
+  search: MapSearch,
+): Record<string, string | boolean | undefined> {
+  return {
+    map: search.map ? serializeMapParam(search.map) : undefined,
+    f: search.f ? serializeFeatureParam(search.f) : undefined,
+    debug: search.debug,
+  }
+}

@@ -20,6 +20,6 @@ export type StreetSpaceMode = {
   enabled: boolean
   MapLayers: ComponentType<ModeMapProps>
   Panel: ComponentType<ModePanelProps>
-  Legend?: ComponentType
+  Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
   interactiveLayerIds: string[]
 }

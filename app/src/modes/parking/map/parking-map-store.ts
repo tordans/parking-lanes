@@ -1,17 +1,18 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { create } from 'zustand'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 interface ParkingMapStore {
   backlights: ParkingFeatureCollection
   cutMarkers: ParkingFeatureCollection
-  selectedOsmId: number | null
+  selectedOsmRef: OsmFeatureRef | null
   actions: {
     setBacklights: (backlights: ParkingFeatureCollection) => void
     clearBacklights: () => void
     setCutMarkers: (markers: ParkingFeatureCollection) => void
     clearCutMarkers: () => void
-    setSelectedOsmId: (osmId: number | null) => void
+    setSelectedOsmRef: (ref: OsmFeatureRef | null) => void
   }
 }
 
@@ -23,19 +24,20 @@ const emptyCollection = (): ParkingFeatureCollection => ({
 const useParkingMapStore = create<ParkingMapStore>()((set) => ({
   backlights: emptyCollection(),
   cutMarkers: emptyCollection(),
-  selectedOsmId: null,
+  selectedOsmRef: null,
   actions: {
     setBacklights: (backlights) => set({ backlights }),
     clearBacklights: () => set({ backlights: emptyCollection() }),
     setCutMarkers: (cutMarkers) => set({ cutMarkers }),
     clearCutMarkers: () => set({ cutMarkers: emptyCollection() }),
-    setSelectedOsmId: (selectedOsmId) => set({ selectedOsmId }),
+    setSelectedOsmRef: (selectedOsmRef) => set({ selectedOsmRef }),
   },
 }))
 
 export const useBacklightFeatures = () => useParkingMapStore((s) => s.backlights)
 export const useCutMarkerFeatures = () => useParkingMapStore((s) => s.cutMarkers)
-export const useSelectedOsmId = () => useParkingMapStore((s) => s.selectedOsmId)
+export const useSelectedOsmRef = () => useParkingMapStore((s) => s.selectedOsmRef)
+export const useSelectedOsmId = () => useParkingMapStore((s) => s.selectedOsmRef?.id ?? null)
 export const useParkingMapActions = () => useParkingMapStore((s) => s.actions)
 
 export function getLaneFeatureByOsmId(

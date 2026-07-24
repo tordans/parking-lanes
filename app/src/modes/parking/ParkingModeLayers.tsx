@@ -1,4 +1,4 @@
-import { useDatetime, useEditorMode, useMapState } from '../../shell/app-store'
+import { useDatetime, useMapState } from '../../shell/app-store'
 import type { ModeMapProps } from '../types'
 import { useBacklightFeatures, useCutMarkerFeatures } from './map/parking-map-store'
 import { ParkingLayers } from './map/ParkingLayers'
@@ -7,7 +7,6 @@ import { useParkingMapFeatures } from './map/use-parking-map-features'
 export function ParkingModeLayers({ mapZoom }: ModeMapProps) {
   const mapState = useMapState()
   const datetime = useDatetime()
-  const editorMode = useEditorMode()
   const backlights = useBacklightFeatures()
   const cutMarkers = useCutMarkerFeatures()
 
@@ -15,7 +14,6 @@ export function ParkingModeLayers({ mapZoom }: ModeMapProps) {
     bounds: mapState?.bounds,
     zoom: mapZoom,
     datetime,
-    editorMode,
   })
 
   return (

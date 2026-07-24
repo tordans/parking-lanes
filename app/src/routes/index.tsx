@@ -16,6 +16,7 @@ function IndexPage() {
     longitude: search.map?.lng ?? cookieLocation?.location.lng ?? 24.609,
     latitude: search.map?.lat ?? cookieLocation?.location.lat ?? 51.591,
     zoom: search.map?.zoom ?? cookieLocation?.zoom ?? 5,
+    bearing: search.map?.bearing,
   }
 
   return <MapPage initialView={initialView} />

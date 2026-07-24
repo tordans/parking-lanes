@@ -1,7 +1,7 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback } from 'react'
-import { useParkingMapActions } from './map/parking-map-store'
+import { useFeatureSelection } from '../../shell/map/feature-selection'
 import { useCutWayHandler, useLaneClickHandler, useOsmChangeHandler } from './map/use-parking-map'
 
 export function useParkingLayerClickHandler(mapZoom: number) {
@@ -22,12 +22,11 @@ export function useParkingLayerClickHandler(mapZoom: number) {
 }
 
 export function useParkingMapClickHandler() {
-  const mapActions = useParkingMapActions()
+  const { clearSelection } = useFeatureSelection()
 
   return useCallback(() => {
-    mapActions.clearBacklights()
-    mapActions.setSelectedOsmId(null)
-  }, [mapActions])
+    clearSelection()
+  }, [clearSelection])
 }
 
 export function useParkingCutLaneHandler() {

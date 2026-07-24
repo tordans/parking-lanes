@@ -1,5 +1,4 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import type { OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   emptyParkingOsmData,
@@ -7,14 +6,10 @@ import {
   type ParkingOsmQueryData,
 } from './parking-osm-query'
 
-export function updateParkingOsmWay(
-  queryClient: QueryClient,
-  editorMode: boolean,
-  osmDataSource: OsmDataSource,
-  way: OsmWay,
-) {
-  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
-  queryClient.setQueryData<ParkingOsmQueryData>(key, (current = emptyParkingOsmData()) => ({
+const sessionKey = parkingOsmSessionKey({})
+
+export function updateParkingOsmWay(queryClient: QueryClient, way: OsmWay) {
+  queryClient.setQueryData<ParkingOsmQueryData>(sessionKey, (current = emptyParkingOsmData()) => ({
     ...current,
     graph: {
       ...current.graph,
@@ -28,14 +23,11 @@ export function updateParkingOsmWay(
 
 export function cutParkingOsmWay(
   queryClient: QueryClient,
-  editorMode: boolean,
-  osmDataSource: OsmDataSource,
   wayId: number,
   nodeId: number,
   newWayId: number,
 ): { oldWay: OsmWay; newWay: OsmWay } | null {
-  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
-  const current = queryClient.getQueryData<ParkingOsmQueryData>(key) ?? emptyParkingOsmData()
+  const current = queryClient.getQueryData<ParkingOsmQueryData>(sessionKey) ?? emptyParkingOsmData()
   const oldWay = current.graph.ways[wayId]
   if (!oldWay) return null
 
@@ -58,7 +50,7 @@ export function cutParkingOsmWay(
   delete newWay.uid
   delete newWay.timestamp
 
-  queryClient.setQueryData<ParkingOsmQueryData>(key, {
+  queryClient.setQueryData<ParkingOsmQueryData>(sessionKey, {
     ...current,
     graph: {
       ...current.graph,
@@ -75,20 +67,17 @@ export function cutParkingOsmWay(
 
 export function remapParkingOsmWayId(
   queryClient: QueryClient,
-  editorMode: boolean,
-  osmDataSource: OsmDataSource,
   oldId: number,
   newId: number,
 ): OsmWay | null {
-  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
-  const current = queryClient.getQueryData<ParkingOsmQueryData>(key) ?? emptyParkingOsmData()
+  const current = queryClient.getQueryData<ParkingOsmQueryData>(sessionKey) ?? emptyParkingOsmData()
   const oldWay = current.graph.ways[oldId]
   if (!oldWay) return null
 
   const remappedWay: OsmWay = { ...oldWay, id: newId }
   const { [oldId]: _removed, ...remainingWays } = current.graph.ways
 
-  queryClient.setQueryData<ParkingOsmQueryData>(key, {
+  queryClient.setQueryData<ParkingOsmQueryData>(sessionKey, {
     ...current,
     graph: {
       ...current.graph,

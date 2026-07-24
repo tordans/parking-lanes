@@ -1,30 +1,28 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
-import { useCallback, useEffect, useRef } from 'react'
-import { authenticate, logout, userInfo } from '../../../lib/osm-client'
+import { useCallback, useRef } from 'react'
 import {
   AuthState,
   useAppActions,
+  useAuthState,
   useDatetime,
-  useEditorMode,
   useMapState,
-  useOsmDataSource,
 } from '../../../shell/app-store'
+import { useFeatureSelection } from '../../../shell/map/feature-selection'
 import { addChangedEntity } from '../../../utils/changes-store'
-import { viewMinZoom } from './constants'
 import {
   getLaneFeatureByOsmId,
   useCutMarkerFeatures,
   useParkingMapActions,
-  useSelectedOsmId,
+  useSelectedOsmRef,
 } from './parking-map-store'
 import { cutParkingOsmWay, updateParkingOsmWay } from './parking-osm-edits'
 import { useParkingOsmQuery } from './parking-osm-query'
 import { createBacklightFeatures } from './parse-lanes'
 import type { MapBounds, ParkingFeature, ParkingFeatureCollection } from './types'
 import { useParkingMapFeatures } from './use-parking-map-features'
-import { useParkingOsmFetch, useResetParkingOsmOnSessionChange } from './use-parking-osm-fetch'
 
 export { viewMinZoom } from './constants'
 export {
@@ -34,36 +32,34 @@ export {
   useParkingOsmQuery,
 } from './use-parking-osm-fetch'
 export { useParkingMapFeatures } from './use-parking-map-features'
-
-const useDevServer = false
+export { useOsmAuth } from './use-osm-auth'
 
 export function useOsmChangeHandler() {
   const queryClient = useQueryClient()
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
+  const authState = useAuthState()
   const { setChangesCount } = useAppActions()
 
   return useCallback(
     (newOsm: OsmWay) => {
-      updateParkingOsmWay(queryClient, editorMode, osmDataSource, newOsm)
+      if (authState !== AuthState.success) return
+      updateParkingOsmWay(queryClient, newOsm)
       const changesCount = addChangedEntity(newOsm)
       setChangesCount(changesCount)
     },
-    [editorMode, osmDataSource, queryClient, setChangesCount],
+    [authState, queryClient, setChangesCount],
   )
 }
 
 export function useLaneClickHandler(zoom: number) {
   const mapState = useMapState()
   const datetime = useDatetime()
-  const editorMode = useEditorMode()
   const { lanes } = useParkingMapFeatures({
     bounds: mapState?.bounds,
     zoom,
     datetime,
-    editorMode,
   })
-  const { setBacklights, clearBacklights, setSelectedOsmId } = useParkingMapActions()
+  const { setBacklights, clearBacklights } = useParkingMapActions()
+  const { selectFeature } = useFeatureSelection()
 
   return useCallback(
     (event: MapLayerMouseEvent) => {
@@ -71,6 +67,7 @@ export function useLaneClickHandler(zoom: number) {
       if (!feature?.properties) return
 
       const osmId = feature.properties.osmId as number
+      const osmType = feature.properties.osmType as OsmFeatureRef['type']
       clearBacklights()
       const laneFeature = getLaneFeatureByOsmId(osmId, lanes)
       if (laneFeature?.geometry.type === 'LineString') {
@@ -80,26 +77,27 @@ export function useLaneClickHandler(zoom: number) {
           features: createBacklightFeatures(coords, zoom),
         })
       }
-      setSelectedOsmId(osmId)
+      selectFeature({ type: osmType, id: osmId })
       event.originalEvent.stopPropagation()
     },
-    [clearBacklights, lanes, setBacklights, setSelectedOsmId, zoom],
+    [clearBacklights, lanes, selectFeature, setBacklights, zoom],
   )
 }
 
 export function useCutWayHandler() {
   const queryClient = useQueryClient()
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
+  const authState = useAuthState()
   const { data: graph } = useParkingOsmQuery({ select: (data) => data.graph })
   const cutMarkers = useCutMarkerFeatures()
-  const selectedOsmId = useSelectedOsmId()
-  const { setCutMarkers, clearCutMarkers, setSelectedOsmId } = useParkingMapActions()
+  const selectedOsmRef = useSelectedOsmRef()
+  const { setCutMarkers, clearCutMarkers } = useParkingMapActions()
+  const { updateFeatureRef } = useFeatureSelection()
   const { setChangesCount } = useAppActions()
   const newWayIdRef = useRef(-1)
 
   const showCutMarkers = useCallback(
     (osm: OsmWay) => {
+      if (authState !== AuthState.success) return
       if (cutMarkers.features.length > 0) return
 
       const nodeCoords = graph?.nodeCoords ?? {}
@@ -124,107 +122,34 @@ export function useCutWayHandler() {
       })
       setCutMarkers({ type: 'FeatureCollection', features: markers })
     },
-    [cutMarkers.features.length, graph, setCutMarkers],
+    [authState, cutMarkers.features.length, graph, setCutMarkers],
   )
 
   const handleCutMarkerClick = useCallback(
     (event: MapLayerMouseEvent) => {
+      if (authState !== AuthState.success) return
+
       const nodeId = event.features?.[0]?.properties?.nodeId as number | undefined
       const wayId = event.features?.[0]?.properties?.wayId as number | undefined
       if (!nodeId || !wayId) return
 
-      const result = cutParkingOsmWay(
-        queryClient,
-        editorMode,
-        osmDataSource,
-        wayId,
-        nodeId,
-        newWayIdRef.current--,
-      )
+      const result = cutParkingOsmWay(queryClient, wayId, nodeId, newWayIdRef.current--)
       if (!result) return
 
       clearCutMarkers()
 
-      if (selectedOsmId === wayId) {
-        setSelectedOsmId(result.oldWay.id)
+      if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === wayId) {
+        updateFeatureRef({ type: 'way', id: result.oldWay.id })
       }
 
       addChangedEntity(result.newWay)
       const changesCount = addChangedEntity(result.oldWay)
       setChangesCount(changesCount)
     },
-    [
-      clearCutMarkers,
-      editorMode,
-      osmDataSource,
-      queryClient,
-      selectedOsmId,
-      setChangesCount,
-      setSelectedOsmId,
-    ],
+    [authState, clearCutMarkers, queryClient, selectedOsmRef, setChangesCount, updateFeatureRef],
   )
 
   return { showCutMarkers, handleCutMarkerClick }
-}
-
-export function useEditorModeAuth() {
-  const editorMode = useEditorMode()
-  const mapState = useMapState()
-  const { loadParkingData } = useParkingOsmFetch()
-  const { setAuthState, setEditorMode, setOsmDisplayName } = useAppActions()
-  const { setSelectedOsmId } = useParkingMapActions()
-
-  useResetParkingOsmOnSessionChange()
-
-  useEffect(
-    function resetWhenEditorOff() {
-      if (editorMode) return
-      setAuthState(AuthState.initial)
-      setOsmDisplayName(null)
-      setSelectedOsmId(null)
-    },
-    [editorMode, setAuthState, setOsmDisplayName, setSelectedOsmId],
-  )
-
-  useEffect(
-    function authenticateWhenEditorOn() {
-      if (!editorMode) return
-
-      let cancelled = false
-
-      void (async function authenticateEditor() {
-        try {
-          await authenticate(useDevServer)
-          let displayName: string | null = null
-          try {
-            const info = await userInfo()
-            displayName = info.display_name ?? null
-          } catch {
-            logout()
-            await authenticate(useDevServer)
-            const info = await userInfo()
-            displayName = info.display_name ?? null
-          }
-          if (cancelled) return
-          setOsmDisplayName(displayName)
-          setAuthState(AuthState.success)
-          if (mapState?.bounds && mapState.zoom >= viewMinZoom) {
-            await loadParkingData(mapState.bounds, mapState.zoom)
-          }
-        } catch (err) {
-          if (cancelled) return
-          setAuthState(AuthState.fail)
-          setEditorMode(false)
-          alert(err)
-        }
-      })()
-
-      return () => {
-        cancelled = true
-      }
-    },
-    [editorMode, loadParkingData, mapState, setAuthState, setEditorMode, setOsmDisplayName],
-  )
 }
 
 export const interactiveLayerIds = [

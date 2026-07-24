@@ -14,8 +14,8 @@ export const parkingMode: StreetSpaceMode = {
   interactiveLayerIds,
 }
 
-export { useEditorModeAuth } from './map/use-parking-map'
+export { useOsmAuth } from './map/use-osm-auth'
 export { remapParkingOsmWayId } from './map/parking-osm-edits'
 export { useParkingCoveragePace } from './map/use-parking-coverage-pace'
-export { useSelectedOsmId, useParkingMapActions } from './map/parking-map-store'
+export { useSelectedOsmId, useSelectedOsmRef, useParkingMapActions } from './map/parking-map-store'
 export { viewMinZoom, getMapSizePx, toBounds } from './map/use-parking-map'
