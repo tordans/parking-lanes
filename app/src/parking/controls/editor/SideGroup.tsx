@@ -1,4 +1,4 @@
-import { type OsmWay } from '../../../utils/types/osm-data'
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ParkingTagInfo } from '../../../utils/types/parking'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'

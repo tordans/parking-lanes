@@ -1,4 +1,4 @@
-import type { OsmNode, OsmRelation, OsmWay } from '../../utils/types/osm-data'
+import type { OsmNode, OsmRelation, OsmWay } from '@osm-editor-kit/osm-data'
 import { getConditions } from '../domain/access-condition'
 import { getColor, getColorByDate } from '../domain/condition-color'
 import type { ParkingFeature } from './types'

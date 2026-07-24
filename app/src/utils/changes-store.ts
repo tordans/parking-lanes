@@ -1,6 +1,6 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { countChanges, upsertChangedWay } from '../parking/domain/editor/changes'
 import { type ChangesStore } from './types/changes-store'
-import { type OsmWay } from './types/osm-data'
 
 export const changesStore: ChangesStore = {
   modify: {

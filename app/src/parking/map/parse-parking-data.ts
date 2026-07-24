@@ -1,4 +1,4 @@
-import type { ParsedOsmData } from '../../utils/types/osm-data-storage'
+import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   parseParkingAreaFeatures,
   parseParkingPointFeatures,

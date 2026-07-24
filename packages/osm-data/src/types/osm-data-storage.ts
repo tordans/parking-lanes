@@ -1,4 +1,4 @@
-import { type OsmNode, type OsmWay, type OsmRelation } from './osm-data'
+import { type OsmNode, type OsmRelation, type OsmWay } from './osm-data'
 
 export type WaysInRelation = Record<number, boolean>
 

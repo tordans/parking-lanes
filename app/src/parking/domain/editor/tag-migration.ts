@@ -1,5 +1,5 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { transpose } from 'osm-parking-tag-updater/src/components/Tool/transpose/transpose'
-import { type OsmTags } from '../../../utils/types/osm-data'
 
 export function tagsToTagLines(tags: OsmTags): string[] {
   return Object.entries(tags).map(([key, value]) => `${key}=${value}`)

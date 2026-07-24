@@ -1,8 +1,9 @@
+import { overpassDeUrl } from '@osm-editor-kit/osm-overpass'
 import { useState } from 'react'
 import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
 import { Label } from '../../components/catalyst/fieldset'
 import { handleJosmLinkClick } from '../../utils/josm'
-import { idEditorUrl, josmUrl, overpassDeUrl } from '../../utils/links'
+import { idEditorUrl, josmUrl } from '../../utils/links'
 import { AuthState, useAppActions, useAuthState, useEditorMode, useMapState } from '../app-store'
 
 export function AppInfoPanel() {

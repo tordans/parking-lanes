@@ -1,110 +1,41 @@
-import { type QueryClient, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { MapBounds } from '@osm-editor-kit/osm-data'
+import { createOsmCoverageApi, OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect } from 'react'
-import {
-  downloadOsmData,
-  emptyParsedOsmData,
-  expandFetchedEnvelope,
-  isViewportFetched,
-  mergeParsedOsm,
-} from '../../utils/data-client'
-import type { OsmDataSource } from '../../utils/types/osm-data'
-import type { ParsedOsmData } from '../../utils/types/osm-data-storage'
 import { useAppActions, useEditorMode, useOsmDataSource } from '../app-store'
 import { getUrl } from '../data-url'
 import { viewMinZoom } from './constants'
-import type { MapBounds } from './types'
 
 const useDevServer = false
 
-export type ParkingOsmQueryData = {
-  graph: ParsedOsmData
-  envelope: MapBounds | null
+type ParkingSessionParams = {
+  editorMode: boolean
+  osmDataSource: OsmDataSource
 }
 
-export const parkingOsmSessionKey = (editorMode: boolean, osmDataSource: OsmDataSource) =>
-  ['parking-osm', editorMode, osmDataSource] as const
+const parkingOsmApi = createOsmCoverageApi<ParkingSessionParams>({
+  getSessionKey: ({ editorMode, osmDataSource }) =>
+    ['parking-osm', editorMode, osmDataSource] as const,
+  minZoom: viewMinZoom,
+  getDownloadUrl: (bounds, { editorMode, osmDataSource }) =>
+    getUrl(bounds, editorMode, useDevServer, osmDataSource),
+})
 
-export const parkingOsmCoverageKey = (editorMode: boolean, osmDataSource: OsmDataSource) =>
-  [...parkingOsmSessionKey(editorMode, osmDataSource), 'coverage'] as const
+export type ParkingOsmQueryData = ReturnType<typeof parkingOsmApi.emptyData>
 
-export function emptyParkingOsmData(): ParkingOsmQueryData {
-  return {
-    graph: emptyParsedOsmData(),
-    envelope: null,
-  }
-}
+export const parkingOsmSessionKey = parkingOsmApi.sessionKey
+export const parkingOsmCoverageKey = parkingOsmApi.coverageKey
+export const emptyParkingOsmData = parkingOsmApi.emptyData
+export const ensureParkingOsmCoverage = parkingOsmApi.ensureCoverage
 
-export function useParkingOsmQuery<TData = ParkingOsmQueryData>(options?: {
-  select?: (data: ParkingOsmQueryData) => TData
-}) {
+function useParkingSessionParams(): ParkingSessionParams {
   const editorMode = useEditorMode()
   const osmDataSource = useOsmDataSource()
-
-  return useQuery({
-    queryKey: parkingOsmSessionKey(editorMode, osmDataSource),
-    queryFn: () => emptyParkingOsmData(),
-    initialData: emptyParkingOsmData(),
-    staleTime: Number.POSITIVE_INFINITY,
-    select: options?.select,
-  })
+  return { editorMode, osmDataSource }
 }
 
-export function useIsParkingOsmFetching() {
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
-  return useIsFetching({ queryKey: parkingOsmCoverageKey(editorMode, osmDataSource) }) > 0
-}
-
-export async function ensureParkingOsmCoverage(
-  queryClient: QueryClient,
-  {
-    bounds,
-    zoom,
-    editorMode,
-    osmDataSource,
-    force = false,
-  }: {
-    bounds: MapBounds
-    zoom: number
-    editorMode: boolean
-    osmDataSource: OsmDataSource
-    force?: boolean
-  },
-): Promise<{ skipped: boolean }> {
-  const sessionKey = parkingOsmSessionKey(editorMode, osmDataSource)
-  const coverageKey = parkingOsmCoverageKey(editorMode, osmDataSource)
-
-  const result = await queryClient.fetchQuery({
-    queryKey: coverageKey,
-    queryFn: async () => {
-      const current =
-        queryClient.getQueryData<ParkingOsmQueryData>(sessionKey) ?? emptyParkingOsmData()
-
-      if (zoom < viewMinZoom) {
-        return { skipped: true as const }
-      }
-
-      if (!force && isViewportFetched(bounds, current.envelope)) {
-        return { skipped: true as const }
-      }
-
-      const url = getUrl(bounds, editorMode, useDevServer, osmDataSource)
-      const newGraph = await downloadOsmData(url)
-      const mergedGraph = mergeParsedOsm(current.graph, newGraph)
-
-      queryClient.setQueryData<ParkingOsmQueryData>(sessionKey, {
-        graph: mergedGraph,
-        envelope: expandFetchedEnvelope(current.envelope, bounds),
-      })
-
-      return { skipped: false as const }
-    },
-    staleTime: 0,
-    gcTime: 0,
-  })
-
-  return result
-}
+export const useParkingOsmQuery = parkingOsmApi.createUseQuery(useParkingSessionParams)
+export const useIsParkingOsmFetching = parkingOsmApi.createUseIsFetching(useParkingSessionParams)
 
 export function useParkingOsmFetch() {
   const queryClient = useQueryClient()
@@ -142,7 +73,7 @@ export function useParkingOsmFetch() {
   const refetchAfterSave = useCallback(
     async (bounds: MapBounds, zoom: number) => {
       queryClient.setQueryData<ParkingOsmQueryData>(
-        parkingOsmSessionKey(editorMode, osmDataSource),
+        parkingOsmSessionKey({ editorMode, osmDataSource }),
         emptyParkingOsmData(),
       )
       return loadParkingData(bounds, zoom, { force: true })
@@ -165,11 +96,11 @@ export function useResetParkingOsmOnSessionChange() {
   useEffect(
     function resetOsmDataOnSessionChange() {
       queryClient.setQueryData(
-        parkingOsmSessionKey(editorMode, osmDataSource),
+        parkingOsmSessionKey({ editorMode, osmDataSource }),
         emptyParkingOsmData(),
       )
       queryClient.removeQueries({
-        queryKey: parkingOsmCoverageKey(editorMode, osmDataSource),
+        queryKey: parkingOsmCoverageKey({ editorMode, osmDataSource }),
       })
     },
     [editorMode, osmDataSource, queryClient],

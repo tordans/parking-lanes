@@ -1,7 +1,7 @@
+import { OsmDataSource } from '@osm-editor-kit/osm-overpass'
 import { useState } from 'react'
 import { Button, TouchTarget } from '../../components/catalyst/button'
 import { assetUrl } from '../../utils/asset-url'
-import { OsmDataSource } from '../../utils/types/osm-data'
 import { useAppActions, useFetchButtonText, useOsmDataSource } from '../app-store'
 
 export function FetchButton(props: { onClick: () => void }) {

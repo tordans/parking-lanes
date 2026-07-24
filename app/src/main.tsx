@@ -1,14 +1,13 @@
 import 'normalize.css'
+import { redirectLegacyMapHash, routerSearch } from '@osm-editor-kit/osm-map-url'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createAppQueryClient } from './lib/query-client'
-import { routeTree } from './routeTree.gen'
 import './styles/tailwind.css'
 import './styles/main.scss'
-import { redirectLegacyMapHash } from './utils/map-url-redirect'
-import { routerSearch } from './utils/router-search'
+import { routeTree } from './routeTree.gen'
 
 redirectLegacyMapHash()
 

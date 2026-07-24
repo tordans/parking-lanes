@@ -1,14 +1,4 @@
-export interface MapBounds {
-  south: number
-  west: number
-  north: number
-  east: number
-}
-
-export interface LatLngLiteral {
-  lat: number
-  lng: number
-}
+export type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
 
 export interface ParkingFeatureProperties {
   featureId: string

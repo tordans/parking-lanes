@@ -1,6 +1,6 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { countChanges, upsertChangedWay } from '../parking/domain/editor/changes'
 import { type ChangesStore } from '../utils/types/changes-store'
-import { type OsmWay } from '../utils/types/osm-data'
 
 function createWay(id: number): OsmWay {
   return {

@@ -1,7 +1,7 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { parseConditionalTag } from '../../utils/conditional-tag'
 import { parseOpeningHours } from '../../utils/opening-hours'
 import { type ParkingConditions } from '../../utils/types/conditions'
-import { type OsmTags } from '../../utils/types/osm-data'
 
 export function getConditions(tags: OsmTags, side?: string) {
   const conditions: ParkingConditions = {

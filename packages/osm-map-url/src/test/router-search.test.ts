@@ -1,4 +1,4 @@
-import { routerSearch } from '../utils/router-search'
+import { routerSearch } from '../router-search'
 
 describe('router search serialization', () => {
   test('map param round-trips with readable slashes', () => {

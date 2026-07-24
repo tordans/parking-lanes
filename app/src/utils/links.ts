@@ -1,5 +1,5 @@
-import type { LatLngLiteral } from '../parking/map/types'
-import { type OsmNode, type OsmRelation, type OsmWay } from './types/osm-data'
+import type { LatLngLiteral } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 
 export const overpassDeUrl = 'https://overpass-api.de/api/interpreter?data='
 export const overpassVkUrl = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter?data='

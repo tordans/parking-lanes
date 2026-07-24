@@ -1,6 +1,6 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmDataSource } from '@osm-editor-kit/osm-overpass'
 import type { QueryClient } from '@tanstack/react-query'
-import type { OsmWay } from '../../utils/types/osm-data'
-import type { OsmDataSource } from '../../utils/types/osm-data'
 import {
   emptyParkingOsmData,
   parkingOsmSessionKey,
@@ -13,7 +13,7 @@ export function updateParkingOsmWay(
   osmDataSource: OsmDataSource,
   way: OsmWay,
 ) {
-  const key = parkingOsmSessionKey(editorMode, osmDataSource)
+  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
   queryClient.setQueryData<ParkingOsmQueryData>(key, (current = emptyParkingOsmData()) => ({
     ...current,
     graph: {
@@ -34,7 +34,7 @@ export function cutParkingOsmWay(
   nodeId: number,
   newWayId: number,
 ): { oldWay: OsmWay; newWay: OsmWay } | null {
-  const key = parkingOsmSessionKey(editorMode, osmDataSource)
+  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
   const current = queryClient.getQueryData<ParkingOsmQueryData>(key) ?? emptyParkingOsmData()
   const oldWay = current.graph.ways[wayId]
   if (!oldWay) return null
@@ -80,7 +80,7 @@ export function remapParkingOsmWayId(
   oldId: number,
   newId: number,
 ): OsmWay | null {
-  const key = parkingOsmSessionKey(editorMode, osmDataSource)
+  const key = parkingOsmSessionKey({ editorMode, osmDataSource })
   const current = queryClient.getQueryData<ParkingOsmQueryData>(key) ?? emptyParkingOsmData()
   const oldWay = current.graph.ways[oldId]
   if (!oldWay) return null

@@ -1,10 +1,10 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import {
   applyTagMigration,
   getTagMigrationInfo,
   hasTagMigration,
   tagsToTagLines,
 } from '../parking/domain/editor/tag-migration'
-import { type OsmTags } from '../utils/types/osm-data'
 
 describe('tag migration', () => {
   test('tagsToTagLines serializes tags', () => {

@@ -1,4 +1,4 @@
-import type { LatLngLiteral } from '../parking/map/types'
+import type { LatLngLiteral } from './geo'
 
 export interface LocationAndZoom {
   location: LatLngLiteral

@@ -1,6 +1,6 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { getColor, getColorByDate } from '../parking/domain/condition-color'
 import { getSideConditions } from '../parking/domain/side-conditions'
-import { type OsmTags } from '../utils/types/osm-data'
 
 describe('condition color', () => {
   test('maps known conditions to legend colors', () => {

@@ -1,4 +1,4 @@
-import { type OsmWay } from './osm-data'
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 
 interface EditTypeStore {
   way: OsmWay[]

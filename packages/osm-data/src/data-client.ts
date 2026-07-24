@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { MapBounds } from '../parking/map/types'
+import type { MapBounds } from './types/geo'
 import { type RawOsmData } from './types/osm-data'
 import { type ParsedOsmData } from './types/osm-data-storage'
 

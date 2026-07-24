@@ -1,6 +1,6 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { getConditions } from '../parking/access-condition'
 import { type ParkingConditions } from '../utils/types/conditions'
-import { type OsmTags } from '../utils/types/osm-data'
 
 describe('#getConditions()', () => {
   test('should return no conditional values and default as free when no tags', async () => {

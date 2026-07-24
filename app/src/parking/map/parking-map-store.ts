@@ -1,5 +1,5 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { create } from 'zustand'
-import type { OsmWay } from '../../utils/types/osm-data'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 interface ParkingMapStore {

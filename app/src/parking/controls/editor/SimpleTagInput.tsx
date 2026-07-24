@@ -1,4 +1,4 @@
-import { type OsmWay } from '../../../utils/types/osm-data'
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type TagValue } from '../../../utils/types/parking'
 import { SelectInput } from './SelectInput'
 import { TextInput } from './TextInput'

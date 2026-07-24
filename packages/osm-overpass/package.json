@@ -1,0 +1,26 @@
+{
+  "name": "@osm-editor-kit/osm-overpass",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src/test"
+  },
+  "dependencies": {
+    "@osm-editor-kit/osm-data": "workspace:*",
+    "@tanstack/react-query": "^5.85.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "bun-types": "^1.2.20",
+    "react": "^19.1.1",
+    "typescript": "^7.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

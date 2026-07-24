@@ -1,6 +1,6 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { Button } from '../../../components/catalyst/button'
 import { Dialog, DialogActions, DialogBody, DialogTitle } from '../../../components/catalyst/dialog'
-import { type OsmWay } from '../../../utils/types/osm-data'
 import { getTagMigrationInfo } from '../../domain/editor/tag-migration'
 
 export function TagUpdaterModal(props: {

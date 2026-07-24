@@ -1,6 +1,12 @@
-import type { MapBounds } from '../parking/map/types'
-import { overpassDeUrl, overpassVkUrl, osmDevUrl, osmProdUrl } from '../utils/links'
-import { OsmDataSource } from '../utils/types/osm-data'
+import type { MapBounds } from '@osm-editor-kit/osm-data'
+import {
+  boundsToOverpassBbox,
+  buildOverpassInterpreterUrl,
+  OsmDataSource,
+  overpassDeUrl,
+  overpassVkUrl,
+} from '@osm-editor-kit/osm-overpass'
+import { osmDevUrl, osmProdUrl } from '../utils/links'
 
 export function getUrl(
   bounds: MapBounds,
@@ -15,27 +21,24 @@ export function getUrl(
 
   const overpassUrl = source === OsmDataSource.OverpassDe ? overpassDeUrl : overpassVkUrl
   const overpassQuery = getOverpassViewerQuery(bounds).replace(/\s+/g, ' ')
-  return overpassUrl + encodeURIComponent(overpassQuery)
+  return buildOverpassInterpreterUrl(overpassUrl, overpassQuery)
 }
 
 function getOverpassViewerQuery(bounds: MapBounds) {
+  const bbox = boundsToOverpassBbox(bounds)
   return `
         [out:json];
         (
-            way[highway][~"^parking:.*"~"."](${convertBoundsToOverpassBbox(bounds)});
-            way[amenity=parking](${convertBoundsToOverpassBbox(bounds)});
-            relation[amenity=parking](${convertBoundsToOverpassBbox(bounds)});
+            way[highway][~"^parking:.*"~"."](${bbox});
+            way[amenity=parking](${bbox});
+            relation[amenity=parking](${bbox});
         )->.a;
         (
             .a;
             .a >;
             .a <;
-            node[amenity=parking](${convertBoundsToOverpassBbox(bounds)});
-            node[amenity=parking_entrance](${convertBoundsToOverpassBbox(bounds)});
+            node[amenity=parking](${bbox});
+            node[amenity=parking_entrance](${bbox});
         );
         out meta;`
-}
-
-function convertBoundsToOverpassBbox(bounds: MapBounds) {
-  return [bounds.south, bounds.west, bounds.north, bounds.east].join(',')
 }

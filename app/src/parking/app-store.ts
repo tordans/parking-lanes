@@ -1,5 +1,5 @@
+import { OsmDataSource } from '@osm-editor-kit/osm-overpass'
 import { create } from 'zustand'
-import { OsmDataSource } from '../utils/types/osm-data'
 import type { LatLngLiteral, MapBounds } from './map/types'
 
 export enum AuthState {

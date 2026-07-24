@@ -1,4 +1,4 @@
-import { type OsmTags } from '../../../utils/types/osm-data'
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { type ParkingTagInfo } from '../../../utils/types/parking'
 import { laneValues, orientationValues, reasonValues, restrictionValues } from './tag-values'
 

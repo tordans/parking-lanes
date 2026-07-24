@@ -1,7 +1,7 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { useState } from 'react'
 import { Input } from '../../../components/catalyst/input'
 import { type ConditionalValue } from '../../../utils/conditional-tag'
-import { type OsmWay } from '../../../utils/types/osm-data'
 import { type TagValue } from '../../../utils/types/parking'
 import {
   buildConditionalTagValue,

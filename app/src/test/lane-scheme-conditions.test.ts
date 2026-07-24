@@ -1,10 +1,10 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import {
   getLaneSchemeConditions,
   parseConditionsBySchemeV1,
   parseConditionsBySchemeV2,
   parseDefaultCondition,
 } from '../parking/domain/lane-scheme-conditions'
-import { type OsmTags } from '../utils/types/osm-data'
 
 describe('lane-scheme conditions', () => {
   test('scheme v2 conditional with default tag', () => {

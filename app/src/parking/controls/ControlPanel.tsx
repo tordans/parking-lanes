@@ -1,4 +1,4 @@
-import type { OsmWay } from '../../utils/types/osm-data'
+import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { DatetimeInput } from './Datetime'
 import { FetchButton } from './Fetch'
 import { OsmObjectPanel } from './LaneInfo'

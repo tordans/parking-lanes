@@ -1,9 +1,9 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { useQueryClient } from '@tanstack/react-query'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback, useEffect, useRef } from 'react'
 import { addChangedEntity } from '../../utils/changes-store'
 import { authenticate, logout, userInfo } from '../../utils/osm-client'
-import type { OsmWay } from '../../utils/types/osm-data'
 import {
   AuthState,
   useAppActions,

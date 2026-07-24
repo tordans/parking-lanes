@@ -1,3 +1,5 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
+import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -9,14 +11,11 @@ import {
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { changesStore } from '../../utils/changes-store'
-import { setLocationToCookie } from '../../utils/location-cookie'
-import { serializeMapParam } from '../../utils/map-param'
 import {
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
 } from '../../utils/openfreemap-style'
 import { OsmApiRequestError, uploadChanges } from '../../utils/osm-client'
-import type { OsmWay } from '../../utils/types/osm-data'
 import {
   useAppActions,
   useDatetime,

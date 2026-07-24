@@ -1,0 +1,24 @@
+{
+  "name": "@osm-editor-kit/osm-map-url",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src/test"
+  },
+  "dependencies": {
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@tanstack/react-router": "^1.131.28",
+    "bun-types": "^1.2.20",
+    "typescript": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": "^1.131.28"
+  }
+}

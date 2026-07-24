@@ -1,5 +1,5 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { ParkingConditions } from '../../utils/types/conditions'
-import type { OsmWay } from '../../utils/types/osm-data'
 import type { Side } from '../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
 import { getSideConditions } from '../domain/side-conditions'

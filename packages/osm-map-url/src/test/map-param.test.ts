@@ -1,4 +1,4 @@
-import { parseLegacyMapHash, parseMapParam, serializeMapParam } from '../utils/map-param'
+import { parseLegacyMapHash, parseMapParam, serializeMapParam } from '../map-param'
 
 describe('map param', () => {
   test('parseMapParam accepts zoom/lat/lng', () => {

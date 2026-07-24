@@ -1,10 +1,10 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { parseConditionalTag } from '../../utils/conditional-tag'
 import { parseOpeningHours } from '../../utils/opening-hours'
 import {
   type ConditionalParkingCondition,
   type ParkingConditions,
 } from '../../utils/types/conditions'
-import { type OsmTags } from '../../utils/types/osm-data'
 import { legend } from '../legend'
 
 export function getLaneSchemeConditions(side: 'left' | 'right', tags: OsmTags): ParkingConditions {

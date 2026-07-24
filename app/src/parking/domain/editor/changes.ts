@@ -1,5 +1,5 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangesStore } from '../../../utils/types/changes-store'
-import { type OsmWay } from '../../../utils/types/osm-data'
 
 export function upsertChangedWay(store: ChangesStore, osm: OsmWay): void {
   if (osm.id > 0) {

@@ -1,4 +1,4 @@
-import { type OsmWay } from '../../../utils/types/osm-data'
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type OsmKeyValue } from '../../../utils/types/preset'
 import { presets } from './presets'
 

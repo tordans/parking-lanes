@@ -10,12 +10,12 @@ mock.module('osm-api', () => {
   }
 })
 
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { uploadChangeset } from 'osm-api'
 import { applyUploadResult, changesStoreToOsmChange } from '../utils/changeset-upload'
 import { uploadChanges } from '../utils/osm-client'
 import { buildChangesetTags } from '../utils/osmUploadChangeset'
 import { type ChangesStore } from '../utils/types/changes-store'
-import { type OsmWay } from '../utils/types/osm-data'
 
 function createWay(id: number, overrides: Partial<OsmWay> = {}): OsmWay {
   return {

@@ -1,4 +1,4 @@
-import { type OsmTags } from './osm-data'
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 
 export type Side = 'left' | 'right'
 

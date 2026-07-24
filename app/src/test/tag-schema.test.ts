@@ -1,3 +1,4 @@
+import { type OsmTags } from '@osm-editor-kit/osm-data'
 import {
   getDependentTagKeys,
   getTagLabel,
@@ -5,7 +6,6 @@ import {
   resolveTagKey,
   shouldShowTag,
 } from '../parking/domain/editor/tag-schema'
-import { type OsmTags } from '../utils/types/osm-data'
 
 describe('tag schema', () => {
   test('resolveTagKey substitutes side placeholder', () => {

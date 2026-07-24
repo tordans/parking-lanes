@@ -1,6 +1,6 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type OsmChange, type OsmWay as OsmApiWay, type UploadResult } from 'osm-api'
 import { type ChangedIdMap, type ChangesStore } from './types/changes-store'
-import { type OsmWay } from './types/osm-data'
 
 function wayToOsmApiFeature(way: OsmWay): OsmApiWay {
   return {
