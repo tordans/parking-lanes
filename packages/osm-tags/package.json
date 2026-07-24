@@ -11,7 +11,7 @@
     "test-run": "bun test src/test"
   },
   "dependencies": {
-    "opening_hours": "^3.9.0"
+    "opening_hours": "^3.14.0"
   },
   "devDependencies": {
     "bun-types": "^1.2.20",
