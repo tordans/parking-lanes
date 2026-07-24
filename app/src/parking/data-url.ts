@@ -1,4 +1,5 @@
 import type { MapBounds } from '@osm-editor-kit/osm-data'
+import { osmDevUrl, osmProdUrl } from '@osm-editor-kit/osm-editor-links'
 import {
   boundsToOverpassBbox,
   buildOverpassInterpreterUrl,
@@ -6,7 +7,6 @@ import {
   overpassDeUrl,
   overpassVkUrl,
 } from '@osm-editor-kit/osm-overpass'
-import { osmDevUrl, osmProdUrl } from '../utils/links'
 
 export function getUrl(
   bounds: MapBounds,

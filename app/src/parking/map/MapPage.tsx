@@ -10,12 +10,12 @@ import {
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
+import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
 import { changesStore } from '../../utils/changes-store'
 import {
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
 } from '../../utils/openfreemap-style'
-import { OsmApiRequestError, uploadChanges } from '../../utils/osm-client'
 import {
   useAppActions,
   useDatetime,

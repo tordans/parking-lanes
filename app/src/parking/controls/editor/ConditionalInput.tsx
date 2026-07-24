@@ -1,12 +1,12 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
-import { useState } from 'react'
-import { Input } from '../../../components/catalyst/input'
-import { type ConditionalValue } from '../../../utils/conditional-tag'
-import { type TagValue } from '../../../utils/types/parking'
 import {
+  type ConditionalValue,
   buildConditionalTagValue,
   parseConditionalTagForEdit,
-} from '../../domain/editor/conditional-tag-edit'
+} from '@osm-editor-kit/osm-tags'
+import { useState } from 'react'
+import { Input } from '../../../components/catalyst/input'
+import { type TagValue } from '../../../utils/types/parking'
 import { SelectInput } from './SelectInput'
 import { TextInput } from './TextInput'
 

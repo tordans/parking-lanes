@@ -1,4 +1,4 @@
-import { type ConditionalValue, parseConditionalTag } from '../../../utils/conditional-tag'
+import { type ConditionalValue, parseConditionalTag } from './conditional-tag'
 
 export function formatConditionalValue(value: string, condition: string | null): string {
   return condition == null || condition === '' ? value : `${value} @ (${condition})`

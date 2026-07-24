@@ -1,0 +1,22 @@
+{
+  "name": "@osm-editor-kit/osm-oauth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src/test"
+  },
+  "dependencies": {
+    "@osm-editor-kit/osm-changeset": "workspace:*",
+    "osm-api": "^4.0.0"
+  },
+  "devDependencies": {
+    "@osm-editor-kit/osm-data": "workspace:*",
+    "bun-types": "^1.2.20",
+    "typescript": "^7.0.0"
+  }
+}

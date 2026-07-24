@@ -1,15 +1,11 @@
+import {
+  countChanges,
+  createEmptyChangesStore,
+  upsertChangedWay,
+} from '@osm-editor-kit/osm-changeset'
 import { type OsmWay } from '@osm-editor-kit/osm-data'
-import { countChanges, upsertChangedWay } from '../parking/domain/editor/changes'
-import { type ChangesStore } from './types/changes-store'
 
-export const changesStore: ChangesStore = {
-  modify: {
-    way: [],
-  },
-  create: {
-    way: [],
-  },
-}
+export const changesStore = createEmptyChangesStore()
 
 export function addChangedEntity(osm: OsmWay): number {
   upsertChangedWay(changesStore, osm)

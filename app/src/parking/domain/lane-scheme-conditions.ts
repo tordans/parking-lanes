@@ -1,6 +1,5 @@
 import { type OsmTags } from '@osm-editor-kit/osm-data'
-import { parseConditionalTag } from '../../utils/conditional-tag'
-import { parseOpeningHours } from '../../utils/opening-hours'
+import { parseConditionalTag, parseOpeningHours } from '@osm-editor-kit/osm-tags'
 import {
   type ConditionalParkingCondition,
   type ParkingConditions,

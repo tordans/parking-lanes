@@ -1,8 +1,6 @@
 import type { LatLngLiteral } from '@osm-editor-kit/osm-data'
 import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 
-export const overpassDeUrl = 'https://overpass-api.de/api/interpreter?data='
-export const overpassVkUrl = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter?data='
 export const josmUrl = 'http://127.0.0.1:8111/import?url='
 
 export const osmProdUrl = 'https://www.openstreetmap.org'

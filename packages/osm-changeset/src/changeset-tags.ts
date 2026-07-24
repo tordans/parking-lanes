@@ -1,14 +1,19 @@
+export interface BuildChangesetTagsOptions {
+  host?: string
+  comment?: string
+}
+
 /** Tags passed to `uploadChangeset` (editor, comment, host). */
 export function buildChangesetTags(
   editorName: string,
   editorVersion: string,
-  host?: string,
+  options: BuildChangesetTagsOptions = {},
 ): Record<string, string> {
-  const resolvedHost = host ?? `${window.location.origin}${window.location.pathname}`
+  const resolvedHost = options.host ?? `${window.location.origin}${window.location.pathname}`
 
   return {
     created_by: `${editorName} ${editorVersion}`,
-    comment: 'Parking lanes',
+    comment: options.comment ?? '',
     host: resolvedHost,
   }
 }

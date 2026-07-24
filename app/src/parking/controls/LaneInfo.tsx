@@ -1,8 +1,12 @@
 import { type OsmObject, type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
+import {
+  handleJosmLinkClick,
+  idEditorUrl,
+  josmUrl,
+  mapillaryUrl,
+} from '@osm-editor-kit/osm-editor-links'
 import { overpassDeUrl } from '@osm-editor-kit/osm-overpass'
 import { Button } from '../../components/catalyst/button'
-import { handleJosmLinkClick } from '../../utils/josm'
-import { idEditorUrl, josmUrl, mapillaryUrl } from '../../utils/links'
 import { useEditorMode, useMapState } from '../app-store'
 import { useSelectedOsmId } from '../map/parking-map-store'
 import { useParkingOsmQuery } from '../map/parking-osm-query'

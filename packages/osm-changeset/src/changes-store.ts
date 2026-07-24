@@ -13,3 +13,10 @@ export interface ChangesStore {
 export interface ChangedIdMap {
   [oldId: string]: string
 }
+
+export function createEmptyChangesStore(): ChangesStore {
+  return {
+    modify: { way: [] },
+    create: { way: [] },
+  }
+}

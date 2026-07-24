@@ -2,7 +2,7 @@ import {
   buildConditionalTagValue,
   formatConditionalValue,
   parseConditionalTagForEdit,
-} from '../parking/domain/editor/conditional-tag-edit'
+} from '../conditional-tag-edit'
 
 describe('conditional tag edit', () => {
   test('formatConditionalValue adds brackets when condition is present', () => {

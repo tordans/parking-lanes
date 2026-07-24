@@ -2,8 +2,8 @@ import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { useQueryClient } from '@tanstack/react-query'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback, useEffect, useRef } from 'react'
+import { authenticate, logout, userInfo } from '../../lib/osm-client'
 import { addChangedEntity } from '../../utils/changes-store'
-import { authenticate, logout, userInfo } from '../../utils/osm-client'
 import {
   AuthState,
   useAppActions,
@@ -98,12 +98,11 @@ export function useCutWayHandler() {
   const { setChangesCount } = useAppActions()
   const newWayIdRef = useRef(-1)
 
-  const nodeCoords = graph?.nodeCoords ?? {}
-
   const showCutMarkers = useCallback(
     (osm: OsmWay) => {
       if (cutMarkers.features.length > 0) return
 
+      const nodeCoords = graph?.nodeCoords ?? {}
       const markers: ParkingFeature[] = osm.nodes.slice(1, -1).map((nd) => {
         const coord = nodeCoords[nd]!
         return {
@@ -125,11 +124,7 @@ export function useCutWayHandler() {
       })
       setCutMarkers({ type: 'FeatureCollection', features: markers })
     },
-    [
-	cutMarkers.features.length,
-	setCutMarkers,
-	nodeCoords
-],
+    [cutMarkers.features.length, graph, setCutMarkers],
   )
 
   const handleCutMarkerClick = useCallback(

@@ -16,9 +16,14 @@
       "version": "1.0.0",
       "dependencies": {
         "@headlessui/react": "^2.2",
+        "@osm-editor-kit/osm-changeset": "workspace:*",
         "@osm-editor-kit/osm-data": "workspace:*",
+        "@osm-editor-kit/osm-editor-links": "workspace:*",
         "@osm-editor-kit/osm-map-url": "workspace:*",
+        "@osm-editor-kit/osm-oauth": "workspace:*",
         "@osm-editor-kit/osm-overpass": "workspace:*",
+        "@osm-editor-kit/osm-tags": "workspace:*",
+        "@osm-editor-kit/osm-ui": "workspace:*",
         "@tanstack/react-form": "^1.19.2",
         "@tanstack/react-query": "^5.85.5",
         "@tanstack/react-router": "^1.131.28",
@@ -27,8 +32,6 @@
         "dayjs": "^1.11.13",
         "maplibre-gl": "^5.7.1",
         "normalize.css": "^8.0.1",
-        "opening_hours": "^3.9.0",
-        "osm-api": "^4.0.0",
         "osm-parking-tag-updater": "github:osmberlin/osm-tag-updater",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
@@ -57,10 +60,34 @@
         "@typescript/typescript-linux-x64": "^7.0.0",
       },
     },
+    "packages/osm-changeset": {
+      "name": "@osm-editor-kit/osm-changeset",
+      "version": "0.0.0",
+      "dependencies": {
+        "@osm-editor-kit/osm-data": "workspace:*",
+        "osm-api": "^4.0.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
     "packages/osm-data": {
       "name": "@osm-editor-kit/osm-data",
       "version": "0.0.0",
       "dependencies": {
+        "axios": "^1.11.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
+    "packages/osm-editor-links": {
+      "name": "@osm-editor-kit/osm-editor-links",
+      "version": "0.0.0",
+      "dependencies": {
+        "@osm-editor-kit/osm-data": "workspace:*",
         "axios": "^1.11.0",
       },
       "devDependencies": {
@@ -83,6 +110,19 @@
         "@tanstack/react-router": "^1.131.28",
       },
     },
+    "packages/osm-oauth": {
+      "name": "@osm-editor-kit/osm-oauth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@osm-editor-kit/osm-changeset": "workspace:*",
+        "osm-api": "^4.0.0",
+      },
+      "devDependencies": {
+        "@osm-editor-kit/osm-data": "workspace:*",
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
     "packages/osm-overpass": {
       "name": "@osm-editor-kit/osm-overpass",
       "version": "0.0.0",
@@ -98,6 +138,24 @@
       },
       "peerDependencies": {
         "react": "^19.0.0",
+      },
+    },
+    "packages/osm-tags": {
+      "name": "@osm-editor-kit/osm-tags",
+      "version": "0.0.0",
+      "dependencies": {
+        "opening_hours": "^3.9.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
+    "packages/osm-ui": {
+      "name": "@osm-editor-kit/osm-ui",
+      "version": "0.0.0",
+      "devDependencies": {
+        "typescript": "^7.0.0",
       },
     },
   },
@@ -226,13 +284,23 @@
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.6", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg=="],
 
+    "@osm-editor-kit/osm-changeset": ["@osm-editor-kit/osm-changeset@workspace:packages/osm-changeset"],
+
     "@osm-editor-kit/osm-data": ["@osm-editor-kit/osm-data@workspace:packages/osm-data"],
 
+    "@osm-editor-kit/osm-editor-links": ["@osm-editor-kit/osm-editor-links@workspace:packages/osm-editor-links"],
+
     "@osm-editor-kit/osm-map-url": ["@osm-editor-kit/osm-map-url@workspace:packages/osm-map-url"],
+
+    "@osm-editor-kit/osm-oauth": ["@osm-editor-kit/osm-oauth@workspace:packages/osm-oauth"],
 
     "@osm-editor-kit/osm-overpass": ["@osm-editor-kit/osm-overpass@workspace:packages/osm-overpass"],
 
     "@osm-editor-kit/osm-parking-lanes": ["@osm-editor-kit/osm-parking-lanes@workspace:app"],
+
+    "@osm-editor-kit/osm-tags": ["@osm-editor-kit/osm-tags@workspace:packages/osm-tags"],
+
+    "@osm-editor-kit/osm-ui": ["@osm-editor-kit/osm-ui@workspace:packages/osm-ui"],
 
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 

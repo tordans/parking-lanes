@@ -1,4 +1,4 @@
-import { parseConditionalTag } from '../utils/conditional-tag'
+import { parseConditionalTag } from '../conditional-tag'
 
 describe('#parseConditionalTag()', () => {
   test('one value', async () => {
