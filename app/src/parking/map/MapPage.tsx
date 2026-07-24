@@ -27,6 +27,7 @@ import { AppInfoPanel } from '../controls/AppInfoPanel'
 import { ControlPanel } from '../controls/ControlPanel'
 import { CoverageDebugToggle } from '../controls/CoverageDebugToggle'
 import { LegendPanel } from '../controls/LegendPanel'
+import { CoverageBusyOverlay } from './CoverageBusyOverlay'
 import { coverageDebugFetchFillLayerId, CoverageDebugLayers } from './CoverageDebugLayers'
 import { MapResizeHandler } from './MapResizeHandler'
 import {
@@ -37,6 +38,7 @@ import {
 } from './parking-map-store'
 import { remapParkingOsmWayId } from './parking-osm-edits'
 import { MapGL, MapProvider, ParkingLayers } from './ParkingLayers'
+import { useParkingCoveragePace } from './use-parking-coverage-pace'
 import {
   getMapSizePx,
   interactiveLayerIds,
@@ -46,7 +48,6 @@ import {
   useLaneClickHandler,
   useOsmChangeHandler,
   useParkingMapFeatures,
-  useParkingOsmFetch,
   viewMinZoom,
 } from './use-parking-map'
 
@@ -93,12 +94,20 @@ export function MapPage({
     editorMode,
   })
 
-  const { loadParkingData, refetchAfterSave } = useParkingOsmFetch()
+  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave, isPending, isBusy } =
+    useParkingCoveragePace()
   const handleOsmChange = useOsmChangeHandler()
   const handleLaneClick = useLaneClickHandler(mapZoom)
   const { showCutMarkers, handleCutMarkerClick } = useCutWayHandler()
 
   useEditorModeAuth()
+
+  const onMove = useCallback(
+    (event: ViewStateChangeEvent) => {
+      scheduleCoverageCheck(event.target)
+    },
+    [scheduleCoverageCheck],
+  )
 
   const onMoveEnd = useCallback(
     (event: ViewStateChangeEvent) => {
@@ -123,11 +132,9 @@ export function MapPage({
         replace: true,
       })
 
-      if (zoom >= viewMinZoom) {
-        void loadParkingData(bounds, zoom, { mapSizePx: getMapSizePx(map) })
-      }
+      scheduleCoverageCheck(map)
     },
-    [loadParkingData, navigate, setMapState],
+    [navigate, scheduleCoverageCheck, setMapState],
   )
 
   const onMapLoad = useCallback(
@@ -145,10 +152,10 @@ export function MapPage({
       })
 
       if (zoom >= viewMinZoom) {
-        void loadParkingData(bounds, zoom, { mapSizePx: getMapSizePx(map) })
+        void loadCoverageNow(bounds, zoom, { mapSizePx: getMapSizePx(map) })
       }
     },
-    [loadParkingData, setMapState],
+    [loadCoverageNow, setMapState],
   )
 
   const onMapClick = useCallback(() => {
@@ -252,6 +259,7 @@ export function MapPage({
               cursor={cursorStyle}
               interactiveLayerIds={interactiveLayerIds}
               onLoad={onMapLoad}
+              onMove={onMove}
               onMoveEnd={onMoveEnd}
               onMouseMove={(event: MapLayerMouseEvent) => {
                 const layerId = event.features?.[0]?.layer?.id
@@ -324,6 +332,7 @@ export function MapPage({
             </MapGL>
           </MapProvider>
 
+          <CoverageBusyOverlay pending={isPending} fetching={isBusy && !isPending} />
           <div className="pointer-events-auto absolute top-2.5 left-2.5 z-10 flex flex-col gap-2">
             <CoverageDebugToggle />
             {debug && coverageHoverInfo ? (
@@ -353,7 +362,7 @@ export function MapPage({
           onFetch={() => {
             if (!mapState?.bounds) return
             const map = mapRef.current?.getMap()
-            void loadParkingData(mapState.bounds, mapState.zoom, {
+            void loadCoverageNow(mapState.bounds, mapState.zoom, {
               mapSizePx: map ? getMapSizePx(map) : undefined,
             })
           }}
