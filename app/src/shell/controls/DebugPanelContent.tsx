@@ -7,7 +7,7 @@ import {
   clearDevOsmFixtureSession,
   seedDevOsmFixture,
 } from '../../modes/parking/map/dev-osm-fixture'
-import { useParkingCoveragePace } from '../../modes/parking/map/use-parking-coverage-pace'
+import { useParkingOsmFetch } from '../../modes/parking/map/parking-osm-query'
 import { useMapBounds, useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { useDebugSettingsActions, useUseOsmDevServer } from '../debug-settings-store'
@@ -26,7 +26,7 @@ export function DebugPanelContent() {
   const { setUseOsmDevServer } = useDebugSettingsActions()
   const mapBounds = useMapBounds()
   const { zoom: mapZoom } = useMapViewport()
-  const { loadCoverageNow } = useParkingCoveragePace()
+  const { loadParkingData } = useParkingOsmFetch()
   const showCoverageDebug = canShowDebugToggle(osmDisplayName, debug)
 
   return (
@@ -60,7 +60,7 @@ export function DebugPanelContent() {
                 if (checked) {
                   clearDevOsmFixtureSession(queryClient)
                   if (mapBounds && mapZoom >= viewMinZoom) {
-                    void loadCoverageNow(mapBounds, mapZoom, { force: true })
+                    void loadParkingData(mapBounds, mapZoom, { force: true })
                   }
                 } else {
                   seedDevOsmFixture(queryClient)
