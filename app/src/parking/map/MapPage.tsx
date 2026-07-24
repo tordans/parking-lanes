@@ -1,7 +1,7 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   AttributionControl,
@@ -25,7 +25,9 @@ import {
 } from '../app-store'
 import { AppInfoPanel } from '../controls/AppInfoPanel'
 import { ControlPanel } from '../controls/ControlPanel'
+import { CoverageDebugToggle } from '../controls/CoverageDebugToggle'
 import { LegendPanel } from '../controls/LegendPanel'
+import { coverageDebugFetchFillLayerId, CoverageDebugLayers } from './CoverageDebugLayers'
 import { MapResizeHandler } from './MapResizeHandler'
 import {
   useBacklightFeatures,
@@ -57,6 +59,7 @@ export function MapPage({
   initialView: { longitude: number; latitude: number; zoom: number }
 }) {
   const navigate = useNavigate({ from: '/' })
+  const { debug } = useSearch({ from: '/' })
   const queryClient = useQueryClient()
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapRef>(null)
@@ -74,6 +77,14 @@ export function MapPage({
 
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
   const [cursorStyle, setCursorStyle] = useState('grab')
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
+  const [coverageHoverInfo, setCoverageHoverInfo] = useState<{
+    fetchedAt: string
+    kind: string
+    requestIndex: number
+    requestCount: number
+    groupId: string
+  } | null>(null)
 
   const { lanes, areas, points } = useParkingMapFeatures({
     bounds: mapState?.bounds,
@@ -105,9 +116,10 @@ export function MapPage({
       setLocationToCookie({ lat: center.lat, lng: center.lng }, zoom)
 
       void navigate({
-        search: {
+        search: (prev) => ({
+          ...prev,
           map: serializeMapParam({ zoom, lat: center.lat, lng: center.lng }),
-        },
+        }),
         replace: true,
       })
 
@@ -248,9 +260,46 @@ export function MapPage({
                 } else {
                   setCursorStyle('grab')
                 }
+
+                if (!debug) {
+                  setHoveredGroupId(null)
+                  setCoverageHoverInfo(null)
+                  return
+                }
+
+                const debugFeatures = event.target.queryRenderedFeatures(event.point, {
+                  layers: [coverageDebugFetchFillLayerId],
+                })
+                const debugFeature = debugFeatures[0]
+                const props = debugFeature?.properties as
+                  | {
+                      groupId?: string
+                      fetchedAt?: string
+                      kind?: string
+                      requestIndex?: number
+                      requestCount?: number
+                    }
+                  | undefined
+
+                if (!props?.groupId) {
+                  setHoveredGroupId(null)
+                  setCoverageHoverInfo(null)
+                  return
+                }
+
+                setHoveredGroupId(props.groupId)
+                setCoverageHoverInfo({
+                  groupId: props.groupId,
+                  fetchedAt: props.fetchedAt ?? '',
+                  kind: props.kind ?? '',
+                  requestIndex: props.requestIndex ?? 0,
+                  requestCount: props.requestCount ?? 0,
+                })
               }}
               onMouseLeave={() => {
                 setCursorStyle('grab')
+                setHoveredGroupId(null)
+                setCoverageHoverInfo(null)
               }}
               onClick={(event: MapLayerMouseEvent) => {
                 if (event.features?.length) {
@@ -264,6 +313,7 @@ export function MapPage({
             >
               <MapResizeHandler containerRef={mapContainerRef} />
               <AttributionControl compact position="bottom-left" />
+              {debug ? <CoverageDebugLayers hoveredGroupId={hoveredGroupId} /> : null}
               <ParkingLayers
                 lanes={lanes}
                 areas={areas}
@@ -274,6 +324,22 @@ export function MapPage({
             </MapGL>
           </MapProvider>
 
+          <div className="pointer-events-auto absolute top-2.5 left-2.5 z-10 flex flex-col gap-2">
+            <CoverageDebugToggle />
+            {debug && coverageHoverInfo ? (
+              <div className="max-w-xs rounded-lg bg-white/90 px-2 py-1.5 text-xs shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm">
+                <div className="font-medium text-zinc-900">Coverage fetch</div>
+                <div className="mt-1 space-y-0.5 text-zinc-700">
+                  <div>Fetched: {coverageHoverInfo.fetchedAt}</div>
+                  <div>Kind: {coverageHoverInfo.kind}</div>
+                  <div>
+                    Request: {coverageHoverInfo.requestIndex + 1}/{coverageHoverInfo.requestCount}
+                  </div>
+                  <div className="truncate text-zinc-500">Group: {coverageHoverInfo.groupId}</div>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <div className="pointer-events-auto absolute bottom-8 left-2.5 z-10">
             <LegendPanel />
           </div>

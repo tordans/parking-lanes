@@ -14,6 +14,7 @@ interface AppStore {
   datetime: Date
   editorMode: boolean
   authState: AuthState
+  osmDisplayName: string | null
   mapState?: {
     zoom: number
     center: LatLngLiteral
@@ -26,6 +27,7 @@ interface AppStore {
     setDatetime: (value: Date) => void
     setEditorMode: (value: boolean) => void
     setAuthState: (value: AuthState) => void
+    setOsmDisplayName: (value: string | null) => void
     setMapState: (value: AppStore['mapState']) => void
     setChangesCount: (value: number) => void
   }
@@ -37,6 +39,7 @@ const useAppStore = create<AppStore>()((set) => ({
   datetime: new Date(),
   editorMode: false,
   authState: AuthState.initial,
+  osmDisplayName: null,
   changesCount: 0,
   actions: {
     setFetchButtonText: (fetchButtonText) => set({ fetchButtonText }),
@@ -45,6 +48,7 @@ const useAppStore = create<AppStore>()((set) => ({
     setEditorMode: (editorMode) => set({ editorMode }),
     setAuthState: (authState) =>
       set((state) => (state.authState === authState ? state : { authState })),
+    setOsmDisplayName: (osmDisplayName) => set({ osmDisplayName }),
     setMapState: (mapState) => set({ mapState }),
     setChangesCount: (changesCount) => set({ changesCount }),
   },
@@ -55,6 +59,7 @@ export const useOsmDataSource = () => useAppStore((s) => s.osmDataSource)
 export const useDatetime = () => useAppStore((s) => s.datetime)
 export const useEditorMode = () => useAppStore((s) => s.editorMode)
 export const useAuthState = () => useAppStore((s) => s.authState)
+export const useOsmDisplayName = () => useAppStore((s) => s.osmDisplayName)
 export const useMapState = () => useAppStore((s) => s.mapState)
 export const useChangesCount = () => useAppStore((s) => s.changesCount)
 export const useAppActions = () => useAppStore((s) => s.actions)

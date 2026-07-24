@@ -1,14 +1,7 @@
-import { getLocationFromCookie, parseMapParam } from '@osm-editor-kit/osm-map-url'
+import { getLocationFromCookie } from '@osm-editor-kit/osm-map-url'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import { MapPage } from '../parking/map/MapPage'
-
-const mapSearchSchema = z.object({
-  map: z
-    .string()
-    .optional()
-    .transform((s) => (s ? (parseMapParam(s) ?? undefined) : undefined)),
-})
+import { mapSearchSchema } from '../parking/map/search-schema'
 
 export const Route = createFileRoute('/')({
   validateSearch: mapSearchSchema,

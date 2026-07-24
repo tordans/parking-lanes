@@ -171,7 +171,7 @@ export function useEditorModeAuth() {
   const editorMode = useEditorMode()
   const mapState = useMapState()
   const { loadParkingData } = useParkingOsmFetch()
-  const { setAuthState, setEditorMode } = useAppActions()
+  const { setAuthState, setEditorMode, setOsmDisplayName } = useAppActions()
   const { setSelectedOsmId } = useParkingMapActions()
 
   useResetParkingOsmOnSessionChange()
@@ -180,9 +180,10 @@ export function useEditorModeAuth() {
     function resetWhenEditorOff() {
       if (editorMode) return
       setAuthState(AuthState.initial)
+      setOsmDisplayName(null)
       setSelectedOsmId(null)
     },
-    [editorMode, setAuthState, setSelectedOsmId],
+    [editorMode, setAuthState, setOsmDisplayName, setSelectedOsmId],
   )
 
   useEffect(
@@ -194,13 +195,18 @@ export function useEditorModeAuth() {
       void (async function authenticateEditor() {
         try {
           await authenticate(useDevServer)
+          let displayName: string | null = null
           try {
-            await userInfo()
+            const info = await userInfo()
+            displayName = info.display_name ?? null
           } catch {
             logout()
             await authenticate(useDevServer)
+            const info = await userInfo()
+            displayName = info.display_name ?? null
           }
           if (cancelled) return
+          setOsmDisplayName(displayName)
           setAuthState(AuthState.success)
           if (mapState?.bounds && mapState.zoom >= viewMinZoom) {
             await loadParkingData(mapState.bounds, mapState.zoom)
@@ -217,7 +223,7 @@ export function useEditorModeAuth() {
         cancelled = true
       }
     },
-    [editorMode, loadParkingData, mapState, setAuthState, setEditorMode],
+    [editorMode, loadParkingData, mapState, setAuthState, setEditorMode, setOsmDisplayName],
   )
 }
 
