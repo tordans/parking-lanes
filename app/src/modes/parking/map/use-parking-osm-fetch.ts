@@ -4,5 +4,4 @@ export {
   useIsParkingOsmFetching,
   useParkingOsmFetch,
   useParkingOsmQuery,
-  useResetParkingOsmOnSessionChange,
 } from './parking-osm-query'

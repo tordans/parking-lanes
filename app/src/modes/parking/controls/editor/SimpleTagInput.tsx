@@ -8,25 +8,29 @@ export function SimpleTagInput(props: {
   tag: string
   label: string
   hide: boolean
+  readOnly?: boolean
   values?: TagValue[]
   onChange: (value: string) => void
 }) {
   const value = props.osm.tags[props.tag]
+  const readOnly = props.readOnly ?? false
 
-  const buttons = props.values
-    ?.filter((v) => v.imgSrc)
-    .map((v) => (
-      <button
-        type="button"
-        key={v.value}
-        title={v.value}
-        className="flex cursor-pointer items-center rounded border-2 bg-transparent p-0"
-        style={{ borderColor: v.value === value ? 'dodgerblue' : 'transparent' }}
-        onClick={(_e) => props.onChange(v.value)}
-      >
-        <img src={v.imgSrc} height="15" alt={v.value} />
-      </button>
-    ))
+  const buttons = readOnly
+    ? null
+    : props.values
+        ?.filter((v) => v.imgSrc)
+        .map((v) => (
+          <button
+            type="button"
+            key={v.value}
+            title={v.value}
+            className="flex cursor-pointer items-center rounded border-2 bg-transparent p-0"
+            style={{ borderColor: v.value === value ? 'dodgerblue' : 'transparent' }}
+            onClick={(_e) => props.onChange(v.value)}
+          >
+            <img src={v.imgSrc} height="15" alt={v.value} />
+          </button>
+        ))
 
   return (
     <tr
@@ -48,10 +52,16 @@ export function SimpleTagInput(props: {
             tag={props.tag}
             value={value}
             values={props.values}
+            disabled={readOnly}
             onChange={(e) => props.onChange(e)}
           />
         ) : (
-          <TextInput tag={props.tag} value={value} onChange={(e) => props.onChange(e)} />
+          <TextInput
+            tag={props.tag}
+            value={value}
+            disabled={readOnly}
+            onChange={(e) => props.onChange(e)}
+          />
         )}
         {buttons}
       </td>

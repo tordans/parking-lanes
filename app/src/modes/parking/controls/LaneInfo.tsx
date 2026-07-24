@@ -1,3 +1,4 @@
+import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { type OsmObject, type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import {
   handleJosmLinkClick,
@@ -5,12 +6,14 @@ import {
   josmUrl,
   mapillaryUrl,
 } from '@osm-editor-kit/osm-editor-links'
-import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { Button } from '../../../components/catalyst/button'
-import { useEditorMode, useMapState } from '../../../shell/app-store'
-import { useSelectedOsmId } from '../map/parking-map-store'
+import { AuthState, useAuthState, useMapState } from '../../../shell/app-store'
+import { useSelectedOsmRef } from '../map/parking-map-store'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
+import { useOsmAuth } from '../map/use-osm-auth'
+import { viewMinZoom } from '../map/use-parking-map'
 import { LaneEditForm } from './editor/EditorForm'
+import { LoginCallout } from './LoginCallout'
 
 export function OsmObjectPanel(props: {
   onCutLane?: (way: OsmWay) => void
@@ -18,29 +21,52 @@ export function OsmObjectPanel(props: {
   onClose?: () => void
 }) {
   const mapState = useMapState()
-  const selectedOsmId = useSelectedOsmId()
-  const { data: graph } = useParkingOsmQuery({ select: (osmData) => osmData.graph })
+  const selectedOsmRef = useSelectedOsmRef()
+  const authState = useAuthState()
+  const { login } = useOsmAuth()
+  const { data: graph, isFetching } = useParkingOsmQuery({ select: (osmData) => osmData.graph })
   const { data: waysInRelation = {} } = useParkingOsmQuery({
     select: (osmData) => osmData.graph.waysInRelation,
   })
-  const editorMode = useEditorMode()
+
+  if (!selectedOsmRef) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
+        <p className="m-0">Click a way on the map to inspect and edit parking tags.</p>
+      </div>
+    )
+  }
 
   const selectedOsmObject =
-    selectedOsmId == null
-      ? null
-      : (graph?.ways[selectedOsmId] ??
-        graph?.nodes[selectedOsmId] ??
-        graph?.relations[selectedOsmId] ??
-        null)
+    graph?.ways[selectedOsmRef.id] ??
+    graph?.nodes[selectedOsmRef.id] ??
+    graph?.relations[selectedOsmRef.id] ??
+    null
 
-  if (!selectedOsmObject) return null
+  if (!selectedOsmObject) {
+    const belowMinZoom = mapState != null && mapState.zoom < viewMinZoom
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
+        {belowMinZoom ? (
+          <p className="m-0">Zoom in to load this feature.</p>
+        ) : isFetching ? (
+          <p className="m-0">Loading feature…</p>
+        ) : (
+          <p className="m-0">
+            Feature {selectedOsmRef.type}/{selectedOsmRef.id} is not in the loaded area. Pan the map
+            to load it.
+          </p>
+        )}
+      </div>
+    )
+  }
 
   const isStreetParking =
     selectedOsmObject.tags.highway && selectedOsmObject.tags.amenity !== 'parking'
+  const readOnly = authState !== AuthState.success
 
   return (
-    <div className="mt-2 border-t border-zinc-950/5 pt-2 max-sm:fixed max-sm:right-0 max-sm:bottom-0 max-sm:left-0 max-sm:z-50 max-sm:mt-0 max-sm:max-h-[50vh] max-sm:overflow-auto max-sm:rounded-t-lg max-sm:border-t max-sm:bg-white max-sm:px-2 max-sm:pt-3.5 max-sm:pb-1 max-sm:shadow-lg">
-      <hr className="max-sm:hidden" />
+    <div className="max-sm:fixed max-sm:right-0 max-sm:bottom-0 max-sm:left-0 max-sm:z-50 max-sm:max-h-[50vh] max-sm:overflow-auto max-sm:rounded-t-lg max-sm:border-t max-sm:border-zinc-950/5 max-sm:bg-white max-sm:px-2 max-sm:pt-3.5 max-sm:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] max-sm:shadow-lg">
       <div className="flex min-w-[250px] items-start justify-between gap-2">
         <span className="text-sm">
           <span>View: </span>
@@ -95,18 +121,29 @@ export function OsmObjectPanel(props: {
       </div>
       <hr className="my-2" />
       {isStreetParking ? (
-        editorMode ? (
+        <>
           <LaneEditForm
             osm={selectedOsmObject as OsmWay}
             waysInRelation={waysInRelation}
+            readOnly={readOnly}
             onCutLane={props.onCutLane!}
             onChange={props.onChange!}
           />
-        ) : (
-          <LaneInfo osm={selectedOsmObject as OsmWay} />
-        )
+          {readOnly ? (
+            <div className="mt-4">
+              <LoginCallout onLogin={() => void login()} />
+            </div>
+          ) : null}
+        </>
       ) : (
-        <OsmObjectInfo osm={selectedOsmObject} />
+        <>
+          <OsmObjectInfo osm={selectedOsmObject} />
+          {readOnly ? (
+            <div className="mt-4">
+              <LoginCallout onLogin={() => void login()} />
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   )
@@ -124,16 +161,6 @@ function getWayWithRelationsOverpassQuery(wayId: number) {
         out meta;`
 }
 
-function LaneInfo(props: { osm: OsmWay }) {
-  return (
-    <div>
-      <SideBlock tags={props.osm.tags} side="right" />
-      <SideBlock tags={props.osm.tags} side="left" />
-      <AllTagsBlock tags={props.osm.tags} />
-    </div>
-  )
-}
-
 function OsmObjectInfo(props: { osm: OsmObject }) {
   return (
     <table className="w-full text-sm">
@@ -146,25 +173,6 @@ function OsmObjectInfo(props: { osm: OsmObject }) {
         ))}
       </tbody>
     </table>
-  )
-}
-
-function SideBlock(props: { tags: OsmTags; side: 'right' | 'left' }) {
-  const regex = new RegExp('^parking:.*(?:' + props.side + '|both)')
-
-  const filteredTags = Object.keys(props.tags)
-    .filter((tag) => regex.test(tag))
-    .map((tag) => tag + ' = ' + props.tags[tag])
-    .map((tag) => (
-      <p key={tag} className="m-0">
-        {tag}
-      </p>
-    ))
-
-  return (
-    <div className={`p-1.5 ${props.side === 'right' ? 'bg-orange-100' : 'bg-violet-100'}`}>
-      {filteredTags}
-    </div>
   )
 }
 

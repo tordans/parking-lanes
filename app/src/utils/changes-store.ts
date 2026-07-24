@@ -11,3 +11,9 @@ export function addChangedEntity(osm: OsmWay): number {
   upsertChangedWay(changesStore, osm)
   return countChanges(changesStore)
 }
+
+export function clearChanges(): number {
+  changesStore.modify.way.length = 0
+  changesStore.create.way.length = 0
+  return 0
+}

@@ -5,8 +5,27 @@ import { presets } from './presets'
 export function PresetSigns(props: {
   osm: OsmWay
   side: 'both' | 'left' | 'right'
+  readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
+  if (props.readOnly) {
+    return (
+      <div className="preset-signs pointer-events-none opacity-50">
+        {presets.map((preset) => (
+          <img
+            src={preset.img.src}
+            key={preset.img.src}
+            className="sign-preset"
+            height={preset.img.height}
+            width={preset.img.width}
+            alt={preset.img.alt}
+            title={preset.img.title}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="preset-signs">
       {presets.map((preset) => (

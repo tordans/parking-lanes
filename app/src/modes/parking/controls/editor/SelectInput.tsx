@@ -5,6 +5,7 @@ export function SelectInput(props: {
   tag: string
   value: string
   values: TagValue[]
+  disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
   const values = props.values.map((v) => v.value)
@@ -16,6 +17,7 @@ export function SelectInput(props: {
       name={props.tag}
       value={props.value}
       className="min-w-0"
+      disabled={props.disabled}
       onChange={(e) => props.onChange(e.target.value)}
     >
       {options.map((o) => (

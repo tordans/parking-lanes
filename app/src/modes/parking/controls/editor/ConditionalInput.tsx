@@ -15,9 +15,11 @@ export function ConditionalInput(props: {
   tag: string
   label: string
   hide: boolean
+  readOnly?: boolean
   values?: TagValue[]
   onChange: (tagValue: string) => void
 }) {
+  const readOnly = props.readOnly ?? false
   const parsedConditionalTag = parseConditionalTagForEdit(props.osm.tags[props.tag])
 
   const buildTagValue = (newConditionalValue: ConditionalValue, index: number) => {
@@ -41,6 +43,7 @@ export function ConditionalInput(props: {
             tag={props.tag}
             part={conditionalValue}
             values={props.values}
+            readOnly={readOnly}
             onChange={(vp) => props.onChange(buildTagValue(vp, index))}
           />
         ))}
@@ -53,17 +56,21 @@ function ConditionalPartInput(props: {
   tag: string
   part: ConditionalValue
   values?: TagValue[]
+  readOnly?: boolean
   onChange: (tagValuePart: ConditionalValue) => void
 }) {
+  const readOnly = props.readOnly ?? false
   const [value, setValue] = useState(props.part.value)
   const [condition, setCondition] = useState(props.part.condition)
 
   const handleChangeValue = (newValue: string) => {
+    if (readOnly) return
     setValue(newValue)
     if (newValue && condition) props.onChange({ value: newValue, condition })
   }
 
   const handleChangeCondition = (newCondition: string) => {
+    if (readOnly) return
     setCondition(newCondition)
     if (value && newCondition) props.onChange({ value, condition: newCondition })
   }
@@ -76,10 +83,16 @@ function ConditionalPartInput(props: {
             tag={props.tag}
             value={value}
             values={props.values}
+            disabled={readOnly}
             onChange={handleChangeValue}
           />
         ) : (
-          <TextInput tag={props.tag} value={value} onChange={handleChangeValue} />
+          <TextInput
+            tag={props.tag}
+            value={value}
+            disabled={readOnly}
+            onChange={handleChangeValue}
+          />
         )}
       </div>
       <div className="flex flex-nowrap items-center gap-1.5">
@@ -90,6 +103,7 @@ function ConditionalPartInput(props: {
           placeholder="time interval"
           name={props.tag}
           value={condition ?? ''}
+          disabled={readOnly}
           onChange={(e) => handleChangeCondition(e.currentTarget.value)}
         />
       </div>

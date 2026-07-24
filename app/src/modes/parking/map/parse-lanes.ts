@@ -54,7 +54,6 @@ export function parseParkingLaneFeatures(
   way: OsmWay,
   nodeCoords: Record<number, number[]>,
   zoom: number,
-  editorMode: boolean,
 ): ParkingFeature[] {
   const isMajor = wayIsMajor(way.tags)
   if (typeof isMajor !== 'boolean') return []
@@ -77,7 +76,7 @@ export function parseParkingLaneFeatures(
     }
   }
 
-  if (editorMode && emptyway && way.tags.highway && highwayRegex.test(way.tags.highway)) {
+  if (emptyway && way.tags.highway && highwayRegex.test(way.tags.highway)) {
     const laneId = 'empty' + way.id
     features.push(createLaneFeature(coords, undefined, 'right', way, 0, isMajor, zoom, laneId))
   }
@@ -213,7 +212,7 @@ export function applyChangedWayToFeatures(
   datetime: Date,
   zoom: number,
 ): { features: ParkingFeature[]; added: ParkingFeature[] } {
-  const parsed = parseParkingLaneFeatures(newOsm, nodeCoords, zoom, true)
+  const parsed = parseParkingLaneFeatures(newOsm, nodeCoords, zoom)
   const withoutOld = features.filter(
     (f) => f.properties.osmId !== newOsm.id || f.properties.kind !== 'lane',
   )

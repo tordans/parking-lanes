@@ -16,9 +16,11 @@ const tagsSchema = z.record(z.string(), z.string())
 export function LaneEditForm(props: {
   osm: OsmWay
   waysInRelation: WaysInRelation
+  readOnly?: boolean
   onCutLane: (way: OsmWay) => void
   onChange: (way: OsmWay) => void
 }) {
+  const readOnly = props.readOnly ?? false
   const existsRightTags = existsSideTags(props.osm.tags, 'right')
   const existsLeftTags = existsSideTags(props.osm.tags, 'left')
   const existsBothTags = existsSideTags(props.osm.tags, 'both')
@@ -53,65 +55,75 @@ export function LaneEditForm(props: {
               <Checkbox
                 id="side-switcher"
                 checked={field.state.value}
+                disabled={readOnly}
                 onChange={field.handleChange}
               />
             )}
           </form.Field>
           <Label htmlFor="side-switcher">Both</Label>
         </CheckboxField>
-        <div className="flex gap-1">
-          <Button
-            title="Cut lane"
-            type="button"
-            plain
-            className={props.waysInRelation[props.osm.id] ? 'hidden' : ''}
-            onClick={() => props.onCutLane(props.osm)}
-          >
-            ✂
-          </Button>
-          <Button
-            title="Update tags"
-            type="button"
-            plain
-            className={canUpdateTags(props.osm) ? '' : 'hidden'}
-            onClick={() => setTagUpdaterModalShown(true)}
-          >
-            🔄
-          </Button>
-        </div>
+        {!readOnly ? (
+          <div className="flex gap-1">
+            <Button
+              title="Cut lane"
+              type="button"
+              plain
+              className={props.waysInRelation[props.osm.id] ? 'hidden' : ''}
+              onClick={() => props.onCutLane(props.osm)}
+            >
+              ✂
+            </Button>
+            <Button
+              title="Update tags"
+              type="button"
+              plain
+              className={canUpdateTags(props.osm) ? '' : 'hidden'}
+              onClick={() => setTagUpdaterModalShown(true)}
+            >
+              🔄
+            </Button>
+          </div>
+        ) : null}
       </div>
       <div id="tags-block">
         <SideGroup
           osm={props.osm}
           side="both"
           shown={bothBlockShown}
+          readOnly={readOnly}
           onChange={handleInputChange}
         />
         <SideGroup
           osm={props.osm}
           side="right"
           shown={!bothBlockShown}
+          readOnly={readOnly}
           onChange={handleInputChange}
         />
         <SideGroup
           osm={props.osm}
           side="left"
           shown={!bothBlockShown}
+          readOnly={readOnly}
           onChange={handleInputChange}
         />
         <AllTagsBlock tags={props.osm.tags} />
       </div>
 
-      <TagUpdaterModal
-        open={tagUpdaterModalShown}
-        osm={props.osm}
-        onUpdate={() => handleUpdateTagsClick()}
-        onClose={() => setTagUpdaterModalShown(false)}
-      />
+      {!readOnly ? (
+        <TagUpdaterModal
+          open={tagUpdaterModalShown}
+          osm={props.osm}
+          onUpdate={() => handleUpdateTagsClick()}
+          onClose={() => setTagUpdaterModalShown(false)}
+        />
+      ) : null}
     </form>
   )
 
   function handleInputChange(key: string, value: string) {
+    if (readOnly) return
+
     const nextTags = { ...form.getFieldValue('tags') }
     if (value) nextTags[key] = value
     else

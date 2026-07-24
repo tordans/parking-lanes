@@ -9,6 +9,7 @@ export function SideGroup(props: {
   osm: OsmWay
   side: 'both' | 'left' | 'right'
   shown: boolean
+  readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
   return (
@@ -17,9 +18,19 @@ export function SideGroup(props: {
       className={`tags-block tags-block_${props.side}`}
       style={{ display: props.shown ? undefined : 'none' }}
     >
-      <PresetSigns osm={props.osm} side={props.side} onChange={props.onChange} />
+      <PresetSigns
+        osm={props.osm}
+        side={props.side}
+        readOnly={props.readOnly}
+        onChange={props.onChange}
+      />
       <table className="tags-inputs-table">
-        <TagInputs osm={props.osm} side={props.side} onChange={props.onChange} />
+        <TagInputs
+          osm={props.osm}
+          side={props.side}
+          readOnly={props.readOnly}
+          onChange={props.onChange}
+        />
       </table>
     </div>
   )
@@ -28,6 +39,7 @@ export function SideGroup(props: {
 function TagInputs(props: {
   osm: OsmWay
   side: 'both' | 'left' | 'right'
+  readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
   const unsupportedTags = Object.keys(props.osm.tags)
@@ -49,6 +61,7 @@ function TagInputs(props: {
         osm={props.osm}
         side={props.side}
         tagInfo={tagInfo}
+        readOnly={props.readOnly}
         onChange={props.onChange}
       />
     ))
@@ -60,6 +73,7 @@ function TagInput(props: {
   osm: OsmWay
   side: 'both' | 'left' | 'right'
   tagInfo: ParkingTagInfo
+  readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
   const tag = resolveTagKey(props.tagInfo.template, props.side)
@@ -71,6 +85,7 @@ function TagInput(props: {
       tag={tag}
       label={label}
       hide={hide}
+      readOnly={props.readOnly}
       values={props.tagInfo.values}
       onChange={(v) => props.onChange(tag, v)}
     />
@@ -80,6 +95,7 @@ function TagInput(props: {
       tag={tag}
       label={label}
       hide={hide}
+      readOnly={props.readOnly}
       values={props.tagInfo.values}
       onChange={(v) => props.onChange(tag, v)}
     />

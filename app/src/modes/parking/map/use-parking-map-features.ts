@@ -17,7 +17,6 @@ export function deriveParkingMapFeatures(
   bounds: MapBounds | undefined,
   zoom: number,
   datetime: Date,
-  editorMode: boolean,
 ): {
   lanes: ParkingFeatureCollection
   areas: ParkingFeatureCollection
@@ -27,7 +26,7 @@ export function deriveParkingMapFeatures(
     return { lanes: emptyCollection(), areas: emptyCollection(), points: emptyCollection() }
   }
 
-  const { lanes, areas, points } = parseParkingFeaturesFromData(graph, bounds, zoom, editorMode)
+  const { lanes, areas, points } = parseParkingFeaturesFromData(graph, bounds, zoom)
 
   const wayTags = Object.fromEntries(Object.values(graph.ways).map((way) => [way.id, way.tags]))
   const nodeTags = Object.fromEntries(
@@ -58,16 +57,13 @@ export function useParkingMapFeatures({
   bounds,
   zoom,
   datetime,
-  editorMode,
 }: {
   bounds: MapBounds | undefined
   zoom: number
   datetime: Date
-  editorMode: boolean
 }) {
   const { data } = useParkingOsmQuery({
-    select: (osmData) =>
-      deriveParkingMapFeatures(osmData.graph, bounds, zoom, datetime, editorMode),
+    select: (osmData) => deriveParkingMapFeatures(osmData.graph, bounds, zoom, datetime),
   })
 
   return (

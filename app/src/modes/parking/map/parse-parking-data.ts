@@ -28,7 +28,6 @@ export function parseParkingFeaturesFromData(
   data: ParsedOsmData,
   bounds: MapBounds,
   zoom: number,
-  editorMode: boolean,
   existingFeatureIds?: ReadonlySet<string>,
 ): { lanes: ParkingFeature[]; areas: ParkingFeature[]; points: ParkingFeature[] } {
   const lanes: ParkingFeature[] = []
@@ -57,7 +56,7 @@ export function parseParkingFeaturesFromData(
   for (const way of Object.values(data.ways)) {
     if (way.tags?.highway) {
       if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
-      lanes.push(...keep(parseParkingLaneFeatures(way, data.nodeCoords, zoom, editorMode)))
+      lanes.push(...keep(parseParkingLaneFeatures(way, data.nodeCoords, zoom)))
     } else if (way.tags?.amenity === 'parking') {
       if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
       areas.push(...keep(parseParkingAreaFeatures(way, data.nodeCoords, zoom)))
