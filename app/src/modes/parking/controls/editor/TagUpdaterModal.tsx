@@ -20,10 +20,10 @@ export function TagUpdaterModal(props: {
     <Dialog open={props.open} onClose={props.onClose} size="3xl">
       <DialogTitle>Update tags to new scheme</DialogTitle>
       <DialogBody>
-        <div id="updated-tags">
-          <h3 className="text-sm font-medium text-zinc-600">Updated tags</h3>
+        <div id="updated-tags" className="font-mono">
+          <h3 className="font-sans text-sm font-medium text-zinc-600">Updated tags</h3>
           <table className="mt-2 w-full border-collapse text-sm">
-            <thead>
+            <thead className="font-sans">
               <tr className="bg-zinc-100">
                 <th className="p-2 text-left">Old tag</th>
                 <th className="p-2 text-left">New tags</th>
@@ -43,8 +43,8 @@ export function TagUpdaterModal(props: {
             </tbody>
           </table>
         </div>
-        <div id="manual-updating-tags" className="mt-4">
-          <h3 className="text-sm font-medium text-zinc-600">Required manual updating</h3>
+        <div id="manual-updating-tags" className="mt-4 font-mono">
+          <h3 className="font-sans text-sm font-medium text-zinc-600">Required manual updating</h3>
           {Object.keys(updateInfo.newTagsManualCandidates).map((k) => (
             <div key={k}>{k}</div>
           ))}

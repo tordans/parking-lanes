@@ -1,6 +1,14 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type TagValue } from '../../../../utils/types/parking'
-import { SelectInput } from './SelectInput'
+import {
+  tagEditorLabelCellClassName,
+  tagEditorLabelClassName,
+  tagEditorValueCellClassName,
+  tagEditorValueRowClassName,
+  usesParkingPositionButtonGroup,
+} from './tag-editor-controls'
+import { TagValueButtonGroup } from './TagValueButtonGroup'
+import { TagValueInput } from './TagValueInput'
 import { TextInput } from './TextInput'
 
 export function SimpleTagInput(props: {
@@ -14,23 +22,7 @@ export function SimpleTagInput(props: {
 }) {
   const value = props.osm.tags[props.tag]
   const readOnly = props.readOnly ?? false
-
-  const buttons = readOnly
-    ? null
-    : props.values
-        ?.filter((v) => v.imgSrc)
-        .map((v) => (
-          <button
-            type="button"
-            key={v.value}
-            title={v.value}
-            className="flex cursor-pointer items-center rounded border-2 bg-transparent p-0"
-            style={{ borderColor: v.value === value ? 'dodgerblue' : 'transparent' }}
-            onClick={(_e) => props.onChange(v.value)}
-          >
-            <img src={v.imgSrc} height="15" alt={v.value} />
-          </button>
-        ))
+  const useParkingPositionLayout = props.values != null && usesParkingPositionButtonGroup(props.tag)
 
   return (
     <tr
@@ -38,33 +30,43 @@ export function SimpleTagInput(props: {
       className="tag-editor"
       style={{ display: props.hide && !value ? 'none' : undefined }}
     >
-      <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
-        <label
-          title={props.tag}
-          className="text-base/6 text-zinc-950 select-none sm:text-sm/6 dark:text-white"
-        >
-          {props.label}
-        </label>
-      </td>
-      <td className="flex items-center gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
-        {props.values ? (
-          <SelectInput
-            tag={props.tag}
-            value={value}
-            values={props.values}
+      {useParkingPositionLayout ? (
+        <td colSpan={2} className={`${tagEditorValueCellClassName} py-0`}>
+          <TagValueButtonGroup
+            value={value ?? ''}
+            values={props.values!}
             disabled={readOnly}
-            onChange={(e) => props.onChange(e)}
+            ariaLabel={props.tag}
+            onChange={props.onChange}
           />
-        ) : (
-          <TextInput
-            tag={props.tag}
-            value={value}
-            disabled={readOnly}
-            onChange={(e) => props.onChange(e)}
-          />
-        )}
-        {buttons}
-      </td>
+        </td>
+      ) : (
+        <>
+          <td className={tagEditorLabelCellClassName}>
+            <label title={props.tag} className={tagEditorLabelClassName}>
+              {props.label}
+            </label>
+          </td>
+          <td className={tagEditorValueRowClassName}>
+            {props.values ? (
+              <TagValueInput
+                tag={props.tag}
+                value={value}
+                values={props.values}
+                disabled={readOnly}
+                onChange={props.onChange}
+              />
+            ) : (
+              <TextInput
+                tag={props.tag}
+                value={value}
+                disabled={readOnly}
+                onChange={props.onChange}
+              />
+            )}
+          </td>
+        </>
+      )}
     </tr>
   )
 }

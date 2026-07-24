@@ -18,6 +18,7 @@ import {
 } from 'osm-api'
 
 type OsmLoginOptions = Parameters<typeof osmLogin>[0]
+type OsmLoginMode = OsmLoginOptions['mode']
 
 export interface OsmOAuthConfig {
   userAgent: string
@@ -25,6 +26,7 @@ export interface OsmOAuthConfig {
   getClientId: (useDevServer: boolean) => string
   getRedirectUrl: () => string
   getApiUrl: (useDevServer: boolean) => string
+  getLoginMode?: () => OsmLoginMode
 }
 
 export interface OsmUploadConfig {
@@ -50,6 +52,7 @@ function wrapOsmApiError(err: unknown): never {
 
 export interface OsmOAuthClient {
   authenticate: (useDevServer: boolean) => Promise<void>
+  restoreSession: (useDevServer: boolean) => Promise<boolean>
   logout: () => void
   userInfo: () => ReturnType<typeof getUser>
   uploadChanges: (
@@ -81,6 +84,13 @@ export function createOsmOAuthClient(
     syncAuthHeader()
   }
 
+  async function restoreSession(useDevServer: boolean): Promise<boolean> {
+    ensureOsmApiConfigured(useDevServer)
+    await authReady
+    syncAuthHeader()
+    return isLoggedIn()
+  }
+
   async function authenticate(useDevServer: boolean): Promise<void> {
     ensureOsmApiConfigured(useDevServer)
     await authReady
@@ -88,7 +98,7 @@ export function createOsmOAuthClient(
 
     if (!isLoggedIn()) {
       await osmLogin({
-        mode: 'popup',
+        mode: oauthConfig.getLoginMode?.() ?? 'popup',
         clientId: oauthConfig.getClientId(useDevServer),
         redirectUrl: oauthConfig.getRedirectUrl(),
         scopes: [...oauthConfig.scopes],
@@ -126,6 +136,7 @@ export function createOsmOAuthClient(
 
   return {
     authenticate,
+    restoreSession,
     logout,
     userInfo,
     uploadChanges,

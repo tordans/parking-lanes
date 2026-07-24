@@ -66,9 +66,9 @@ export function OsmObjectPanel(props: {
   const readOnly = authState !== AuthState.success
 
   return (
-    <div className="flex min-w-[250px] flex-col">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-sm">
+    <div className="flex min-w-[250px] flex-col text-zinc-900">
+      <div className="flex items-start justify-between gap-2 text-sm text-zinc-700">
+        <span>
           <span>View: </span>
           <a
             href={`https://openstreetmap.org/way/${selectedOsmObject.id}`}
@@ -88,7 +88,7 @@ export function OsmObjectPanel(props: {
             Mapillary
           </a>
         </span>
-        <span className="max-sm:hidden text-sm">
+        <span className="max-sm:hidden">
           <span>Edit: </span>
           <a
             href={`${josmUrl + overpassDeUrl + getWayWithRelationsOverpassQuery(selectedOsmObject.id).replace(/\s+/g, ' ')}`}
@@ -111,9 +111,14 @@ export function OsmObjectPanel(props: {
           </a>
         </span>
       </div>
-      <hr className="my-2" />
+      <hr className="my-2 border-zinc-950/10" />
       {isStreetParking ? (
         <>
+          {readOnly ? (
+            <div className="mb-3">
+              <LoginCallout onLogin={() => void login()} />
+            </div>
+          ) : null}
           <LaneEditForm
             osm={selectedOsmObject as OsmWay}
             waysInRelation={waysInRelation}
@@ -121,20 +126,15 @@ export function OsmObjectPanel(props: {
             onCutLane={props.onCutLane!}
             onChange={props.onChange!}
           />
-          {readOnly ? (
-            <div className="mt-4">
-              <LoginCallout onLogin={() => void login()} />
-            </div>
-          ) : null}
         </>
       ) : (
         <>
-          <OsmObjectInfo osm={selectedOsmObject} />
           {readOnly ? (
-            <div className="mt-4">
+            <div className="mb-3">
               <LoginCallout onLogin={() => void login()} />
             </div>
           ) : null}
+          <OsmObjectInfo osm={selectedOsmObject} />
         </>
       )}
     </div>
@@ -155,7 +155,7 @@ function getWayWithRelationsOverpassQuery(wayId: number) {
 
 function OsmObjectInfo(props: { osm: OsmObject }) {
   return (
-    <table className="w-full text-sm">
+    <table className="w-full font-mono text-sm text-zinc-900">
       <tbody>
         {Object.keys(props.osm.tags).map((tag) => (
           <tr key={tag}>
@@ -171,16 +171,20 @@ function OsmObjectInfo(props: { osm: OsmObject }) {
 export function AllTagsBlock(props: { tags: OsmTags }) {
   return (
     <details className="pt-1.5 text-sm text-zinc-600">
-      <summary className="cursor-pointer">All tags</summary>
-      <table className="w-full">
+      <summary className="cursor-pointer font-sans">All tags</summary>
+      <table className="w-full table-fixed">
+        <colgroup>
+          <col className="w-1/2" />
+          <col className="w-1/2" />
+        </colgroup>
         <tbody>
           {Object.keys(props.tags).map((tag) => (
             <tr
               key={tag}
               className={`hover:bg-zinc-950/5 ${tag.startsWith('parking:') ? 'font-semibold' : ''}`}
             >
-              <td className="max-w-[250px] break-words pr-2 align-top">{tag}</td>
-              <td className="max-w-[250px] break-words">{props.tags[tag]}</td>
+              <td className="break-all pr-2 align-top">{tag}</td>
+              <td className="break-all align-top">{props.tags[tag]}</td>
             </tr>
           ))}
         </tbody>

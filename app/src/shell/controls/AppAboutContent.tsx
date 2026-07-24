@@ -5,6 +5,7 @@ import { Button } from '../../components/catalyst/button'
 import { useOsmAuth } from '../../modes/parking/map/use-osm-auth'
 import { AuthState, useAuthState, useMapBounds, useOsmDisplayName } from '../app-store'
 import { useMapViewport } from '../map/map-viewport'
+import { PanelSectionDivider } from './PanelSectionDivider'
 
 type Props = {
   variant?: 'compact' | 'panel'
@@ -90,8 +91,8 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-4 text-sm">
-      <section>
+    <div className="flex flex-col text-sm">
+      <section className="pb-4">
         <h3 className="mb-1 font-semibold text-zinc-900">About</h3>
         <p className="text-zinc-700">
           Street Space Editor maps and edits on-street parking and related street-space data in
@@ -99,7 +100,9 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
         </p>
       </section>
 
-      <section className="flex flex-col gap-2">
+      <PanelSectionDivider />
+
+      <section className="flex flex-col gap-2 py-4">
         <h3 className="font-semibold text-zinc-900">Links</h3>
         <div className="flex flex-col gap-1.5">
           <a
@@ -146,14 +149,17 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
       </section>
 
       {authState === AuthState.success ? (
-        <section>
-          <div className={loginLabelColor}>
-            <p className="m-0">Signed in as {osmDisplayName ?? 'OpenStreetMap user'}.</p>
-            <Button plain className="mt-2 px-0!" onClick={logout}>
-              Log out
-            </Button>
-          </div>
-        </section>
+        <>
+          <PanelSectionDivider />
+          <section className="pt-4">
+            <div className={loginLabelColor}>
+              <p className="m-0">Signed in as {osmDisplayName ?? 'OpenStreetMap user'}.</p>
+              <Button plain className="mt-2 px-0!" onClick={logout}>
+                Log out
+              </Button>
+            </div>
+          </section>
+        </>
       ) : null}
     </div>
   )

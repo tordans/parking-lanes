@@ -1,4 +1,5 @@
 import { Input } from '../../../../components/catalyst/input'
+import { tagEditorFieldClassName } from './tag-editor-controls'
 
 export function TextInput(props: {
   tag: string
@@ -9,7 +10,7 @@ export function TextInput(props: {
   return (
     <Input
       type="text"
-      className="min-w-0"
+      className={tagEditorFieldClassName}
       placeholder={props.tag}
       name={props.tag}
       value={props.value ?? ''}

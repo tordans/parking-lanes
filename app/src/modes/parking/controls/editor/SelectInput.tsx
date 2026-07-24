@@ -1,5 +1,6 @@
 import { Select } from '../../../../components/catalyst/select'
 import { type TagValue } from '../../../../utils/types/parking'
+import { tagEditorFieldClassName } from './tag-editor-controls'
 
 export function SelectInput(props: {
   tag: string
@@ -16,7 +17,7 @@ export function SelectInput(props: {
     <Select
       name={props.tag}
       value={props.value}
-      className="min-w-0"
+      className={tagEditorFieldClassName}
       disabled={props.disabled}
       onChange={(e) => props.onChange(e.target.value)}
     >

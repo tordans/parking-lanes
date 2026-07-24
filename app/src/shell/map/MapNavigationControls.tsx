@@ -6,7 +6,13 @@ import { toast } from '../../lib/toast'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
 import { useMapViewport } from './map-viewport'
-import { mapControlButtonClassName, mapControlsClassName } from './mobileMapChrome.const'
+import {
+  mapControlButtonClassName,
+  mapControlButtonDividerClassName,
+  mapControlButtonGroupClassName,
+  mapControlSegmentClassName,
+  mapControlsClassName,
+} from './mobileMapChrome.const'
 
 const bearingEpsilon = 0.5
 
@@ -48,28 +54,44 @@ export function MapNavigationControls() {
     )
   }
 
+  const locateButton = (
+    <button
+      type="button"
+      aria-label="Locate me"
+      className={clsx(
+        isRotated ? mapControlSegmentClassName : mapControlButtonClassName,
+        isRotated && mapControlButtonDividerClassName,
+        locating && 'animate-pulse',
+      )}
+      disabled={locating || !mapLoaded}
+      onClick={handleLocate}
+    >
+      <LocateFixed className="size-5" aria-hidden />
+    </button>
+  )
+
   return (
     <div className={mapControlsClassName}>
       {isRotated ? (
-        <button
-          type="button"
-          aria-label="Reset north"
-          className={mapControlButtonClassName}
-          onClick={handleResetBearing}
-          disabled={!mapLoaded}
-        >
-          <Compass className="size-5" aria-hidden style={{ transform: `rotate(${-bearing}deg)` }} />
-        </button>
-      ) : null}
-      <button
-        type="button"
-        aria-label="Locate me"
-        className={clsx(mapControlButtonClassName, locating && 'animate-pulse')}
-        disabled={locating || !mapLoaded}
-        onClick={handleLocate}
-      >
-        <LocateFixed className="size-5" aria-hidden />
-      </button>
+        <div className={mapControlButtonGroupClassName}>
+          <button
+            type="button"
+            aria-label="Reset north"
+            className={mapControlSegmentClassName}
+            onClick={handleResetBearing}
+            disabled={!mapLoaded}
+          >
+            <Compass
+              className="size-5"
+              aria-hidden
+              style={{ transform: `rotate(${-bearing}deg)` }}
+            />
+          </button>
+          {locateButton}
+        </div>
+      ) : (
+        locateButton
+      )}
     </div>
   )
 }

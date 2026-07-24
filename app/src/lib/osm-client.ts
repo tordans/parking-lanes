@@ -16,9 +16,10 @@ const client = createOsmOAuthClient(
     getClientId: getOsmOAuthClientId,
     getRedirectUrl: getOsmOAuthRedirectUrl,
     getApiUrl: (useDevServer) => (useDevServer ? osmDevUrl : osmProdApiUrl),
+    getLoginMode: () => (import.meta.env.DEV ? 'redirect' : 'popup'),
   },
   { changesetTags: { comment: 'Street Space Editor' } },
 )
 
-export const { authenticate, logout, userInfo, uploadChanges } = client
+export const { authenticate, restoreSession, logout, userInfo, uploadChanges } = client
 export { OsmApiRequestError } from '@osm-editor-kit/osm-oauth'

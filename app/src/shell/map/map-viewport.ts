@@ -4,9 +4,9 @@ import { useSearch } from '@tanstack/react-router'
 function defaultMapParam(): MapParam {
   const cookie = getLocationFromCookie()
   return {
-    zoom: cookie?.zoom ?? 5,
-    lat: cookie?.location.lat ?? 51.591,
-    lng: cookie?.location.lng ?? 24.609,
+    zoom: cookie?.zoom ?? 13,
+    lat: cookie?.location.lat ?? 52.472,
+    lng: cookie?.location.lng ?? 13.453,
   }
 }
 

@@ -7,8 +7,14 @@
   <body>
     <script>
       if (new URLSearchParams(location.search).has('code')) {
-        new BroadcastChannel('osm-api-auth-complete').postMessage(location.href)
-        window.close()
+        if (window.opener) {
+          new BroadcastChannel('osm-api-auth-complete').postMessage(location.href)
+          window.close()
+        } else {
+          const appUrl = new URL('..', location.href)
+          appUrl.search = location.search
+          location.replace(appUrl.href)
+        }
       }
     </script>
   </body>

@@ -4,6 +4,7 @@ import type { Side } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
 import { getSideConditions } from '../domain/side-conditions'
 import { laneStyleByZoom } from '../lane-styles'
+import { parkingSideColors } from '../side-colors'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 const highwayRegex =
@@ -158,7 +159,7 @@ export function createBacklightFeatures(
       properties: {
         featureId: 'backlight-right',
         kind: 'backlight-right',
-        color: '#e66101',
+        color: parkingSideColors.right,
         weight: offsetMajor * n - 4,
         offset: offsetMajor * n,
         osmType: 'way',
@@ -172,7 +173,7 @@ export function createBacklightFeatures(
       properties: {
         featureId: 'backlight-left',
         kind: 'backlight-left',
-        color: '#5e3c99',
+        color: parkingSideColors.left,
         weight: (style.offsetMajor ?? 0.5) * n - 4,
         offset: -((style.offsetMajor ?? 0.5) * n),
         osmType: 'way',

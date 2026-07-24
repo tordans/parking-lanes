@@ -9,13 +9,19 @@ import {
 } from '../../modes/parking/map/dev-osm-fixture'
 import { useParkingOsmFetch } from '../../modes/parking/map/parking-osm-query'
 import { useMapBounds, useOsmDisplayName } from '../app-store'
-import { canShowDebugToggle } from '../debug'
+import {
+  DEBUG_USERS,
+  debugUserSettingsHeaderClassName,
+  debugUserSettingsHeaderStyle,
+  debugUserSettingsSectionClassName,
+  debugUserSettingsSectionStyle,
+} from '../debug'
 import { useDebugSettingsActions, useUseOsmDevServer } from '../debug-settings-store'
 import { useDevOsmFixtureActions, useLiveViewportOsmFetch } from '../dev-osm-fixture-store'
 import { useMapViewport } from '../map/map-viewport'
 import { serializeMapSearch } from '../map/search-schema'
 
-export function DebugPanelContent() {
+export function DebugUserSettingsSection() {
   const navigate = useNavigate({ from: '/' })
   const { debug } = useSearch({ from: '/' })
   const queryClient = useQueryClient()
@@ -27,13 +33,34 @@ export function DebugPanelContent() {
   const mapBounds = useMapBounds()
   const { zoom: mapZoom } = useMapViewport()
   const { loadParkingData } = useParkingOsmFetch()
-  const showCoverageDebug = canShowDebugToggle(osmDisplayName, debug)
 
   return (
-    <div className="flex flex-col gap-4 p-1">
-      {showCoverageDebug ? (
+    <section
+      aria-label="Debug user settings"
+      className={debugUserSettingsSectionClassName()}
+      style={debugUserSettingsSectionStyle()}
+    >
+      <div className={debugUserSettingsHeaderClassName()} style={debugUserSettingsHeaderStyle()}>
+        Debug user settings
+      </div>
+      <div className="flex flex-col gap-4 px-2 py-1.5">
+        <section className="flex flex-col gap-1">
+          <h4 className="text-xs font-semibold text-zinc-900">Debug users</h4>
+          <ul className="list-inside list-disc text-xs text-zinc-700">
+            {DEBUG_USERS.map((user) => (
+              <li
+                key={user}
+                className={user === osmDisplayName ? 'font-semibold text-zinc-950' : undefined}
+              >
+                {user}
+                {user === osmDisplayName ? ' (you)' : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900">OSM API</h3>
+          <h4 className="text-xs font-semibold text-zinc-900">OSM API</h4>
           <CheckboxField>
             <Checkbox
               checked={useOsmDevServer}
@@ -47,39 +74,37 @@ export function DebugPanelContent() {
               : 'OAuth and map API use production openstreetmap.org.'}
           </p>
         </section>
-      ) : null}
 
-      {import.meta.env.DEV === true ? (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900">Dev OSM data</h3>
-          <CheckboxField>
-            <Checkbox
-              checked={liveViewportOsmFetch}
-              onChange={(checked) => {
-                setLiveViewportOsmFetch(checked)
-                if (checked) {
-                  clearDevOsmFixtureSession(queryClient)
-                  if (mapBounds && mapZoom >= viewMinZoom) {
-                    void loadParkingData(mapBounds, mapZoom, { force: true })
+        {import.meta.env.DEV === true ? (
+          <section className="flex flex-col gap-2">
+            <h4 className="text-xs font-semibold text-zinc-900">Dev OSM data</h4>
+            <CheckboxField>
+              <Checkbox
+                checked={liveViewportOsmFetch}
+                onChange={(checked) => {
+                  setLiveViewportOsmFetch(checked)
+                  if (checked) {
+                    clearDevOsmFixtureSession(queryClient)
+                    if (mapBounds && mapZoom >= viewMinZoom) {
+                      void loadParkingData(mapBounds, mapZoom, { force: true })
+                    }
+                  } else {
+                    seedDevOsmFixture(queryClient)
                   }
-                } else {
-                  seedDevOsmFixture(queryClient)
-                }
-              }}
-            />
-            <Label>Live OSM viewport fetch</Label>
-          </CheckboxField>
-          <p className="text-xs text-zinc-600">
-            {liveViewportOsmFetch
-              ? 'OSM map API loads for the current viewport (fixture off).'
-              : 'Local Berlin fixture — no OSM map API on startup.'}
-          </p>
-        </section>
-      ) : null}
+                }}
+              />
+              <Label>Live OSM viewport fetch</Label>
+            </CheckboxField>
+            <p className="text-xs text-zinc-600">
+              {liveViewportOsmFetch
+                ? 'OSM map API loads for the current viewport (fixture off).'
+                : 'Local Berlin fixture — no OSM map API on startup.'}
+            </p>
+          </section>
+        ) : null}
 
-      {showCoverageDebug ? (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900">Coverage</h3>
+          <h4 className="text-xs font-semibold text-zinc-900">Coverage</h4>
           <CheckboxField>
             <Checkbox
               checked={debug === true}
@@ -98,7 +123,7 @@ export function DebugPanelContent() {
             Show fetch coverage polygons on the map and details on hover.
           </p>
         </section>
-      ) : null}
-    </div>
+      </div>
+    </section>
   )
 }

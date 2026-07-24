@@ -1,44 +1,59 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
+import {
+  parkingSideCssVariables,
+  parkingSideHeaderClassName,
+  parkingSideLabel,
+  parkingSideSectionClassName,
+  parkingSideSectionStyle,
+  type ParkingEditorSide,
+} from '../../side-colors'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
 import { PresetSigns } from './PresetSigns'
 import { SimpleTagInput } from './SimpleTagInput'
+import { tagEditorTableClassName } from './tag-editor-controls'
 
 export function SideGroup(props: {
   osm: OsmWay
-  side: 'both' | 'left' | 'right'
+  side: ParkingEditorSide
   shown: boolean
   readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
+  if (!props.shown) return null
+
   return (
-    <div
+    <section
       id={props.side}
-      className={`tags-block tags-block_${props.side}`}
-      style={{ display: props.shown ? undefined : 'none' }}
+      aria-label={parkingSideLabel(props.side)}
+      className={`tags-block tags-block_${props.side} ${parkingSideSectionClassName(props.side)}`}
+      style={{ ...parkingSideCssVariables, ...parkingSideSectionStyle(props.side) }}
     >
-      <PresetSigns
-        osm={props.osm}
-        side={props.side}
-        readOnly={props.readOnly}
-        onChange={props.onChange}
-      />
-      <table className="tags-inputs-table">
-        <TagInputs
+      <div className={parkingSideHeaderClassName(props.side)}>{parkingSideLabel(props.side)}</div>
+      <div className="px-2 py-1.5">
+        <PresetSigns
           osm={props.osm}
           side={props.side}
           readOnly={props.readOnly}
           onChange={props.onChange}
         />
-      </table>
-    </div>
+        <table className={tagEditorTableClassName}>
+          <TagInputs
+            osm={props.osm}
+            side={props.side}
+            readOnly={props.readOnly}
+            onChange={props.onChange}
+          />
+        </table>
+      </div>
+    </section>
   )
 }
 
 function TagInputs(props: {
   osm: OsmWay
-  side: 'both' | 'left' | 'right'
+  side: ParkingEditorSide
   readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
@@ -71,7 +86,7 @@ function TagInputs(props: {
 
 function TagInput(props: {
   osm: OsmWay
-  side: 'both' | 'left' | 'right'
+  side: ParkingEditorSide
   tagInfo: ParkingTagInfo
   readOnly?: boolean
   onChange: (key: string, value: string) => void

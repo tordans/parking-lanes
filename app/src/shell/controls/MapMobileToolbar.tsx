@@ -1,8 +1,8 @@
 import { useSearch } from '@tanstack/react-router'
 import clsx from 'clsx'
-import { Bug, Info, MousePointerClick, Settings } from 'lucide-react'
+import { Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { LegendContent } from '../../modes/parking/controls/LegendPanel'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 import type { ModePanelProps, StreetSpaceMode } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
@@ -14,14 +14,12 @@ import {
   mapToolbarIconSegmentClassName,
   mobileMapHeaderClassName,
 } from '../map/mobileMapChrome.const'
-import { AppAboutContent } from './AppAboutContent'
-import { DatetimeInput } from './Datetime'
-import { DebugPanelContent } from './DebugPanelContent'
-import { MapMobileSidePanel } from './MapMobileSidePanel'
+import { InfoPanelContent, SettingsPanelContent } from './ControlPanel'
+import { MobileBottomSheet } from './MobileBottomSheet'
 import { ModeSwitcher } from './ModeSwitcher'
 import { SaveButton } from './SaveButton'
 
-type MobilePanel = 'info' | 'inspector' | 'settings' | 'debug' | null
+type MobilePanel = 'info' | 'inspector' | 'settings' | null
 
 export function MapMobileToolbar(
   props: {
@@ -29,14 +27,17 @@ export function MapMobileToolbar(
     onSave: () => void
   } & ModePanelProps,
 ) {
+  const isDesktop = useBreakpoint('sm')
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
   const { debug } = useSearch({ from: '/' })
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
   const { selectionEpoch } = useFeatureSelection()
   const showDebug = canShowDebugToggle(osmDisplayName, debug)
-  const { Panel } = props.mode
+  const { Panel, Legend } = props.mode
   const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
+
+  if (isDesktop) return null
 
   if (selectedOsmRef && selectionEpoch !== inspectorOpenedForEpoch) {
     setInspectorOpenedForEpoch(selectionEpoch)
@@ -81,65 +82,49 @@ export function MapMobileToolbar(
             >
               <Settings className="size-5" aria-hidden />
             </MapToolbarIconButton>
-            {showDebug ? (
-              <MapToolbarIconButton
-                label="Debug"
-                active={openPanel === 'debug'}
-                divided
-                onClick={() => togglePanel('debug')}
-              >
-                <Bug className="size-5" aria-hidden />
-              </MapToolbarIconButton>
-            ) : null}
           </div>
         </div>
         <SaveButton onClick={props.onSave} />
       </div>
 
-      <MapMobileSidePanel
+      <MobileBottomSheet
         title="Info"
         open={openPanel === 'info'}
         onClose={() => setOpenPanel(null)}
       >
-        <div className="flex flex-col gap-4">
-          <AppAboutContent variant="panel" />
-          <section>
-            <h3 className="mb-2 text-sm font-semibold text-zinc-900">Legend</h3>
-            <LegendContent />
-          </section>
+        <div className="pb-4">
+          <InfoPanelContent Legend={Legend} />
         </div>
-      </MapMobileSidePanel>
+      </MobileBottomSheet>
 
-      <MapMobileSidePanel
+      <MobileBottomSheet
         title="Inspector"
         open={openPanel === 'inspector'}
         onClose={() => setOpenPanel(null)}
       >
-        <Panel
-          key={selectedOsmRef ? `${selectedOsmRef.type}/${selectedOsmRef.id}` : 'none'}
-          onCutLane={props.onCutLane}
-          onOsmChange={props.onOsmChange}
-          onClose={handleInspectorClose}
-        />
-      </MapMobileSidePanel>
+        <div className="pb-4">
+          <Panel
+            key={selectedOsmRef ? `${selectedOsmRef.type}/${selectedOsmRef.id}` : 'none'}
+            onCutLane={props.onCutLane}
+            onOsmChange={props.onOsmChange}
+            onClose={handleInspectorClose}
+          />
+        </div>
+      </MobileBottomSheet>
 
-      <MapMobileSidePanel
+      <MobileBottomSheet
         title="Settings"
         open={openPanel === 'settings'}
         onClose={() => setOpenPanel(null)}
       >
-        <DatetimeInput fullWidth />
-      </MapMobileSidePanel>
-
-      {showDebug ? (
-        <MapMobileSidePanel
-          title="Debug"
-          open={openPanel === 'debug'}
-          onClose={() => setOpenPanel(null)}
-        >
-          <DebugPanelContent />
-        </MapMobileSidePanel>
-      ) : null}
+        <div className="pb-4">
+          <SettingsPanelContent
+            onSave={props.onSave}
+            showSaveButton={false}
+            showDebug={showDebug}
+          />
+        </div>
+      </MobileBottomSheet>
     </>
   )
 }
@@ -157,11 +142,13 @@ function MapToolbarIconButton(props: {
       aria-label={props.label}
       aria-expanded={props.active}
       className={clsx(
-        mapToolbarIconSegmentClassName,
+        props.active ? mapToolbarIconSegmentActiveClassName : mapToolbarIconSegmentClassName,
         props.divided && mapToolbarButtonDividerClassName,
-        props.active && mapToolbarIconSegmentActiveClassName,
       )}
-      onClick={props.onClick}
+      onClick={() => {
+        if (props.active) return
+        props.onClick()
+      }}
     >
       {props.children}
     </button>

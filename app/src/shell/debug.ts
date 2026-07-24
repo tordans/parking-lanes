@@ -1,6 +1,27 @@
+import type { CSSProperties } from 'react'
+
 export const DEBUG_USERS = ['tordans'] as const
 
 export type DebugUser = (typeof DEBUG_USERS)[number]
+
+/** Admin/debug panel accent (matches side-group box pattern). */
+export const debugAdminColor = '#db2777'
+
+export function debugUserSettingsSectionClassName() {
+  return 'overflow-hidden rounded-sm ring-1 ring-zinc-950/5'
+}
+
+export function debugUserSettingsSectionStyle(): CSSProperties {
+  return { backgroundColor: `${debugAdminColor}20` }
+}
+
+export function debugUserSettingsHeaderClassName() {
+  return 'px-2 py-1 text-xs font-semibold tracking-wide text-white uppercase'
+}
+
+export function debugUserSettingsHeaderStyle(): CSSProperties {
+  return { backgroundColor: debugAdminColor }
+}
 
 export function parseDebugSearch(
   value: boolean | 1 | 0 | '1' | 'true' | '0' | 'false' | undefined,

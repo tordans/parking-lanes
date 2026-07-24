@@ -65,7 +65,7 @@ function clsxModeButton({
   index: number
 }) {
   // Match PanelModeSwitcher / map toolbar segment height (size-10).
-  const sizing = isActive ? 'h-10 gap-1 px-2.5' : 'size-10 justify-center'
+  const sizing = isActive ? 'h-10 gap-1.5 px-2.5' : 'size-10 justify-center'
 
   const tone = isActive
     ? 'cursor-pointer bg-zinc-950 text-white'

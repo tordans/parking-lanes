@@ -4,10 +4,20 @@ import {
   buildConditionalTagValue,
   parseConditionalTagForEdit,
 } from '@osm-editor-kit/osm-tag-syntax'
+import clsx from 'clsx'
 import { useState } from 'react'
 import { Input } from '../../../../components/catalyst/input'
 import { type TagValue } from '../../../../utils/types/parking'
-import { SelectInput } from './SelectInput'
+import {
+  tagEditorConditionalConditionGroupClassName,
+  tagEditorConditionalConditionInputClassName,
+  tagEditorConditionalConditionPrefixClassName,
+  tagEditorLabelCellClassName,
+  tagEditorLabelClassName,
+  tagEditorValueStackClassName,
+  isYesNoTagValues,
+} from './tag-editor-controls'
+import { TagValueInput } from './TagValueInput'
 import { TextInput } from './TextInput'
 
 export function ConditionalInput(props: {
@@ -21,22 +31,24 @@ export function ConditionalInput(props: {
 }) {
   const readOnly = props.readOnly ?? false
   const parsedConditionalTag = parseConditionalTagForEdit(props.osm.tags[props.tag])
+  const conditionalValue = props.osm.tags[props.tag]
 
   const buildTagValue = (newConditionalValue: ConditionalValue, index: number) => {
     return buildConditionalTagValue(parsedConditionalTag, newConditionalValue, index)
   }
 
   return (
-    <tr id={props.tag} className="tag-editor" style={{ display: props.hide ? 'none' : undefined }}>
-      <td className="align-baseline max-sm:max-w-[30vw] max-sm:overflow-auto">
-        <label
-          title={props.tag}
-          className="text-base/6 text-zinc-950 select-none sm:text-sm/6 dark:text-white"
-        >
+    <tr
+      id={props.tag}
+      className="tag-editor"
+      style={{ display: props.hide && !conditionalValue ? 'none' : undefined }}
+    >
+      <td className={tagEditorLabelCellClassName}>
+        <label title={props.tag} className={tagEditorLabelClassName}>
           {props.label}
         </label>
       </td>
-      <td className="flex flex-col items-start gap-1 max-sm:max-w-[60vw] max-sm:overflow-auto">
+      <td className={tagEditorValueStackClassName}>
         {parsedConditionalTag.map((conditionalValue, index) => (
           <ConditionalPartInput
             key={index}
@@ -75,15 +87,18 @@ function ConditionalPartInput(props: {
     if (value && newCondition) props.onChange({ value, condition: newCondition })
   }
 
+  const isYesNo = props.values != null && isYesNoTagValues(props.values)
+
   return (
-    <div className="flex flex-nowrap gap-1.5">
-      <div>
+    <div className="flex w-full min-w-0 items-center gap-1.5">
+      <div className={clsx('min-w-0', isYesNo ? 'shrink-0' : 'w-1/2 shrink-0')}>
         {props.values ? (
-          <SelectInput
+          <TagValueInput
             tag={props.tag}
             value={value}
             values={props.values}
             disabled={readOnly}
+            iconShortcuts={false}
             onChange={handleChangeValue}
           />
         ) : (
@@ -95,11 +110,11 @@ function ConditionalPartInput(props: {
           />
         )}
       </div>
-      <div className="flex flex-nowrap items-center gap-1.5">
-        @
+      <div className={clsx(tagEditorConditionalConditionGroupClassName, 'min-w-0 flex-1')}>
+        <span className={tagEditorConditionalConditionPrefixClassName}>@</span>
         <Input
           type="text"
-          className="min-w-0 max-sm:max-w-[30vw]"
+          className={tagEditorConditionalConditionInputClassName}
           placeholder="time interval"
           name={props.tag}
           value={condition ?? ''}

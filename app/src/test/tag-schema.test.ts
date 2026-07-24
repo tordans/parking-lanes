@@ -17,6 +17,14 @@ describe('tag schema', () => {
     expect(getTagLabel('parking:{side}:fee', 'left')).toBe('fee')
   })
 
+  test('getTagLabel truncates long conditional tag labels for display', () => {
+    expect(getTagLabel('parking:{side}:restriction:conditional', 'right')).toBe(
+      'restri…:conditional',
+    )
+    expect(getTagLabel('parking:{side}:maxstay:conditional', 'left')).toBe('maxsta…:conditional')
+    expect(getTagLabel('parking:{side}:fee:conditional', 'right')).toBe('fee:conditional')
+  })
+
   test('shouldShowTag hides reason unless parking position is no', () => {
     const reasonTag = parkingLaneTags.find((tag) => tag.template === 'parking:{side}:reason')!
 
@@ -49,5 +57,41 @@ describe('tag schema', () => {
 
     expect(shouldShowTag(restrictionReasonTag, tags, 'right')).toBe(true)
     expect(shouldShowTag(restrictionReasonTag, {}, 'right')).toBe(false)
+  })
+
+  test('conditional tags show when parent or conditional value is set', () => {
+    const maxstayConditionalTag = parkingLaneTags.find(
+      (tag) => tag.template === 'parking:{side}:maxstay:conditional',
+    )!
+    const feeConditionalTag = parkingLaneTags.find(
+      (tag) => tag.template === 'parking:{side}:fee:conditional',
+    )!
+
+    expect(shouldShowTag(maxstayConditionalTag, {}, 'right')).toBe(false)
+    expect(shouldShowTag(maxstayConditionalTag, { 'parking:right:maxstay': '2h' }, 'right')).toBe(
+      true,
+    )
+    expect(
+      shouldShowTag(
+        maxstayConditionalTag,
+        { 'parking:right:maxstay:conditional': '1h @ Mo-Fr' },
+        'right',
+      ),
+    ).toBe(true)
+
+    expect(shouldShowTag(feeConditionalTag, { 'parking:right:fee': 'yes' }, 'right')).toBe(true)
+    expect(
+      shouldShowTag(feeConditionalTag, { 'parking:right:fee:conditional': 'no @ Sa' }, 'right'),
+    ).toBe(true)
+    expect(shouldShowTag(feeConditionalTag, {}, 'right')).toBe(false)
+  })
+
+  test('surface values come from parking side surface taginfo usage', () => {
+    const surfaceTag = parkingLaneTags.find((tag) => tag.template === 'parking:{side}:surface')!
+    const values = surfaceTag.values!.map((entry) => entry.value)
+
+    expect(values).toContain('asphalt')
+    expect(values).toContain('paving_stones')
+    expect(values).not.toContain('acrylic')
   })
 })

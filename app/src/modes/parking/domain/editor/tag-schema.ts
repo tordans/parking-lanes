@@ -1,6 +1,12 @@
 import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
-import { laneValues, orientationValues, reasonValues, restrictionValues } from './tag-values'
+import {
+  laneValues,
+  orientationValues,
+  reasonValues,
+  restrictionValues,
+  surfaceValues,
+} from './tag-values'
 
 export const parkingLaneTags: ParkingTagInfo[] = [
   {
@@ -28,6 +34,7 @@ export const parkingLaneTags: ParkingTagInfo[] = [
   },
   {
     template: 'parking:{side}:surface',
+    values: surfaceValues,
     checkForNeedShowing: (tags: OsmTags, side: string) =>
       ['lane', 'street_side', 'on_kerb', 'half_on_kerb', 'shoulder', 'yes'].includes(
         tags[`parking:${side}`],
@@ -42,7 +49,7 @@ export const parkingLaneTags: ParkingTagInfo[] = [
   {
     template: 'parking:{side}:fee:conditional',
     values: [{ value: 'yes' }, { value: 'no' }],
-    checkForNeedShowing: (_tags: OsmTags, _side: string) => true,
+    checkForNeedShowing: showWhenParentOrConditionalFilled('parking:{side}:fee'),
   },
   {
     template: 'parking:{side}:maxstay',
@@ -51,7 +58,7 @@ export const parkingLaneTags: ParkingTagInfo[] = [
   },
   {
     template: 'parking:{side}:maxstay:conditional',
-    checkForNeedShowing: (_tags: OsmTags, _side: string) => true,
+    checkForNeedShowing: showWhenParentOrConditionalFilled('parking:{side}:maxstay'),
   },
   {
     template: 'parking:{side}:access',
@@ -60,7 +67,7 @@ export const parkingLaneTags: ParkingTagInfo[] = [
   },
   {
     template: 'parking:{side}:access:conditional',
-    checkForNeedShowing: (_tags: OsmTags, _side: string) => true,
+    checkForNeedShowing: showWhenParentOrConditionalFilled('parking:{side}:access'),
   },
   {
     template: 'parking:{side}:restriction',
@@ -71,7 +78,7 @@ export const parkingLaneTags: ParkingTagInfo[] = [
   {
     template: 'parking:{side}:restriction:conditional',
     values: restrictionValues,
-    checkForNeedShowing: (_tags: OsmTags, _side: string) => true,
+    checkForNeedShowing: showWhenParentOrConditionalFilled('parking:{side}:restriction'),
   },
   {
     template: 'parking:{side}:restriction:reason',
@@ -84,6 +91,14 @@ export function resolveTagKey(template: string, side: string): string {
   return template.replace('{side}', side)
 }
 
+function showWhenParentOrConditionalFilled(parentTemplate: string) {
+  return (tags: OsmTags, side: string) => {
+    const parentKey = resolveTagKey(parentTemplate, side)
+    const conditionalKey = `${parentKey}:conditional`
+    return Boolean(tags[parentKey]) || Boolean(tags[conditionalKey])
+  }
+}
+
 export function shouldShowTag(tagInfo: ParkingTagInfo, tags: OsmTags, side: string): boolean {
   return tagInfo.checkForNeedShowing(tags, side)
 }
@@ -92,9 +107,23 @@ export function getDependentTagKeys(tagInfo: ParkingTagInfo, side: string): stri
   return (tagInfo.dependentTags ?? []).map((template) => resolveTagKey(template, side))
 }
 
+const conditionalLabelSuffix = ':conditional'
+const conditionalLabelPrefixMaxLength = 6
+
+function compactConditionalTagLabel(label: string): string {
+  if (!label.endsWith(conditionalLabelSuffix)) return label
+
+  const prefix = label.slice(0, -conditionalLabelSuffix.length)
+  if (prefix.length <= conditionalLabelPrefixMaxLength) return label
+
+  return `${prefix.slice(0, conditionalLabelPrefixMaxLength)}…${conditionalLabelSuffix}`
+}
+
 export function getTagLabel(template: string, side: string, tag?: string): string {
   const resolvedTag = tag ?? resolveTagKey(template, side)
-  return template.startsWith('parking:{side}')
+  const label = template.startsWith('parking:{side}')
     ? template.replace('parking:{side}', '').slice(1) || side
     : resolvedTag
+
+  return compactConditionalTagLabel(label)
 }

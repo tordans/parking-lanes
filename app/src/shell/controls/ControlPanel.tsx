@@ -8,22 +8,28 @@ import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { AppAboutContent } from './AppAboutContent'
 import { DatetimeInput } from './Datetime'
-import { DebugPanelContent } from './DebugPanelContent'
+import { DebugUserSettingsSection } from './DebugPanelContent'
 import { PanelModeSwitcher, type MapPanelMode } from './PanelModeSwitcher'
+import { PanelSectionDivider } from './PanelSectionDivider'
 import { SaveButton } from './SaveButton'
 
 function initialPanelMode(selected: boolean): MapPanelMode {
   return selected ? 'inspector' : 'info'
 }
 
-export function SettingsPanelContent(props: { onSave: () => void }) {
+export function SettingsPanelContent(props: {
+  onSave: () => void
+  showSaveButton?: boolean
+  showDebug?: boolean
+}) {
   return (
     <div className="flex flex-col gap-4 p-1">
       <section className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
         <DatetimeInput fullWidth />
-        <SaveButton onClick={props.onSave} />
+        {props.showSaveButton !== false ? <SaveButton onClick={props.onSave} /> : null}
       </section>
+      {props.showDebug ? <DebugUserSettingsSection /> : null}
     </div>
   )
 }
@@ -34,13 +40,16 @@ export function InfoPanelContent(props: {
   const Legend = props.Legend
 
   return (
-    <div className="flex flex-col gap-4 p-1">
+    <div className="flex flex-col p-1">
       <AppAboutContent variant="panel" />
       {Legend ? (
-        <section>
-          <h3 className="mb-2 text-sm font-semibold text-zinc-900">Legend</h3>
-          <Legend variant="inline" />
-        </section>
+        <>
+          <PanelSectionDivider />
+          <section className="pt-4">
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900">Legend</h3>
+            <Legend variant="inline" />
+          </section>
+        </>
       ) : null}
     </div>
   )
@@ -61,14 +70,12 @@ export function ControlPanel(props: {
   const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
     initialPanelMode(selectedOsmRef != null),
   )
-  const activePanelMode = panelMode === 'debug' && !showDebug ? 'info' : panelMode
+  const activePanelMode = panelMode
 
   return (
     <div className="flex h-full flex-col overflow-hidden text-sm">
-      <div className="shrink-0 border-b border-zinc-950/10 p-2">
-        <PanelModeSwitcher mode={activePanelMode} onChange={setPanelMode} showDebug={showDebug} />
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto p-2">
+      <PanelModeSwitcher className="shrink-0" mode={activePanelMode} onChange={setPanelMode} />
+      <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
         {activePanelMode === 'info' ? <InfoPanelContent Legend={Legend} /> : null}
         {activePanelMode === 'inspector' ? (
           <Panel
@@ -77,8 +84,9 @@ export function ControlPanel(props: {
             onClose={props.onClose}
           />
         ) : null}
-        {activePanelMode === 'settings' ? <SettingsPanelContent onSave={props.onSave} /> : null}
-        {activePanelMode === 'debug' && showDebug ? <DebugPanelContent /> : null}
+        {activePanelMode === 'settings' ? (
+          <SettingsPanelContent onSave={props.onSave} showDebug={showDebug} />
+        ) : null}
       </div>
     </div>
   )

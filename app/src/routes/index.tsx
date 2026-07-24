@@ -13,9 +13,9 @@ function IndexPage() {
   const cookieLocation = getLocationFromCookie()
 
   const initialView = {
-    longitude: search.map?.lng ?? cookieLocation?.location.lng ?? 24.609,
-    latitude: search.map?.lat ?? cookieLocation?.location.lat ?? 51.591,
-    zoom: search.map?.zoom ?? cookieLocation?.zoom ?? 5,
+    longitude: search.map?.lng ?? cookieLocation?.location.lng ?? 13.453,
+    latitude: search.map?.lat ?? cookieLocation?.location.lat ?? 52.472,
+    zoom: search.map?.zoom ?? cookieLocation?.zoom ?? 13,
     bearing: search.map?.bearing,
   }
 

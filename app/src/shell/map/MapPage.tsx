@@ -49,7 +49,6 @@ import { useMapActions } from './map-store'
 import { useMapViewport } from './map-viewport'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
-import { mapLegendClassName } from './mobileMapChrome.const'
 import { serializeMapSearch } from './search-schema'
 import { useSelectionBacklights } from './use-selection-backlights'
 import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
@@ -117,7 +116,6 @@ function MapPageContent({
   const handleMapClick = useParkingMapClickHandler()
   const handleCutLane = useParkingCutLaneHandler()
   const ModeMapLayers = mode.MapLayers
-  const ModeLegend = mode.Legend
 
   const interactiveLayerIds = debug
     ? [...mode.interactiveLayerIds, coverageDebugFetchFillLayerId]
@@ -284,7 +282,7 @@ function MapPageContent({
     <AppShell
       map={
         <div ref={mapContainerRef} className="relative h-full w-full">
-          <div className="fixed inset-0 z-0 lg:static lg:inset-auto lg:z-auto lg:h-full lg:w-full">
+          <div className="fixed inset-0 z-0 sm:static sm:inset-auto sm:z-auto sm:h-full sm:w-full">
             <div className="relative h-full w-full">
               <MapGL
                 id={MAIN_MAP_ID}
@@ -328,13 +326,13 @@ function MapPageContent({
             onClose={clearSelection}
           />
 
-          <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden lg:block">
+          <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden sm:block">
             <ModeSwitcher />
           </div>
 
           <MapNavigationControls />
 
-          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-10 flex flex-col gap-2 lg:top-2.5">
+          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-10 flex flex-col gap-2 sm:top-2.5">
             {debug && coverageHoverInfo ? (
               <div className="max-w-xs rounded-lg bg-white/90 px-2 py-1.5 text-xs shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm">
                 <div className="font-medium text-zinc-900">Coverage fetch</div>
@@ -349,11 +347,6 @@ function MapPageContent({
               </div>
             ) : null}
           </div>
-          {ModeLegend ? (
-            <div className={`${mapLegendClassName} lg:hidden`}>
-              <ModeLegend variant="floating" />
-            </div>
-          ) : null}
         </div>
       }
       panel={
