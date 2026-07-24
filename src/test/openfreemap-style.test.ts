@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { StyleSpecification } from 'maplibre-gl'
-import { patchOpenFreeMapStyle } from '../utils/openfreemap-style'
+import { openFreeMapTransformStyle, patchOpenFreeMapStyle } from '../utils/openfreemap-style'
 
 describe('patchOpenFreeMapStyle', () => {
   test('adds typeof guard to boundary_3 filter', () => {
@@ -27,5 +27,28 @@ describe('patchOpenFreeMapStyle', () => {
       ['>=', ['get', 'admin_level'], 3],
       ['<=', ['get', 'admin_level'], 6],
     ])
+  })
+})
+
+describe('openFreeMapTransformStyle', () => {
+  test('patches the next style from transformStyle', () => {
+    const style: StyleSpecification = {
+      version: 8,
+      sources: {},
+      layers: [
+        {
+          id: 'boundary_3',
+          type: 'line',
+          source: 'openmaptiles',
+          'source-layer': 'boundary',
+          filter: ['all', ['>=', ['get', 'admin_level'], 3], ['<=', ['get', 'admin_level'], 6]],
+        },
+      ],
+    }
+
+    const patched = openFreeMapTransformStyle(undefined, style)
+    const layer = patched.layers[0]!
+
+    expect(layer.filter?.[1]).toEqual(['==', ['typeof', ['get', 'admin_level']], 'number'])
   })
 })

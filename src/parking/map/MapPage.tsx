@@ -4,12 +4,17 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   AttributionControl,
   type MapLayerMouseEvent,
+  type MapRef,
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { changesStore } from '../../utils/changes-store'
 import { setLocationToCookie } from '../../utils/location-cookie'
 import { serializeMapParam } from '../../utils/map-param'
+import {
+  OPENFREEMAP_POSITRON_STYLE_URL,
+  openFreeMapTransformStyle,
+} from '../../utils/openfreemap-style'
 import { OsmApiRequestError, uploadChanges } from '../../utils/osm-client'
 import type { OsmWay } from '../../utils/types/osm-data'
 import {
@@ -31,7 +36,6 @@ import {
 } from './parking-map-store'
 import { remapParkingOsmWayId } from './parking-osm-edits'
 import { MapGL, MapProvider, ParkingLayers } from './ParkingLayers'
-import { useMapStyle } from './use-map-style'
 import {
   interactiveLayerIds,
   toBounds,
@@ -55,6 +59,8 @@ export function MapPage({
   const navigate = useNavigate({ from: '/' })
   const queryClient = useQueryClient()
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<MapRef>(null)
+  const styleTransformApplied = useRef(false)
 
   const { setMapState, setChangesCount } = useAppActions()
   const mapState = useMapState()
@@ -65,8 +71,6 @@ export function MapPage({
   const selectedOsmId = useSelectedOsmId()
   const backlights = useBacklightFeatures()
   const cutMarkers = useCutMarkerFeatures()
-
-  const { data: mapStyle } = useMapStyle()
 
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
   const [cursorStyle, setCursorStyle] = useState('grab')
@@ -202,54 +206,63 @@ export function MapPage({
     [initialView.latitude, initialView.longitude, initialView.zoom],
   )
 
+  const setMapRef = useCallback((instance: MapRef | null) => {
+    mapRef.current = instance
+    if (!instance || styleTransformApplied.current) return
+
+    styleTransformApplied.current = true
+    instance.getMap().setStyle(OPENFREEMAP_POSITRON_STYLE_URL, {
+      transformStyle: openFreeMapTransformStyle,
+    })
+  }, [])
+
   return (
     <AppShell
       map={
         <div ref={mapContainerRef} className="relative h-full w-full">
           <MapProvider>
-            {mapStyle ? (
-              <MapGL
-                id="main-map"
-                mapStyle={mapStyle}
-                initialViewState={initialViewState}
-                style={{ width: '100%', height: '100%' }}
-                attributionControl={false}
-                cursor={cursorStyle}
-                interactiveLayerIds={interactiveLayerIds}
-                onLoad={onMapLoad}
-                onMoveEnd={onMoveEnd}
-                onMouseMove={(event: MapLayerMouseEvent) => {
-                  const layerId = event.features?.[0]?.layer?.id
-                  if (layerId && interactiveLayerIds.includes(layerId)) {
-                    setCursorStyle('pointer')
-                  } else {
-                    setCursorStyle('grab')
-                  }
-                }}
-                onMouseLeave={() => {
+            <MapGL
+              ref={setMapRef}
+              id="main-map"
+              mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
+              initialViewState={initialViewState}
+              style={{ width: '100%', height: '100%' }}
+              attributionControl={false}
+              cursor={cursorStyle}
+              interactiveLayerIds={interactiveLayerIds}
+              onLoad={onMapLoad}
+              onMoveEnd={onMoveEnd}
+              onMouseMove={(event: MapLayerMouseEvent) => {
+                const layerId = event.features?.[0]?.layer?.id
+                if (layerId && interactiveLayerIds.includes(layerId)) {
+                  setCursorStyle('pointer')
+                } else {
                   setCursorStyle('grab')
-                }}
-                onClick={(event: MapLayerMouseEvent) => {
-                  if (event.features?.length) {
-                    onLayerClick(event)
-                    return
-                  }
-                  onMapClick()
-                }}
-                onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-                onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-              >
-                <MapResizeHandler containerRef={mapContainerRef} />
-                <AttributionControl compact position="bottom-left" />
-                <ParkingLayers
-                  lanes={lanes}
-                  areas={areas}
-                  points={points}
-                  backlights={backlights}
-                  cutMarkers={cutMarkers}
-                />
-              </MapGL>
-            ) : null}
+                }
+              }}
+              onMouseLeave={() => {
+                setCursorStyle('grab')
+              }}
+              onClick={(event: MapLayerMouseEvent) => {
+                if (event.features?.length) {
+                  onLayerClick(event)
+                  return
+                }
+                onMapClick()
+              }}
+              onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+              onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+            >
+              <MapResizeHandler containerRef={mapContainerRef} />
+              <AttributionControl compact position="bottom-left" />
+              <ParkingLayers
+                lanes={lanes}
+                areas={areas}
+                points={points}
+                backlights={backlights}
+                cutMarkers={cutMarkers}
+              />
+            </MapGL>
           </MapProvider>
 
           <div className="pointer-events-auto absolute bottom-8 left-2.5 z-10">

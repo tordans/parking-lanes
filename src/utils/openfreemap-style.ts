@@ -1,4 +1,9 @@
-import type { FilterSpecification, LayerSpecification, StyleSpecification } from 'maplibre-gl'
+import type {
+  FilterSpecification,
+  LayerSpecification,
+  StyleSpecification,
+  TransformStyleFunction,
+} from 'maplibre-gl'
 
 export const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron'
 
@@ -29,3 +34,7 @@ export function patchOpenFreeMapStyle(style: StyleSpecification): StyleSpecifica
     layers: style.layers.map(patchBoundary3Filter),
   }
 }
+
+/** For MapLibre `setStyle` / `transformStyle` when loading the CDN URL directly. */
+export const openFreeMapTransformStyle: TransformStyleFunction = (_previous, next) =>
+  patchOpenFreeMapStyle(next)
