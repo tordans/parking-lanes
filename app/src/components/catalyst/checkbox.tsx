@@ -126,7 +126,10 @@ export function Checkbox({
     <Headless.Checkbox
       data-slot="control"
       {...props}
-      className={clsx(className, 'group inline-flex focus:outline-hidden')}
+      className={clsx(
+        className,
+        'group inline-flex cursor-pointer focus:outline-hidden group-data-disabled:cursor-not-allowed',
+      )}
     >
       <span className={clsx([base, colors[color]])}>
         <svg

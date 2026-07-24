@@ -1,38 +1,92 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
+import { useSearch } from '@tanstack/react-router'
+import type { ComponentType } from 'react'
+import { useState } from 'react'
+import { useSelectedOsmRef } from '../../modes/parking'
 import type { StreetSpaceMode } from '../../modes/types'
+import { useOsmDisplayName } from '../app-store'
+import { canShowDebugToggle } from '../debug'
+import { AppAboutContent } from './AppAboutContent'
 import { DatetimeInput } from './Datetime'
-import { FetchButton } from './Fetch'
-import { ModeSwitcher } from './ModeSwitcher'
+import { DebugPanelContent } from './DebugPanelContent'
+import { PanelModeSwitcher, type MapPanelMode } from './PanelModeSwitcher'
 import { SaveButton } from './SaveButton'
+
+function initialPanelMode(selected: boolean): MapPanelMode {
+  return selected ? 'inspector' : 'info'
+}
+
+export function SettingsPanelContent(props: { onSave: () => void }) {
+  return (
+    <div className="flex flex-col gap-4 p-1">
+      <section className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
+        <DatetimeInput fullWidth />
+        <SaveButton onClick={props.onSave} />
+      </section>
+    </div>
+  )
+}
+
+export function InfoPanelContent(props: {
+  Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
+}) {
+  const Legend = props.Legend
+
+  return (
+    <div className="flex flex-col gap-4 p-1">
+      <AppAboutContent variant="panel" />
+      {Legend ? (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold text-zinc-900">Legend</h3>
+          <Legend variant="inline" />
+        </section>
+      ) : null}
+    </div>
+  )
+}
 
 export function ControlPanel(props: {
   mode: StreetSpaceMode
-  onFetch: () => void
   onSave: () => void
   onCutLane: (way: OsmWay) => void
   onOsmChange: (way: OsmWay) => void
   onClose: () => void
+  /** Mobile: only the mode panel (toolbar floats over the map). */
+  panelOnly?: boolean
 }) {
-  const { Panel } = props.mode
+  const { Panel, Legend } = props.mode
+  const selectedOsmRef = useSelectedOsmRef()
+  const { debug } = useSearch({ from: '/' })
+  const osmDisplayName = useOsmDisplayName()
+  const showDebug = canShowDebugToggle(osmDisplayName, debug)
+  const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
+    initialPanelMode(selectedOsmRef != null),
+  )
+  const activePanelMode = panelMode === 'debug' && !showDebug ? 'info' : panelMode
+
+  if (props.panelOnly) {
+    return (
+      <Panel onCutLane={props.onCutLane} onOsmChange={props.onOsmChange} onClose={props.onClose} />
+    )
+  }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-2 text-sm">
-      <div className="flex shrink-0 flex-col gap-2">
-        <ModeSwitcher />
-        <div className="flex items-center justify-between gap-2">
-          <DatetimeInput />
-          <div className="flex items-center gap-2">
-            <FetchButton onClick={props.onFetch} />
-            <SaveButton onClick={props.onSave} />
-          </div>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden text-sm">
+      <div className="shrink-0 border-b border-zinc-950/10 p-2">
+        <PanelModeSwitcher mode={activePanelMode} onChange={setPanelMode} showDebug={showDebug} />
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <Panel
-          onCutLane={props.onCutLane}
-          onOsmChange={props.onOsmChange}
-          onClose={props.onClose}
-        />
+      <div className="min-h-0 flex-1 overflow-auto p-2">
+        {activePanelMode === 'info' ? <InfoPanelContent Legend={Legend} /> : null}
+        {activePanelMode === 'inspector' ? (
+          <Panel
+            onCutLane={props.onCutLane}
+            onOsmChange={props.onOsmChange}
+            onClose={props.onClose}
+          />
+        ) : null}
+        {activePanelMode === 'settings' ? <SettingsPanelContent onSave={props.onSave} /> : null}
+        {activePanelMode === 'debug' && showDebug ? <DebugPanelContent /> : null}
       </div>
     </div>
   )

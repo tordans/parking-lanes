@@ -8,6 +8,7 @@
   "author": "Zlant",
   "type": "module",
   "scripts": {
+    "predev": "bun run scripts/ensure-dev-osm-fixture.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -17,11 +18,11 @@
   "dependencies": {
     "@headlessui/react": "^2.2",
     "@osm-editor-kit/osm-changeset": "workspace:*",
+    "@osm-editor-kit/osm-coverage": "workspace:*",
     "@osm-editor-kit/osm-data": "workspace:*",
     "@osm-editor-kit/osm-editor-links": "workspace:*",
     "@osm-editor-kit/osm-map-url": "workspace:*",
     "@osm-editor-kit/osm-oauth": "workspace:*",
-    "@osm-editor-kit/osm-coverage": "workspace:*",
     "@osm-editor-kit/osm-tag-syntax": "workspace:*",
     "@osm-editor-kit/osm-ui": "workspace:*",
     "@tanstack/react-form": "^1.19.2",
@@ -33,6 +34,7 @@
     "dayjs": "^1.11.13",
     "lucide-react": "^1.25.0",
     "maplibre-gl": "^5.7.1",
+    "motion": "^12.42.2",
     "normalize.css": "^8.0.1",
     "osm-parking-tag-updater": "github:osmberlin/osm-tag-updater",
     "react": "^19.1.1",

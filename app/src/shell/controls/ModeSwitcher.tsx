@@ -1,53 +1,69 @@
+import clsx from 'clsx'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
-import { useActiveMode, useAppActions } from '../app-store'
+import { useActiveMode, useAppActions, useIsOsmDataBusy } from '../app-store'
+import {
+  mapToolbarButtonDividerClassName,
+  mapToolbarButtonGroupClassName,
+  mapToolbarIconSegmentClassName,
+} from '../map/mobileMapChrome.const'
 
 export function ModeSwitcher() {
   const activeMode = useActiveMode()
+  const isOsmDataBusy = useIsOsmDataBusy()
   const { setActiveMode } = useAppActions()
 
   return (
-    <div
-      className="flex overflow-visible rounded-lg ring-1 ring-zinc-950/10"
-      role="tablist"
-      aria-label="Street space mode"
-    >
-      {streetSpaceModes.map((mode, index) => {
-        const isActive = mode.id === activeMode
-        const Icon = modeIcons[mode.id]
-        const tooltip = mode.enabled ? mode.label : `${mode.label} (coming soon)`
-        const isFirst = index === 0
-        const isLast = index === streetSpaceModes.length - 1
+    <div className="flex items-center gap-2">
+      <div className={mapToolbarButtonGroupClassName} role="tablist" aria-label="Street space mode">
+        {streetSpaceModes.map((mode, index) => {
+          const isActive = mode.id === activeMode
+          const Icon = modeIcons[mode.id]
+          const tooltip = mode.enabled ? mode.label : `${mode.label} (coming soon)`
 
-        return (
-          <Tooltip key={mode.id} content={isActive ? null : tooltip} placement="bottom">
-            <span className="inline-flex">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-label={mode.label}
-                disabled={!mode.enabled}
-                className={clsxModeButton({ isActive, enabled: mode.enabled, isFirst, isLast })}
-                onClick={() => {
-                  if (!mode.enabled) return
-                  setActiveMode(mode.id as StreetSpaceModeId)
-                }}
-              >
-                <Icon className="size-7 shrink-0" aria-hidden />
-                {isActive ? (
-                  <span className="flex flex-col items-start text-left text-[11px] leading-[1.15] font-medium">
-                    <span>{mode.label}</span>
-                    <span>Editor</span>
-                  </span>
-                ) : null}
-              </button>
-            </span>
-          </Tooltip>
-        )
-      })}
+          return (
+            <Tooltip key={mode.id} content={isActive ? null : tooltip} placement="bottom">
+              <span className="inline-flex">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={mode.label}
+                  disabled={!mode.enabled}
+                  className={clsxModeButton({ isActive, enabled: mode.enabled, index })}
+                  onClick={() => {
+                    if (!mode.enabled) return
+                    setActiveMode(mode.id as StreetSpaceModeId)
+                  }}
+                >
+                  <Icon className="size-5 shrink-0" aria-hidden />
+                  {isActive ? (
+                    <span className="flex flex-col items-start text-left text-[11px] leading-[1.15] font-medium">
+                      <span>{mode.label}</span>
+                      <span>Editor</span>
+                    </span>
+                  ) : null}
+                </button>
+              </span>
+            </Tooltip>
+          )
+        })}
+      </div>
+      {isOsmDataBusy ? (
+        <Tooltip content="Fetching data" placement="bottom">
+          <span
+            className={clsx(mapToolbarIconSegmentClassName, 'cursor-default hover:bg-white')}
+            aria-label="Fetching data"
+          >
+            <span
+              aria-hidden
+              className="size-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700"
+            />
+          </span>
+        </Tooltip>
+      ) : null}
     </div>
   )
 }
@@ -55,24 +71,25 @@ export function ModeSwitcher() {
 function clsxModeButton({
   isActive,
   enabled,
-  isFirst,
-  isLast,
+  index,
 }: {
   isActive: boolean
   enabled: boolean
-  isFirst: boolean
-  isLast: boolean
+  index: number
 }) {
-  const corners =
-    isFirst && isLast ? 'rounded-lg' : isFirst ? 'rounded-l-lg' : isLast ? 'rounded-r-lg' : ''
-
-  const sizing = isActive ? 'gap-1 p-1.5' : 'p-1.5'
+  // Match PanelModeSwitcher / map toolbar segment height (size-10).
+  const sizing = isActive ? 'h-10 gap-1 px-2.5' : 'size-10 justify-center'
 
   const tone = isActive
-    ? 'bg-zinc-950 text-white'
+    ? 'cursor-pointer bg-zinc-950 text-white'
     : enabled
-      ? 'bg-white text-zinc-800 hover:bg-zinc-950/5'
+      ? 'cursor-pointer bg-white text-zinc-800 hover:bg-zinc-950/5'
       : 'cursor-not-allowed bg-zinc-50 text-zinc-400'
 
-  return `flex items-center font-medium transition-colors ${sizing} ${corners} ${tone}`
+  return clsx(
+    'flex items-center font-medium transition-colors',
+    sizing,
+    tone,
+    index > 0 && mapToolbarButtonDividerClassName,
+  )
 }

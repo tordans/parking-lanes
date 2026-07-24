@@ -9,17 +9,17 @@ import {
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
+import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
 import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
 import {
   getMapSizePx,
   remapParkingOsmWayId,
   toBounds,
-  useEditorModeAuth,
   useParkingCoveragePace,
-  useParkingMapActions,
-  useSelectedOsmId,
+  useSelectedOsmRef,
   viewMinZoom,
 } from '../../modes/parking'
+import { useDevOsmFixtureSeed } from '../../modes/parking/map/dev-osm-fixture'
 import {
   useParkingCutLaneHandler,
   useParkingLayerClickHandler,
@@ -32,20 +32,20 @@ import {
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
 } from '../../utils/openfreemap-style'
-import {
-  useActiveMode,
-  useAppActions,
-  useEditorMode,
-  useMapState,
-  useOsmDataSource,
-} from '../app-store'
-import { AppInfoPanel } from '../controls/AppInfoPanel'
+import { useActiveMode, useAppActions, useMapState } from '../app-store'
 import { ControlPanel } from '../controls/ControlPanel'
-import { CoverageDebugToggle } from '../controls/CoverageDebugToggle'
-import { CoverageBusyOverlay } from './CoverageBusyOverlay'
+import { MapMobileToolbar } from '../controls/MapMobileToolbar'
+import { ModeSwitcher } from '../controls/ModeSwitcher'
 import { coverageDebugFetchFillLayerId, CoverageDebugLayers } from './CoverageDebugLayers'
+import { FeatureSelectionProvider } from './feature-selection'
+import { useFeatureSelection } from './feature-selection'
 import { MapGL, MapProvider } from './map-gl'
+import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
+import { mapLegendClassName } from './mobileMapChrome.const'
+import { serializeMapSearch } from './search-schema'
+import { useSelectionBacklights } from './use-selection-backlights'
+import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
 
 const editorName = 'StreetSpace'
 const version = '0.9.0'
@@ -53,7 +53,19 @@ const version = '0.9.0'
 export function MapPage({
   initialView,
 }: {
-  initialView: { longitude: number; latitude: number; zoom: number }
+  initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
+}) {
+  return (
+    <FeatureSelectionProvider>
+      <MapPageContent initialView={initialView} />
+    </FeatureSelectionProvider>
+  )
+}
+
+function MapPageContent({
+  initialView,
+}: {
+  initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
   const navigate = useNavigate({ from: '/' })
   const { debug } = useSearch({ from: '/' })
@@ -64,14 +76,13 @@ export function MapPage({
 
   const { setMapState, setChangesCount } = useAppActions()
   const mapState = useMapState()
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
   const activeModeId = useActiveMode()
   const mode = useActiveStreetSpaceMode(activeModeId)
-  const mapActions = useParkingMapActions()
-  const selectedOsmId = useSelectedOsmId()
+  const selectedOsmRef = useSelectedOsmRef()
+  const { updateFeatureRef, clearSelection, selectionEpoch } = useFeatureSelection()
 
   const [mapZoom, setMapZoom] = useState(initialView.zoom)
+  const [mapBearing, setMapBearing] = useState(initialView.bearing ?? 0)
   const [cursorStyle, setCursorStyle] = useState('grab')
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const [coverageHoverInfo, setCoverageHoverInfo] = useState<{
@@ -82,8 +93,9 @@ export function MapPage({
     groupId: string
   } | null>(null)
 
-  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave, isPending, isBusy } =
-    useParkingCoveragePace()
+  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = useParkingCoveragePace()
+
+  useDevOsmFixtureSeed()
 
   // Parking is the only enabled mode; handlers stay stable for Rules of Hooks.
   const handleOsmChange = useParkingOsmChangeHandler()
@@ -93,7 +105,8 @@ export function MapPage({
   const ModeMapLayers = mode.MapLayers
   const ModeLegend = mode.Legend
 
-  useEditorModeAuth()
+  useVisibleViewportHeightVar(true)
+  useSelectionBacklights(mapZoom)
 
   const onMove = useCallback(
     (event: ViewStateChangeEvent) => {
@@ -102,13 +115,19 @@ export function MapPage({
     [scheduleCoverageCheck],
   )
 
+  const onRotate = useCallback((event: ViewStateChangeEvent) => {
+    setMapBearing(event.viewState.bearing)
+  }, [])
+
   const onMoveEnd = useCallback(
     (event: ViewStateChangeEvent) => {
       const map = event.target
       const zoom = map.getZoom()
       const center = map.getCenter()
+      const bearing = map.getBearing()
       const bounds = toBounds(map.getBounds())
       setMapZoom(zoom)
+      setMapBearing(bearing)
 
       setMapState({
         zoom,
@@ -119,8 +138,8 @@ export function MapPage({
 
       void navigate({
         search: (prev) => ({
-          ...prev,
-          map: serializeMapParam({ zoom, lat: center.lat, lng: center.lng }),
+          ...serializeMapSearch(prev),
+          map: serializeMapParam({ zoom, lat: center.lat, lng: center.lng, bearing }),
         }),
         replace: true,
       })
@@ -130,13 +149,22 @@ export function MapPage({
     [navigate, scheduleCoverageCheck, setMapState],
   )
 
+  const handleResetBearing = useCallback(() => {
+    const map = mapRef.current?.getMap()
+    if (!map) return
+
+    map.easeTo({ bearing: 0, pitch: 0 })
+  }, [])
+
   const onMapLoad = useCallback(
     (event: ViewStateChangeEvent) => {
       const map = event.target
       const zoom = map.getZoom()
       const center = map.getCenter()
+      const bearing = map.getBearing()
       const bounds = toBounds(map.getBounds())
       setMapZoom(zoom)
+      setMapBearing(bearing)
 
       setMapState({
         zoom,
@@ -156,16 +184,10 @@ export function MapPage({
       const changedIdMap = await uploadChanges(editorName, version, changesStore)
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
-        const remappedWay = remapParkingOsmWayId(
-          queryClient,
-          editorMode,
-          osmDataSource,
-          Number(oldId),
-          Number(newId),
-        )
+        const remappedWay = remapParkingOsmWayId(queryClient, Number(oldId), Number(newId))
 
-        if (selectedOsmId === Number(oldId) && remappedWay) {
-          mapActions.setSelectedOsmId(remappedWay.id)
+        if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === Number(oldId) && remappedWay) {
+          updateFeatureRef({ type: 'way', id: remappedWay.id })
         }
       }
       setChangesCount(0)
@@ -183,24 +205,16 @@ export function MapPage({
       if (err instanceof OsmApiRequestError) alert(err.responseText || err.message)
       else alert(err)
     }
-  }, [
-    editorMode,
-    mapActions,
-    mapState,
-    osmDataSource,
-    queryClient,
-    refetchAfterSave,
-    selectedOsmId,
-    setChangesCount,
-  ])
+  }, [mapState, queryClient, refetchAfterSave, selectedOsmRef, setChangesCount, updateFeatureRef])
 
   const initialViewState = useMemo(
     () => ({
       longitude: initialView.longitude,
       latitude: initialView.latitude,
       zoom: initialView.zoom,
+      bearing: initialView.bearing ?? 0,
     }),
-    [initialView.latitude, initialView.longitude, initialView.zoom],
+    [initialView.bearing, initialView.latitude, initialView.longitude, initialView.zoom],
   )
 
   const setMapRef = useCallback((instance: MapRef | null) => {
@@ -217,87 +231,106 @@ export function MapPage({
     <AppShell
       map={
         <div ref={mapContainerRef} className="relative h-full w-full">
-          <MapProvider>
-            <MapGL
-              ref={setMapRef}
-              id="main-map"
-              mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
-              initialViewState={initialViewState}
-              style={{ width: '100%', height: '100%' }}
-              attributionControl={false}
-              cursor={cursorStyle}
-              interactiveLayerIds={mode.interactiveLayerIds}
-              onLoad={onMapLoad}
-              onMove={onMove}
-              onMoveEnd={onMoveEnd}
-              onMouseMove={(event: MapLayerMouseEvent) => {
-                const layerId = event.features?.[0]?.layer?.id
-                if (layerId && mode.interactiveLayerIds.includes(layerId)) {
-                  setCursorStyle('pointer')
-                } else {
-                  setCursorStyle('grab')
-                }
-
-                if (!debug) {
-                  setHoveredGroupId(null)
-                  setCoverageHoverInfo(null)
-                  return
-                }
-
-                const debugFeatures = event.target.queryRenderedFeatures(event.point, {
-                  layers: [coverageDebugFetchFillLayerId],
-                })
-                const debugFeature = debugFeatures[0]
-                const props = debugFeature?.properties as
-                  | {
-                      groupId?: string
-                      fetchedAt?: string
-                      kind?: string
-                      requestIndex?: number
-                      requestCount?: number
+          <div className="fixed inset-0 z-0 lg:static lg:inset-auto lg:z-auto lg:h-full lg:w-full">
+            <MapProvider>
+              <div className="relative h-full w-full">
+                <MapGL
+                  ref={setMapRef}
+                  id="main-map"
+                  mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
+                  initialViewState={initialViewState}
+                  style={{ width: '100%', height: '100%' }}
+                  attributionControl={false}
+                  maxPitch={0}
+                  touchPitch={false}
+                  pitchWithRotate={false}
+                  cursor={cursorStyle}
+                  interactiveLayerIds={mode.interactiveLayerIds}
+                  onLoad={onMapLoad}
+                  onMove={onMove}
+                  onMoveEnd={onMoveEnd}
+                  onRotate={onRotate}
+                  onMouseMove={(event: MapLayerMouseEvent) => {
+                    const layerId = event.features?.[0]?.layer?.id
+                    if (layerId && mode.interactiveLayerIds.includes(layerId)) {
+                      setCursorStyle('pointer')
+                    } else {
+                      setCursorStyle('grab')
                     }
-                  | undefined
 
-                if (!props?.groupId) {
-                  setHoveredGroupId(null)
-                  setCoverageHoverInfo(null)
-                  return
-                }
+                    if (!debug) {
+                      setHoveredGroupId(null)
+                      setCoverageHoverInfo(null)
+                      return
+                    }
 
-                setHoveredGroupId(props.groupId)
-                setCoverageHoverInfo({
-                  groupId: props.groupId,
-                  fetchedAt: props.fetchedAt ?? '',
-                  kind: props.kind ?? '',
-                  requestIndex: props.requestIndex ?? 0,
-                  requestCount: props.requestCount ?? 0,
-                })
-              }}
-              onMouseLeave={() => {
-                setCursorStyle('grab')
-                setHoveredGroupId(null)
-                setCoverageHoverInfo(null)
-              }}
-              onClick={(event: MapLayerMouseEvent) => {
-                if (event.features?.length) {
-                  handleLayerClick(event)
-                  return
-                }
-                handleMapClick()
-              }}
-              onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-              onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
-            >
-              <MapResizeHandler containerRef={mapContainerRef} />
-              <AttributionControl compact position="bottom-left" />
-              {debug ? <CoverageDebugLayers hoveredGroupId={hoveredGroupId} /> : null}
-              <ModeMapLayers mapZoom={mapZoom} />
-            </MapGL>
-          </MapProvider>
+                    const debugFeatures = event.target.queryRenderedFeatures(event.point, {
+                      layers: [coverageDebugFetchFillLayerId],
+                    })
+                    const debugFeature = debugFeatures[0]
+                    const props = debugFeature?.properties as
+                      | {
+                          groupId?: string
+                          fetchedAt?: string
+                          kind?: string
+                          requestIndex?: number
+                          requestCount?: number
+                        }
+                      | undefined
 
-          <CoverageBusyOverlay pending={isPending} fetching={isBusy && !isPending} />
-          <div className="pointer-events-auto absolute top-2.5 left-2.5 z-10 flex flex-col gap-2">
-            <CoverageDebugToggle />
+                    if (!props?.groupId) {
+                      setHoveredGroupId(null)
+                      setCoverageHoverInfo(null)
+                      return
+                    }
+
+                    setHoveredGroupId(props.groupId)
+                    setCoverageHoverInfo({
+                      groupId: props.groupId,
+                      fetchedAt: props.fetchedAt ?? '',
+                      kind: props.kind ?? '',
+                      requestIndex: props.requestIndex ?? 0,
+                      requestCount: props.requestCount ?? 0,
+                    })
+                  }}
+                  onMouseLeave={() => {
+                    setCursorStyle('grab')
+                    setHoveredGroupId(null)
+                    setCoverageHoverInfo(null)
+                  }}
+                  onClick={(event: MapLayerMouseEvent) => {
+                    if (event.features?.length) {
+                      handleLayerClick(event)
+                      return
+                    }
+                    handleMapClick()
+                  }}
+                  onMouseDown={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+                  onDblClick={(e: MapLayerMouseEvent) => e.originalEvent.stopPropagation()}
+                >
+                  <MapResizeHandler containerRef={mapContainerRef} />
+                  <AttributionControl compact position="bottom-left" />
+                  {debug ? <CoverageDebugLayers hoveredGroupId={hoveredGroupId} /> : null}
+                  <ModeMapLayers mapZoom={mapZoom} />
+                </MapGL>
+                <ViewMinZoomOverlay zoom={mapZoom} />
+              </div>
+            </MapProvider>
+          </div>
+
+          <MapMobileToolbar onSave={() => void handleSave()} />
+
+          <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden lg:block">
+            <ModeSwitcher />
+          </div>
+
+          <MapNavigationControls
+            mapRef={mapRef}
+            bearing={mapBearing}
+            onResetBearing={handleResetBearing}
+          />
+
+          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-10 flex flex-col gap-2 lg:top-2.5">
             {debug && coverageHoverInfo ? (
               <div className="max-w-xs rounded-lg bg-white/90 px-2 py-1.5 text-xs shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm">
                 <div className="font-medium text-zinc-900">Coverage fetch</div>
@@ -313,32 +346,34 @@ export function MapPage({
             ) : null}
           </div>
           {ModeLegend ? (
-            <div className="pointer-events-auto absolute bottom-8 left-2.5 z-10">
-              <ModeLegend />
+            <div className={`${mapLegendClassName} lg:hidden`}>
+              <ModeLegend variant="floating" />
             </div>
           ) : null}
-          <div className="pointer-events-auto absolute right-2.5 bottom-2.5 z-10">
-            <AppInfoPanel />
+          <div className="lg:hidden">
+            <ControlPanel
+              panelOnly
+              mode={mode}
+              onSave={() => void handleSave()}
+              onCutLane={handleCutLane}
+              onOsmChange={handleOsmChange}
+              onClose={clearSelection}
+            />
           </div>
         </div>
       }
       panel={
         <ControlPanel
+          key={
+            selectedOsmRef
+              ? `${selectedOsmRef.type}/${selectedOsmRef.id}:${selectionEpoch}`
+              : 'none'
+          }
           mode={mode}
-          onFetch={() => {
-            if (!mapState?.bounds) return
-            const map = mapRef.current?.getMap()
-            void loadCoverageNow(mapState.bounds, mapState.zoom, {
-              mapSizePx: map ? getMapSizePx(map) : undefined,
-            })
-          }}
           onSave={() => void handleSave()}
           onCutLane={handleCutLane}
           onOsmChange={handleOsmChange}
-          onClose={() => {
-            mapActions.clearBacklights()
-            mapActions.setSelectedOsmId(null)
-          }}
+          onClose={clearSelection}
         />
       }
     />

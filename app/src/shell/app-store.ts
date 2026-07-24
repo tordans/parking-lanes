@@ -1,5 +1,4 @@
 import type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
-import { OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import { create } from 'zustand'
 import type { StreetSpaceModeId } from '../modes/types'
 
@@ -10,10 +9,8 @@ export enum AuthState {
 }
 
 interface AppStore {
-  fetchButtonText: string
-  osmDataSource: OsmDataSource
+  isOsmDataBusy: boolean
   datetime: Date
-  editorMode: boolean
   activeMode: StreetSpaceModeId
   authState: AuthState
   osmDisplayName: string | null
@@ -24,10 +21,8 @@ interface AppStore {
   }
   changesCount: number
   actions: {
-    setFetchButtonText: (value: string) => void
-    setOsmDataSource: (value: OsmDataSource) => void
+    setIsOsmDataBusy: (value: boolean) => void
     setDatetime: (value: Date) => void
-    setEditorMode: (value: boolean) => void
     setActiveMode: (value: StreetSpaceModeId) => void
     setAuthState: (value: AuthState) => void
     setOsmDisplayName: (value: string | null) => void
@@ -37,19 +32,15 @@ interface AppStore {
 }
 
 const useAppStore = create<AppStore>()((set) => ({
-  fetchButtonText: 'Fetch OSM data',
-  osmDataSource: OsmDataSource.OverpassVk,
+  isOsmDataBusy: false,
   datetime: new Date(),
-  editorMode: false,
   activeMode: 'parking',
   authState: AuthState.initial,
   osmDisplayName: null,
   changesCount: 0,
   actions: {
-    setFetchButtonText: (fetchButtonText) => set({ fetchButtonText }),
-    setOsmDataSource: (osmDataSource) => set({ osmDataSource }),
+    setIsOsmDataBusy: (isOsmDataBusy) => set({ isOsmDataBusy }),
     setDatetime: (datetime) => set({ datetime }),
-    setEditorMode: (editorMode) => set({ editorMode }),
     setActiveMode: (activeMode) => set({ activeMode }),
     setAuthState: (authState) =>
       set((state) => (state.authState === authState ? state : { authState })),
@@ -59,10 +50,8 @@ const useAppStore = create<AppStore>()((set) => ({
   },
 }))
 
-export const useFetchButtonText = () => useAppStore((s) => s.fetchButtonText)
-export const useOsmDataSource = () => useAppStore((s) => s.osmDataSource)
+export const useIsOsmDataBusy = () => useAppStore((s) => s.isOsmDataBusy)
 export const useDatetime = () => useAppStore((s) => s.datetime)
-export const useEditorMode = () => useAppStore((s) => s.editorMode)
 export const useActiveMode = () => useAppStore((s) => s.activeMode)
 export const useAuthState = () => useAppStore((s) => s.authState)
 export const useOsmDisplayName = () => useAppStore((s) => s.osmDisplayName)
