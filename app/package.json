@@ -31,6 +31,7 @@
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "lucide-react": "^1.25.0",
     "maplibre-gl": "^5.7.1",
     "normalize.css": "^8.0.1",
     "osm-parking-tag-updater": "github:osmberlin/osm-tag-updater",
