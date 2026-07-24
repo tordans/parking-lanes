@@ -1,7 +1,7 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AttributionControl,
   type MapLayerMouseEvent,
@@ -85,7 +85,7 @@ function MapPageContent({
   const mainMap = maps[MAIN_MAP_ID]
 
   const { setMapBounds, setChangesCount } = useAppActions()
-  const { markMapLoaded } = useMapActions()
+  const { markMapLoaded, resetMapChrome, setMapTilesLoading, setOsmDataBusy } = useMapActions()
   const mapBounds = useMapBounds()
   const activeModeId = useActiveMode()
   const mode = useActiveStreetSpaceMode(activeModeId)
@@ -104,6 +104,20 @@ function MapPageContent({
 
   const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave, isBusy } =
     useParkingCoveragePace()
+
+  useEffect(
+    function syncOsmDataBusyToMapStore() {
+      setOsmDataBusy(isBusy)
+    },
+    [isBusy, setOsmDataBusy],
+  )
+
+  useEffect(
+    function resetMapChromeOnUnmount() {
+      return resetMapChrome
+    },
+    [resetMapChrome],
+  )
 
   useDevOsmFixtureSeed()
 
@@ -164,6 +178,14 @@ function MapPageContent({
     },
     [scheduleCoverageCheck, writeMapViewport],
   )
+
+  const onMapData = useCallback(() => {
+    setMapTilesLoading(true)
+  }, [setMapTilesLoading])
+
+  const onMapIdle = useCallback(() => {
+    setMapTilesLoading(false)
+  }, [setMapTilesLoading])
 
   const onMapLoad = useCallback(
     (event: ViewStateChangeEvent) => {
@@ -330,6 +352,8 @@ function MapPageContent({
                 cursor={cursorStyle}
                 interactiveLayerIds={interactiveLayerIds}
                 onLoad={onMapLoad}
+                onData={onMapData}
+                onIdle={onMapIdle}
                 onMove={onMove}
                 onMoveEnd={onMoveEnd}
                 onRotate={onRotate}
@@ -346,10 +370,10 @@ function MapPageContent({
             </div>
           </div>
 
-          <MapMobileToolbar onSave={() => void handleSave()} isOsmDataBusy={isBusy} />
+          <MapMobileToolbar onSave={() => void handleSave()} />
 
           <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden lg:block">
-            <ModeSwitcher isOsmDataBusy={isBusy} />
+            <ModeSwitcher />
           </div>
 
           <MapNavigationControls />

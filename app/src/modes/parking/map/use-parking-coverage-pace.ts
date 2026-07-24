@@ -14,7 +14,7 @@ type CoverageFetchArgs = {
 
 /**
  * Debounces OSM coverage checks until the map viewport settles ([TanStack Pacer](https://tanstack.com/pacer/latest)).
- * Busy spinner shows while `isPending` (waiting) or `isBusy` (fetching).
+ * Busy spinner on the mode toolbar reads {@link useMapChromeBusy} from map-store.
  */
 export function useParkingCoveragePace() {
   const { loadParkingData, refetchAfterSave, isFetching } = useParkingOsmFetch()

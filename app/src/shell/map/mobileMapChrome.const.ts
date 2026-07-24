@@ -18,6 +18,10 @@ export const mapToolbarIconSegmentClassName =
 
 export const mapToolbarIconSegmentActiveClassName = 'bg-zinc-950 text-white hover:bg-zinc-800'
 
+/** Standalone toolbar loading chip (matches map control rounding, not a button). */
+export const mapToolbarLoadingSegmentClassName =
+  'flex size-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-xs ring-1 ring-zinc-950/10'
+
 /** Floating map navigation controls (locate, compass). */
 export const mapControlsClassName =
   'pointer-events-auto absolute right-2.5 z-20 flex flex-col gap-2 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] lg:top-1/2 lg:bottom-auto lg:-translate-y-1/2'

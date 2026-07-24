@@ -7,12 +7,11 @@ import { useActiveMode, useAppActions } from '../app-store'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
-  mapToolbarIconSegmentClassName,
 } from '../map/mobileMapChrome.const'
+import { MapToolbarLoadingIndicator } from './MapToolbarLoadingIndicator'
 
-export function ModeSwitcher(props: { isOsmDataBusy?: boolean }) {
+export function ModeSwitcher() {
   const activeMode = useActiveMode()
-  const isOsmDataBusy = props.isOsmDataBusy ?? false
   const { setActiveMode } = useAppActions()
 
   return (
@@ -51,19 +50,7 @@ export function ModeSwitcher(props: { isOsmDataBusy?: boolean }) {
           )
         })}
       </div>
-      {isOsmDataBusy ? (
-        <Tooltip content="Fetching data" placement="bottom">
-          <span
-            className={clsx(mapToolbarIconSegmentClassName, 'cursor-default hover:bg-white')}
-            aria-label="Fetching data"
-          >
-            <span
-              aria-hidden
-              className="size-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700"
-            />
-          </span>
-        </Tooltip>
-      ) : null}
+      <MapToolbarLoadingIndicator />
     </div>
   )
 }
