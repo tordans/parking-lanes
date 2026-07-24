@@ -1,44 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  emptyParsedOsmData,
-  expandFetchedEnvelope,
-  isViewportFetched,
-  mergeParsedOsm,
-  parseOsmResp,
-} from '../data-client'
-import type { MapBounds } from '../types/geo'
+import { emptyParsedOsmData, mergeParsedOsm, parseOsmResp } from '../data-client'
 import type { OsmWay } from '../types/osm-data'
-
-const viewport: MapBounds = {
-  south: 52.47,
-  west: 13.44,
-  north: 52.48,
-  east: 13.45,
-}
-
-describe('fetched envelope', () => {
-  test('empty envelope is not fetched', () => {
-    expect(isViewportFetched(viewport, null)).toBe(false)
-  })
-
-  test('viewport inside envelope is fetched', () => {
-    const envelope = expandFetchedEnvelope(null, viewport)
-    expect(isViewportFetched(viewport, envelope)).toBe(true)
-  })
-
-  test('expandFetchedEnvelope grows to cover panning', () => {
-    const first: MapBounds = { south: 52.47, west: 13.44, north: 52.48, east: 13.45 }
-    const pannedEast: MapBounds = { south: 52.47, west: 13.45, north: 52.48, east: 13.46 }
-
-    let envelope = expandFetchedEnvelope(null, first)
-    expect(isViewportFetched(first, envelope)).toBe(true)
-    expect(isViewportFetched(pannedEast, envelope)).toBe(false)
-
-    envelope = expandFetchedEnvelope(envelope, pannedEast)
-    expect(isViewportFetched(pannedEast, envelope)).toBe(true)
-    expect(isViewportFetched(first, envelope)).toBe(true)
-  })
-})
 
 describe('mergeParsedOsm', () => {
   test('merges nodes and keeps newer way versions', () => {

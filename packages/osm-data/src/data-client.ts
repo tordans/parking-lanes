@@ -1,5 +1,4 @@
 import axios from 'axios'
-import type { MapBounds } from './types/geo'
 import { type RawOsmData } from './types/osm-data'
 import { type ParsedOsmData } from './types/osm-data-storage'
 
@@ -10,32 +9,6 @@ export function emptyParsedOsmData(): ParsedOsmData {
     nodes: {},
     nodeCoords: {},
     waysInRelation: {},
-  }
-}
-
-export function isViewportFetched(
-  bounds: MapBounds,
-  envelope: MapBounds | null | undefined,
-): boolean {
-  if (!envelope) return false
-  return (
-    bounds.west >= envelope.west &&
-    bounds.south >= envelope.south &&
-    bounds.east <= envelope.east &&
-    bounds.north <= envelope.north
-  )
-}
-
-export function expandFetchedEnvelope(
-  envelope: MapBounds | null | undefined,
-  viewport: MapBounds,
-): MapBounds {
-  if (!envelope) return { ...viewport }
-  return {
-    west: Math.min(envelope.west, viewport.west),
-    south: Math.min(envelope.south, viewport.south),
-    east: Math.max(envelope.east, viewport.east),
-    north: Math.max(envelope.north, viewport.north),
   }
 }
 

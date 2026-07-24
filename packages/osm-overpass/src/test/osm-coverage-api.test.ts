@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { emptyParsedOsmData, type MapBounds } from '@osm-editor-kit/osm-data'
 import { QueryClient } from '@tanstack/react-query'
+import { boundsToPolygon } from '../coverage-geometry'
 import { createOsmCoverageApi } from '../create-osm-coverage-api'
 import { OsmDataSource } from '../osm-data-source'
 
@@ -10,6 +11,8 @@ const viewport: MapBounds = {
   north: 52.48,
   east: 13.45,
 }
+
+const mapSizePx = { width: 1000, height: 800 }
 
 type TestSessionParams = {
   editorMode: boolean
@@ -31,12 +34,14 @@ describe('ensureCoverage', () => {
     const key = testApi.sessionKey(params)
     queryClient.setQueryData(key, {
       graph: emptyParsedOsmData(),
-      envelope: viewport,
+      coverage: boundsToPolygon(viewport),
+      fetchHistory: { type: 'FeatureCollection', features: [] },
     })
 
     const result = await testApi.ensureCoverage(queryClient, {
       bounds: viewport,
       zoom: 18,
+      mapSizePx,
       ...params,
     })
 
@@ -50,9 +55,28 @@ describe('ensureCoverage', () => {
     const result = await testApi.ensureCoverage(queryClient, {
       bounds: viewport,
       zoom: 10,
+      mapSizePx,
       ...params,
     })
 
     expect(result.skipped).toBe(true)
+  })
+
+  test('records fetch history after a fetch', async () => {
+    const queryClient = new QueryClient()
+    const params = { editorMode: false, osmDataSource: OsmDataSource.OverpassVk }
+    const key = testApi.sessionKey(params)
+
+    await testApi.ensureCoverage(queryClient, {
+      bounds: viewport,
+      zoom: 18,
+      mapSizePx,
+      ...params,
+    })
+
+    const stored = queryClient.getQueryData<ReturnType<typeof testApi.emptyData>>(key)
+    expect(stored?.coverage).not.toBeNull()
+    expect(stored?.fetchHistory.features).toHaveLength(1)
+    expect(stored?.fetchHistory.features[0]?.properties.kind).toBe('initial')
   })
 })

@@ -45,14 +45,21 @@ export function useParkingOsmFetch() {
   const isFetching = useIsParkingOsmFetching()
 
   const loadParkingData = useCallback(
-    async (bounds: MapBounds, zoom: number, options?: { force?: boolean }) => {
+    async (
+      bounds: MapBounds,
+      zoom: number,
+      options?: { force?: boolean; mapSizePx?: { width: number; height: number } },
+    ) => {
       if (zoom < viewMinZoom) return
+
+      const mapSizePx = options?.mapSizePx ?? { width: 1024, height: 768 }
 
       setFetchButtonText('Fetching data...')
       try {
         await ensureParkingOsmCoverage(queryClient, {
           bounds,
           zoom,
+          mapSizePx,
           editorMode,
           osmDataSource,
           force: options?.force,
@@ -71,12 +78,12 @@ export function useParkingOsmFetch() {
   )
 
   const refetchAfterSave = useCallback(
-    async (bounds: MapBounds, zoom: number) => {
+    async (bounds: MapBounds, zoom: number, mapSizePx?: { width: number; height: number }) => {
       queryClient.setQueryData<ParkingOsmQueryData>(
         parkingOsmSessionKey({ editorMode, osmDataSource }),
         emptyParkingOsmData(),
       )
-      return loadParkingData(bounds, zoom, { force: true })
+      return loadParkingData(bounds, zoom, { force: true, mapSizePx })
     },
     [editorMode, loadParkingData, osmDataSource, queryClient],
   )

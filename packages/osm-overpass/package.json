@@ -12,9 +12,18 @@
   },
   "dependencies": {
     "@osm-editor-kit/osm-data": "workspace:*",
-    "@tanstack/react-query": "^5.85.5"
+    "@tanstack/react-query": "^5.85.5",
+    "@turf/area": "^7.3.5",
+    "@turf/bbox": "^7.3.5",
+    "@turf/bbox-polygon": "^7.3.5",
+    "@turf/difference": "^7.3.5",
+    "@turf/flatten": "^7.3.5",
+    "@turf/helpers": "^7.3.5",
+    "@turf/intersect": "^7.3.5",
+    "@turf/union": "^7.3.5"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
     "@types/react": "^19.1.10",
     "bun-types": "^1.2.20",
     "react": "^19.1.1",

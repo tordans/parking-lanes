@@ -242,6 +242,17 @@ export function toBounds(mapBounds: {
   }
 }
 
+export function getMapSizePx(map: { getContainer: () => HTMLElement }): {
+  width: number
+  height: number
+} {
+  const container = map.getContainer()
+  return {
+    width: container.clientWidth,
+    height: container.clientHeight,
+  }
+}
+
 export function emptyCollection(): ParkingFeatureCollection {
   return { type: 'FeatureCollection', features: [] }
 }

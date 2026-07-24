@@ -1,11 +1,4 @@
-export {
-  downloadOsmData,
-  emptyParsedOsmData,
-  expandFetchedEnvelope,
-  isViewportFetched,
-  mergeParsedOsm,
-  parseOsmResp,
-} from './data-client'
+export { downloadOsmData, emptyParsedOsmData, mergeParsedOsm, parseOsmResp } from './data-client'
 export type { LatLngLiteral, MapBounds } from './types/geo'
 export type {
   OsmElement,

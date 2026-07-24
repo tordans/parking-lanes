@@ -1,18 +1,29 @@
 import {
   downloadOsmData,
   emptyParsedOsmData,
-  expandFetchedEnvelope,
-  isViewportFetched,
   mergeParsedOsm,
   type MapBounds,
   type ParsedOsmData,
 } from '@osm-editor-kit/osm-data'
 import { type QueryClient, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import { useEffect } from 'react'
+import {
+  appendFetchHistory,
+  computeMissingFetchRequests,
+  createViewportFetchRequest,
+  emptyFetchHistory,
+  type CoverageFetchProps,
+  type MapSizePx,
+  unionIntoCoverage,
+} from './coverage-geometry'
+
+export type { CoverageFetchProps, MapSizePx } from './coverage-geometry'
 
 export type OsmCoverageQueryData = {
   graph: ParsedOsmData
-  envelope: MapBounds | null
+  coverage: Feature<Polygon | MultiPolygon> | null
+  fetchHistory: FeatureCollection<Polygon, CoverageFetchProps>
 }
 
 export type CreateOsmCoverageApiOptions<TSessionParams> = {
@@ -33,7 +44,8 @@ export function createOsmCoverageApi<TSessionParams>({
   function emptyData(): OsmCoverageQueryData {
     return {
       graph: emptyParsedOsmData(),
-      envelope: null,
+      coverage: null,
+      fetchHistory: emptyFetchHistory(),
     }
   }
 
@@ -42,11 +54,13 @@ export function createOsmCoverageApi<TSessionParams>({
     {
       bounds,
       zoom,
+      mapSizePx,
       force = false,
       ...sessionParams
     }: {
       bounds: MapBounds
       zoom: number
+      mapSizePx: MapSizePx
       force?: boolean
     } & TSessionParams,
   ): Promise<{ skipped: boolean }> {
@@ -57,23 +71,44 @@ export function createOsmCoverageApi<TSessionParams>({
     const result = await queryClient.fetchQuery({
       queryKey: coverageKey,
       queryFn: async () => {
-        const current = queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyData()
+        const current = force
+          ? emptyData()
+          : (queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyData())
 
         if (zoom < minZoom) {
           return { skipped: true as const }
         }
 
-        if (!force && isViewportFetched(bounds, current.envelope)) {
+        const requests = force
+          ? (() => {
+              const full = createViewportFetchRequest(bounds, zoom, mapSizePx, 'full')
+              return full ? [full] : []
+            })()
+          : computeMissingFetchRequests(bounds, current.coverage, zoom, mapSizePx)
+
+        if (requests.length === 0) {
           return { skipped: true as const }
         }
 
-        const url = getDownloadUrl(bounds, params)
-        const newGraph = await download(url)
-        const mergedGraph = mergeParsedOsm(current.graph, newGraph)
+        const groupId = crypto.randomUUID()
+        const fetchedAt = new Date().toISOString()
+        let graph = current.graph
+        let coverage = force ? null : current.coverage
+        let fetchHistory = force ? emptyFetchHistory() : current.fetchHistory
+
+        for (const request of requests) {
+          const url = getDownloadUrl(request.bounds, params)
+          const newGraph = await download(url)
+          graph = mergeParsedOsm(graph, newGraph)
+          coverage = unionIntoCoverage(coverage, request.bounds)
+        }
+
+        fetchHistory = appendFetchHistory(fetchHistory, groupId, fetchedAt, requests)
 
         queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
-          graph: mergedGraph,
-          envelope: expandFetchedEnvelope(current.envelope, bounds),
+          graph,
+          coverage,
+          fetchHistory,
         })
 
         return { skipped: false as const }

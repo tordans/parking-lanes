@@ -36,6 +36,7 @@ import {
 import { remapParkingOsmWayId } from './parking-osm-edits'
 import { MapGL, MapProvider, ParkingLayers } from './ParkingLayers'
 import {
+  getMapSizePx,
   interactiveLayerIds,
   toBounds,
   useCutWayHandler,
@@ -110,7 +111,9 @@ export function MapPage({
         replace: true,
       })
 
-      if (zoom >= viewMinZoom) void loadParkingData(bounds, zoom)
+      if (zoom >= viewMinZoom) {
+        void loadParkingData(bounds, zoom, { mapSizePx: getMapSizePx(map) })
+      }
     },
     [loadParkingData, navigate, setMapState],
   )
@@ -129,7 +132,9 @@ export function MapPage({
         bounds,
       })
 
-      if (zoom >= viewMinZoom) void loadParkingData(bounds, zoom)
+      if (zoom >= viewMinZoom) {
+        void loadParkingData(bounds, zoom, { mapSizePx: getMapSizePx(map) })
+      }
     },
     [loadParkingData, setMapState],
   )
@@ -172,7 +177,12 @@ export function MapPage({
 
       const currentMapState = mapState
       if (currentMapState?.bounds && currentMapState.zoom >= viewMinZoom) {
-        await refetchAfterSave(currentMapState.bounds, currentMapState.zoom)
+        const map = mapRef.current?.getMap()
+        await refetchAfterSave(
+          currentMapState.bounds,
+          currentMapState.zoom,
+          map ? getMapSizePx(map) : undefined,
+        )
       }
     } catch (err) {
       if (err instanceof OsmApiRequestError) alert(err.responseText || err.message)
@@ -275,7 +285,11 @@ export function MapPage({
       panel={
         <ControlPanel
           onFetch={() => {
-            if (mapState?.bounds) void loadParkingData(mapState.bounds, mapState.zoom)
+            if (!mapState?.bounds) return
+            const map = mapRef.current?.getMap()
+            void loadParkingData(mapState.bounds, mapState.zoom, {
+              mapSizePx: map ? getMapSizePx(map) : undefined,
+            })
           }}
           onSave={() => void handleSave()}
           onCutLane={handleCutLane}

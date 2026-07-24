@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
-import { OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import { OsmDataSource, boundsToPolygon } from '@osm-editor-kit/osm-overpass'
 import type { MapBounds } from '../parking/map/types'
 
 const viewport: MapBounds = {
@@ -76,6 +76,8 @@ describe('deriveParkingMapFeatures', () => {
   })
 })
 
+const mapSizePx = { width: 1000, height: 800 }
+
 describe('ensureParkingOsmCoverage', () => {
   test('skips network when viewport is covered', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
@@ -86,12 +88,14 @@ describe('ensureParkingOsmCoverage', () => {
     const key = parkingOsmSessionKey({ editorMode: false, osmDataSource: OsmDataSource.OverpassVk })
     queryClient.setQueryData(key, {
       graph: emptyParkingOsmData().graph,
-      envelope: viewport,
+      coverage: boundsToPolygon(viewport),
+      fetchHistory: { type: 'FeatureCollection', features: [] },
     })
 
     const result = await ensureParkingOsmCoverage(queryClient, {
       bounds: viewport,
       zoom: 18,
+      mapSizePx,
       editorMode: false,
       osmDataSource: OsmDataSource.OverpassVk,
     })
