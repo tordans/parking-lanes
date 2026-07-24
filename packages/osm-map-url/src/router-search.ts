@@ -1,4 +1,5 @@
 import { parseSearchWith, stringifySearchWith } from '@tanstack/react-router'
+import { type OsmFeatureRef, serializeFeatureParam } from './feature-param'
 import { type MapParam, serializeMapParam } from './map-param'
 
 const parseSearch = parseSearchWith(JSON.parse)
@@ -23,13 +24,33 @@ function makeSearchPretty(searchString: string) {
 function isMapParam(value: unknown): value is MapParam {
   if (typeof value !== 'object' || value == null) return false
   const map = value as Record<string, unknown>
-  return typeof map.zoom === 'number' && typeof map.lat === 'number' && typeof map.lng === 'number'
+  return (
+    typeof map.zoom === 'number' &&
+    typeof map.lat === 'number' &&
+    typeof map.lng === 'number' &&
+    (map.bearing === undefined || typeof map.bearing === 'number')
+  )
+}
+
+function isFeatureRef(value: unknown): value is OsmFeatureRef {
+  if (typeof value !== 'object' || value == null) return false
+  const feature = value as Record<string, unknown>
+  return (
+    (feature.type === 'way' || feature.type === 'node' || feature.type === 'relation') &&
+    typeof feature.id === 'number'
+  )
 }
 
 /** Keep ?map=zoom/lat/lng (tilda-geo), not JSON objects in the URL bar. */
 function normalizeSearchForStringify(search: Record<string, unknown>): Record<string, unknown> {
-  if (!isMapParam(search.map)) return search
-  return { ...search, map: serializeMapParam(search.map) }
+  let result = search
+  if (isMapParam(search.map)) {
+    result = { ...result, map: serializeMapParam(search.map) }
+  }
+  if (isFeatureRef(search.f)) {
+    result = { ...result, f: serializeFeatureParam(search.f) }
+  }
+  return result
 }
 
 export const routerSearch = {
