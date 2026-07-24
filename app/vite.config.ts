@@ -8,6 +8,7 @@ import browserslistToEsbuild from 'browserslist-to-esbuild'
 import { defineConfig } from 'vite'
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url))
+const monorepoRoot = path.resolve(projectRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
 
 export default defineConfig({
@@ -31,7 +32,7 @@ export default defineConfig({
     // Localhost only — one dev URL (OAuth callback used 127.0.0.1). Set a LAN IP here for other devices.
     host: '127.0.0.1',
     fs: {
-      allow: [projectRoot, bunLinksCache],
+      allow: [projectRoot, monorepoRoot, bunLinksCache],
     },
   },
   build: {

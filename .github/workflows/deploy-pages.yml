@@ -25,10 +25,10 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check-ci
       - run: bun run build
-      - run: cp dist/index.html dist/404.html
+      - run: cp app/dist/index.html app/dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: app/dist
 
   deploy:
     needs: build

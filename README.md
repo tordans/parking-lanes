@@ -25,8 +25,17 @@ For an easy way to automatically use this Node version just for your current she
 - Run `nvm use` to automatically use the Node version specified in the `.nvmrc`. You may need to
   `nvm install`.
 
+## Development
+
+From the repo root:
+
+```sh
+bun install
+bun run dev
+```
+
+The Vite app lives in `app/` (`@osm-editor-kit/osm-parking-lanes`). Run `bun run check` from the root before pushing.
+
 ## Install git hook
 
-Run `npm run prepare`. This will install [Husky](https://github.com/typicode/husky), which will automatically run the command in `.husky/pre-commit` before commiting.
-
-This prevents commits that fail typecheck or the linter being committed (you can always add a type or linter ignore though).
+[Husky](https://github.com/typicode/husky) runs `bun run check-ci` on pre-push (see `.husky/pre-push`).

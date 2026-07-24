@@ -4,6 +4,16 @@
   "workspaces": {
     "": {
       "name": "parking-lanes",
+      "devDependencies": {
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "oxfmt": "^0.56.0",
+        "oxlint": "^1.70.0",
+        "oxlint-config-react-hooks-js": "^1.1.4",
+      },
+    },
+    "app": {
+      "name": "@osm-editor-kit/osm-parking-lanes",
+      "version": "1.0.0",
       "dependencies": {
         "@headlessui/react": "^2.2",
         "@tanstack/react-form": "^1.19.2",
@@ -35,10 +45,6 @@
         "browserslist": "^4.25.3",
         "browserslist-to-esbuild": "^2.1.1",
         "bun-types": "^1.2.20",
-        "eslint-plugin-react-hooks": "^7.1.1",
-        "oxfmt": "^0.56.0",
-        "oxlint": "^1.70.0",
-        "oxlint-config-react-hooks-js": "^1.1.4",
         "sass": "^1.90.0",
         "tailwindcss": "^4.3.3",
         "typescript": "^7.0.0",
@@ -173,6 +179,8 @@
     "@maplibre/vt-pbf": ["@maplibre/vt-pbf@4.3.2", "", { "dependencies": { "@mapbox/point-geometry": "^1.1.0", "@types/geojson": "^7946.0.16", "pbf": "^5.1.0" } }, "sha512-j6p0AdjvAR19Z3XaCysle7A4ZSo08tYOzxD0Y9NQylwPAkwJJeYub5b2eVucdeDh7erhv69DahoLOevDRERRUw=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.6", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg=="],
+
+    "@osm-editor-kit/osm-parking-lanes": ["@osm-editor-kit/osm-parking-lanes@workspace:app"],
 
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 

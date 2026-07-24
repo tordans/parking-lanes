@@ -4,7 +4,7 @@ import reactHooksJs from 'oxlint-config-react-hooks-js/configs/recommended-lates
 export default defineConfig({
   plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'react'],
   options: { typeAware: false },
-  ignorePatterns: ['.agents/**', '.cursor/**', 'dist/**', 'src/routeTree.gen.ts'],
+  ignorePatterns: ['.agents/**', '.cursor/**', '**/dist/**', '**/routeTree.gen.ts'],
   rules: {
     'typescript/switch-exhaustiveness-check': 'error',
   },

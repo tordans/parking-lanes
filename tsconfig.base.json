@@ -1,6 +1,4 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
-  "exclude": ["node_modules", "dist", "src/test/**", "node_modules/osm-parking-tag-updater/**"],
   "compilerOptions": {
     "target": "ES2025",
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
@@ -26,14 +24,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo-app",
-    "noErrorTruncation": true,
-
-    "paths": {
-      "@/*": ["./src/*"],
-      "osm-parking-tag-updater/src/components/Tool/transpose/transpose": [
-        "./src/shims/osm-tag-updater-transpose.ts"
-      ]
-    }
+    "noErrorTruncation": true
   }
 }

@@ -17,5 +17,5 @@ export default defineConfig({
     newlinesBetween: false,
   },
   sortPackageJson: true,
-  ignorePatterns: ['.agents/**', '.cursor/**', 'dist/**', 'src/routeTree.gen.ts'],
+  ignorePatterns: ['.agents/**', '.cursor/**', '**/dist/**', '**/routeTree.gen.ts'],
 })
