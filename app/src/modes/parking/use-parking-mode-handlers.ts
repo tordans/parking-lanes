@@ -1,6 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback } from 'react'
+import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { useFeatureSelection } from '../../shell/map/feature-selection'
 import { useCutWayHandler, useLaneClickHandler, useOsmChangeHandler } from './map/use-parking-map'
 

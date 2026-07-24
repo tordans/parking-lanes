@@ -1,22 +1,27 @@
 import clsx from 'clsx'
 import { Compass, LocateFixed } from 'lucide-react'
-import { useState, type RefObject } from 'react'
-import type { MapRef } from 'react-map-gl/maplibre'
+import { useState } from 'react'
+import { useMap } from 'react-map-gl/maplibre'
+import { MAIN_MAP_ID } from './map-ids'
+import { useMapLoaded } from './map-store'
 import { mapControlButtonClassName, mapControlsClassName } from './mobileMapChrome.const'
 
 const bearingEpsilon = 0.5
 
-export function MapNavigationControls(props: {
-  mapRef: RefObject<MapRef | null>
-  bearing: number
-  onResetBearing: () => void
-}) {
+export function MapNavigationControls(props: { bearing: number }) {
+  const maps = useMap()
+  const map = maps[MAIN_MAP_ID]
+  const mapLoaded = useMapLoaded()
   const [locating, setLocating] = useState(false)
   const isRotated = Math.abs(props.bearing) > bearingEpsilon
 
+  const handleResetBearing = () => {
+    if (!mapLoaded) return
+    map?.easeTo({ bearing: 0, pitch: 0 })
+  }
+
   const handleLocate = () => {
-    const map = props.mapRef.current?.getMap()
-    if (!map) return
+    if (!mapLoaded) return
 
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by this browser.')
@@ -26,7 +31,7 @@ export function MapNavigationControls(props: {
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        map.flyTo({
+        map?.flyTo({
           center: [position.coords.longitude, position.coords.latitude],
           zoom: Math.max(map.getZoom(), 16),
         })
@@ -47,7 +52,8 @@ export function MapNavigationControls(props: {
           type="button"
           aria-label="Reset north"
           className={mapControlButtonClassName}
-          onClick={props.onResetBearing}
+          onClick={handleResetBearing}
+          disabled={!mapLoaded}
         >
           <Compass
             className="size-5"
@@ -60,7 +66,7 @@ export function MapNavigationControls(props: {
         type="button"
         aria-label="Locate me"
         className={clsx(mapControlButtonClassName, locating && 'animate-pulse')}
-        disabled={locating}
+        disabled={locating || !mapLoaded}
         onClick={handleLocate}
       >
         <LocateFixed className="size-5" aria-hidden />
