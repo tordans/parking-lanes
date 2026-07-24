@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { authenticate, logout, userInfo } from '../../../lib/osm-client'
-import { AuthState, useAppActions, useAuthState, useMapState } from '../../../shell/app-store'
+import { AuthState, useAppActions, useAuthState, useMapBounds } from '../../../shell/app-store'
+import { useMapViewport } from '../../../shell/map/map-viewport'
 import { clearChanges } from '../../../utils/changes-store'
 import { viewMinZoom } from './constants'
 import { useParkingOsmFetch } from './use-parking-osm-fetch'
@@ -9,7 +10,8 @@ const useDevServer = false
 
 export function useOsmAuth() {
   const authState = useAuthState()
-  const mapState = useMapState()
+  const mapBounds = useMapBounds()
+  const { zoom } = useMapViewport()
   const { loadParkingData } = useParkingOsmFetch()
   const { setAuthState, setOsmDisplayName, setChangesCount } = useAppActions()
 
@@ -28,14 +30,14 @@ export function useOsmAuth() {
       }
       setOsmDisplayName(displayName)
       setAuthState(AuthState.success)
-      if (mapState?.bounds && mapState.zoom >= viewMinZoom) {
-        await loadParkingData(mapState.bounds, mapState.zoom)
+      if (mapBounds && zoom >= viewMinZoom) {
+        await loadParkingData(mapBounds, zoom)
       }
     } catch (err) {
       setAuthState(AuthState.fail)
       alert(err)
     }
-  }, [loadParkingData, mapState, setAuthState, setOsmDisplayName])
+  }, [loadParkingData, mapBounds, setAuthState, setOsmDisplayName, zoom])
 
   const logoutUser = useCallback(() => {
     logout()

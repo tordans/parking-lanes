@@ -32,7 +32,7 @@ import {
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
 } from '../../utils/openfreemap-style'
-import { useActiveMode, useAppActions, useMapState } from '../app-store'
+import { useActiveMode, useAppActions, useMapBounds } from '../app-store'
 import { ControlPanel } from '../controls/ControlPanel'
 import { MapMobileToolbar } from '../controls/MapMobileToolbar'
 import { ModeSwitcher } from '../controls/ModeSwitcher'
@@ -45,6 +45,7 @@ import {
 import { MapGL, MapProvider } from './map-gl'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapActions } from './map-store'
+import { useMapViewport } from './map-viewport'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
 import { mapLegendClassName } from './mobileMapChrome.const'
@@ -75,23 +76,22 @@ function MapPageContent({
   initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
   const navigate = useNavigate({ from: '/' })
-  const { debug } = useSearch({ from: '/' })
+  const { debug, map: mapSearch } = useSearch({ from: '/' })
+  const { zoom: mapZoom } = useMapViewport()
   const queryClient = useQueryClient()
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const styleTransformApplied = useRef(false)
   const maps = useMap()
   const mainMap = maps[MAIN_MAP_ID]
 
-  const { setMapState, setChangesCount } = useAppActions()
+  const { setMapBounds, setChangesCount } = useAppActions()
   const { markMapLoaded } = useMapActions()
-  const mapState = useMapState()
+  const mapBounds = useMapBounds()
   const activeModeId = useActiveMode()
   const mode = useActiveStreetSpaceMode(activeModeId)
   const selectedOsmRef = useSelectedOsmRef()
   const { updateFeatureRef, clearSelection, selectionEpoch } = useFeatureSelection()
 
-  const [mapZoom, setMapZoom] = useState(initialView.zoom)
-  const [mapBearing, setMapBearing] = useState(initialView.bearing ?? 0)
   const [cursorStyle, setCursorStyle] = useState('grab')
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const [coverageHoverInfo, setCoverageHoverInfo] = useState<{
@@ -108,7 +108,7 @@ function MapPageContent({
   useDevOsmFixtureSeed()
 
   const handleOsmChange = useParkingOsmChangeHandler()
-  const handleLayerClick = useParkingLayerClickHandler(mapZoom)
+  const handleLayerClick = useParkingLayerClickHandler()
   const handleMapClick = useParkingMapClickHandler()
   const handleCutLane = useParkingCutLaneHandler()
   const ModeMapLayers = mode.MapLayers
@@ -123,7 +123,7 @@ function MapPageContent({
   )
 
   useVisibleViewportHeightVar(true)
-  useSelectionBacklights(mapZoom)
+  useSelectionBacklights()
 
   const onMove = useCallback(
     (event: ViewStateChangeEvent) => {
@@ -132,23 +132,10 @@ function MapPageContent({
     [scheduleCoverageCheck],
   )
 
-  const onRotate = useCallback((event: ViewStateChangeEvent) => {
-    setMapBearing(event.viewState.bearing)
-  }, [])
-
-  const onMoveEnd = useCallback(
-    (event: ViewStateChangeEvent) => {
-      const map = event.target
-      const { zoom, latitude, longitude, bearing } = event.viewState
-      const bounds = toBounds(map.getBounds())
-      setMapZoom(zoom)
-      setMapBearing(bearing)
-
-      setMapState({
-        zoom,
-        center: { lat: latitude, lng: longitude },
-        bounds,
-      })
+  const writeMapViewport = useCallback(
+    (viewState: ViewStateChangeEvent['viewState'], bounds: ReturnType<typeof toBounds>) => {
+      const { zoom, latitude, longitude, bearing } = viewState
+      setMapBounds(bounds)
       setLocationToCookie({ lat: latitude, lng: longitude }, zoom)
 
       void navigate({
@@ -158,10 +145,24 @@ function MapPageContent({
         }),
         replace: true,
       })
+    },
+    [navigate, setMapBounds],
+  )
 
+  const onRotate = useCallback(
+    (event: ViewStateChangeEvent) => {
+      writeMapViewport(event.viewState, toBounds(event.target.getBounds()))
+    },
+    [writeMapViewport],
+  )
+
+  const onMoveEnd = useCallback(
+    (event: ViewStateChangeEvent) => {
+      const map = event.target
+      writeMapViewport(event.viewState, toBounds(map.getBounds()))
       scheduleCoverageCheck(map)
     },
-    [navigate, scheduleCoverageCheck, setMapState],
+    [scheduleCoverageCheck, writeMapViewport],
   )
 
   const onMapLoad = useCallback(
@@ -183,20 +184,28 @@ function MapPageContent({
       const center = map.getCenter()
       const bearing = map.getBearing()
       const bounds = toBounds(map.getBounds())
-      setMapZoom(zoom)
-      setMapBearing(bearing)
+      setMapBounds(bounds)
 
-      setMapState({
-        zoom,
-        center: { lat: center.lat, lng: center.lng },
-        bounds,
-      })
+      if (!mapSearch) {
+        void navigate({
+          search: (prev) => ({
+            ...serializeMapSearch(prev),
+            map: serializeMapParam({
+              zoom,
+              lat: center.lat,
+              lng: center.lng,
+              bearing: bearing || undefined,
+            }),
+          }),
+          replace: true,
+        })
+      }
 
       if (zoom >= viewMinZoom) {
         void loadCoverageNow(bounds, zoom, { mapSizePx: getMapSizePx(map) })
       }
     },
-    [loadCoverageNow, markMapLoaded, setMapState],
+    [loadCoverageNow, mapSearch, markMapLoaded, navigate, setMapBounds],
   )
 
   const handleMouseMove = useCallback(
@@ -270,12 +279,11 @@ function MapPageContent({
       }
       setChangesCount(0)
 
-      const currentMapState = mapState
-      if (currentMapState?.bounds && currentMapState.zoom >= viewMinZoom) {
+      if (mapBounds && mapZoom >= viewMinZoom) {
         const maplibreMap = mainMap?.getMap()
         await refetchAfterSave(
-          currentMapState.bounds,
-          currentMapState.zoom,
+          mapBounds,
+          mapZoom,
           maplibreMap ? getMapSizePx(maplibreMap) : undefined,
         )
       }
@@ -285,7 +293,8 @@ function MapPageContent({
     }
   }, [
     mainMap,
-    mapState,
+    mapBounds,
+    mapZoom,
     queryClient,
     refetchAfterSave,
     selectedOsmRef,
@@ -331,9 +340,9 @@ function MapPageContent({
                 <MapResizeHandler containerRef={mapContainerRef} />
                 <AttributionControl compact position="bottom-left" />
                 {debug ? <CoverageDebugLayers hoveredGroupId={hoveredGroupId} /> : null}
-                <ModeMapLayers mapZoom={mapZoom} />
+                <ModeMapLayers />
               </MapGL>
-              <ViewMinZoomOverlay zoom={mapZoom} />
+              <ViewMinZoomOverlay />
             </div>
           </div>
 
@@ -343,7 +352,7 @@ function MapPageContent({
             <ModeSwitcher isOsmDataBusy={isBusy} />
           </div>
 
-          <MapNavigationControls bearing={mapBearing} />
+          <MapNavigationControls />
 
           <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-10 flex flex-col gap-2 lg:top-2.5">
             {debug && coverageHoverInfo ? (

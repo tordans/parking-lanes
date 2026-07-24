@@ -7,8 +7,9 @@ import {
   mapillaryUrl,
 } from '@osm-editor-kit/osm-editor-links'
 import { Button } from '../../../components/catalyst/button'
-import { AuthState, useAuthState, useMapState } from '../../../shell/app-store'
+import { AuthState, useAuthState } from '../../../shell/app-store'
 import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
+import { useMapViewport } from '../../../shell/map/map-viewport'
 import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
@@ -20,7 +21,7 @@ export function OsmObjectPanel(props: {
   onChange?: (way: OsmWay) => void
   onClose?: () => void
 }) {
-  const mapState = useMapState()
+  const mapViewport = useMapViewport()
   const selectedOsmRef = useSelectedOsmRef()
   const authState = useAuthState()
   const { login } = useOsmAuth()
@@ -44,7 +45,7 @@ export function OsmObjectPanel(props: {
     null
 
   if (!selectedOsmObject) {
-    const belowMinZoom = mapState != null && mapState.zoom < viewMinZoom
+    const belowMinZoom = mapViewport.zoom < viewMinZoom
     return (
       <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
         {belowMinZoom ? (
@@ -80,7 +81,7 @@ export function OsmObjectPanel(props: {
           </a>
           <span>, </span>
           <a
-            href={`${mapillaryUrl(mapState?.center ?? { lat: 0, lng: 0 })}`}
+            href={`${mapillaryUrl({ lat: mapViewport.lat, lng: mapViewport.lng })}`}
             target="_blank"
             rel="noreferrer"
             className="text-blue-600 hover:underline"

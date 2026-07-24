@@ -4,16 +4,18 @@ import { useState } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
+import { useMapViewport } from './map-viewport'
 import { mapControlButtonClassName, mapControlsClassName } from './mobileMapChrome.const'
 
 const bearingEpsilon = 0.5
 
-export function MapNavigationControls(props: { bearing: number }) {
+export function MapNavigationControls() {
+  const { bearing = 0 } = useMapViewport()
   const maps = useMap()
   const map = maps[MAIN_MAP_ID]
   const mapLoaded = useMapLoaded()
   const [locating, setLocating] = useState(false)
-  const isRotated = Math.abs(props.bearing) > bearingEpsilon
+  const isRotated = Math.abs(bearing) > bearingEpsilon
 
   const handleResetBearing = () => {
     if (!mapLoaded) return
@@ -55,11 +57,7 @@ export function MapNavigationControls(props: { bearing: number }) {
           onClick={handleResetBearing}
           disabled={!mapLoaded}
         >
-          <Compass
-            className="size-5"
-            aria-hidden
-            style={{ transform: `rotate(${-props.bearing}deg)` }}
-          />
+          <Compass className="size-5" aria-hidden style={{ transform: `rotate(${-bearing}deg)` }} />
         </button>
       ) : null}
       <button

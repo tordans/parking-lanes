@@ -3,9 +3,7 @@ import type { ComponentType } from 'react'
 
 export type StreetSpaceModeId = 'parking' | 'width' | 'lanes' | 'surface' | 'sidewalks'
 
-export type ModeMapProps = {
-  mapZoom: number
-}
+export type ModeMapProps = Record<string, never>
 
 export type ModePanelProps = {
   onCutLane: (way: OsmWay) => void

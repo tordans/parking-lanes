@@ -4,8 +4,8 @@ import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { useFeatureSelection } from '../../shell/map/feature-selection'
 import { useCutWayHandler, useLaneClickHandler, useOsmChangeHandler } from './map/use-parking-map'
 
-export function useParkingLayerClickHandler(mapZoom: number) {
-  const handleLaneClick = useLaneClickHandler(mapZoom)
+export function useParkingLayerClickHandler() {
+  const handleLaneClick = useLaneClickHandler()
   const { handleCutMarkerClick } = useCutWayHandler()
 
   return useCallback(

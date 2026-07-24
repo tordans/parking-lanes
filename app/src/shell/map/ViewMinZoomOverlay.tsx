@@ -3,8 +3,10 @@ import { Button } from '../../components/catalyst/button'
 import { viewMinZoom } from '../../modes/parking'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
+import { useMapViewport } from './map-viewport'
 
-export function ViewMinZoomOverlay({ zoom }: { zoom: number }) {
+export function ViewMinZoomOverlay() {
+  const { zoom } = useMapViewport()
   const maps = useMap()
   const map = maps[MAIN_MAP_ID]
   const mapLoaded = useMapLoaded()

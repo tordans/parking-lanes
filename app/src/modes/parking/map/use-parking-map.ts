@@ -37,7 +37,7 @@ export function useOsmChangeHandler() {
   )
 }
 
-export function useLaneClickHandler(_mapZoom: number) {
+export function useLaneClickHandler() {
   const { selectFeature } = useFeatureSelection()
 
   return useCallback(

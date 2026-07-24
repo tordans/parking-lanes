@@ -3,7 +3,8 @@ import { handleJosmLinkClick, idEditorUrl, josmUrl } from '@osm-editor-kit/osm-e
 import { useState } from 'react'
 import { Button } from '../../components/catalyst/button'
 import { useOsmAuth } from '../../modes/parking/map/use-osm-auth'
-import { AuthState, useAuthState, useMapState, useOsmDisplayName } from '../app-store'
+import { AuthState, useAuthState, useMapBounds, useOsmDisplayName } from '../app-store'
+import { useMapViewport } from '../map/map-viewport'
 
 type Props = {
   variant?: 'compact' | 'panel'
@@ -13,7 +14,8 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
   const [linksShown, setLinksShown] = useState(false)
   const authState = useAuthState()
   const osmDisplayName = useOsmDisplayName()
-  const mapState = useMapState()
+  const mapBounds = useMapBounds()
+  const mapViewport = useMapViewport()
   const { logout } = useOsmAuth()
 
   const loginLabelColor =
@@ -38,10 +40,13 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
             Tagging
           </a>
           <span> | </span>
-          {mapState != null ? (
+          {mapBounds != null ? (
             <>
               <a
-                href={idEditorUrl({ zoom: mapState.zoom, center: mapState.center })}
+                href={idEditorUrl({
+                  zoom: mapViewport.zoom,
+                  center: { lat: mapViewport.lat, lng: mapViewport.lng },
+                })}
                 target="_blank"
                 rel="noreferrer"
                 className={linkClass}
@@ -50,7 +55,7 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
               </a>
               <span>, </span>
               <a
-                href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapState.bounds)}
+                href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapBounds)}
                 target="_blank"
                 rel="noreferrer"
                 className={linkClass}
@@ -105,10 +110,13 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
           >
             Tagging guide
           </a>
-          {mapState != null ? (
+          {mapBounds != null ? (
             <>
               <a
-                href={idEditorUrl({ zoom: mapState.zoom, center: mapState.center })}
+                href={idEditorUrl({
+                  zoom: mapViewport.zoom,
+                  center: { lat: mapViewport.lat, lng: mapViewport.lng },
+                })}
                 target="_blank"
                 rel="noreferrer"
                 className={linkClass}
@@ -116,7 +124,7 @@ export function AppAboutContent({ variant = 'panel' }: Props) {
                 Open viewport in iD
               </a>
               <a
-                href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapState.bounds)}
+                href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapBounds)}
                 target="_blank"
                 rel="noreferrer"
                 className={linkClass}
