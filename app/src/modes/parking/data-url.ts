@@ -6,7 +6,7 @@ import {
   OsmDataSource,
   overpassDeUrl,
   overpassVkUrl,
-} from '@osm-editor-kit/osm-overpass'
+} from '@osm-editor-kit/osm-coverage'
 
 export function getUrl(
   bounds: MapBounds,

@@ -3,7 +3,7 @@ import {
   type ConditionalValue,
   buildConditionalTagValue,
   parseConditionalTagForEdit,
-} from '@osm-editor-kit/osm-tags'
+} from '@osm-editor-kit/osm-tag-syntax'
 import { useState } from 'react'
 import { Input } from '../../../../components/catalyst/input'
 import { type TagValue } from '../../../../utils/types/parking'

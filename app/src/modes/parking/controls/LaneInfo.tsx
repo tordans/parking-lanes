@@ -5,7 +5,7 @@ import {
   josmUrl,
   mapillaryUrl,
 } from '@osm-editor-kit/osm-editor-links'
-import { overpassDeUrl } from '@osm-editor-kit/osm-overpass'
+import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { Button } from '../../../components/catalyst/button'
 import { useEditorMode, useMapState } from '../../../shell/app-store'
 import { useSelectedOsmId } from '../map/parking-map-store'

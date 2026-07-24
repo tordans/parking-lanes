@@ -1,5 +1,5 @@
 import type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
-import { OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import { OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import { create } from 'zustand'
 import type { StreetSpaceModeId } from '../modes/types'
 

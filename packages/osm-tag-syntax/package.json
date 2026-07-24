@@ -1,5 +1,5 @@
 {
-  "name": "@osm-editor-kit/osm-tags",
+  "name": "@osm-editor-kit/osm-tag-syntax",
   "version": "0.0.0",
   "private": true,
   "type": "module",

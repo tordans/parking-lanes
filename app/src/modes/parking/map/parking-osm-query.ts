@@ -1,5 +1,5 @@
 import type { MapBounds } from '@osm-editor-kit/osm-data'
-import { createOsmCoverageApi, OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import { createOsmCoverageApi, OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect } from 'react'
 import { useAppActions, useEditorMode, useOsmDataSource } from '../../../shell/app-store'

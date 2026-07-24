@@ -1,4 +1,4 @@
-import type { CoverageFetchProps } from '@osm-editor-kit/osm-overpass'
+import type { CoverageFetchProps } from '@osm-editor-kit/osm-coverage'
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'

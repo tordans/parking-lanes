@@ -21,8 +21,8 @@
         "@osm-editor-kit/osm-editor-links": "workspace:*",
         "@osm-editor-kit/osm-map-url": "workspace:*",
         "@osm-editor-kit/osm-oauth": "workspace:*",
-        "@osm-editor-kit/osm-overpass": "workspace:*",
-        "@osm-editor-kit/osm-tags": "workspace:*",
+        "@osm-editor-kit/osm-coverage": "workspace:*",
+        "@osm-editor-kit/osm-tag-syntax": "workspace:*",
         "@osm-editor-kit/osm-ui": "workspace:*",
         "@tanstack/react-form": "^1.19.2",
         "@tanstack/react-pacer": "^0.22.1",
@@ -125,8 +125,8 @@
         "typescript": "^7.0.0",
       },
     },
-    "packages/osm-overpass": {
-      "name": "@osm-editor-kit/osm-overpass",
+    "packages/osm-coverage": {
+      "name": "@osm-editor-kit/osm-coverage",
       "version": "0.0.0",
       "dependencies": {
         "@osm-editor-kit/osm-data": "workspace:*",
@@ -151,8 +151,8 @@
         "react": "^19.0.0",
       },
     },
-    "packages/osm-tags": {
-      "name": "@osm-editor-kit/osm-tags",
+    "packages/osm-tag-syntax": {
+      "name": "@osm-editor-kit/osm-tag-syntax",
       "version": "0.0.0",
       "dependencies": {
         "opening_hours": "^3.14.0",
@@ -305,9 +305,9 @@
 
     "@osm-editor-kit/osm-oauth": ["@osm-editor-kit/osm-oauth@workspace:packages/osm-oauth"],
 
-    "@osm-editor-kit/osm-overpass": ["@osm-editor-kit/osm-overpass@workspace:packages/osm-overpass"],
+    "@osm-editor-kit/osm-coverage": ["@osm-editor-kit/osm-coverage@workspace:packages/osm-coverage"],
 
-    "@osm-editor-kit/osm-tags": ["@osm-editor-kit/osm-tags@workspace:packages/osm-tags"],
+    "@osm-editor-kit/osm-tag-syntax": ["@osm-editor-kit/osm-tag-syntax@workspace:packages/osm-tag-syntax"],
 
     "@osm-editor-kit/osm-ui": ["@osm-editor-kit/osm-ui@workspace:packages/osm-ui"],
 

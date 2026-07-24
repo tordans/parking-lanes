@@ -1,5 +1,5 @@
 import { handleJosmLinkClick, idEditorUrl, josmUrl } from '@osm-editor-kit/osm-editor-links'
-import { overpassDeUrl } from '@osm-editor-kit/osm-overpass'
+import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { useState } from 'react'
 import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
 import { Label } from '../../components/catalyst/fieldset'

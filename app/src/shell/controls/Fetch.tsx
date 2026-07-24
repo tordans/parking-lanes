@@ -1,4 +1,4 @@
-import { OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import { OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import { useState } from 'react'
 import { Button, TouchTarget } from '../../components/catalyst/button'
 import { assetUrl } from '../../utils/asset-url'

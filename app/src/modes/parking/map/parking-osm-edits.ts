@@ -1,5 +1,5 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import type { OsmDataSource } from '@osm-editor-kit/osm-overpass'
+import type { OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   emptyParkingOsmData,

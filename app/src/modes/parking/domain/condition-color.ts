@@ -1,4 +1,4 @@
-import { getOpeningHourseState } from '@osm-editor-kit/osm-tags'
+import { getOpeningHourseState } from '@osm-editor-kit/osm-tag-syntax'
 import { type ConditionColor, type ParkingConditions } from '../../../utils/types/conditions'
 import { legend } from '../legend'
 

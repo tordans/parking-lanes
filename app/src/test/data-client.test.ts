@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
-import { OsmDataSource, boundsToPolygon } from '@osm-editor-kit/osm-overpass'
+import { OsmDataSource, boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds } from '../modes/parking/map/types'
 
 const viewport: MapBounds = {
