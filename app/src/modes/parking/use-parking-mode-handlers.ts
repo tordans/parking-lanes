@@ -1,0 +1,44 @@
+import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { MapLayerMouseEvent } from 'maplibre-gl'
+import { useCallback } from 'react'
+import { useParkingMapActions } from './map/parking-map-store'
+import { useCutWayHandler, useLaneClickHandler, useOsmChangeHandler } from './map/use-parking-map'
+
+export function useParkingLayerClickHandler(mapZoom: number) {
+  const handleLaneClick = useLaneClickHandler(mapZoom)
+  const { handleCutMarkerClick } = useCutWayHandler()
+
+  return useCallback(
+    (event: MapLayerMouseEvent) => {
+      const layerId = event.features?.[0]?.layer?.id
+      if (layerId === 'parking-cut-markers-hitarea-layer') {
+        handleCutMarkerClick(event)
+        return
+      }
+      handleLaneClick(event)
+    },
+    [handleCutMarkerClick, handleLaneClick],
+  )
+}
+
+export function useParkingMapClickHandler() {
+  const mapActions = useParkingMapActions()
+
+  return useCallback(() => {
+    mapActions.clearBacklights()
+    mapActions.setSelectedOsmId(null)
+  }, [mapActions])
+}
+
+export function useParkingCutLaneHandler() {
+  const { showCutMarkers } = useCutWayHandler()
+
+  return useCallback(
+    (way: OsmWay) => {
+      showCutMarkers(way)
+    },
+    [showCutMarkers],
+  )
+}
+
+export { useOsmChangeHandler as useParkingOsmChangeHandler }

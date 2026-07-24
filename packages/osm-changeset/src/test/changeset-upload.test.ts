@@ -20,11 +20,11 @@ describe('buildChangesetTags', () => {
     expect(
       buildChangesetTags('PLanes', '0.9.0', {
         host: 'https://example.com/parking/',
-        comment: 'Parking lanes',
+        comment: 'Street Space Editor',
       }),
     ).toEqual({
       created_by: 'PLanes 0.9.0',
-      comment: 'Parking lanes',
+      comment: 'Street Space Editor',
       host: 'https://example.com/parking/',
     })
   })

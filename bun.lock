@@ -12,7 +12,7 @@
       },
     },
     "app": {
-      "name": "@osm-editor-kit/osm-parking-lanes",
+      "name": "@osm-editor-kit/street-space-editor",
       "version": "1.0.0",
       "dependencies": {
         "@headlessui/react": "^2.2",
@@ -306,11 +306,11 @@
 
     "@osm-editor-kit/osm-overpass": ["@osm-editor-kit/osm-overpass@workspace:packages/osm-overpass"],
 
-    "@osm-editor-kit/osm-parking-lanes": ["@osm-editor-kit/osm-parking-lanes@workspace:app"],
-
     "@osm-editor-kit/osm-tags": ["@osm-editor-kit/osm-tags@workspace:packages/osm-tags"],
 
     "@osm-editor-kit/osm-ui": ["@osm-editor-kit/osm-ui@workspace:packages/osm-ui"],
+
+    "@osm-editor-kit/street-space-editor": ["@osm-editor-kit/street-space-editor@workspace:app"],
 
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 

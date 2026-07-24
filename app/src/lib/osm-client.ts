@@ -17,7 +17,7 @@ const client = createOsmOAuthClient(
     getRedirectUrl: getOsmOAuthRedirectUrl,
     getApiUrl: (useDevServer) => (useDevServer ? osmDevUrl : osmProdApiUrl),
   },
-  { changesetTags: { comment: 'Parking lanes' } },
+  { changesetTags: { comment: 'Street Space Editor' } },
 )
 
 export const { authenticate, logout, userInfo, uploadChanges } = client

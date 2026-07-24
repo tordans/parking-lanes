@@ -1,11 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  canShowDebugToggle,
-  colorForGroupId,
-  isDebugUser,
-  parseDebugSearch,
-} from '../parking/debug'
-import { mapSearchSchema } from '../parking/map/search-schema'
+import { canShowDebugToggle, colorForGroupId, isDebugUser, parseDebugSearch } from '../shell/debug'
+import { mapSearchSchema } from '../shell/map/search-schema'
 
 describe('parseDebugSearch', () => {
   test('accepts boolean, number, and string literals', () => {

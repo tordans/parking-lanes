@@ -1,0 +1,87 @@
+import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type ParkingTagInfo } from '../../../../utils/types/parking'
+import { ConditionalInput } from './ConditionalInput'
+import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
+import { PresetSigns } from './PresetSigns'
+import { SimpleTagInput } from './SimpleTagInput'
+
+export function SideGroup(props: {
+  osm: OsmWay
+  side: 'both' | 'left' | 'right'
+  shown: boolean
+  onChange: (key: string, value: string) => void
+}) {
+  return (
+    <div
+      id={props.side}
+      className={`tags-block tags-block_${props.side}`}
+      style={{ display: props.shown ? undefined : 'none' }}
+    >
+      <PresetSigns osm={props.osm} side={props.side} onChange={props.onChange} />
+      <table className="tags-inputs-table">
+        <TagInputs osm={props.osm} side={props.side} onChange={props.onChange} />
+      </table>
+    </div>
+  )
+}
+
+function TagInputs(props: {
+  osm: OsmWay
+  side: 'both' | 'left' | 'right'
+  onChange: (key: string, value: string) => void
+}) {
+  const unsupportedTags = Object.keys(props.osm.tags)
+    .filter((x) => x.startsWith('parking:'))
+    .filter((x) => x.includes(props.side))
+    /* eslint-disable @typescript-eslint/indent */
+    .map<ParkingTagInfo>((x) => ({
+      template: x.replace(props.side, '{side}'),
+      checkForNeedShowing: (_tags, _side) => true,
+    }))
+    /* eslint-enable @typescript-eslint/indent */
+    .filter((x) => !parkingLaneTags.find((t) => t.template === x.template))
+
+  const inputs = parkingLaneTags
+    .concat(unsupportedTags)
+    .map((tagInfo) => (
+      <TagInput
+        key={tagInfo.template}
+        osm={props.osm}
+        side={props.side}
+        tagInfo={tagInfo}
+        onChange={props.onChange}
+      />
+    ))
+
+  return <tbody>{inputs}</tbody>
+}
+
+function TagInput(props: {
+  osm: OsmWay
+  side: 'both' | 'left' | 'right'
+  tagInfo: ParkingTagInfo
+  onChange: (key: string, value: string) => void
+}) {
+  const tag = resolveTagKey(props.tagInfo.template, props.side)
+  const label = getTagLabel(props.tagInfo.template, props.side, tag)
+  const hide = !shouldShowTag(props.tagInfo, props.osm.tags, props.side)
+  return tag.endsWith(':conditional') ? (
+    <ConditionalInput
+      osm={props.osm}
+      tag={tag}
+      label={label}
+      hide={hide}
+      values={props.tagInfo.values}
+      onChange={(v) => props.onChange(tag, v)}
+    />
+  ) : (
+    <SimpleTagInput
+      osm={props.osm}
+      tag={tag}
+      label={label}
+      hide={hide}
+      values={props.tagInfo.values}
+      onChange={(v) => props.onChange(tag, v)}
+    />
+  )
+}

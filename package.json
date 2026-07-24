@@ -1,13 +1,13 @@
 {
   "name": "parking-lanes",
   "private": true,
-  "description": "Parking lanes viewer from OpenStreetMap — Bun workspace monorepo",
+  "description": "Street Space Editor for OpenStreetMap — Bun workspace monorepo",
   "type": "module",
   "workspaces": ["app", "packages/*"],
   "scripts": {
-    "dev": "bun run --filter @osm-editor-kit/osm-parking-lanes dev",
-    "build": "bun run --filter @osm-editor-kit/osm-parking-lanes build",
-    "preview": "bun run --filter @osm-editor-kit/osm-parking-lanes preview",
+    "dev": "bun run --filter @osm-editor-kit/street-space-editor dev",
+    "build": "bun run --filter @osm-editor-kit/street-space-editor build",
+    "preview": "bun run --filter @osm-editor-kit/street-space-editor preview",
     "type-check": "bun run --filter '*' type-check",
     "lint": "oxlint --fix --fix-dangerously --deny-warnings -c oxlint.config.mjs app packages",
     "lint-check": "oxlint --deny-warnings -c oxlint.config.mjs app packages",

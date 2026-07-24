@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
 import { OsmDataSource, boundsToPolygon } from '@osm-editor-kit/osm-overpass'
-import type { MapBounds } from '../parking/map/types'
+import type { MapBounds } from '../modes/parking/map/types'
 
 const viewport: MapBounds = {
   south: 52.47,
@@ -23,8 +23,8 @@ describe('parking osm edits', () => {
   test('updateParkingOsmWay stores immutable way copy', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
     const { emptyParkingOsmData, parkingOsmSessionKey } =
-      await import('../parking/map/parking-osm-query')
-    const { updateParkingOsmWay } = await import('../parking/map/parking-osm-edits')
+      await import('../modes/parking/map/parking-osm-query')
+    const { updateParkingOsmWay } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
     const key = parkingOsmSessionKey({ editorMode: false, osmDataSource: OsmDataSource.OverpassVk })
@@ -40,8 +40,8 @@ describe('parking osm edits', () => {
   test('remapParkingOsmWayId moves way to new id', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
     const { emptyParkingOsmData, parkingOsmSessionKey } =
-      await import('../parking/map/parking-osm-query')
-    const { remapParkingOsmWayId } = await import('../parking/map/parking-osm-edits')
+      await import('../modes/parking/map/parking-osm-query')
+    const { remapParkingOsmWayId } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
     const key = parkingOsmSessionKey({ editorMode: true, osmDataSource: OsmDataSource.OverpassVk })
@@ -60,7 +60,8 @@ describe('parking osm edits', () => {
 
 describe('deriveParkingMapFeatures', () => {
   test('returns empty collections without bounds', async () => {
-    const { deriveParkingMapFeatures } = await import('../parking/map/use-parking-map-features')
+    const { deriveParkingMapFeatures } =
+      await import('../modes/parking/map/use-parking-map-features')
 
     const result = deriveParkingMapFeatures(
       emptyParsedOsmData(),
@@ -82,7 +83,7 @@ describe('ensureParkingOsmCoverage', () => {
   test('skips network when viewport is covered', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
     const { ensureParkingOsmCoverage, emptyParkingOsmData, parkingOsmSessionKey } =
-      await import('../parking/map/parking-osm-query')
+      await import('../modes/parking/map/parking-osm-query')
 
     const queryClient = new QueryClient()
     const key = parkingOsmSessionKey({ editorMode: false, osmDataSource: OsmDataSource.OverpassVk })

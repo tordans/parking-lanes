@@ -4,7 +4,8 @@ import { OSM_OAUTH_CLIENT_ID, OSM_OAUTH_CLIENT_ID_DEV } from './osmOAuth.const'
  * OSM changeset `created_by` and HTTP User-Agent (required by API policy).
  * Format: `name/version (repo URL)`.
  */
-export const OSM_APP_EDITOR = 'PLanes/0.9.0 (https://github.com/osmberlin/street-parking-editor)'
+export const OSM_APP_EDITOR =
+  'StreetSpace/0.9.0 (https://github.com/osmberlin/street-parking-editor)'
 
 export const OSM_API_USER_AGENT = OSM_APP_EDITOR
 

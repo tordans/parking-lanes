@@ -36,7 +36,7 @@ const { uploadChanges } = createOsmOAuthClient(
     getApiUrl: (useDev) =>
       useDev ? 'https://master.apis.dev.openstreetmap.org' : 'https://api.openstreetmap.org',
   },
-  { changesetTags: { comment: 'Parking lanes' } },
+  { changesetTags: { comment: 'Street Space Editor' } },
 )
 
 describe('uploadChanges', () => {
@@ -72,7 +72,7 @@ describe('uploadChanges', () => {
     expect(mockUploadChangeset).toHaveBeenCalledWith(
       {
         created_by: 'PLanes 0.9.0',
-        comment: 'Parking lanes',
+        comment: 'Street Space Editor',
         host: 'https://example.com/lanes/',
       },
       {

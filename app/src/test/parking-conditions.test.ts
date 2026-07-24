@@ -1,5 +1,5 @@
 import { type OsmTags } from '@osm-editor-kit/osm-data'
-import { getConditions } from '../parking/access-condition'
+import { getConditions } from '../modes/parking/access-condition'
 import { type ParkingConditions } from '../utils/types/conditions'
 
 describe('#getConditions()', () => {

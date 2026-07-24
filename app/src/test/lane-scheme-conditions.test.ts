@@ -4,7 +4,7 @@ import {
   parseConditionsBySchemeV1,
   parseConditionsBySchemeV2,
   parseDefaultCondition,
-} from '../parking/domain/lane-scheme-conditions'
+} from '../modes/parking/domain/lane-scheme-conditions'
 
 describe('lane-scheme conditions', () => {
   test('scheme v2 conditional with default tag', () => {

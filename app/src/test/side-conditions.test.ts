@@ -1,5 +1,5 @@
 import { type OsmTags } from '@osm-editor-kit/osm-data'
-import { getSideConditions } from '../parking/domain/side-conditions'
+import { getSideConditions } from '../modes/parking/domain/side-conditions'
 
 describe('side conditions', () => {
   test('prefers new parking scheme over legacy lane scheme', () => {

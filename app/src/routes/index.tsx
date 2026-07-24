@@ -1,7 +1,7 @@
 import { getLocationFromCookie } from '@osm-editor-kit/osm-map-url'
 import { createFileRoute } from '@tanstack/react-router'
-import { MapPage } from '../parking/map/MapPage'
-import { mapSearchSchema } from '../parking/map/search-schema'
+import { MapPage } from '../shell/map/MapPage'
+import { mapSearchSchema } from '../shell/map/search-schema'
 
 export const Route = createFileRoute('/')({
   validateSearch: mapSearchSchema,

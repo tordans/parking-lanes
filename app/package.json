@@ -1,7 +1,7 @@
 {
-  "name": "@osm-editor-kit/osm-parking-lanes",
+  "name": "@osm-editor-kit/street-space-editor",
   "version": "1.0.0",
-  "description": "Parking lanes viewer from OpenStreetMap",
+  "description": "Street Space Editor for OpenStreetMap",
   "keywords": [],
   "homepage": "https://osmberlin.github.io/street-parking-editor/",
   "license": "MIT",

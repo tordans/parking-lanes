@@ -4,7 +4,7 @@ import {
   getTagMigrationInfo,
   hasTagMigration,
   tagsToTagLines,
-} from '../parking/domain/editor/tag-migration'
+} from '../modes/parking/domain/editor/tag-migration'
 
 describe('tag migration', () => {
   test('tagsToTagLines serializes tags', () => {

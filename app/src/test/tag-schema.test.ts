@@ -5,7 +5,7 @@ import {
   parkingLaneTags,
   resolveTagKey,
   shouldShowTag,
-} from '../parking/domain/editor/tag-schema'
+} from '../modes/parking/domain/editor/tag-schema'
 
 describe('tag schema', () => {
   test('resolveTagKey substitutes side placeholder', () => {
