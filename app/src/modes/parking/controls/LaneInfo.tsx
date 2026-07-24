@@ -8,10 +8,10 @@ import {
 } from '@osm-editor-kit/osm-editor-links'
 import { Button } from '../../../components/catalyst/button'
 import { AuthState, useAuthState, useMapState } from '../../../shell/app-store'
-import { useSelectedOsmRef } from '../map/parking-map-store'
+import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
+import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
-import { viewMinZoom } from '../map/use-parking-map'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
 

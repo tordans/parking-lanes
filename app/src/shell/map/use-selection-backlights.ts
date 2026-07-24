@@ -2,11 +2,11 @@ import { useEffect } from 'react'
 import {
   getLaneFeatureByOsmId,
   useParkingMapActions,
-  useSelectedOsmRef,
 } from '../../modes/parking/map/parking-map-store'
 import { createBacklightFeatures } from '../../modes/parking/map/parse-lanes'
 import { useParkingMapFeatures } from '../../modes/parking/map/use-parking-map-features'
 import { useDatetime, useMapState } from '../app-store'
+import { useSelectedOsmRef } from './feature-selection'
 
 /** Restore lane backlights when selection is hydrated from URL after data loads. */
 export function useSelectionBacklights(mapZoom: number) {
@@ -20,22 +20,25 @@ export function useSelectionBacklights(mapZoom: number) {
     datetime,
   })
 
-  useEffect(() => {
-    if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
-      clearBacklights()
-      return
-    }
+  useEffect(
+    function syncSelectionBacklights() {
+      if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
+        clearBacklights()
+        return
+      }
 
-    const laneFeature = getLaneFeatureByOsmId(selectedOsmRef.id, lanes)
-    if (laneFeature?.geometry.type !== 'LineString') {
-      clearBacklights()
-      return
-    }
+      const laneFeature = getLaneFeatureByOsmId(selectedOsmRef.id, lanes)
+      if (laneFeature?.geometry.type !== 'LineString') {
+        clearBacklights()
+        return
+      }
 
-    const coords = laneFeature.geometry.coordinates as [number, number][]
-    setBacklights({
-      type: 'FeatureCollection',
-      features: createBacklightFeatures(coords, mapZoom),
-    })
-  }, [clearBacklights, lanes, mapZoom, selectedOsmRef, setBacklights])
+      const coords = laneFeature.geometry.coordinates as [number, number][]
+      setBacklights({
+        type: 'FeatureCollection',
+        features: createBacklightFeatures(coords, mapZoom),
+      })
+    },
+    [clearBacklights, lanes, mapZoom, selectedOsmRef, setBacklights],
+  )
 }

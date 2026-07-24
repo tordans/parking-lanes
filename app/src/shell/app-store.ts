@@ -9,7 +9,6 @@ export enum AuthState {
 }
 
 interface AppStore {
-  isOsmDataBusy: boolean
   datetime: Date
   activeMode: StreetSpaceModeId
   authState: AuthState
@@ -21,7 +20,6 @@ interface AppStore {
   }
   changesCount: number
   actions: {
-    setIsOsmDataBusy: (value: boolean) => void
     setDatetime: (value: Date) => void
     setActiveMode: (value: StreetSpaceModeId) => void
     setAuthState: (value: AuthState) => void
@@ -32,14 +30,12 @@ interface AppStore {
 }
 
 const useAppStore = create<AppStore>()((set) => ({
-  isOsmDataBusy: false,
   datetime: new Date(),
   activeMode: 'parking',
   authState: AuthState.initial,
   osmDisplayName: null,
   changesCount: 0,
   actions: {
-    setIsOsmDataBusy: (isOsmDataBusy) => set({ isOsmDataBusy }),
     setDatetime: (datetime) => set({ datetime }),
     setActiveMode: (activeMode) => set({ activeMode }),
     setAuthState: (authState) =>
@@ -50,7 +46,6 @@ const useAppStore = create<AppStore>()((set) => ({
   },
 }))
 
-export const useIsOsmDataBusy = () => useAppStore((s) => s.isOsmDataBusy)
 export const useDatetime = () => useAppStore((s) => s.datetime)
 export const useActiveMode = () => useAppStore((s) => s.activeMode)
 export const useAuthState = () => useAppStore((s) => s.authState)

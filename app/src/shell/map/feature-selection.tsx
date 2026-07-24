@@ -1,9 +1,14 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useParkingMapActions } from '../../modes/parking'
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
 import { serializeMapSearch } from './search-schema'
+
+/** Selected OSM feature from URL search (`f` param) — single source of truth. */
+export function useSelectedOsmRef(): OsmFeatureRef | undefined {
+  const { f } = useSearch({ from: '/' })
+  return f
+}
 
 type FeatureSelectionContextValue = {
   selectFeature: (ref: OsmFeatureRef) => void
@@ -17,8 +22,6 @@ const FeatureSelectionContext = createContext<FeatureSelectionContextValue | nul
 
 export function FeatureSelectionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate({ from: '/' })
-  const { f } = useSearch({ from: '/' })
-  const mapActions = useParkingMapActions()
   const [selectionEpoch, setSelectionEpoch] = useState(0)
 
   const selectFeature = useCallback(
@@ -33,12 +36,11 @@ export function FeatureSelectionProvider({ children }: { children: ReactNode }) 
   )
 
   const clearSelection = useCallback(() => {
-    mapActions.clearBacklights()
     void navigate({
       search: (prev) => ({ ...serializeMapSearch(prev), f: undefined }),
       replace: true,
     })
-  }, [mapActions, navigate])
+  }, [navigate])
 
   const updateFeatureRef = useCallback(
     (ref: OsmFeatureRef) => {
@@ -49,16 +51,6 @@ export function FeatureSelectionProvider({ children }: { children: ReactNode }) 
     },
     [navigate],
   )
-
-  useEffect(() => {
-    if (!f) {
-      mapActions.clearBacklights()
-      mapActions.setSelectedOsmRef(null)
-      return
-    }
-
-    mapActions.setSelectedOsmRef(f)
-  }, [f, mapActions])
 
   return (
     <FeatureSelectionContext.Provider

@@ -3,26 +3,13 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import type { MapLayerMouseEvent } from 'maplibre-gl'
 import { useCallback, useRef } from 'react'
-import {
-  AuthState,
-  useAppActions,
-  useAuthState,
-  useDatetime,
-  useMapState,
-} from '../../../shell/app-store'
-import { useFeatureSelection } from '../../../shell/map/feature-selection'
+import { AuthState, useAppActions, useAuthState } from '../../../shell/app-store'
+import { useFeatureSelection, useSelectedOsmRef } from '../../../shell/map/feature-selection'
 import { addChangedEntity } from '../../../utils/changes-store'
-import {
-  getLaneFeatureByOsmId,
-  useCutMarkerFeatures,
-  useParkingMapActions,
-  useSelectedOsmRef,
-} from './parking-map-store'
+import { useCutMarkerFeatures, useParkingMapActions } from './parking-map-store'
 import { cutParkingOsmWay, updateParkingOsmWay } from './parking-osm-edits'
 import { useParkingOsmQuery } from './parking-osm-query'
-import { createBacklightFeatures } from './parse-lanes'
 import type { MapBounds, ParkingFeature, ParkingFeatureCollection } from './types'
-import { useParkingMapFeatures } from './use-parking-map-features'
 
 export { viewMinZoom } from './constants'
 export {
@@ -50,15 +37,7 @@ export function useOsmChangeHandler() {
   )
 }
 
-export function useLaneClickHandler(zoom: number) {
-  const mapState = useMapState()
-  const datetime = useDatetime()
-  const { lanes } = useParkingMapFeatures({
-    bounds: mapState?.bounds,
-    zoom,
-    datetime,
-  })
-  const { setBacklights, clearBacklights } = useParkingMapActions()
+export function useLaneClickHandler(_mapZoom: number) {
   const { selectFeature } = useFeatureSelection()
 
   return useCallback(
@@ -68,19 +47,10 @@ export function useLaneClickHandler(zoom: number) {
 
       const osmId = feature.properties.osmId as number
       const osmType = feature.properties.osmType as OsmFeatureRef['type']
-      clearBacklights()
-      const laneFeature = getLaneFeatureByOsmId(osmId, lanes)
-      if (laneFeature?.geometry.type === 'LineString') {
-        const coords = laneFeature.geometry.coordinates as [number, number][]
-        setBacklights({
-          type: 'FeatureCollection',
-          features: createBacklightFeatures(coords, zoom),
-        })
-      }
       selectFeature({ type: osmType, id: osmId })
       event.originalEvent.stopPropagation()
     },
-    [clearBacklights, lanes, selectFeature, setBacklights, zoom],
+    [selectFeature],
   )
 }
 

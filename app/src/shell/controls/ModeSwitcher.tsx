@@ -3,16 +3,16 @@ import { Tooltip } from '../../components/Tooltip/Tooltip'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
-import { useActiveMode, useAppActions, useIsOsmDataBusy } from '../app-store'
+import { useActiveMode, useAppActions } from '../app-store'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
   mapToolbarIconSegmentClassName,
 } from '../map/mobileMapChrome.const'
 
-export function ModeSwitcher() {
+export function ModeSwitcher(props: { isOsmDataBusy?: boolean }) {
   const activeMode = useActiveMode()
-  const isOsmDataBusy = useIsOsmDataBusy()
+  const isOsmDataBusy = props.isOsmDataBusy ?? false
   const { setActiveMode } = useAppActions()
 
   return (

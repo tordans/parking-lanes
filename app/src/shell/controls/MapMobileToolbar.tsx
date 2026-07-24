@@ -21,7 +21,7 @@ import { SaveButton } from './SaveButton'
 
 type MobilePanel = 'info' | 'inspector' | 'settings' | 'debug' | null
 
-export function MapMobileToolbar(props: { onSave: () => void }) {
+export function MapMobileToolbar(props: { onSave: () => void; isOsmDataBusy?: boolean }) {
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
   const { debug } = useSearch({ from: '/' })
   const osmDisplayName = useOsmDisplayName()
@@ -35,7 +35,7 @@ export function MapMobileToolbar(props: { onSave: () => void }) {
     <>
       <div className={mobileMapHeaderClassName}>
         <div className="flex min-w-0 items-center gap-2">
-          <ModeSwitcher />
+          <ModeSwitcher isOsmDataBusy={props.isOsmDataBusy} />
           <div className={mapToolbarButtonGroupClassName}>
             <MapToolbarIconButton
               label="Info"

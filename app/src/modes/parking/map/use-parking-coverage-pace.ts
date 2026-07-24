@@ -1,8 +1,7 @@
 import type { MapBounds } from '@osm-editor-kit/osm-data'
 import { useAsyncDebouncer } from '@tanstack/react-pacer'
 import type { Map as MapLibreMap } from 'maplibre-gl'
-import { useEffect, useEffectEvent } from 'react'
-import { useAppActions } from '../../../shell/app-store'
+import { useEffectEvent } from 'react'
 import { coverageFetchDebounceMs, viewMinZoom } from './constants'
 import { useParkingOsmFetch } from './parking-osm-query'
 import { getMapSizePx, toBounds } from './use-parking-map'
@@ -19,7 +18,6 @@ type CoverageFetchArgs = {
  */
 export function useParkingCoveragePace() {
   const { loadParkingData, refetchAfterSave, isFetching } = useParkingOsmFetch()
-  const { setIsOsmDataBusy } = useAppActions()
 
   const runCoverageCheck = useEffectEvent(async (args: CoverageFetchArgs) => {
     await loadParkingData(args.bounds, args.zoom, { mapSizePx: args.mapSizePx })
@@ -37,13 +35,6 @@ export function useParkingCoveragePace() {
   const isPending = coverageDebouncer.state.isPending === true
   const isExecuting = coverageDebouncer.state.isExecuting === true
   const isBusy = isPending || isExecuting || isFetching
-
-  useEffect(
-    function syncOsmDataBusyState() {
-      setIsOsmDataBusy(isBusy)
-    },
-    [isBusy, setIsOsmDataBusy],
-  )
 
   const scheduleCoverageCheck = useEffectEvent((map: MapLibreMap) => {
     const zoom = map.getZoom()

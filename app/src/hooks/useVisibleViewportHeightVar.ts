@@ -5,24 +5,27 @@ import { useEffect } from 'react'
  * `h-(--app-height,100dvh)` instead of raw viewport units (unreliable on iOS browsers).
  */
 export function useVisibleViewportHeightVar(enabled: boolean) {
-  useEffect(() => {
-    if (!enabled || typeof window === 'undefined') return
+  useEffect(
+    function syncVisibleViewportHeight() {
+      if (!enabled || typeof window === 'undefined') return
 
-    const root = document.documentElement
-    const update = () => {
-      root.style.setProperty('--app-height', `${window.innerHeight}px`)
-    }
-    update()
+      const root = document.documentElement
+      const update = () => {
+        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+      }
+      update()
 
-    window.addEventListener('resize', update)
-    window.addEventListener('orientationchange', update)
-    window.visualViewport?.addEventListener('resize', update)
+      window.addEventListener('resize', update)
+      window.addEventListener('orientationchange', update)
+      window.visualViewport?.addEventListener('resize', update)
 
-    return () => {
-      window.removeEventListener('resize', update)
-      window.removeEventListener('orientationchange', update)
-      window.visualViewport?.removeEventListener('resize', update)
-      root.style.removeProperty('--app-height')
-    }
-  }, [enabled])
+      return function resetVisibleViewportHeight() {
+        window.removeEventListener('resize', update)
+        window.removeEventListener('orientationchange', update)
+        window.visualViewport?.removeEventListener('resize', update)
+        root.style.removeProperty('--app-height')
+      }
+    },
+    [enabled],
+  )
 }

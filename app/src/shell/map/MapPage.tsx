@@ -16,7 +16,6 @@ import {
   remapParkingOsmWayId,
   toBounds,
   useParkingCoveragePace,
-  useSelectedOsmRef,
   viewMinZoom,
 } from '../../modes/parking'
 import { useDevOsmFixtureSeed } from '../../modes/parking/map/dev-osm-fixture'
@@ -37,8 +36,11 @@ import { ControlPanel } from '../controls/ControlPanel'
 import { MapMobileToolbar } from '../controls/MapMobileToolbar'
 import { ModeSwitcher } from '../controls/ModeSwitcher'
 import { coverageDebugFetchFillLayerId, CoverageDebugLayers } from './CoverageDebugLayers'
-import { FeatureSelectionProvider } from './feature-selection'
-import { useFeatureSelection } from './feature-selection'
+import {
+  FeatureSelectionProvider,
+  useFeatureSelection,
+  useSelectedOsmRef,
+} from './feature-selection'
 import { MapGL, MapProvider } from './map-gl'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
@@ -93,7 +95,8 @@ function MapPageContent({
     groupId: string
   } | null>(null)
 
-  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = useParkingCoveragePace()
+  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave, isBusy } =
+    useParkingCoveragePace()
 
   useDevOsmFixtureSeed()
 
@@ -318,10 +321,10 @@ function MapPageContent({
             </MapProvider>
           </div>
 
-          <MapMobileToolbar onSave={() => void handleSave()} />
+          <MapMobileToolbar onSave={() => void handleSave()} isOsmDataBusy={isBusy} />
 
           <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden lg:block">
-            <ModeSwitcher />
+            <ModeSwitcher isOsmDataBusy={isBusy} />
           </div>
 
           <MapNavigationControls
