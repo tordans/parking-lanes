@@ -8,11 +8,13 @@ import {
 import { mapSearchSchema } from '../parking/map/search-schema'
 
 describe('parseDebugSearch', () => {
-  test('accepts true and string literals', () => {
+  test('accepts boolean, number, and string literals', () => {
     expect(parseDebugSearch(true)).toBe(true)
+    expect(parseDebugSearch(1)).toBe(true)
     expect(parseDebugSearch('1')).toBe(true)
     expect(parseDebugSearch('true')).toBe(true)
     expect(parseDebugSearch(false)).toBe(false)
+    expect(parseDebugSearch(0)).toBe(false)
     expect(parseDebugSearch('0')).toBe(false)
     expect(parseDebugSearch('false')).toBe(false)
     expect(parseDebugSearch(undefined)).toBeUndefined()
@@ -42,8 +44,10 @@ describe('colorForGroupId', () => {
 
 describe('mapSearchSchema', () => {
   test('coerces debug search param to boolean', () => {
+    expect(mapSearchSchema.parse({ debug: 1 }).debug).toBe(true)
     expect(mapSearchSchema.parse({ debug: '1' }).debug).toBe(true)
     expect(mapSearchSchema.parse({ debug: 'true' }).debug).toBe(true)
+    expect(mapSearchSchema.parse({ debug: 0 }).debug).toBe(false)
     expect(mapSearchSchema.parse({ debug: '0' }).debug).toBe(false)
     expect(mapSearchSchema.parse({}).debug).toBeUndefined()
   })

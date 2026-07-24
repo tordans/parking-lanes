@@ -3,11 +3,11 @@ export const DEBUG_USERS = ['tordans'] as const
 export type DebugUser = (typeof DEBUG_USERS)[number]
 
 export function parseDebugSearch(
-  value: boolean | '1' | 'true' | '0' | 'false' | undefined,
+  value: boolean | 1 | 0 | '1' | 'true' | '0' | 'false' | undefined,
 ): boolean | undefined {
   if (value === undefined) return undefined
-  if (value === true || value === '1' || value === 'true') return true
-  if (value === false || value === '0' || value === 'false') return false
+  if (value === true || value === 1 || value === '1' || value === 'true') return true
+  if (value === false || value === 0 || value === '0' || value === 'false') return false
   return undefined
 }
 

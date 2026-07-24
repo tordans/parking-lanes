@@ -8,7 +8,15 @@ export const mapSearchSchema = z.object({
     .optional()
     .transform((s) => (s ? (parseMapParam(s) ?? undefined) : undefined)),
   debug: z
-    .union([z.boolean(), z.literal('1'), z.literal('true'), z.literal('0'), z.literal('false')])
+    .union([
+      z.boolean(),
+      z.literal(1),
+      z.literal(0),
+      z.literal('1'),
+      z.literal('true'),
+      z.literal('0'),
+      z.literal('false'),
+    ])
     .optional()
     .transform(parseDebugSearch),
 })
