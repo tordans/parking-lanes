@@ -52,8 +52,6 @@ export function ControlPanel(props: {
   onCutLane: (way: OsmWay) => void
   onOsmChange: (way: OsmWay) => void
   onClose: () => void
-  /** Mobile: only the mode panel (toolbar floats over the map). */
-  panelOnly?: boolean
 }) {
   const { Panel, Legend } = props.mode
   const selectedOsmRef = useSelectedOsmRef()
@@ -64,12 +62,6 @@ export function ControlPanel(props: {
     initialPanelMode(selectedOsmRef != null),
   )
   const activePanelMode = panelMode === 'debug' && !showDebug ? 'info' : panelMode
-
-  if (props.panelOnly) {
-    return (
-      <Panel onCutLane={props.onCutLane} onOsmChange={props.onOsmChange} onClose={props.onClose} />
-    )
-  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden text-sm">

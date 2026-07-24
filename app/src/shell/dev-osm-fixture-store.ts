@@ -23,7 +23,7 @@ export const useLiveViewportOsmFetch = () =>
 
 export const useDevOsmFixtureActions = () => useDevOsmFixtureStore((state) => state.actions)
 
-/** DEV + fixture mode (not live viewport fetch). Always false in production builds. */
+/** DEV + fixture mode (not live viewport fetch). Always false outside Vite DEV. */
 export function isDevOsmFixtureActive(): boolean {
-  return import.meta.env.DEV && !useDevOsmFixtureStore.getState().liveViewportOsmFetch
+  return import.meta.env.DEV === true && !useDevOsmFixtureStore.getState().liveViewportOsmFetch
 }

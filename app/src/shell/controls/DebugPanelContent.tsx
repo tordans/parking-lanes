@@ -1,26 +1,72 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
 import { Label } from '../../components/catalyst/fieldset'
-import { useOsmDisplayName } from '../app-store'
+import { viewMinZoom } from '../../modes/parking/map/constants'
+import {
+  clearDevOsmFixtureSession,
+  seedDevOsmFixture,
+} from '../../modes/parking/map/dev-osm-fixture'
+import { useParkingCoveragePace } from '../../modes/parking/map/use-parking-coverage-pace'
+import { useMapBounds, useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
+import { useDebugSettingsActions, useUseOsmDevServer } from '../debug-settings-store'
 import { useDevOsmFixtureActions, useLiveViewportOsmFetch } from '../dev-osm-fixture-store'
+import { useMapViewport } from '../map/map-viewport'
 import { serializeMapSearch } from '../map/search-schema'
 
 export function DebugPanelContent() {
   const navigate = useNavigate({ from: '/' })
   const { debug } = useSearch({ from: '/' })
+  const queryClient = useQueryClient()
   const osmDisplayName = useOsmDisplayName()
   const liveViewportOsmFetch = useLiveViewportOsmFetch()
+  const useOsmDevServer = useUseOsmDevServer()
   const { setLiveViewportOsmFetch } = useDevOsmFixtureActions()
+  const { setUseOsmDevServer } = useDebugSettingsActions()
+  const mapBounds = useMapBounds()
+  const { zoom: mapZoom } = useMapViewport()
+  const { loadCoverageNow } = useParkingCoveragePace()
   const showCoverageDebug = canShowDebugToggle(osmDisplayName, debug)
 
   return (
     <div className="flex flex-col gap-4 p-1">
-      {import.meta.env.DEV ? (
+      {showCoverageDebug ? (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-zinc-900">OSM API</h3>
+          <CheckboxField>
+            <Checkbox
+              checked={useOsmDevServer}
+              onChange={(checked) => setUseOsmDevServer(checked)}
+            />
+            <Label>Use OSM dev server</Label>
+          </CheckboxField>
+          <p className="text-xs text-zinc-600">
+            {useOsmDevServer
+              ? 'OAuth and map API use api06.dev.openstreetmap.org (next login / fetch).'
+              : 'OAuth and map API use production openstreetmap.org.'}
+          </p>
+        </section>
+      ) : null}
+
+      {import.meta.env.DEV === true ? (
         <section className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-zinc-900">Dev OSM data</h3>
           <CheckboxField>
-            <Checkbox checked={liveViewportOsmFetch} onChange={setLiveViewportOsmFetch} />
+            <Checkbox
+              checked={liveViewportOsmFetch}
+              onChange={(checked) => {
+                setLiveViewportOsmFetch(checked)
+                if (checked) {
+                  clearDevOsmFixtureSession(queryClient)
+                  if (mapBounds && mapZoom >= viewMinZoom) {
+                    void loadCoverageNow(mapBounds, mapZoom, { force: true })
+                  }
+                } else {
+                  seedDevOsmFixture(queryClient)
+                }
+              }}
+            />
             <Label>Live OSM viewport fetch</Label>
           </CheckboxField>
           <p className="text-xs text-zinc-600">

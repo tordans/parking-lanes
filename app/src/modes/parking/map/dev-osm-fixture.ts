@@ -1,12 +1,7 @@
 import { boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import { parseOsmResp, type RawOsmData } from '@osm-editor-kit/osm-data'
 import type { QueryClient } from '@tanstack/react-query'
-import { useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import {
-  isDevOsmFixtureActive,
-  useLiveViewportOsmFetch,
-} from '../../../shell/dev-osm-fixture-store'
+import { isDevOsmFixtureActive } from '../../../shell/dev-osm-fixture-store'
 import { DEV_OSM_FIXTURE_BBOX } from '../fixtures/dev-map-fixture.const'
 import {
   emptyParkingOsmData,
@@ -35,6 +30,7 @@ function buildDevFixtureQueryData(): ParkingOsmQueryData | null {
   }
 }
 
+/** Seeds the Berlin fixture into the parking OSM query when fixture mode is active. */
 export function seedDevOsmFixture(queryClient: QueryClient): boolean {
   if (!isDevOsmFixtureActive()) return false
 
@@ -51,16 +47,8 @@ export function seedDevOsmFixture(queryClient: QueryClient): boolean {
   return true
 }
 
-/** Seeds the Berlin fixture in DEV when live viewport fetch is off. */
-export function useDevOsmFixtureSeed() {
-  const queryClient = useQueryClient()
-  const liveViewportOsmFetch = useLiveViewportOsmFetch()
-
-  useEffect(
-    function syncDevOsmFixture() {
-      if (!import.meta.env.DEV || liveViewportOsmFetch) return
-      seedDevOsmFixture(queryClient)
-    },
-    [liveViewportOsmFetch, queryClient],
-  )
+/** Drops seeded fixture data so live viewport fetches can repopulate the session. */
+export function clearDevOsmFixtureSession(queryClient: QueryClient): void {
+  queryClient.setQueryData(parkingOsmSessionKey(parkingSessionParams), emptyParkingOsmData())
+  queryClient.removeQueries({ queryKey: parkingOsmCoverageKey(parkingSessionParams) })
 }

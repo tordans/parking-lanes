@@ -1,17 +1,19 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AttributionControl,
   type MapLayerMouseEvent,
+  type MapEvent,
   type ViewStateChangeEvent,
+  useMap,
 } from 'react-map-gl/maplibre'
-import { useMap } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
+import { toast } from '../../lib/toast'
 import {
   getMapSizePx,
   remapParkingOsmWayId,
@@ -19,7 +21,6 @@ import {
   useParkingCoveragePace,
   viewMinZoom,
 } from '../../modes/parking'
-import { useDevOsmFixtureSeed } from '../../modes/parking/map/dev-osm-fixture'
 import {
   useParkingCutLaneHandler,
   useParkingLayerClickHandler,
@@ -85,7 +86,7 @@ function MapPageContent({
   const mainMap = maps[MAIN_MAP_ID]
 
   const { setMapBounds, setChangesCount } = useAppActions()
-  const { markMapLoaded, resetMapChrome, setMapTilesLoading, setOsmDataBusy } = useMapActions()
+  const { markMapLoaded, resetMapChrome, setMapTilesLoading } = useMapActions()
   const mapBounds = useMapBounds()
   const activeModeId = useActiveMode()
   const mode = useActiveStreetSpaceMode(activeModeId)
@@ -102,15 +103,7 @@ function MapPageContent({
     groupId: string
   } | null>(null)
 
-  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave, isBusy } =
-    useParkingCoveragePace()
-
-  useEffect(
-    function syncOsmDataBusyToMapStore() {
-      setOsmDataBusy(isBusy)
-    },
-    [isBusy, setOsmDataBusy],
-  )
+  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = useParkingCoveragePace()
 
   useEffect(
     function resetMapChromeOnUnmount() {
@@ -119,8 +112,6 @@ function MapPageContent({
     [resetMapChrome],
   )
 
-  useDevOsmFixtureSeed()
-
   const handleOsmChange = useParkingOsmChangeHandler()
   const handleLayerClick = useParkingLayerClickHandler()
   const handleMapClick = useParkingMapClickHandler()
@@ -128,167 +119,141 @@ function MapPageContent({
   const ModeMapLayers = mode.MapLayers
   const ModeLegend = mode.Legend
 
-  const interactiveLayerIds = useMemo(
-    () =>
-      debug
-        ? [...mode.interactiveLayerIds, coverageDebugFetchFillLayerId]
-        : mode.interactiveLayerIds,
-    [debug, mode.interactiveLayerIds],
-  )
+  const interactiveLayerIds = debug
+    ? [...mode.interactiveLayerIds, coverageDebugFetchFillLayerId]
+    : mode.interactiveLayerIds
 
   useVisibleViewportHeightVar(true)
   useSelectionBacklights()
 
-  const onMove = useCallback(
-    (event: ViewStateChangeEvent) => {
-      scheduleCoverageCheck(event.target)
-    },
-    [scheduleCoverageCheck],
-  )
+  function writeMapViewport(
+    viewState: ViewStateChangeEvent['viewState'],
+    bounds: ReturnType<typeof toBounds>,
+  ) {
+    const { zoom, latitude, longitude, bearing } = viewState
+    setMapBounds(bounds)
+    setLocationToCookie({ lat: latitude, lng: longitude }, zoom)
 
-  const writeMapViewport = useCallback(
-    (viewState: ViewStateChangeEvent['viewState'], bounds: ReturnType<typeof toBounds>) => {
-      const { zoom, latitude, longitude, bearing } = viewState
-      setMapBounds(bounds)
-      setLocationToCookie({ lat: latitude, lng: longitude }, zoom)
+    void navigate({
+      search: (prev) => ({
+        ...serializeMapSearch(prev),
+        map: serializeMapParam({ zoom, lat: latitude, lng: longitude, bearing }),
+      }),
+      replace: true,
+    })
+  }
 
+  function onMove(event: ViewStateChangeEvent) {
+    scheduleCoverageCheck(event.target)
+  }
+
+  function onMoveEnd(event: ViewStateChangeEvent) {
+    const map = event.target
+    writeMapViewport(event.viewState, toBounds(map.getBounds()))
+    scheduleCoverageCheck(map)
+  }
+
+  function onMapData() {
+    setMapTilesLoading(true)
+  }
+
+  function onMapIdle() {
+    setMapTilesLoading(false)
+  }
+
+  function onMapLoad(event: MapEvent) {
+    const map = event.target
+
+    if (!styleTransformApplied.current) {
+      styleTransformApplied.current = true
+      map.setStyle(OPENFREEMAP_POSITRON_STYLE_URL, {
+        transformStyle: openFreeMapTransformStyle,
+      })
+    }
+
+    markMapLoaded()
+    exposeMainMapForDebugging(map)
+    firePlaywrightMapLoadedEvent()
+
+    const zoom = map.getZoom()
+    const center = map.getCenter()
+    const bearing = map.getBearing()
+    const bounds = toBounds(map.getBounds())
+    setMapBounds(bounds)
+
+    if (!mapSearch) {
       void navigate({
         search: (prev) => ({
           ...serializeMapSearch(prev),
-          map: serializeMapParam({ zoom, lat: latitude, lng: longitude, bearing }),
+          map: serializeMapParam({
+            zoom,
+            lat: center.lat,
+            lng: center.lng,
+            bearing: bearing || undefined,
+          }),
         }),
         replace: true,
       })
-    },
-    [navigate, setMapBounds],
-  )
+    }
 
-  const onRotate = useCallback(
-    (event: ViewStateChangeEvent) => {
-      writeMapViewport(event.viewState, toBounds(event.target.getBounds()))
-    },
-    [writeMapViewport],
-  )
+    if (zoom >= viewMinZoom) {
+      void loadCoverageNow(bounds, zoom, { mapSizePx: getMapSizePx(map) })
+    }
+  }
 
-  const onMoveEnd = useCallback(
-    (event: ViewStateChangeEvent) => {
-      const map = event.target
-      writeMapViewport(event.viewState, toBounds(map.getBounds()))
-      scheduleCoverageCheck(map)
-    },
-    [scheduleCoverageCheck, writeMapViewport],
-  )
+  function handleMouseMove(event: MapLayerMouseEvent) {
+    setCursorStyle(event.features?.length ? 'pointer' : 'grab')
 
-  const onMapData = useCallback(() => {
-    setMapTilesLoading(true)
-  }, [setMapTilesLoading])
+    if (!debug) {
+      setHoveredGroupId(null)
+      setCoverageHoverInfo(null)
+      return
+    }
 
-  const onMapIdle = useCallback(() => {
-    setMapTilesLoading(false)
-  }, [setMapTilesLoading])
+    const debugFeature = event.features?.find(
+      (feature) => feature.layer?.id === coverageDebugFetchFillLayerId,
+    )
+    const props = debugFeature?.properties as
+      | {
+          groupId?: string
+          fetchedAt?: string
+          kind?: string
+          requestIndex?: number
+          requestCount?: number
+        }
+      | undefined
 
-  const onMapLoad = useCallback(
-    (event: ViewStateChangeEvent) => {
-      const map = event.target
+    if (!props?.groupId) {
+      setHoveredGroupId(null)
+      setCoverageHoverInfo(null)
+      return
+    }
 
-      if (!styleTransformApplied.current) {
-        styleTransformApplied.current = true
-        map.setStyle(OPENFREEMAP_POSITRON_STYLE_URL, {
-          transformStyle: openFreeMapTransformStyle,
-        })
-      }
+    setHoveredGroupId(props.groupId)
+    setCoverageHoverInfo({
+      groupId: props.groupId,
+      fetchedAt: props.fetchedAt ?? '',
+      kind: props.kind ?? '',
+      requestIndex: props.requestIndex ?? 0,
+      requestCount: props.requestCount ?? 0,
+    })
+  }
 
-      markMapLoaded()
-      exposeMainMapForDebugging(map)
-      firePlaywrightMapLoadedEvent()
-
-      const zoom = map.getZoom()
-      const center = map.getCenter()
-      const bearing = map.getBearing()
-      const bounds = toBounds(map.getBounds())
-      setMapBounds(bounds)
-
-      if (!mapSearch) {
-        void navigate({
-          search: (prev) => ({
-            ...serializeMapSearch(prev),
-            map: serializeMapParam({
-              zoom,
-              lat: center.lat,
-              lng: center.lng,
-              bearing: bearing || undefined,
-            }),
-          }),
-          replace: true,
-        })
-      }
-
-      if (zoom >= viewMinZoom) {
-        void loadCoverageNow(bounds, zoom, { mapSizePx: getMapSizePx(map) })
-      }
-    },
-    [loadCoverageNow, mapSearch, markMapLoaded, navigate, setMapBounds],
-  )
-
-  const handleMouseMove = useCallback(
-    (event: MapLayerMouseEvent) => {
-      setCursorStyle(event.features?.length ? 'pointer' : 'grab')
-
-      if (!debug) {
-        setHoveredGroupId(null)
-        setCoverageHoverInfo(null)
-        return
-      }
-
-      const debugFeature = event.features?.find(
-        (feature) => feature.layer?.id === coverageDebugFetchFillLayerId,
-      )
-      const props = debugFeature?.properties as
-        | {
-            groupId?: string
-            fetchedAt?: string
-            kind?: string
-            requestIndex?: number
-            requestCount?: number
-          }
-        | undefined
-
-      if (!props?.groupId) {
-        setHoveredGroupId(null)
-        setCoverageHoverInfo(null)
-        return
-      }
-
-      setHoveredGroupId(props.groupId)
-      setCoverageHoverInfo({
-        groupId: props.groupId,
-        fetchedAt: props.fetchedAt ?? '',
-        kind: props.kind ?? '',
-        requestIndex: props.requestIndex ?? 0,
-        requestCount: props.requestCount ?? 0,
-      })
-    },
-    [debug],
-  )
-
-  const handleMouseLeave = useCallback(() => {
+  function handleMouseLeave() {
     setCursorStyle('grab')
     setHoveredGroupId(null)
     setCoverageHoverInfo(null)
-  }, [])
+  }
 
-  const handleClick = useCallback(
-    (event: MapLayerMouseEvent) => {
-      if (event.features?.length) {
-        handleLayerClick(event)
-        return
-      }
-      handleMapClick()
-    },
-    [handleLayerClick, handleMapClick],
-  )
+  function handleClick(event: MapLayerMouseEvent) {
+    if (event.features?.length) {
+      handleLayerClick(event)
+      return
+    }
+    handleMapClick()
+  }
 
-  const handleSave = useCallback(async () => {
+  async function handleSave() {
     try {
       const changedIdMap = await uploadChanges(editorName, version, changesStore)
       for (const oldId in changedIdMap) {
@@ -310,29 +275,10 @@ function MapPageContent({
         )
       }
     } catch (err) {
-      if (err instanceof OsmApiRequestError) alert(err.responseText || err.message)
-      else alert(err)
+      if (err instanceof OsmApiRequestError) toast.error(err.responseText || err.message)
+      else toast.fromError(err, 'Could not save changes')
     }
-  }, [
-    mainMap,
-    mapBounds,
-    mapZoom,
-    queryClient,
-    refetchAfterSave,
-    selectedOsmRef,
-    setChangesCount,
-    updateFeatureRef,
-  ])
-
-  const initialViewState = useMemo(
-    () => ({
-      longitude: initialView.longitude,
-      latitude: initialView.latitude,
-      zoom: initialView.zoom,
-      bearing: initialView.bearing ?? 0,
-    }),
-    [initialView.bearing, initialView.latitude, initialView.longitude, initialView.zoom],
-  )
+  }
 
   return (
     <AppShell
@@ -343,7 +289,12 @@ function MapPageContent({
               <MapGL
                 id={MAIN_MAP_ID}
                 mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
-                initialViewState={initialViewState}
+                initialViewState={{
+                  longitude: initialView.longitude,
+                  latitude: initialView.latitude,
+                  zoom: initialView.zoom,
+                  bearing: initialView.bearing ?? 0,
+                }}
                 style={{ width: '100%', height: '100%' }}
                 attributionControl={false}
                 maxPitch={0}
@@ -356,7 +307,6 @@ function MapPageContent({
                 onIdle={onMapIdle}
                 onMove={onMove}
                 onMoveEnd={onMoveEnd}
-                onRotate={onRotate}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 onClick={handleClick}
@@ -370,7 +320,13 @@ function MapPageContent({
             </div>
           </div>
 
-          <MapMobileToolbar onSave={() => void handleSave()} />
+          <MapMobileToolbar
+            mode={mode}
+            onSave={() => void handleSave()}
+            onCutLane={handleCutLane}
+            onOsmChange={handleOsmChange}
+            onClose={clearSelection}
+          />
 
           <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden lg:block">
             <ModeSwitcher />
@@ -398,16 +354,6 @@ function MapPageContent({
               <ModeLegend variant="floating" />
             </div>
           ) : null}
-          <div className="lg:hidden">
-            <ControlPanel
-              panelOnly
-              mode={mode}
-              onSave={() => void handleSave()}
-              onCutLane={handleCutLane}
-              onOsmChange={handleOsmChange}
-              onClose={clearSelection}
-            />
-          </div>
         </div>
       }
       panel={

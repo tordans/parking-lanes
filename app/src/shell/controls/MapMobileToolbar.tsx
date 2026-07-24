@@ -3,8 +3,10 @@ import clsx from 'clsx'
 import { Bug, Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { LegendContent } from '../../modes/parking/controls/LegendPanel'
+import type { ModePanelProps, StreetSpaceMode } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
+import { useFeatureSelection, useSelectedOsmRef } from '../map/feature-selection'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
@@ -21,14 +23,33 @@ import { SaveButton } from './SaveButton'
 
 type MobilePanel = 'info' | 'inspector' | 'settings' | 'debug' | null
 
-export function MapMobileToolbar(props: { onSave: () => void }) {
+export function MapMobileToolbar(
+  props: {
+    mode: StreetSpaceMode
+    onSave: () => void
+  } & ModePanelProps,
+) {
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
   const { debug } = useSearch({ from: '/' })
   const osmDisplayName = useOsmDisplayName()
+  const selectedOsmRef = useSelectedOsmRef()
+  const { selectionEpoch } = useFeatureSelection()
   const showDebug = canShowDebugToggle(osmDisplayName, debug)
+  const { Panel } = props.mode
+  const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
+
+  if (selectedOsmRef && selectionEpoch !== inspectorOpenedForEpoch) {
+    setInspectorOpenedForEpoch(selectionEpoch)
+    if (openPanel !== 'inspector') setOpenPanel('inspector')
+  }
 
   const togglePanel = (panel: Exclude<MobilePanel, null>) => {
     setOpenPanel((current) => (current === panel ? null : panel))
+  }
+
+  const handleInspectorClose = () => {
+    props.onClose()
+    setOpenPanel(null)
   }
 
   return (
@@ -94,10 +115,12 @@ export function MapMobileToolbar(props: { onSave: () => void }) {
         open={openPanel === 'inspector'}
         onClose={() => setOpenPanel(null)}
       >
-        <p className="m-0 text-sm text-zinc-600">
-          Tap a street on the map to inspect and edit parking tags. The inspector opens as a bottom
-          sheet when a feature is selected.
-        </p>
+        <Panel
+          key={selectedOsmRef ? `${selectedOsmRef.type}/${selectedOsmRef.id}` : 'none'}
+          onCutLane={props.onCutLane}
+          onOsmChange={props.onOsmChange}
+          onClose={handleInspectorClose}
+        />
       </MapMobileSidePanel>
 
       <MapMobileSidePanel

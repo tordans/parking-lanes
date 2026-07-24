@@ -1,6 +1,5 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { Layer, Map as MapGL, MapProvider, Source } from 'react-map-gl/maplibre'
-import { OPENFREEMAP_POSITRON_STYLE_URL } from '../../../utils/openfreemap-style'
+import { Layer, Source } from 'react-map-gl/maplibre'
 import type { ParkingFeatureCollection } from './types'
 
 const laneLayerPaint = {
@@ -125,5 +124,3 @@ export function ParkingLayers({
     </>
   )
 }
-
-export { MapGL, MapProvider, OPENFREEMAP_POSITRON_STYLE_URL as MAP_STYLE }

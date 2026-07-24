@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { Compass, LocateFixed } from 'lucide-react'
 import { useState } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
+import { toast } from '../../lib/toast'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
 import { useMapViewport } from './map-viewport'
@@ -26,7 +27,7 @@ export function MapNavigationControls() {
     if (!mapLoaded) return
 
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this browser.')
+      toast.error('Geolocation is not supported by this browser.')
       return
     }
 
@@ -41,7 +42,7 @@ export function MapNavigationControls() {
       },
       (error) => {
         setLocating(false)
-        alert(error.message || 'Could not determine your location.')
+        toast.error(error.message || 'Could not determine your location.')
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     )

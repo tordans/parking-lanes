@@ -6,7 +6,6 @@ import {
   josmUrl,
   mapillaryUrl,
 } from '@osm-editor-kit/osm-editor-links'
-import { Button } from '../../../components/catalyst/button'
 import { AuthState, useAuthState } from '../../../shell/app-store'
 import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
 import { useMapViewport } from '../../../shell/map/map-viewport'
@@ -67,8 +66,8 @@ export function OsmObjectPanel(props: {
   const readOnly = authState !== AuthState.success
 
   return (
-    <div className="max-sm:fixed max-sm:right-0 max-sm:bottom-0 max-sm:left-0 max-sm:z-50 max-sm:max-h-[50vh] max-sm:overflow-auto max-sm:rounded-t-lg max-sm:border-t max-sm:border-zinc-950/5 max-sm:bg-white max-sm:px-2 max-sm:pt-3.5 max-sm:pb-[calc(env(safe-area-inset-bottom)+0.25rem)] max-sm:shadow-lg">
-      <div className="flex min-w-[250px] items-start justify-between gap-2">
+    <div className="flex min-w-[250px] flex-col">
+      <div className="flex items-start justify-between gap-2">
         <span className="text-sm">
           <span>View: </span>
           <a
@@ -111,14 +110,6 @@ export function OsmObjectPanel(props: {
             iD
           </a>
         </span>
-        <Button
-          plain
-          className="hidden max-sm:inline-flex"
-          aria-label="Close"
-          onClick={props.onClose}
-        >
-          +
-        </Button>
       </div>
       <hr className="my-2" />
       {isStreetParking ? (

@@ -2,11 +2,10 @@ import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds } from '@osm-editor-kit/osm-data'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { getUseOsmDevServer } from '../../../shell/debug-settings-store'
 import { isDevOsmFixtureActive } from '../../../shell/dev-osm-fixture-store'
 import { getUrl } from '../data-url'
 import { viewMinZoom } from './constants'
-
-const useDevServer = false
 
 type ParkingSessionParams = Record<never, never>
 
@@ -15,7 +14,7 @@ const parkingSessionParams = {} as ParkingSessionParams
 const parkingOsmApi = createOsmCoverageApi<ParkingSessionParams>({
   getSessionKey: () => ['street-space-osm'] as const,
   minZoom: viewMinZoom,
-  getDownloadUrl: (bounds) => getUrl(bounds, useDevServer),
+  getDownloadUrl: (bounds) => getUrl(bounds, getUseOsmDevServer()),
 })
 
 export type ParkingOsmQueryData = ReturnType<typeof parkingOsmApi.emptyData>
