@@ -1,24 +1,21 @@
+import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds } from '@osm-editor-kit/osm-data'
-import { createOsmCoverageApi, OsmDataSource } from '@osm-editor-kit/osm-coverage'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect } from 'react'
-import { useAppActions, useEditorMode, useOsmDataSource } from '../../../shell/app-store'
+import { useCallback } from 'react'
+import { isDevOsmFixtureActive } from '../../../shell/dev-osm-fixture-store'
 import { getUrl } from '../data-url'
 import { viewMinZoom } from './constants'
 
 const useDevServer = false
 
-type ParkingSessionParams = {
-  editorMode: boolean
-  osmDataSource: OsmDataSource
-}
+type ParkingSessionParams = Record<never, never>
+
+const parkingSessionParams = {} as ParkingSessionParams
 
 const parkingOsmApi = createOsmCoverageApi<ParkingSessionParams>({
-  getSessionKey: ({ editorMode, osmDataSource }) =>
-    ['street-space-osm', editorMode, osmDataSource] as const,
+  getSessionKey: () => ['street-space-osm'] as const,
   minZoom: viewMinZoom,
-  getDownloadUrl: (bounds, { editorMode, osmDataSource }) =>
-    getUrl(bounds, editorMode, useDevServer, osmDataSource),
+  getDownloadUrl: (bounds) => getUrl(bounds, useDevServer),
 })
 
 export type ParkingOsmQueryData = ReturnType<typeof parkingOsmApi.emptyData>
@@ -29,9 +26,7 @@ export const emptyParkingOsmData = parkingOsmApi.emptyData
 export const ensureParkingOsmCoverage = parkingOsmApi.ensureCoverage
 
 function useParkingSessionParams(): ParkingSessionParams {
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
-  return { editorMode, osmDataSource }
+  return parkingSessionParams
 }
 
 export const useParkingOsmQuery = parkingOsmApi.createUseQuery(useParkingSessionParams)
@@ -39,9 +34,6 @@ export const useIsParkingOsmFetching = parkingOsmApi.createUseIsFetching(usePark
 
 export function useParkingOsmFetch() {
   const queryClient = useQueryClient()
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
-  const { setFetchButtonText } = useAppActions()
   const isFetching = useIsParkingOsmFetching()
 
   const loadParkingData = useCallback(
@@ -51,41 +43,43 @@ export function useParkingOsmFetch() {
       options?: { force?: boolean; mapSizePx?: { width: number; height: number } },
     ) => {
       if (zoom < viewMinZoom) return
+      if (isDevOsmFixtureActive()) return
 
       const mapSizePx = options?.mapSizePx ?? { width: 1024, height: 768 }
 
-      setFetchButtonText('Fetching data...')
       try {
         await ensureParkingOsmCoverage(queryClient, {
           bounds,
           zoom,
           mapSizePx,
-          editorMode,
-          osmDataSource,
+          ...parkingSessionParams,
           force: options?.force,
         })
-        setFetchButtonText('Fetch OSM data')
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : ''
-        const errorMessage =
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        console.error(
           message === 'Request failed with status code 429'
-            ? 'Error: Too many requests - try again soon'
-            : 'Unknown error, please try again'
-        setFetchButtonText(errorMessage)
+            ? 'Too many OSM requests — try again soon'
+            : message,
+          error,
+        )
       }
     },
-    [editorMode, osmDataSource, queryClient, setFetchButtonText],
+    [queryClient],
   )
 
   const refetchAfterSave = useCallback(
     async (bounds: MapBounds, zoom: number, mapSizePx?: { width: number; height: number }) => {
+      // Fixture mode blocks network; keep the seeded graph instead of wiping then no-op.
+      if (isDevOsmFixtureActive()) return
+
       queryClient.setQueryData<ParkingOsmQueryData>(
-        parkingOsmSessionKey({ editorMode, osmDataSource }),
+        parkingOsmSessionKey(parkingSessionParams),
         emptyParkingOsmData(),
       )
       return loadParkingData(bounds, zoom, { force: true, mapSizePx })
     },
-    [editorMode, loadParkingData, osmDataSource, queryClient],
+    [loadParkingData, queryClient],
   )
 
   return {
@@ -93,23 +87,4 @@ export function useParkingOsmFetch() {
     refetchAfterSave,
     isFetching,
   }
-}
-
-export function useResetParkingOsmOnSessionChange() {
-  const queryClient = useQueryClient()
-  const editorMode = useEditorMode()
-  const osmDataSource = useOsmDataSource()
-
-  useEffect(
-    function resetOsmDataOnSessionChange() {
-      queryClient.setQueryData(
-        parkingOsmSessionKey({ editorMode, osmDataSource }),
-        emptyParkingOsmData(),
-      )
-      queryClient.removeQueries({
-        queryKey: parkingOsmCoverageKey({ editorMode, osmDataSource }),
-      })
-    },
-    [editorMode, osmDataSource, queryClient],
-  )
 }

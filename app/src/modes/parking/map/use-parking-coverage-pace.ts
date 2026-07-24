@@ -15,11 +15,11 @@ type CoverageFetchArgs = {
 
 /**
  * Debounces OSM coverage checks until the map viewport settles ([TanStack Pacer](https://tanstack.com/pacer/latest)).
- * Spinner should show while `isPending` (waiting) or `isBusy` (fetching).
+ * Busy spinner shows while `isPending` (waiting) or `isBusy` (fetching).
  */
 export function useParkingCoveragePace() {
   const { loadParkingData, refetchAfterSave, isFetching } = useParkingOsmFetch()
-  const { setFetchButtonText } = useAppActions()
+  const { setIsOsmDataBusy } = useAppActions()
 
   const runCoverageCheck = useEffectEvent(async (args: CoverageFetchArgs) => {
     await loadParkingData(args.bounds, args.zoom, { mapSizePx: args.mapSizePx })
@@ -39,23 +39,16 @@ export function useParkingCoveragePace() {
   const isBusy = isPending || isExecuting || isFetching
 
   useEffect(
-    function syncFetchButtonBusyLabel() {
-      if (isPending && !isExecuting && !isFetching) {
-        setFetchButtonText('Waiting for map…')
-        return
-      }
-      if (isExecuting || isFetching) {
-        setFetchButtonText('Fetching data...')
-      }
+    function syncOsmDataBusyState() {
+      setIsOsmDataBusy(isBusy)
     },
-    [isExecuting, isFetching, isPending, setFetchButtonText],
+    [isBusy, setIsOsmDataBusy],
   )
 
   const scheduleCoverageCheck = useEffectEvent((map: MapLibreMap) => {
     const zoom = map.getZoom()
     if (zoom < viewMinZoom) {
       coverageDebouncer.cancel()
-      setFetchButtonText('Fetch OSM data')
       return
     }
 

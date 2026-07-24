@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": ["app", "packages/*"],
   "scripts": {
+    "predev": "bun run --filter @osm-editor-kit/street-space-editor predev",
     "dev": "bun run --filter @osm-editor-kit/street-space-editor dev",
     "build": "bun run --filter @osm-editor-kit/street-space-editor build",
     "preview": "bun run --filter @osm-editor-kit/street-space-editor preview",

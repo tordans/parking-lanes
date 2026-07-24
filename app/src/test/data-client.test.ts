@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
-import { OsmDataSource, boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds } from '../modes/parking/map/types'
 
 const viewport: MapBounds = {
@@ -27,11 +27,11 @@ describe('parking osm edits', () => {
     const { updateParkingOsmWay } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({ editorMode: false, osmDataSource: OsmDataSource.OverpassVk })
+    const key = parkingOsmSessionKey({})
     queryClient.setQueryData(key, emptyParkingOsmData())
 
     const way = makeWay(5, 1, { highway: 'residential', 'parking:lane:right': 'parallel' })
-    updateParkingOsmWay(queryClient, false, OsmDataSource.OverpassVk, way)
+    updateParkingOsmWay(queryClient, way)
 
     const stored = queryClient.getQueryData<typeof emptyParkingOsmData>(key)
     expect(stored?.graph.ways[5]?.tags['parking:lane:right']).toBe('parallel')
@@ -44,12 +44,12 @@ describe('parking osm edits', () => {
     const { remapParkingOsmWayId } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({ editorMode: true, osmDataSource: OsmDataSource.OverpassVk })
+    const key = parkingOsmSessionKey({})
     const initial = emptyParkingOsmData()
     initial.graph.ways[10] = makeWay(10, 1)
     queryClient.setQueryData(key, initial)
 
-    const remapped = remapParkingOsmWayId(queryClient, true, OsmDataSource.OverpassVk, 10, 99)
+    const remapped = remapParkingOsmWayId(queryClient, 10, 99)
     const stored = queryClient.getQueryData<typeof initial>(key)
 
     expect(remapped?.id).toBe(99)
@@ -68,7 +68,6 @@ describe('deriveParkingMapFeatures', () => {
       undefined,
       18,
       new Date('2024-01-01'),
-      false,
     )
 
     expect(result.lanes.features).toHaveLength(0)
@@ -86,7 +85,7 @@ describe('ensureParkingOsmCoverage', () => {
       await import('../modes/parking/map/parking-osm-query')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({ editorMode: false, osmDataSource: OsmDataSource.OverpassVk })
+    const key = parkingOsmSessionKey({})
     queryClient.setQueryData(key, {
       graph: emptyParkingOsmData().graph,
       coverage: boundsToPolygon(viewport),
@@ -97,8 +96,6 @@ describe('ensureParkingOsmCoverage', () => {
       bounds: viewport,
       zoom: 18,
       mapSizePx,
-      editorMode: false,
-      osmDataSource: OsmDataSource.OverpassVk,
     })
 
     expect(result.skipped).toBe(true)

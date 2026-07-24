@@ -9,3 +9,6 @@ node_modules
 
 *.tsbuildinfo
 .tsbuildinfo*
+
+# Local dev OSM map fixture (downloaded by app predev)
+app/src/modes/parking/fixtures/dev-map-bbox.json
