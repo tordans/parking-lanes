@@ -85,7 +85,7 @@ function clsxModeButton({
   const tone = isActive
     ? 'cursor-pointer bg-zinc-950 text-white'
     : enabled
-      ? 'cursor-pointer bg-white text-zinc-800 hover:bg-zinc-950/5'
+      ? 'cursor-pointer bg-white text-zinc-800 hover:bg-zinc-100 active:bg-zinc-200'
       : 'cursor-not-allowed bg-zinc-50 text-zinc-400'
 
   return clsx(
