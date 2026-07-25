@@ -24,9 +24,11 @@
         "@osm-editor-kit/osm-maplibre": "workspace:*",
         "@osm-editor-kit/osm-oauth": "workspace:*",
         "@osm-editor-kit/osm-sidepath-tags": "workspace:*",
+        "@osm-editor-kit/osm-surface-quality": "workspace:*",
         "@osm-editor-kit/osm-tag-syntax": "workspace:*",
         "@osm-editor-kit/osm-ui": "workspace:*",
         "@osm-editor-kit/osm-way-edit": "workspace:*",
+        "@osm-surface-smoothness/data": "file:../../osm-surface-smoothness-workspace/osm-surface-smoothness-tagging/packages/data",
         "@tanstack/react-form": "^1.19.2",
         "@tanstack/react-pacer": "^0.22.1",
         "@tanstack/react-query": "^5.85.5",
@@ -179,6 +181,14 @@
       "dependencies": {
         "@tilda-geo/bicycle-infrastructure": "file:../../../../FMC/tilda-geo-schema-spec-and-library-workspace/tilda-geo-bicycle-infrastructure-ts",
       },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
+    "packages/osm-surface-quality": {
+      "name": "@osm-editor-kit/osm-surface-quality",
+      "version": "0.0.0",
       "devDependencies": {
         "bun-types": "^1.2.20",
         "typescript": "^7.0.0",
@@ -354,6 +364,8 @@
     "@osm-editor-kit/osm-oauth": ["@osm-editor-kit/osm-oauth@workspace:packages/osm-oauth"],
 
     "@osm-editor-kit/osm-sidepath-tags": ["@osm-editor-kit/osm-sidepath-tags@workspace:packages/osm-sidepath-tags"],
+
+    "@osm-editor-kit/osm-surface-quality": ["@osm-editor-kit/osm-surface-quality@workspace:packages/osm-surface-quality"],
 
     "@osm-editor-kit/osm-tag-syntax": ["@osm-editor-kit/osm-tag-syntax@workspace:packages/osm-tag-syntax"],
 
@@ -1372,6 +1384,8 @@
     "@maplibre/vt-pbf/pbf": ["pbf@5.1.2", "", { "dependencies": { "resolve-protobuf-schema": "^2.1.0" }, "bin": { "pbf": "bin/pbf" } }, "sha512-mnvGdvOrIvJOBGUEdGkrVXjN8E/VkIJCkf2eS1DH2yv82ORUlLttmDt0rWY38yYZmVwciZwBUvHM20qxBZf40w=="],
 
     "@osm-editor-kit/osm-sidepath-tags/@tilda-geo/bicycle-infrastructure": ["@tilda-geo/bicycle-infrastructure@file:../../FMC/tilda-geo-schema-spec-and-library-workspace/tilda-geo-bicycle-infrastructure-ts", { "devDependencies": { "@tilda-geo/schema": "file:../tilda-schema", "@types/bun": "latest", "typescript": "^5.6.0" } }],
+
+    "@osm-editor-kit/street-space-editor/@osm-surface-smoothness/data": ["@osm-surface-smoothness/data@file:../osm-surface-smoothness-workspace/osm-surface-smoothness-tagging/packages/data", {}],
 
     "@tailwindcss/oxide-wasm32-wasi/@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" }, "bundled": true }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
 

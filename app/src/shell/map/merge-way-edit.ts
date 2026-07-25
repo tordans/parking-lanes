@@ -13,10 +13,38 @@ function isParkingTagKey(key: string): boolean {
   return key === 'parking' || key.startsWith('parking:') || key.startsWith('parking_')
 }
 
+const TOP_LEVEL_SURFACE_TAG_KEYS = new Set(['surface', 'smoothness', 'sett:length'])
+
+const INFRA_SURFACE_SCALAR_KEYS = new Set([
+  'footway:surface',
+  'footway:smoothness',
+  'footway:sett:length',
+  'cycleway:surface',
+  'cycleway:smoothness',
+  'cycleway:sett:length',
+])
+
+const SIDEPATH_SURFACE_TAG_PATTERN =
+  /^(?:cycleway|sidewalk|footway):(?:left|right|both):(?:surface|smoothness|sett:length)$/
+
+function isSurfaceTagKey(key: string): boolean {
+  if (TOP_LEVEL_SURFACE_TAG_KEYS.has(key)) return true
+  if (INFRA_SURFACE_SCALAR_KEYS.has(key)) return true
+  return SIDEPATH_SURFACE_TAG_PATTERN.test(key)
+}
+
 function pickWidthTags(tags: OsmTags): OsmTags {
   const picked: OsmTags = {}
   for (const [key, value] of Object.entries(tags)) {
     if (value !== undefined && isWidthTagKey(key)) picked[key] = value
+  }
+  return picked
+}
+
+function pickSurfaceTags(tags: OsmTags): OsmTags {
+  const picked: OsmTags = {}
+  for (const [key, value] of Object.entries(tags)) {
+    if (value !== undefined && isSurfaceTagKey(key)) picked[key] = value
   }
   return picked
 }
@@ -43,6 +71,18 @@ export function mergeWayEdit(base: OsmWay, incoming: OsmWay, source: ChangeSourc
       tags: {
         ...base.tags,
         ...pickWidthTags(incoming.tags),
+      },
+    }
+  }
+
+  if (source === 'surface') {
+    return {
+      ...base,
+      ...incoming,
+      nodes: incoming.nodes ?? base.nodes,
+      tags: {
+        ...base.tags,
+        ...pickSurfaceTags(incoming.tags),
       },
     }
   }

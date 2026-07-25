@@ -6,6 +6,7 @@ import {
   useParkingMapClickHandler,
 } from '../../modes/parking/use-parking-mode-handlers'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
+import { useSurfaceModeHandlers } from '../../modes/surface/use-surface-mode-handlers'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthModeHandlers } from '../../modes/width/use-width-mode-handlers'
 import { coverageDebugFetchFillLayerId } from './CoverageDebugLayers'
@@ -23,6 +24,7 @@ export function useMapPageInteractions() {
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const mode = useActiveStreetSpaceMode(resolvedModeId)
   const isWidthMode = resolvedModeId === 'width'
+  const isSurfaceMode = resolvedModeId === 'surface'
 
   const [cursorStyle, setCursorStyle] = useState('grab')
   const coverageDebug = useCoverageDebugHover()
@@ -31,6 +33,7 @@ export function useMapPageInteractions() {
   const parkingLayerClick = useParkingLayerClickHandler()
   const parkingMapClick = useParkingMapClickHandler()
   const widthHandlers = useWidthModeHandlers()
+  const surfaceHandlers = useSurfaceModeHandlers()
 
   const interactiveLayerIds = [
     ...mode.interactiveLayerIds,
@@ -45,6 +48,10 @@ export function useMapPageInteractions() {
       widthHandlers.handleLayerClick(event)
       return
     }
+    if (isSurfaceMode) {
+      surfaceHandlers.handleLayerClick(event)
+      return
+    }
     parkingLayerClick(event)
   }
 
@@ -52,6 +59,10 @@ export function useMapPageInteractions() {
     if (isCutActive && handleCutClick(event)) return
     if (isWidthMode) {
       widthHandlers.handleMapClick()
+      return
+    }
+    if (isSurfaceMode) {
+      surfaceHandlers.handleMapClick()
       return
     }
     parkingMapClick()

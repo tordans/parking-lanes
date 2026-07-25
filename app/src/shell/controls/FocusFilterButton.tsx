@@ -14,11 +14,11 @@ import {
   mapToolbarIconSegmentActiveClassName,
   mapToolbarIconSegmentClassName,
 } from '../map/mobileMapChrome.const'
-import type { ParkingFocus, WidthFocus } from '../map/search-schema'
+import type { ParkingFocus, SurfaceFocus, WidthFocus } from '../map/search-schema'
 import { useMapFocus, useMapFocusSupportsCurrentMode } from '../map/use-map-focus'
 
 type FocusOption = {
-  value: ParkingFocus | WidthFocus
+  value: ParkingFocus | WidthFocus | SurfaceFocus
   label: string
 }
 
@@ -31,6 +31,13 @@ const focusOptionsByMode: Partial<Record<StreetSpaceModeId, FocusOption[]>> = {
     { value: 'all', label: 'All infrastructure' },
     { value: 'car', label: 'Car roads' },
     { value: 'bicycle', label: 'Bicycle infrastructure' },
+  ],
+  surface: [
+    { value: 'all', label: 'All infrastructure' },
+    { value: 'roads', label: 'Car roads' },
+    { value: 'path', label: 'Paths' },
+    { value: 'sidewalks', label: 'Sidewalks' },
+    { value: 'bike', label: 'Bicycle infrastructure' },
   ],
 }
 

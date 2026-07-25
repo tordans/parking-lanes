@@ -57,6 +57,9 @@ describe('mapSearchSchema', () => {
     expect(serializeMapSearch({ focus: { width: 'bicycle' } })).toEqual({
       focus: { width: 'bicycle' },
     })
+    expect(serializeMapSearch({ focus: { surface: 'bike' } })).toEqual({
+      focus: { surface: 'bike' },
+    })
   })
 
   test('parses focus search param', () => {

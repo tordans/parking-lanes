@@ -4,11 +4,12 @@ import type { StreetSpaceModeId } from '../../modes/types'
 import {
   type MapFocus,
   type ParkingFocus,
+  type SurfaceFocus,
   type WidthFocus,
   serializeMapSearch,
 } from './search-schema'
 
-const focusModes = new Set<StreetSpaceModeId>(['parking', 'width'])
+const focusModes = new Set<StreetSpaceModeId>(['parking', 'width', 'surface'])
 
 export function useMapFocusSupportsCurrentMode(): boolean {
   const { mode } = useParams({ from: '/$mode' })
@@ -16,8 +17,8 @@ export function useMapFocusSupportsCurrentMode(): boolean {
 }
 
 export function useMapFocus(): {
-  focus: ParkingFocus | WidthFocus
-  setFocus: (value: ParkingFocus | WidthFocus) => void
+  focus: ParkingFocus | WidthFocus | SurfaceFocus
+  setFocus: (value: ParkingFocus | WidthFocus | SurfaceFocus) => void
   isActive: boolean
 } {
   const { mode } = useParams({ from: '/$mode' })
@@ -28,7 +29,7 @@ export function useMapFocus(): {
   const isActive = focus !== 'all'
 
   const setFocus = useCallback(
-    (value: ParkingFocus | WidthFocus) => {
+    (value: ParkingFocus | WidthFocus | SurfaceFocus) => {
       void navigate({
         search: (prev) => ({
           ...serializeMapSearch(prev),
@@ -46,16 +47,17 @@ export function useMapFocus(): {
 function readFocusForMode(
   mode: StreetSpaceModeId,
   focus: MapFocus | undefined,
-): ParkingFocus | WidthFocus {
+): ParkingFocus | WidthFocus | SurfaceFocus {
   if (mode === 'parking') return focus?.parking ?? 'all'
   if (mode === 'width') return focus?.width ?? 'all'
+  if (mode === 'surface') return focus?.surface ?? 'all'
   return 'all'
 }
 
 function nextFocusState(
   current: MapFocus | undefined,
   mode: StreetSpaceModeId,
-  value: ParkingFocus | WidthFocus,
+  value: ParkingFocus | WidthFocus | SurfaceFocus,
 ): MapFocus | undefined {
   const next: NonNullable<MapFocus> = { ...current }
 
@@ -67,8 +69,12 @@ function nextFocusState(
     const widthValue = value as WidthFocus
     if (widthValue === 'all') delete next.width
     else next.width = widthValue
+  } else if (mode === 'surface') {
+    const surfaceValue = value as SurfaceFocus
+    if (surfaceValue === 'all') delete next.surface
+    else next.surface = surfaceValue
   }
 
-  if (!next.parking && !next.width) return undefined
+  if (!next.parking && !next.width && !next.surface) return undefined
   return next
 }

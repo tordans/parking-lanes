@@ -113,6 +113,64 @@ describe('mergeWayEdit', () => {
       'source:cycleway:left:width': 'street-space-editor',
     })
   })
+
+  test('surface edit only patches surface/smoothness keys', () => {
+    const base = way(1, {
+      highway: 'residential',
+      'parking:both': 'lane',
+      width: '5',
+      surface: 'asphalt',
+    })
+    const incoming = way(1, {
+      highway: 'primary',
+      smoothness: 'good',
+      width: '9',
+      'cycleway:left:surface': 'paving_stones',
+      'footway:smoothness': 'intermediate',
+      'sett:length': '0.13',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'surface').tags).toEqual({
+      highway: 'residential',
+      'parking:both': 'lane',
+      width: '5',
+      surface: 'asphalt',
+      smoothness: 'good',
+      'cycleway:left:surface': 'paving_stones',
+      'footway:smoothness': 'intermediate',
+      'sett:length': '0.13',
+    })
+  })
+
+  test('surface edit preserves nested sett:length keys', () => {
+    const base = way(1, {
+      highway: 'residential',
+      surface: 'asphalt',
+      parking: 'lane',
+    })
+    const incoming = way(1, {
+      highway: 'primary',
+      parking: 'no',
+      'cycleway:left:sett:length': '0.08',
+      'cycleway:right:sett:length': '0.13',
+      'cycleway:both:sett:length': '0.15',
+      'cycleway:sett:length': '0.12',
+      'footway:sett:length': '0.1',
+      'footway:left:sett:length': '0.07',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'surface').tags).toEqual({
+      highway: 'residential',
+      surface: 'asphalt',
+      parking: 'lane',
+      'cycleway:left:sett:length': '0.08',
+      'cycleway:right:sett:length': '0.13',
+      'cycleway:both:sett:length': '0.15',
+      'cycleway:sett:length': '0.12',
+      'footway:sett:length': '0.1',
+      'footway:left:sett:length': '0.07',
+    })
+  })
 })
 
 describe('commitOsmWayChange', () => {

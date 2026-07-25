@@ -10,6 +10,10 @@ import { defineConfig } from 'vite'
 const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 const monorepoRoot = path.resolve(projectRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
+const smoothnessDataRoot = path.resolve(
+  monorepoRoot,
+  '../osm-surface-smoothness-workspace/osm-surface-smoothness-tagging/packages/data',
+)
 
 export default defineConfig({
   base: '/street-space-editor/',
@@ -32,7 +36,7 @@ export default defineConfig({
     // Localhost only — one dev URL (OAuth callback used 127.0.0.1). Set a LAN IP here for other devices.
     host: '127.0.0.1',
     fs: {
-      allow: [projectRoot, monorepoRoot, bunLinksCache],
+      allow: [projectRoot, monorepoRoot, bunLinksCache, smoothnessDataRoot],
     },
   },
   build: {
