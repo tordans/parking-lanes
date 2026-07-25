@@ -10,6 +10,7 @@ import {
   wayDisplayName,
 } from '@osm-editor-kit/osm-changeset'
 import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
+import { useSyncExternalStore } from 'react'
 import { type ChangeSource } from './changeset-message'
 
 export type PendingChange = {
@@ -34,6 +35,28 @@ export const changesStore = createEmptyChangesStore()
 const pendingMeta = new Map<number, PendingMeta>()
 const pendingRelationMeta = new Map<number, PendingRelationMeta>()
 
+const changesListeners = new Set<() => void>()
+
+function notifyChangesListeners() {
+  for (const listener of changesListeners) listener()
+}
+
+export function subscribeChangesCount(onStoreChange: () => void) {
+  changesListeners.add(onStoreChange)
+  return () => {
+    changesListeners.delete(onStoreChange)
+  }
+}
+
+export function getChangesCountSnapshot() {
+  return countChanges(changesStore)
+}
+
+/** React subscription over the module changes store — single source of truth for the badge. */
+export function useChangesCount() {
+  return useSyncExternalStore(subscribeChangesCount, getChangesCountSnapshot, () => 0)
+}
+
 function cloneWay(way: OsmWay): OsmWay {
   return {
     ...way,
@@ -57,6 +80,27 @@ function cloneRelation(relation: OsmRelation): OsmRelation {
   }
 }
 
+/** Drop create/modify nodes no longer referenced by pending ways; clear relations when no ways remain. */
+function pruneOrphanPendingEntities() {
+  const referencedNodeIds = new Set<number>()
+  for (const way of [...changesStore.create.way, ...changesStore.modify.way]) {
+    for (const nodeId of way.nodes) referencedNodeIds.add(nodeId)
+  }
+
+  changesStore.create.node = changesStore.create.node.filter((node) =>
+    referencedNodeIds.has(node.id),
+  )
+  changesStore.modify.node = changesStore.modify.node.filter((node) =>
+    referencedNodeIds.has(node.id),
+  )
+
+  if (changesStore.create.way.length === 0 && changesStore.modify.way.length === 0) {
+    changesStore.modify.relation.length = 0
+    changesStore.create.relation.length = 0
+    pendingRelationMeta.clear()
+  }
+}
+
 export function addChangedRelation(
   relation: OsmRelation,
   options: { original?: OsmRelation | null } = {},
@@ -69,7 +113,9 @@ export function addChangedRelation(
   }
 
   upsertChangedRelation(changesStore, relation)
-  return countChanges(changesStore)
+  const count = countChanges(changesStore)
+  notifyChangesListeners()
+  return count
 }
 
 export function addChangedEntity(
@@ -87,12 +133,16 @@ export function addChangedEntity(
   }
 
   upsertChangedWay(changesStore, osm)
-  return countChanges(changesStore)
+  const count = countChanges(changesStore)
+  notifyChangesListeners()
+  return count
 }
 
 export function addChangedNode(osm: OsmNode): number {
   upsertChangedNode(changesStore, osm)
-  return countChanges(changesStore)
+  const count = countChanges(changesStore)
+  notifyChangesListeners()
+  return count
 }
 
 /** Removes a pending change. Returns the original way to restore, or `null` for creates. */
@@ -104,10 +154,13 @@ export function removeChangedEntity(wayId: number): {
   removeChangedWay(changesStore, wayId)
   const meta = pendingMeta.get(wayId)
   pendingMeta.delete(wayId)
+  pruneOrphanPendingEntities()
+  const count = countChanges(changesStore)
+  notifyChangesListeners()
   return {
     original: meta?.original ?? null,
     wasCreate: wayId < 0,
-    count: countChanges(changesStore),
+    count,
   }
 }
 
@@ -143,5 +196,6 @@ export function clearChanges(): number {
   changesStore.create.relation.length = 0
   pendingMeta.clear()
   pendingRelationMeta.clear()
+  notifyChangesListeners()
   return 0
 }

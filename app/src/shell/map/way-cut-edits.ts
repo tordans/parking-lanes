@@ -6,12 +6,15 @@ import {
 } from '@osm-editor-kit/osm-way-edit'
 import type { QueryClient } from '@tanstack/react-query'
 import {
+  currentOsmSessionParams,
   emptyOsmCoverageData,
   osmCoverageSessionKey,
   type OsmCoverageQueryData,
 } from './osm-coverage-query'
 
-const sessionKey = osmCoverageSessionKey({})
+function sessionKey() {
+  return osmCoverageSessionKey(currentOsmSessionParams())
+}
 
 export type CutOsmWayResult = SplitOsmWayResult & {
   newNode?: OsmNode
@@ -26,11 +29,11 @@ export function cutOsmWayInSession(
   newWayId: number,
 ): CutOsmWayResult | null {
   const current =
-    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   const result = splitOsmWayAtNodeInGraph(current.graph, wayId, nodeId, newWayId)
   if (!result) return null
 
-  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey(), {
     ...current,
     graph: result.graph,
   })
@@ -52,7 +55,7 @@ export function insertNodeAndCutOsmWayInSession(
   newWayId: number,
 ): CutOsmWayResult | null {
   const current =
-    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   const way = current.graph.ways[wayId]
   if (!way) return null
 
@@ -78,7 +81,7 @@ export function insertNodeAndCutOsmWayInSession(
   const result = splitOsmWayAtNodeInGraph(graphWithNode, wayId, newNodeId, newWayId)
   if (!result) return null
 
-  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey(), {
     ...current,
     graph: result.graph,
   })

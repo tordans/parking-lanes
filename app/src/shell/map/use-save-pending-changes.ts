@@ -8,7 +8,7 @@ import { getMapSizePx, useParkingCoveragePace, viewMinZoom } from '../../modes/p
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
 import { changesStore, clearChanges, removeChangedEntity } from '../../utils/changes-store'
-import { useAppActions, useMapBounds } from '../app-store'
+import { useMapBounds } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapViewport } from './map-viewport'
@@ -21,7 +21,6 @@ import {
 
 export function useSavePendingChanges() {
   const queryClient = useQueryClient()
-  const { setChangesCount } = useAppActions()
   const mapBounds = useMapBounds()
   const { zoom: mapZoom } = useMapViewport()
   const { mode: modeSlug } = useParams({ from: '/$mode' })
@@ -55,7 +54,6 @@ export function useSavePendingChanges() {
         }
       }
       clearChanges()
-      setChangesCount(0)
 
       if (mapBounds && mapZoom >= minZoom) {
         const maplibreMap = mainMap?.getMap()

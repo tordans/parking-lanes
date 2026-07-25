@@ -7,11 +7,11 @@ import {
   allPendingSources,
   listPendingChanges,
   removeChangedEntity,
+  useChangesCount,
   type PendingChange,
 } from '../../utils/changes-store'
 import { buildChangesetComment } from '../../utils/changeset-message'
 import { downloadPendingChangesOsc } from '../../utils/download-pending-osc'
-import { useAppActions, useChangesCount } from '../app-store'
 import { useUseOsmDevServer } from '../debug-settings-store'
 import { floatingChromeElevationClassName } from '../map/mobileMapChrome.const'
 import { useSavePendingChanges } from '../map/use-save-pending-changes'
@@ -20,7 +20,6 @@ import { SaveChangesDialog } from './save-changes/SaveChangesDialog'
 export function SaveChangesControl() {
   const changesCount = useChangesCount()
   const useOsmDevServer = useUseOsmDevServer()
-  const { setChangesCount } = useAppActions()
   const { handleSave: savePendingChanges, handleDiscardWay } = useSavePendingChanges()
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
@@ -51,7 +50,6 @@ export function SaveChangesControl() {
   function handleDiscard(wayId: number) {
     const result = removeChangedEntity(wayId)
     handleDiscardWay(wayId, result)
-    setChangesCount(result.count)
     if (result.count === 0) {
       setOpen(false)
       setPending([])

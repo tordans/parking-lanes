@@ -107,4 +107,57 @@ describe('ensureCoverage', () => {
     expect(result.skipped).toBe(true)
     expect(downloads).toBe(0)
   })
+
+  test('runs concurrent viewport fetches serially with each call’s bounds', async () => {
+    let releaseFirst!: () => void
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    let downloadCount = 0
+
+    const api = createOsmCoverageApi<TestSessionParams>({
+      getSessionKey: ({ editorMode, osmDataSource }) =>
+        ['test-osm-serial', editorMode, osmDataSource] as const,
+      minZoom: 14,
+      getDownloadUrl: () => 'https://example.test/overpass',
+      download: async () => {
+        downloadCount += 1
+        if (downloadCount === 1) await firstGate
+        return emptyParsedOsmData()
+      },
+    })
+
+    const queryClient = new QueryClient()
+    const params = { editorMode: false, osmDataSource: OsmDataSource.OverpassVk }
+    const otherViewport: MapBounds = {
+      south: 52.5,
+      west: 13.5,
+      north: 52.51,
+      east: 13.51,
+    }
+
+    const first = api.ensureCoverage(queryClient, {
+      bounds: viewport,
+      zoom: 18,
+      mapSizePx,
+      ...params,
+    })
+    const second = api.ensureCoverage(queryClient, {
+      bounds: otherViewport,
+      zoom: 18,
+      mapSizePx,
+      ...params,
+    })
+
+    // Let the first download start, then unblock so the second can run with its own bounds.
+    await Bun.sleep(10)
+    releaseFirst()
+    await Promise.all([first, second])
+
+    const stored = queryClient.getQueryData<ReturnType<typeof api.emptyData>>(
+      api.sessionKey(params),
+    )
+    expect(stored?.fetchHistory.features.length).toBe(2)
+    expect(downloadCount).toBe(2)
+  })
 })

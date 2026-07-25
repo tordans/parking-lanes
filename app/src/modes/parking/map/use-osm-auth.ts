@@ -24,7 +24,7 @@ export function useOsmAuth() {
   const { zoom } = useMapViewport()
   const useDevServer = useUseOsmDevServer()
   const { loadParkingData } = useParkingOsmFetch()
-  const { setAuthState, setOsmDisplayName, setChangesCount } = useAppActions()
+  const { setAuthState, setOsmDisplayName } = useAppActions()
 
   const applyLoggedInState = useCallback(async () => {
     let displayName: string | null = null
@@ -89,8 +89,8 @@ export function useOsmAuth() {
     logout()
     setAuthState(AuthState.initial)
     setOsmDisplayName(null)
-    setChangesCount(clearChanges())
-  }, [setAuthState, setChangesCount, setOsmDisplayName])
+    clearChanges()
+  }, [setAuthState, setOsmDisplayName])
 
   return { login, logout: logoutUser, authState }
 }

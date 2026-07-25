@@ -2,19 +2,25 @@ import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds } from '@osm-editor-kit/osm-data'
 import { getUrl } from '@osm-editor-kit/osm-editor-links'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { viewMinZoom } from '../../modes/parking/map/constants'
-import { getUseOsmDevServer } from '../debug-settings-store'
+import { getUseOsmDevServer, useUseOsmDevServer } from '../debug-settings-store'
 import { isDevOsmFixtureActive, useLiveViewportOsmFetch } from '../dev-osm-fixture-store'
 
-type OsmSessionParams = Record<never, never>
+export type OsmServerSession = 'dev' | 'prod'
 
-const osmSessionParams = {} as OsmSessionParams
+export type OsmSessionParams = {
+  osmServer: OsmServerSession
+}
+
+function osmServerFromSettings(): OsmServerSession {
+  return getUseOsmDevServer() ? 'dev' : 'prod'
+}
 
 const osmCoverageApi = createOsmCoverageApi<OsmSessionParams>({
-  getSessionKey: () => ['street-space-osm'] as const,
+  getSessionKey: ({ osmServer }) => ['street-space-osm', osmServer] as const,
   minZoom: viewMinZoom,
-  getDownloadUrl: (bounds) => getUrl(bounds, getUseOsmDevServer()),
+  getDownloadUrl: (bounds, { osmServer }) => getUrl(bounds, osmServer === 'dev'),
   isNetworkEnabled: () => !isDevOsmFixtureActive(),
 })
 
@@ -25,10 +31,11 @@ export const osmCoverageFetchKey = osmCoverageApi.coverageKey
 export const emptyOsmCoverageData = osmCoverageApi.emptyData
 export const ensureOsmCoverage = osmCoverageApi.ensureCoverage
 
-/** Subscribe to the fixture gate so Query `enabled` updates when the debug toggle changes. */
+/** Subscribe to fixture + OSM server so Query keys/`enabled` update when debug toggles change. */
 function useOsmSessionParams(): OsmSessionParams {
   useLiveViewportOsmFetch()
-  return osmSessionParams
+  const useOsmDevServer = useUseOsmDevServer()
+  return useMemo(() => ({ osmServer: useOsmDevServer ? 'dev' : 'prod' }), [useOsmDevServer])
 }
 
 export const useOsmCoverageQuery = osmCoverageApi.createUseQuery(useOsmSessionParams)
@@ -37,6 +44,7 @@ export const useIsOsmCoverageFetching = osmCoverageApi.createUseIsFetching(useOs
 export function useOsmCoverageFetch() {
   const queryClient = useQueryClient()
   const isFetching = useIsOsmCoverageFetching()
+  const sessionParams = useOsmSessionParams()
 
   const loadOsmData = useCallback(
     async (
@@ -53,7 +61,7 @@ export function useOsmCoverageFetch() {
           bounds,
           zoom,
           mapSizePx,
-          ...osmSessionParams,
+          ...sessionParams,
           force: options?.force,
         })
       } catch (error: unknown) {
@@ -66,7 +74,7 @@ export function useOsmCoverageFetch() {
         )
       }
     },
-    [queryClient],
+    [queryClient, sessionParams],
   )
 
   const refetchAfterSave = useCallback(
@@ -75,12 +83,12 @@ export function useOsmCoverageFetch() {
       if (isDevOsmFixtureActive()) return
 
       queryClient.setQueryData<OsmCoverageQueryData>(
-        osmCoverageSessionKey(osmSessionParams),
+        osmCoverageSessionKey(sessionParams),
         emptyOsmCoverageData(),
       )
       return loadOsmData(bounds, zoom, { force: true, mapSizePx })
     },
-    [loadOsmData, queryClient],
+    [loadOsmData, queryClient, sessionParams],
   )
 
   return {
@@ -88,4 +96,13 @@ export function useOsmCoverageFetch() {
     refetchAfterSave,
     isFetching,
   }
+}
+
+/** Wipe all street-space OSM session caches (both prod and dev keys). */
+export function clearOsmCoverageSessions(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.removeQueries({ queryKey: ['street-space-osm'] })
+}
+
+export function currentOsmSessionParams(): OsmSessionParams {
+  return { osmServer: osmServerFromSettings() }
 }

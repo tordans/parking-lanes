@@ -10,7 +10,7 @@ import nearestPointOnLine from '@turf/nearest-point-on-line'
 import { useCallback, useRef } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { addChangedEntity, addChangedNode, addChangedRelation } from '../../utils/changes-store'
-import { AuthState, useAppActions, useAuthState } from '../app-store'
+import { AuthState, useAuthState } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
 import { useOsmCoverageQuery } from './osm-coverage-query'
 import { getOsmWayFromSession } from './osm-session-way-edits'
@@ -205,7 +205,6 @@ export function useWayCutHandler() {
   const selectedOsmRef = useSelectedOsmRef()
   const { activateCut, cancelCut, setHoveredNodeId, setPreview } = useWayCutActions()
   const { updateFeatureRef } = useFeatureSelection()
-  const { setChangesCount } = useAppActions()
   const newWayIdRef = useRef(-1)
   const newNodeIdRef = useRef(-1)
 
@@ -227,16 +226,14 @@ export function useWayCutHandler() {
         addChangedNode(result.newNode)
       }
       addChangedEntity(result.newWay, { source: 'split' })
-      let changesCount = addChangedEntity(result.oldWay, { original, source: 'split' })
+      addChangedEntity(result.oldWay, { original, source: 'split' })
 
       const graphRelations = graph?.relations ?? {}
       for (const relation of result.modifiedRelations) {
-        changesCount = addChangedRelation(relation, {
+        addChangedRelation(relation, {
           original: graphRelations[relation.id] ?? null,
         })
       }
-
-      setChangesCount(changesCount)
 
       if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === wayId) {
         updateFeatureRef({ type: 'way', id: result.oldWay.id })
@@ -244,7 +241,7 @@ export function useWayCutHandler() {
 
       cancelCut()
     },
-    [cancelCut, graph?.relations, selectedOsmRef, setChangesCount, updateFeatureRef],
+    [cancelCut, graph?.relations, selectedOsmRef, updateFeatureRef],
   )
 
   const handleCutMarkerClick = useCallback(

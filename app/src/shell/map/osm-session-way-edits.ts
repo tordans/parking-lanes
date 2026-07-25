@@ -4,22 +4,25 @@ import { addChangedEntity, getPendingWay } from '../../utils/changes-store'
 import type { ChangeSource } from '../../utils/changeset-message'
 import { mergeWayEdit } from './merge-way-edit'
 import {
+  currentOsmSessionParams,
   emptyOsmCoverageData,
   osmCoverageSessionKey,
   type OsmCoverageQueryData,
 } from './osm-coverage-query'
 
-const sessionKey = osmCoverageSessionKey({})
+function sessionKey() {
+  return osmCoverageSessionKey(currentOsmSessionParams())
+}
 
 export function getOsmWayFromSession(queryClient: QueryClient, wayId: number): OsmWay | null {
   const current =
-    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   return current.graph.ways[wayId] ?? null
 }
 
 export function updateOsmWayInSession(queryClient: QueryClient, way: OsmWay) {
   queryClient.setQueryData<OsmCoverageQueryData>(
-    sessionKey,
+    sessionKey(),
     (current = emptyOsmCoverageData()) => ({
       ...current,
       graph: {
@@ -38,16 +41,19 @@ export function restoreOsmWayInSession(queryClient: QueryClient, way: OsmWay) {
 }
 
 export function removeOsmWayFromSession(queryClient: QueryClient, wayId: number) {
-  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, (current = emptyOsmCoverageData()) => {
-    const { [wayId]: _removed, ...remainingWays } = current.graph.ways
-    return {
-      ...current,
-      graph: {
-        ...current.graph,
-        ways: remainingWays,
-      },
-    }
-  })
+  queryClient.setQueryData<OsmCoverageQueryData>(
+    sessionKey(),
+    (current = emptyOsmCoverageData()) => {
+      const { [wayId]: _removed, ...remainingWays } = current.graph.ways
+      return {
+        ...current,
+        graph: {
+          ...current.graph,
+          ways: remainingWays,
+        },
+      }
+    },
+  )
 }
 
 export function remapOsmWayIdInSession(
@@ -56,14 +62,14 @@ export function remapOsmWayIdInSession(
   newId: number,
 ): OsmWay | null {
   const current =
-    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   const oldWay = current.graph.ways[oldId]
   if (!oldWay) return null
 
   const remappedWay: OsmWay = { ...oldWay, id: newId }
   const { [oldId]: _removed, ...remainingWays } = current.graph.ways
 
-  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey(), {
     ...current,
     graph: {
       ...current.graph,
@@ -83,7 +89,7 @@ export function remapOsmNodeIdInSession(
   newId: number,
 ): OsmNode | null {
   const current =
-    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   const oldNode = current.graph.nodes[oldId]
   if (!oldNode) return null
 
@@ -102,7 +108,7 @@ export function remapOsmNodeIdInSession(
     ]),
   )
 
-  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey(), {
     ...current,
     graph: {
       ...current.graph,

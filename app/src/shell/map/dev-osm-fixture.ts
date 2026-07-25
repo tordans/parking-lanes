@@ -4,13 +4,12 @@ import type { QueryClient } from '@tanstack/react-query'
 import { DEV_OSM_FIXTURE_BBOX } from '../../modes/parking/fixtures/dev-map-fixture.const'
 import { isDevOsmFixtureActive } from '../dev-osm-fixture-store'
 import {
+  currentOsmSessionParams,
   emptyOsmCoverageData,
   osmCoverageFetchKey,
   osmCoverageSessionKey,
   type OsmCoverageQueryData,
 } from './osm-coverage-query'
-
-const osmSessionParams = {} as Record<never, never>
 
 const devFixtureModules = import.meta.env.DEV
   ? import.meta.glob<RawOsmData>('../../modes/parking/fixtures/dev-map-bbox.json', {
@@ -42,13 +41,15 @@ export function seedDevOsmFixture(queryClient: QueryClient): boolean {
     return false
   }
 
-  queryClient.setQueryData(osmCoverageSessionKey(osmSessionParams), data)
-  queryClient.removeQueries({ queryKey: osmCoverageFetchKey(osmSessionParams) })
+  const params = currentOsmSessionParams()
+  queryClient.setQueryData(osmCoverageSessionKey(params), data)
+  queryClient.removeQueries({ queryKey: osmCoverageFetchKey(params) })
   return true
 }
 
 /** Drops seeded fixture data so live viewport fetches can repopulate the session. */
 export function clearDevOsmFixtureSession(queryClient: QueryClient): void {
-  queryClient.setQueryData(osmCoverageSessionKey(osmSessionParams), emptyOsmCoverageData())
-  queryClient.removeQueries({ queryKey: osmCoverageFetchKey(osmSessionParams) })
+  const params = currentOsmSessionParams()
+  queryClient.setQueryData(osmCoverageSessionKey(params), emptyOsmCoverageData())
+  queryClient.removeQueries({ queryKey: osmCoverageFetchKey(params) })
 }

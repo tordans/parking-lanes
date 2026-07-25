@@ -44,6 +44,8 @@ export function createOsmCoverageApi<TSessionParams>({
 }: CreateOsmCoverageApiOptions<TSessionParams>) {
   const getCoverageKey = (params: TSessionParams) => [...getSessionKey(params), 'coverage'] as const
   const networkEnabled = () => isNetworkEnabled?.() ?? true
+  /** Serialize coverage work per session so concurrent viewports cannot share one fetchQuery. */
+  const coverageChains = new Map<string, Promise<unknown>>()
 
   function emptyData(): OsmCoverageQueryData {
     return {
@@ -75,57 +77,73 @@ export function createOsmCoverageApi<TSessionParams>({
     const params = sessionParams as TSessionParams
     const sessionKey = getSessionKey(params)
     const coverageKey = getCoverageKey(params)
+    const chainKey = JSON.stringify(sessionKey)
 
-    const result = await queryClient.fetchQuery({
-      queryKey: coverageKey,
-      queryFn: async () => {
-        const current = force
-          ? emptyData()
-          : (queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyData())
+    const run = async (): Promise<{ skipped: boolean }> => {
+      // Unique request key: isFetching still matches the coverage prefix, but each call
+      // keeps its own bounds/zoom closure (static keys would dedupe onto the wrong fetch).
+      const requestKey = [...coverageKey, crypto.randomUUID()] as const
 
-        if (zoom < minZoom) {
-          return { skipped: true as const }
-        }
+      return queryClient.fetchQuery({
+        queryKey: requestKey,
+        queryFn: async () => {
+          const current = force
+            ? emptyData()
+            : (queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyData())
 
-        const requests = force
-          ? (() => {
-              const full = createViewportFetchRequest(bounds, zoom, mapSizePx, 'full')
-              return full ? [full] : []
-            })()
-          : computeMissingFetchRequests(bounds, current.coverage, zoom, mapSizePx)
+          if (zoom < minZoom) {
+            return { skipped: true as const }
+          }
 
-        if (requests.length === 0) {
-          return { skipped: true as const }
-        }
+          const requests = force
+            ? (() => {
+                const full = createViewportFetchRequest(bounds, zoom, mapSizePx, 'full')
+                return full ? [full] : []
+              })()
+            : computeMissingFetchRequests(bounds, current.coverage, zoom, mapSizePx)
 
-        const groupId = crypto.randomUUID()
-        const fetchedAt = new Date().toISOString()
-        let graph = current.graph
-        let coverage = force ? null : current.coverage
-        let fetchHistory = force ? emptyFetchHistory() : current.fetchHistory
+          if (requests.length === 0) {
+            return { skipped: true as const }
+          }
 
-        for (const request of requests) {
-          const url = getDownloadUrl(request.bounds, params)
-          const newGraph = await download(url)
-          graph = mergeParsedOsm(graph, newGraph)
-          coverage = unionIntoCoverage(coverage, request.bounds)
-        }
+          const groupId = crypto.randomUUID()
+          const fetchedAt = new Date().toISOString()
+          let graph = current.graph
+          let coverage = force ? null : current.coverage
+          let fetchHistory = force ? emptyFetchHistory() : current.fetchHistory
 
-        fetchHistory = appendFetchHistory(fetchHistory, groupId, fetchedAt, requests)
+          for (const request of requests) {
+            const url = getDownloadUrl(request.bounds, params)
+            const newGraph = await download(url)
+            graph = mergeParsedOsm(graph, newGraph)
+            coverage = unionIntoCoverage(coverage, request.bounds)
+          }
 
-        queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
-          graph,
-          coverage,
-          fetchHistory,
-        })
+          fetchHistory = appendFetchHistory(fetchHistory, groupId, fetchedAt, requests)
 
-        return { skipped: false as const }
-      },
-      staleTime: 0,
-      gcTime: 0,
-    })
+          queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+            graph,
+            coverage,
+            fetchHistory,
+          })
 
-    return result
+          return { skipped: false as const }
+        },
+        staleTime: 0,
+        gcTime: 0,
+      })
+    }
+
+    const previous = coverageChains.get(chainKey) ?? Promise.resolve()
+    const next = previous.then(run, run)
+    coverageChains.set(
+      chainKey,
+      next.then(
+        () => undefined,
+        () => undefined,
+      ),
+    )
+    return next
   }
 
   function createUseQuery(useSessionParams: () => TSessionParams) {

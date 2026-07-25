@@ -22,12 +22,13 @@ function makeWay(
 describe('parking osm edits', () => {
   test('updateParkingOsmWay stores immutable way copy', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
+    const { currentOsmSessionParams } = await import('../shell/map/osm-coverage-query')
     const { emptyParkingOsmData, parkingOsmSessionKey } =
       await import('../modes/parking/map/parking-osm-query')
     const { updateParkingOsmWay } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({})
+    const key = parkingOsmSessionKey(currentOsmSessionParams())
     queryClient.setQueryData(key, emptyParkingOsmData())
 
     const way = makeWay(5, 1, { highway: 'residential', 'parking:lane:right': 'parallel' })
@@ -39,12 +40,13 @@ describe('parking osm edits', () => {
 
   test('remapParkingOsmWayId moves way to new id', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
+    const { currentOsmSessionParams } = await import('../shell/map/osm-coverage-query')
     const { emptyParkingOsmData, parkingOsmSessionKey } =
       await import('../modes/parking/map/parking-osm-query')
     const { remapParkingOsmWayId } = await import('../modes/parking/map/parking-osm-edits')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({})
+    const key = parkingOsmSessionKey(currentOsmSessionParams())
     const initial = emptyParkingOsmData()
     initial.graph.ways[10] = makeWay(10, 1)
     queryClient.setQueryData(key, initial)
@@ -81,11 +83,13 @@ const mapSizePx = { width: 1000, height: 800 }
 describe('ensureParkingOsmCoverage', () => {
   test('skips network when viewport is covered', async () => {
     const { QueryClient } = await import('@tanstack/react-query')
+    const { currentOsmSessionParams } = await import('../shell/map/osm-coverage-query')
     const { ensureParkingOsmCoverage, emptyParkingOsmData, parkingOsmSessionKey } =
       await import('../modes/parking/map/parking-osm-query')
 
     const queryClient = new QueryClient()
-    const key = parkingOsmSessionKey({})
+    const sessionParams = currentOsmSessionParams()
+    const key = parkingOsmSessionKey(sessionParams)
     queryClient.setQueryData(key, {
       graph: emptyParkingOsmData().graph,
       coverage: boundsToPolygon(viewport),
@@ -96,6 +100,7 @@ describe('ensureParkingOsmCoverage', () => {
       bounds: viewport,
       zoom: 18,
       mapSizePx,
+      ...sessionParams,
     })
 
     expect(result.skipped).toBe(true)

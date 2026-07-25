@@ -104,16 +104,19 @@ function cleanupOldTempFiles() {
 }
 
 /**
- * Wrap code in async IIFE if not already wrapped
+ * Wrap code in an async IIFE and export its promise so main() can await completion.
  */
 function wrapCodeIfNeeded(code) {
   // Check if code already has require() and async structure
   const hasRequire = code.includes('require(')
   const hasAsyncIIFE = code.includes('(async () => {') || code.includes('(async()=>{')
 
-  // If it's already a complete script, return as-is
+  // Already a complete script: export the IIFE promise when it isn't already the runner export
   if (hasRequire && hasAsyncIIFE) {
-    return code
+    if (/module\.exports\s*=\s*\(async\s*\(/.test(code)) {
+      return code
+    }
+    return code.replace(/\(async\s*\(\s*\)\s*=>\s*\{/, 'module.exports = (async () => {')
   }
 
   // If it's just Playwright commands, wrap in full template
@@ -142,7 +145,7 @@ function getContextOptionsWithHeaders(options = {}) {
   };
 }
 
-(async () => {
+module.exports = (async () => {
   try {
     ${code}
   } catch (error) {
@@ -159,7 +162,7 @@ function getContextOptionsWithHeaders(options = {}) {
   // If has require but no async wrapper
   if (!hasAsyncIIFE) {
     return `
-(async () => {
+module.exports = (async () => {
   try {
     ${code}
   } catch (error) {
@@ -204,12 +207,12 @@ async function main() {
     // Write code to temp file
     fs.writeFileSync(tempFile, code, 'utf8')
 
-    // Execute the code
+    // Execute the code and await the exported promise so we don't exit early
     console.log('🚀 Starting automation...\n')
-    require(tempFile)
-
-    // Note: Temp file will be cleaned up on next run
-    // This allows long-running async operations to complete safely
+    const result = require(tempFile)
+    if (result != null && typeof result.then === 'function') {
+      await result
+    }
   } catch (error) {
     console.error('❌ Execution failed:', error.message)
     if (error.stack) {
@@ -217,6 +220,12 @@ async function main() {
       console.error(error.stack)
     }
     process.exit(1)
+  } finally {
+    try {
+      fs.unlinkSync(tempFile)
+    } catch {
+      // Ignore cleanup errors (file may already be gone)
+    }
   }
 }
 

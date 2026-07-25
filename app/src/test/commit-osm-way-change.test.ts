@@ -2,7 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { QueryClient } from '@tanstack/react-query'
 import { mergeWayEdit } from '../shell/map/merge-way-edit'
-import { emptyOsmCoverageData, osmCoverageSessionKey } from '../shell/map/osm-coverage-query'
+import {
+  currentOsmSessionParams,
+  emptyOsmCoverageData,
+  osmCoverageSessionKey,
+} from '../shell/map/osm-coverage-query'
 import { commitOsmWayChange, getOsmWayFromSession } from '../shell/map/osm-session-way-edits'
 import { clearChanges, listPendingChanges } from '../utils/changes-store'
 import { changeSourceLabels } from '../utils/changeset-message'
@@ -177,7 +181,7 @@ describe('commitOsmWayChange', () => {
   test('accumulates parking and width edits on one way for save + session', () => {
     clearChanges()
     const queryClient = new QueryClient()
-    const key = osmCoverageSessionKey({})
+    const key = osmCoverageSessionKey(currentOsmSessionParams())
     const initial = emptyOsmCoverageData()
     initial.graph.ways[42] = way(42, { highway: 'residential', name: 'Teststraße' })
     queryClient.setQueryData(key, initial)
@@ -221,7 +225,7 @@ describe('commitOsmWayChange', () => {
   test('second mode merges onto pending even if session was overwritten', () => {
     clearChanges()
     const queryClient = new QueryClient()
-    const key = osmCoverageSessionKey({})
+    const key = osmCoverageSessionKey(currentOsmSessionParams())
     const initial = emptyOsmCoverageData()
     initial.graph.ways[7] = way(7, { highway: 'residential' })
     queryClient.setQueryData(key, initial)
@@ -259,7 +263,7 @@ describe('commitOsmWayChange', () => {
   test('accumulates parking and nested sidepath width edits on one way', () => {
     clearChanges()
     const queryClient = new QueryClient()
-    const key = osmCoverageSessionKey({})
+    const key = osmCoverageSessionKey(currentOsmSessionParams())
     const initial = emptyOsmCoverageData()
     initial.graph.ways[42] = way(42, { highway: 'residential', 'cycleway:left': 'track' })
     queryClient.setQueryData(key, initial)

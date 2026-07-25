@@ -118,12 +118,18 @@ export function useWidthModeHandlers() {
       }
 
       const way = graph?.ways[selectedOsmRef.id]
-      if (!way?.tags?.highway) return
+      if (!way?.tags?.highway) {
+        clearDraft()
+        return
+      }
 
       const coordinates = wayCoordinates(way, graph?.nodeCoords)
       if (isSidepathRef(selectedOsmRef)) {
         const sidepathWidth = sidepathWidthFromWay(way, selectedOsmRef)
-        if (!sidepathWidth) return
+        if (!sidepathWidth) {
+          clearDraft()
+          return
+        }
 
         const parentWidth = roadWidthFromTags(way.tags).value
         const handleCoordinates = offsetPolylineCoordinates(

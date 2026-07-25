@@ -344,11 +344,12 @@ async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) {
  */
 async function createContext(browser, options = {}) {
   const envHeaders = getExtraHeadersFromEnv()
+  // Pull caller headers out so a later options spread cannot wipe env merges
+  const { extraHTTPHeaders: optionHeaders, ...restOptions } = options
 
-  // Merge environment headers with any passed in options
   const mergedHeaders = {
     ...envHeaders,
-    ...options.extraHTTPHeaders,
+    ...optionHeaders,
   }
 
   const defaultOptions = {
@@ -360,11 +361,14 @@ async function createContext(browser, options = {}) {
     geolocation: options.geolocation,
     locale: options.locale || 'en-US',
     timezoneId: options.timezoneId || 'America/New_York',
-    // Only include extraHTTPHeaders if we have any
-    ...(Object.keys(mergedHeaders).length > 0 && { extraHTTPHeaders: mergedHeaders }),
   }
 
-  return await browser.newContext({ ...defaultOptions, ...options })
+  return await browser.newContext({
+    ...defaultOptions,
+    ...restOptions,
+    // Apply last so env + caller headers always win over any leftover spread
+    ...(Object.keys(mergedHeaders).length > 0 ? { extraHTTPHeaders: mergedHeaders } : {}),
+  })
 }
 
 /**

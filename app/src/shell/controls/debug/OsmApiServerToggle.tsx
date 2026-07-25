@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Checkbox, CheckboxField } from '../../../components/catalyst/checkbox'
 import { Label } from '../../../components/catalyst/fieldset'
 import { logout } from '../../../lib/osm-client'
@@ -5,12 +6,14 @@ import { toast } from '../../../lib/toast'
 import { clearChanges } from '../../../utils/changes-store'
 import { AuthState, useAppActions, useAuthState } from '../../app-store'
 import { useDebugSettingsActions, useUseOsmDevServer } from '../../debug-settings-store'
+import { clearOsmCoverageSessions } from '../../map/osm-coverage-query'
 
 export function OsmApiServerToggle() {
+  const queryClient = useQueryClient()
   const authState = useAuthState()
   const useOsmDevServer = useUseOsmDevServer()
   const { setUseOsmDevServer } = useDebugSettingsActions()
-  const { setAuthState, setOsmDisplayName, setChangesCount } = useAppActions()
+  const { setAuthState, setOsmDisplayName } = useAppActions()
 
   return (
     <section className="flex flex-col gap-2">
@@ -20,11 +23,12 @@ export function OsmApiServerToggle() {
           checked={useOsmDevServer}
           onChange={(checked) => {
             setUseOsmDevServer(checked)
+            clearChanges()
+            clearOsmCoverageSessions(queryClient)
             if (authState === AuthState.success) {
               logout()
               setAuthState(AuthState.initial)
               setOsmDisplayName(null)
-              setChangesCount(clearChanges())
               toast.message(
                 checked
                   ? 'Switched to OSM dev server — sign in again before uploading.'
