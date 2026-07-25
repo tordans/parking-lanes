@@ -1,5 +1,6 @@
 import { osmDevUrl } from '@osm-editor-kit/osm-editor-links'
 import { createOsmOAuthClient } from '@osm-editor-kit/osm-oauth'
+import { APP_NAME } from './app-identity'
 import {
   getOsmOAuthClientId,
   getOsmOAuthRedirectUrl,
@@ -18,7 +19,7 @@ const client = createOsmOAuthClient(
     getApiUrl: (useDevServer) => (useDevServer ? osmDevUrl : osmProdApiUrl),
     getLoginMode: () => (import.meta.env.DEV ? 'redirect' : 'popup'),
   },
-  { changesetTags: { comment: 'Street Space Editor' } },
+  { changesetTags: { comment: APP_NAME } },
 )
 
 export const { authenticate, restoreSession, logout, userInfo, uploadChanges } = client

@@ -1,5 +1,5 @@
 {
-  "name": "parking-lanes",
+  "name": "street-space-editor",
   "private": true,
   "description": "Street Space Editor for OpenStreetMap — Bun workspace monorepo",
   "type": "module",

@@ -18,12 +18,12 @@ function createWay(id: number, overrides: Partial<OsmWay> = {}): OsmWay {
 describe('buildChangesetTags', () => {
   test('includes created_by, comment, and host', () => {
     expect(
-      buildChangesetTags('PLanes', '0.9.0', {
+      buildChangesetTags('Street Space Editor', '0.9.0', {
         host: 'https://example.com/parking/',
         comment: 'Street Space Editor',
       }),
     ).toEqual({
-      created_by: 'PLanes 0.9.0',
+      created_by: 'Street Space Editor 0.9.0',
       comment: 'Street Space Editor',
       host: 'https://example.com/parking/',
     })

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "parking-lanes",
+      "name": "street-space-editor",
       "devDependencies": {
         "eslint-plugin-react-hooks": "^7.1.1",
         "oxfmt": "^0.56.0",

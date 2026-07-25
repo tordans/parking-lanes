@@ -12,6 +12,7 @@ import {
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
+import { APP_NAME, APP_VERSION } from '../../lib/app-identity'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
 import { toast } from '../../lib/toast'
@@ -65,9 +66,6 @@ import { MapResizeHandler } from './MapResizeHandler'
 import { serializeMapSearch } from './search-schema'
 import { useSelectionBacklights } from './use-selection-backlights'
 import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
-
-const editorName = 'StreetSpace'
-const version = '0.9.0'
 
 export function MapPage({
   initialView,
@@ -321,7 +319,7 @@ function MapPageContent({
 
   async function handleSave() {
     try {
-      const changedIdMap = await uploadChanges(editorName, version, changesStore)
+      const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore)
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
         const remap = isWidthMode ? remapWidthOsmWayId : remapParkingOsmWayId

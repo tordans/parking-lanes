@@ -29,7 +29,7 @@ function createWay(id: number, overrides: Partial<OsmWay> = {}): OsmWay {
 
 const { uploadChanges } = createOsmOAuthClient(
   {
-    userAgent: 'PLanes/0.9.0',
+    userAgent: 'StreetSpaceEditor/0.9.0',
     scopes: ['read_prefs', 'write_api'],
     getClientId: () => 'test-client-id',
     getRedirectUrl: () => 'https://example.com/osm-oauth-land.html',
@@ -66,12 +66,12 @@ describe('uploadChanges', () => {
       },
     })
 
-    const changedIdMap = await uploadChanges('PLanes', '0.9.0', store)
+    const changedIdMap = await uploadChanges('Street Space Editor', '0.9.0', store)
 
     expect(mockUploadChangeset).toHaveBeenCalledTimes(1)
     expect(mockUploadChangeset).toHaveBeenCalledWith(
       {
-        created_by: 'PLanes 0.9.0',
+        created_by: 'Street Space Editor 0.9.0',
         comment: 'Street Space Editor',
         host: 'https://example.com/lanes/',
       },
@@ -94,7 +94,7 @@ describe('uploadChanges', () => {
       create: { way: [] },
     }
 
-    await expect(uploadChanges('PLanes', '0.9.0', store)).rejects.toMatchObject({
+    await expect(uploadChanges('Street Space Editor', '0.9.0', store)).rejects.toMatchObject({
       name: 'OsmApiRequestError',
       responseText: 'changeset required',
     })

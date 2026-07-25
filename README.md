@@ -15,7 +15,7 @@ One app with a shared OSM shell (auth, fetch, changeset upload) and **modes** fo
 
 Modes plug into `app/src/modes/`; the shell lives in `app/src/shell/`. Shared kit packages remain under `packages/*`.
 
-**Deploy path:** GH Pages currently serves `/street-parking-editor/` (Vite `base`). A rename to `/street-space-editor/` needs a redirect or updated Pages config before changing `app/vite.config.ts`.
+**Deploy path / GitHub repo:** GH Pages still serves `/street-parking-editor/` and the remote is still `street-parking-editor`. Rename those later (with a redirect); internal product name is already **Street Space Editor**.
 
 ## Screenshots
 

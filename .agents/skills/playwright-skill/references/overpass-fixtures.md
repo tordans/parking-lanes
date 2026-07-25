@@ -2,7 +2,7 @@
 
 **Rule:** Default E2E and CI must **never** call live Overpass interpreters. Serve committed JSON fixtures via `page.route()`.
 
-Applies to **parking-lanes** (`overpass-api.de`, `maps.mail.ru/osm/tools/overpass`) and any OSM viewer that loads bbox data through Overpass.
+Applies to **street-space-editor** (`overpass-api.de`, `maps.mail.ru/osm/tools/overpass`) and any OSM viewer that loads bbox data through Overpass.
 
 ---
 
@@ -36,7 +36,7 @@ Fixture files are **raw Overpass `[out:json]` responses** (same shape `downloadC
 
 ## Capture a fixture (one-time, outside CI)
 
-Use a **small bbox** (single intersection or short street). parking-lanes default map from README: `#16/52.4751/13.4435`.
+Use a **small bbox** (single intersection or short street). street-space-editor default map from README: `#16/52.4751/13.4435`.
 
 1. Build the same URL the app would use — see `src/parking/data-url.ts` (`getOverpassViewerQuery`).
 2. Fetch once locally:

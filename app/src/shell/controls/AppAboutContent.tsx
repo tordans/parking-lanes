@@ -1,5 +1,6 @@
 import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { handleJosmLinkClick, idEditorUrl, josmUrl } from '@osm-editor-kit/osm-editor-links'
+import { APP_REPO_URL } from '../../lib/app-identity'
 import type { ModeAboutContent } from '../../modes/types'
 import { useMapBounds } from '../app-store'
 import { useMapViewport } from '../map/map-viewport'
@@ -54,12 +55,7 @@ export function AppAboutContent({ about }: Props) {
               </a>
             </>
           ) : null}
-          <a
-            href="https://github.com/osmberlin/street-parking-editor"
-            target="_blank"
-            rel="noreferrer"
-            className={linkClass}
-          >
+          <a href={APP_REPO_URL} target="_blank" rel="noreferrer" className={linkClass}>
             GitHub
           </a>
         </div>

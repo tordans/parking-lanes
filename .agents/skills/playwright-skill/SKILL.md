@@ -60,7 +60,7 @@ Exploration findings that should stick → add `tests/*.spec.ts` and run `bun ru
 | **Default E2E / CI**      | `page.route()` → committed JSON in `tests/fixtures/overpass/` |
 | **Manual debug only**     | `RUN_LIVE_OVERPASS_E2E=1` (never in CI) |
 
-**Agents:** When adding or running E2E for parking-lanes (or any Overpass-backed viewer):
+**Agents:** When adding or running E2E for street-space-editor (or any Overpass-backed viewer):
 
 1. Add or reuse a fixture under `tests/fixtures/overpass/` (small bbox; capture once locally — not in a test).
 2. Wire `installOverpassFixtures(page)` via a shared Playwright fixture or `beforeEach`.
