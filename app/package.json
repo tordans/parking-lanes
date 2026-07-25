@@ -22,6 +22,7 @@
     "@osm-editor-kit/osm-data": "workspace:*",
     "@osm-editor-kit/osm-editor-links": "workspace:*",
     "@osm-editor-kit/osm-map-url": "workspace:*",
+    "@osm-editor-kit/osm-maplibre": "workspace:*",
     "@osm-editor-kit/osm-oauth": "workspace:*",
     "@osm-editor-kit/osm-sidepath-tags": "workspace:*",
     "@osm-editor-kit/osm-tag-syntax": "workspace:*",

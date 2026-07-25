@@ -1,14 +1,10 @@
-import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { ComponentType } from 'react'
 
 export type StreetSpaceModeId = 'parking' | 'width' | 'lanes' | 'surface' | 'sidewalks'
 
 export type ModeMapProps = Record<string, never>
 
-export type ModePanelProps = {
-  onOsmChange: (way: OsmWay) => void
-  onClose: () => void
-}
+export type ModePanelProps = Record<string, never>
 
 export type ModeAboutContent = {
   description: string

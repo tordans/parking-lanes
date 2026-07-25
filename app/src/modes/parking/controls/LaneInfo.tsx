@@ -1,21 +1,21 @@
-import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { type OsmObject, type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
-import {
-  handleJosmLinkClick,
-  idEditorUrl,
-  josmUrl,
-  mapillaryUrl,
-} from '@osm-editor-kit/osm-editor-links'
 import { AuthState, useAuthState } from '../../../shell/app-store'
+import {
+  MapFeatureLoadEmptyState,
+  MapFeaturePromptEmptyState,
+} from '../../../shell/controls/MapFeatureEmptyState'
 import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
 import { useMapViewport } from '../../../shell/map/map-viewport'
 import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
+import { useParkingOsmChangeHandler } from '../use-parking-mode-handlers'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
+import { OsmExternalLinksBar } from './OsmExternalLinksBar'
 
-export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClose?: () => void }) {
+export function OsmObjectPanel() {
+  const onChange = useParkingOsmChangeHandler()
   const mapViewport = useMapViewport()
   const selectedOsmRef = useSelectedOsmRef()
   const authState = useAuthState()
@@ -24,9 +24,7 @@ export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClos
 
   if (!selectedOsmRef) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
-        <p className="m-0">Click a way on the map to inspect and edit parking tags.</p>
-      </div>
+      <MapFeaturePromptEmptyState message="Click a way on the map to inspect and edit parking tags." />
     )
   }
 
@@ -37,20 +35,13 @@ export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClos
     null
 
   if (!selectedOsmObject) {
-    const belowMinZoom = mapViewport.zoom < viewMinZoom
     return (
-      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
-        {belowMinZoom ? (
-          <p className="m-0">Zoom in to load this feature.</p>
-        ) : isFetching ? (
-          <p className="m-0">Loading feature…</p>
-        ) : (
-          <p className="m-0">
-            Feature {selectedOsmRef.type}/{selectedOsmRef.id} is not in the loaded area. Pan the map
-            to load it.
-          </p>
-        )}
-      </div>
+      <MapFeatureLoadEmptyState
+        zoom={mapViewport.zoom}
+        minZoom={viewMinZoom}
+        isFetching={isFetching}
+        featureLabel={`${selectedOsmRef.type}/${selectedOsmRef.id}`}
+      />
     )
   }
 
@@ -60,50 +51,11 @@ export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClos
 
   return (
     <div className="flex min-w-[250px] flex-col text-zinc-900">
-      <div className="flex items-start justify-between gap-2 text-sm text-zinc-700">
-        <span>
-          <span>View: </span>
-          <a
-            href={`https://openstreetmap.org/way/${selectedOsmObject.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            OSM
-          </a>
-          <span>, </span>
-          <a
-            href={`${mapillaryUrl({ lat: mapViewport.lat, lng: mapViewport.lng })}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            Mapillary
-          </a>
-        </span>
-        <span className="max-sm:hidden">
-          <span>Edit: </span>
-          <a
-            href={`${josmUrl + overpassDeUrl + getWayWithRelationsOverpassQuery(selectedOsmObject.id).replace(/\s+/g, ' ')}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline"
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises
-            onClick={(e) => handleJosmLinkClick(e.nativeEvent)}
-          >
-            Josm
-          </a>
-          <span>, </span>
-          <a
-            href={`${idEditorUrl({ osmObjectType: 'way', osmObjectId: selectedOsmObject.id })}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            iD
-          </a>
-        </span>
-      </div>
+      <OsmExternalLinksBar
+        wayId={selectedOsmObject.id}
+        lat={mapViewport.lat}
+        lng={mapViewport.lng}
+      />
       <hr className="my-2 border-zinc-950/10" />
       {isStreetParking ? (
         <>
@@ -112,11 +64,7 @@ export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClos
               <LoginCallout onLogin={() => void login()} />
             </div>
           ) : null}
-          <LaneEditForm
-            osm={selectedOsmObject as OsmWay}
-            readOnly={readOnly}
-            onChange={props.onChange!}
-          />
+          <LaneEditForm osm={selectedOsmObject as OsmWay} readOnly={readOnly} onChange={onChange} />
         </>
       ) : (
         <>
@@ -130,18 +78,6 @@ export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClos
       )}
     </div>
   )
-}
-
-function getWayWithRelationsOverpassQuery(wayId: number) {
-  return `
-        [out:xml];
-        (
-            way(id:${wayId});
-            >;
-            way(id:${wayId});
-            <;
-        );
-        out meta;`
 }
 
 function OsmObjectInfo(props: { osm: OsmObject }) {

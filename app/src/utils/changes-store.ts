@@ -1,13 +1,16 @@
 import {
   countChanges,
   createEmptyChangesStore,
+  diffWayTags,
   removeChangedWay,
+  type TagChange,
   upsertChangedNode,
   upsertChangedRelation,
   upsertChangedWay,
+  wayDisplayName,
 } from '@osm-editor-kit/osm-changeset'
 import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
-import { type ChangeSource, diffWayTags, type TagChange, wayDisplayName } from './changeset-message'
+import { type ChangeSource } from './changeset-message'
 
 export type PendingChange = {
   way: OsmWay

@@ -1,9 +1,10 @@
-import type { OsmWay } from '@osm-editor-kit/osm-data'
+import { useParams } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
 import { useState } from 'react'
 import { useSelectedOsmRef } from '../../modes/parking'
 import { ParkingDatetimeFilter } from '../../modes/parking/controls/ParkingDatetimeFilter'
-import type { StreetSpaceMode } from '../../modes/types'
+import { useActiveStreetSpaceMode } from '../../modes/registry'
+import type { StreetSpaceMode, StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { AccountCallout } from './AccountCallout'
@@ -51,12 +52,10 @@ export function InfoPanelContent(props: {
   )
 }
 
-export function ControlPanel(props: {
-  mode: StreetSpaceMode
-  onOsmChange: (way: OsmWay) => void
-  onClose: () => void
-}) {
-  const { Panel, Legend } = props.mode
+export function ControlPanel() {
+  const { mode: modeSlug } = useParams({ from: '/$mode' })
+  const mode = useActiveStreetSpaceMode(modeSlug as StreetSpaceModeId)
+  const { Panel, Legend } = mode
   const selectedOsmRef = useSelectedOsmRef()
   const osmDisplayName = useOsmDisplayName()
   const showDebug = canShowDebugToggle(osmDisplayName)
@@ -70,11 +69,9 @@ export function ControlPanel(props: {
       <PanelModeSwitcher className="shrink-0" mode={activePanelMode} onChange={setPanelMode} />
       <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
         {activePanelMode === 'info' ? (
-          <InfoPanelContent about={props.mode.about} Legend={Legend} />
+          <InfoPanelContent about={mode.about} Legend={Legend} />
         ) : null}
-        {activePanelMode === 'inspector' ? (
-          <Panel onOsmChange={props.onOsmChange} onClose={props.onClose} />
-        ) : null}
+        {activePanelMode === 'inspector' ? <Panel /> : null}
         {activePanelMode === 'settings' ? <SettingsPanelContent showDebug={showDebug} /> : null}
       </div>
     </div>

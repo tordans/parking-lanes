@@ -3,8 +3,6 @@ import clsx from 'clsx'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
-import type { StreetSpaceModeId } from '../../modes/types'
-import { useAppActions } from '../app-store'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
@@ -17,7 +15,6 @@ import { SplitWayButton } from './SplitWayButton'
 export function ModeSwitcher() {
   const navigate = useNavigate({ from: '/$mode' })
   const { mode: currentMode } = useParams({ from: '/$mode' })
-  const { setActiveMode } = useAppActions()
 
   return (
     <div className="flex items-center gap-2">
@@ -39,7 +36,6 @@ export function ModeSwitcher() {
                   className={clsxModeButton({ isActive, enabled: mode.enabled, index })}
                   onClick={() => {
                     if (!mode.enabled || isActive) return
-                    setActiveMode(mode.id as StreetSpaceModeId)
                     void navigate({
                       to: '/$mode',
                       params: { mode: mode.id },

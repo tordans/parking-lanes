@@ -21,6 +21,7 @@
         "@osm-editor-kit/osm-data": "workspace:*",
         "@osm-editor-kit/osm-editor-links": "workspace:*",
         "@osm-editor-kit/osm-map-url": "workspace:*",
+        "@osm-editor-kit/osm-maplibre": "workspace:*",
         "@osm-editor-kit/osm-oauth": "workspace:*",
         "@osm-editor-kit/osm-sidepath-tags": "workspace:*",
         "@osm-editor-kit/osm-tag-syntax": "workspace:*",
@@ -146,6 +147,17 @@
       },
       "peerDependencies": {
         "@tanstack/react-router": "^1.131.28",
+      },
+    },
+    "packages/osm-maplibre": {
+      "name": "@osm-editor-kit/osm-maplibre",
+      "version": "0.0.0",
+      "dependencies": {
+        "maplibre-gl": "^5.7.1",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
       },
     },
     "packages/osm-oauth": {
@@ -336,6 +348,8 @@
     "@osm-editor-kit/osm-editor-links": ["@osm-editor-kit/osm-editor-links@workspace:packages/osm-editor-links"],
 
     "@osm-editor-kit/osm-map-url": ["@osm-editor-kit/osm-map-url@workspace:packages/osm-map-url"],
+
+    "@osm-editor-kit/osm-maplibre": ["@osm-editor-kit/osm-maplibre@workspace:packages/osm-maplibre"],
 
     "@osm-editor-kit/osm-oauth": ["@osm-editor-kit/osm-oauth@workspace:packages/osm-oauth"],
 

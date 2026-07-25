@@ -1,5 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
+import { metersPerPixel } from '@osm-editor-kit/osm-maplibre'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { useCallback, useEffect, useRef } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
@@ -13,7 +14,6 @@ import {
   offsetPolylineCoordinates,
   widthDeltaFromScreenDrag,
 } from './domain/handle-geometry'
-import { metersPerPixel } from './domain/meters-to-pixels'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { highwaysToCollection } from './map/parse-highways'
 import { useWidthMapActions, useWidthDragSide, useDraftWidthM } from './map/width-map-store'

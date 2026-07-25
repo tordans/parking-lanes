@@ -1,10 +1,14 @@
+import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import {
+  MapFeatureLoadEmptyState,
+  MapFeaturePromptEmptyState,
+} from '../../shell/controls/MapFeatureEmptyState'
 import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
-import type { ModePanelProps } from '../types'
 import {
   buildHandleGeometry,
   MIN_WIDTH_M,
@@ -15,6 +19,7 @@ import { viewMinZoom } from './map/constants'
 import { useDraftWidthM, useWidthMapActions } from './map/width-map-store'
 import { stageWidthOnSidepath, stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
+import { useWidthOsmChangeHandler } from './use-width-mode-handlers'
 
 function formatSourceLabel(source: string): string {
   switch (source) {
@@ -44,7 +49,13 @@ function wayCoordinates(
     .filter((coord): coord is [number, number] => coord != null)
 }
 
-export function WidthModePanel(props: ModePanelProps) {
+function formatFeatureLabel(ref: OsmFeatureRef): string {
+  const suffix = ref.prefix && ref.side ? `/${ref.prefix}/${ref.side}` : ''
+  return `${ref.type}/${ref.id}${suffix}`
+}
+
+export function WidthModePanel() {
+  const onOsmChange = useWidthOsmChangeHandler()
   const mapViewport = useMapViewport()
   const selectedOsmRef = useSelectedOsmRef()
   const authState = useAuthState()
@@ -55,9 +66,7 @@ export function WidthModePanel(props: ModePanelProps) {
 
   if (!selectedOsmRef) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
-        <p className="m-0">Click a highway on the map to inspect and edit its width.</p>
-      </div>
+      <MapFeaturePromptEmptyState message="Click a highway on the map to inspect and edit its width." />
     )
   }
 
@@ -65,23 +74,13 @@ export function WidthModePanel(props: ModePanelProps) {
     selectedOsmRef.type === 'way' ? (graph?.ways[selectedOsmRef.id] ?? null) : null
 
   if (!selectedWay) {
-    const belowMinZoom = mapViewport.zoom < viewMinZoom
     return (
-      <div className="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center text-sm text-zinc-600">
-        {belowMinZoom ? (
-          <p className="m-0">Zoom in to load this feature.</p>
-        ) : isFetching ? (
-          <p className="m-0">Loading feature…</p>
-        ) : (
-          <p className="m-0">
-            Feature {selectedOsmRef.type}/{selectedOsmRef.id}
-            {selectedOsmRef.prefix && selectedOsmRef.side
-              ? `/${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-              : ''}{' '}
-            is not in the loaded area. Pan the map to load it.
-          </p>
-        )}
-      </div>
+      <MapFeatureLoadEmptyState
+        zoom={mapViewport.zoom}
+        minZoom={viewMinZoom}
+        isFetching={isFetching}
+        featureLabel={formatFeatureLabel(selectedOsmRef)}
+      />
     )
   }
 
@@ -123,13 +122,13 @@ export function WidthModePanel(props: ModePanelProps) {
     setHandles(buildHandleGeometry(handleCoordinates, clamped))
 
     if (isSidepath && selectedOsmRef.prefix && selectedOsmRef.side) {
-      props.onOsmChange(
+      onOsmChange(
         stageWidthOnSidepath(selectedWay, selectedOsmRef.prefix, selectedOsmRef.side, clamped),
       )
       return
     }
 
-    props.onOsmChange(stageWidthOnWay(selectedWay, clamped))
+    onOsmChange(stageWidthOnWay(selectedWay, clamped))
   }
 
   const panelTitle = isSidepath

@@ -12,3 +12,4 @@ export {
 } from './changeset-upload'
 export { buildChangesetTags, type BuildChangesetTagsOptions } from './changeset-tags'
 export { type ChangedIdMap, type ChangesStore, createEmptyChangesStore } from './changes-store'
+export { diffWayTags, type TagChange, wayDisplayName } from './way-tags'

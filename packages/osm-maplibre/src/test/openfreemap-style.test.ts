@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { StyleSpecification } from 'maplibre-gl'
-import { openFreeMapTransformStyle, patchOpenFreeMapStyle } from '../utils/openfreemap-style'
+import { openFreeMapTransformStyle, patchOpenFreeMapStyle } from '../openfreemap-style'
 
 describe('patchOpenFreeMapStyle', () => {
   test('adds typeof guard to boundary_3 filter', () => {

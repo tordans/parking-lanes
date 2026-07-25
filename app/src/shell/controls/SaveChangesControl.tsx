@@ -1,57 +1,27 @@
 import { osmDevUrl } from '@osm-editor-kit/osm-editor-links'
 import clsx from 'clsx'
-import { Download, Scissors, Trash2, Upload, X } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '../../components/catalyst/button'
-import {
-  Dialog,
-  DialogActions,
-  DialogBody,
-  DialogDescription,
-  DialogTitle,
-} from '../../components/catalyst/dialog'
-import { Field, Label } from '../../components/catalyst/fieldset'
-import { Textarea } from '../../components/catalyst/textarea'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
-import { modeIcons } from '../../modes/mode-icons'
 import {
   allPendingSources,
   listPendingChanges,
   removeChangedEntity,
   type PendingChange,
 } from '../../utils/changes-store'
-import {
-  buildChangesetComment,
-  changeSourceLabel,
-  orderedChangeSources,
-  wayHasStreetName,
-  type ChangeSource,
-} from '../../utils/changeset-message'
+import { buildChangesetComment } from '../../utils/changeset-message'
 import { downloadPendingChangesOsc } from '../../utils/download-pending-osc'
 import { useAppActions, useChangesCount } from '../app-store'
 import { useUseOsmDevServer } from '../debug-settings-store'
 import { floatingChromeElevationClassName } from '../map/mobileMapChrome.const'
+import { useSavePendingChanges } from '../map/use-save-pending-changes'
+import { SaveChangesDialog } from './save-changes/SaveChangesDialog'
 
-function ChangeSourceIcon(props: { source: ChangeSource }) {
-  const label = changeSourceLabel(props.source)
-  const Icon = props.source === 'split' ? Scissors : modeIcons[props.source]
-
-  return (
-    <Tooltip content={label} placement="top">
-      <span className="inline-flex text-zinc-500" aria-label={label}>
-        <Icon className="size-3.5 shrink-0" aria-hidden />
-      </span>
-    </Tooltip>
-  )
-}
-
-export function SaveChangesControl(props: {
-  onSave: (comment: string) => Promise<void>
-  onDiscardWay: (wayId: number, result: ReturnType<typeof removeChangedEntity>) => void
-}) {
+export function SaveChangesControl() {
   const changesCount = useChangesCount()
   const useOsmDevServer = useUseOsmDevServer()
   const { setChangesCount } = useAppActions()
+  const { handleSave: savePendingChanges, handleDiscardWay } = useSavePendingChanges()
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [pending, setPending] = useState<PendingChange[]>([])
@@ -80,7 +50,7 @@ export function SaveChangesControl(props: {
 
   function handleDiscard(wayId: number) {
     const result = removeChangedEntity(wayId)
-    props.onDiscardWay(wayId, result)
+    handleDiscardWay(wayId, result)
     setChangesCount(result.count)
     if (result.count === 0) {
       setOpen(false)
@@ -99,7 +69,7 @@ export function SaveChangesControl(props: {
     if (!trimmed || saving) return
     setSaving(true)
     try {
-      await props.onSave(trimmed)
+      await savePendingChanges(trimmed)
       setOpen(false)
       setPending([])
     } finally {
@@ -143,108 +113,19 @@ export function SaveChangesControl(props: {
         </button>
       </Tooltip>
 
-      <Dialog open={open} onClose={setOpen} size="lg">
-        <div className="flex items-start justify-between gap-3">
-          <DialogTitle>Save changes</DialogTitle>
-          <button
-            type="button"
-            aria-label="Close"
-            disabled={saving}
-            className="shrink-0 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 disabled:opacity-50"
-            onClick={() => setOpen(false)}
-          >
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
-        <DialogDescription className="!text-base/5 sm:!text-sm/5">
-          Review pending OSM edits before uploading a changeset to {uploadHost}.
-        </DialogDescription>
-        <DialogBody>
-          <ul className="max-h-64 space-y-3 overflow-auto rounded-lg bg-zinc-50 p-3 ring-1 ring-zinc-950/5">
-            {pending.map((change) => (
-              <li key={change.way.id} className="rounded-md bg-white p-3 ring-1 ring-zinc-950/5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="truncate font-medium text-zinc-950">
-                      way/{change.way.id}
-                      {wayHasStreetName(change.way) ? (
-                        <span className="font-normal text-zinc-500"> · {change.displayName}</span>
-                      ) : null}
-                    </div>
-                    {change.sources.length > 0 ? (
-                      <div className="flex shrink-0 items-center gap-1">
-                        {orderedChangeSources(change.sources).map((source) => (
-                          <ChangeSourceIcon key={source} source={source} />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={`Remove way/${change.way.id}`}
-                    className="shrink-0 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-red-700"
-                    onClick={() => handleDiscard(change.way.id)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </button>
-                </div>
-                {change.tagChanges.length > 0 ? (
-                  <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
-                    {change.tagChanges.map((tag) => (
-                      <li key={tag.key} className="break-all">
-                        <span className="text-zinc-500">{tag.key}=</span>
-                        {tag.from === null ? (
-                          <span className="text-emerald-700">{tag.to}</span>
-                        ) : tag.to === null ? (
-                          <span className="text-red-700 line-through">{tag.from}</span>
-                        ) : (
-                          <>
-                            <span className="text-red-700 line-through">{tag.from}</span>
-                            <span className="text-zinc-400"> → </span>
-                            <span className="text-emerald-700">{tag.to}</span>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-2 text-xs text-zinc-500">Geometry change (no tag edits)</p>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <Field className="mt-4 [&>[data-slot=label]+[data-slot=control]]:mt-1.5">
-            <Label>Changeset message</Label>
-            <Textarea
-              rows={3}
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              resizable={false}
-            />
-          </Field>
-        </DialogBody>
-        <DialogActions className="sm:justify-between">
-          <Tooltip content="Download osmChange (.osc)" placement="top">
-            <Button
-              outline
-              type="button"
-              aria-label="Download osmChange (.osc)"
-              onClick={handleDownload}
-              disabled={saving || pending.length === 0}
-            >
-              <Download data-slot="icon" />
-            </Button>
-          </Tooltip>
-          <Button
-            color="yellow"
-            onClick={() => void handleSave()}
-            disabled={saving || !comment.trim()}
-          >
-            {uploadLabel}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <SaveChangesDialog
+        open={open}
+        saving={saving}
+        uploadHost={uploadHost}
+        uploadLabel={uploadLabel}
+        pending={pending}
+        comment={comment}
+        onOpenChange={setOpen}
+        onCommentChange={setComment}
+        onDiscard={handleDiscard}
+        onDownload={handleDownload}
+        onSave={() => void handleSave()}
+      />
     </>
   )
 }

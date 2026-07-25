@@ -1,9 +1,11 @@
 import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
+import { useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Info, MousePointerClick, Settings } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
-import type { ModePanelProps, StreetSpaceMode } from '../../modes/types'
+import { useActiveStreetSpaceMode } from '../../modes/registry'
+import type { StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { useFeatureSelection, useSelectedOsmRef } from '../map/feature-selection'
@@ -17,22 +19,20 @@ import {
 import { InfoPanelContent, SettingsPanelContent } from './ControlPanel'
 import { MobileBottomSheet } from './MobileBottomSheet'
 import { ModeSwitcher } from './ModeSwitcher'
+import { SaveChangesControl } from './SaveChangesControl'
 
 type MobilePanel = 'info' | 'inspector' | 'settings' | null
 
-export function MapMobileToolbar(
-  props: {
-    mode: StreetSpaceMode
-    saveControl?: ReactNode
-  } & ModePanelProps,
-) {
+export function MapMobileToolbar() {
   const isDesktop = useBreakpoint('sm')
+  const { mode: modeSlug } = useParams({ from: '/$mode' })
+  const mode = useActiveStreetSpaceMode(modeSlug as StreetSpaceModeId)
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
-  const { selectionEpoch } = useFeatureSelection()
+  const { selectionEpoch, clearSelection } = useFeatureSelection()
   const showDebug = canShowDebugToggle(osmDisplayName)
-  const { Panel, Legend } = props.mode
+  const { Panel, Legend } = mode
   const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
 
   if (isDesktop) return null
@@ -47,7 +47,7 @@ export function MapMobileToolbar(
   }
 
   const handleInspectorClose = () => {
-    props.onClose()
+    clearSelection()
     setOpenPanel(null)
   }
 
@@ -82,7 +82,7 @@ export function MapMobileToolbar(
             </MapToolbarIconButton>
           </div>
         </div>
-        {props.saveControl}
+        <SaveChangesControl />
       </div>
 
       <MobileBottomSheet
@@ -91,21 +91,17 @@ export function MapMobileToolbar(
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
-          <InfoPanelContent about={props.mode.about} Legend={Legend} />
+          <InfoPanelContent about={mode.about} Legend={Legend} />
         </div>
       </MobileBottomSheet>
 
       <MobileBottomSheet
         title="Inspector"
         open={openPanel === 'inspector'}
-        onClose={() => setOpenPanel(null)}
+        onClose={handleInspectorClose}
       >
-        <div className="pb-4">
-          <Panel
-            key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}
-            onOsmChange={props.onOsmChange}
-            onClose={handleInspectorClose}
-          />
+        <div className="pb-4" key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}>
+          <Panel />
         </div>
       </MobileBottomSheet>
 
@@ -127,7 +123,7 @@ function MapToolbarIconButton(props: {
   active: boolean
   divided?: boolean
   onClick: () => void
-  children: ReactNode
+  children: React.ReactNode
 }) {
   return (
     <button

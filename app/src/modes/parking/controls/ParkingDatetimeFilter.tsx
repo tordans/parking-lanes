@@ -1,18 +1,19 @@
+import { useParams } from '@tanstack/react-router'
 import dayjs from 'dayjs'
 import { Field, Label } from '../../../components/catalyst/fieldset'
 import { Input } from '../../../components/catalyst/input'
-import { useActiveMode, useAppActions, useDatetime } from '../../../shell/app-store'
+import { useAppActions, useDatetime } from '../../../shell/app-store'
 
 /**
  * Parking-only filter: colors conditional parking access by date/time.
  * Renders nothing outside parking mode.
  */
 export function ParkingDatetimeFilter({ fullWidth = false }: { fullWidth?: boolean }) {
-  const activeMode = useActiveMode()
+  const { mode } = useParams({ from: '/$mode' })
   const datetime = useDatetime()
   const { setDatetime } = useAppActions()
 
-  if (activeMode !== 'parking') return null
+  if (mode !== 'parking') return null
 
   return (
     <section className="flex flex-col gap-2">

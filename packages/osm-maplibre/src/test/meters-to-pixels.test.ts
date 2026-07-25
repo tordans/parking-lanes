@@ -4,7 +4,7 @@ import {
   lineWidthFromMeters,
   PIXEL_SCALE_GERMANY,
   pixelsFromMeters,
-} from '../modes/width/domain/meters-to-pixels'
+} from '../meters-to-pixels'
 
 function assertZoomIsTopLevelInterpolateInput(expr: readonly unknown[]) {
   expect(expr[0]).toBe('interpolate')

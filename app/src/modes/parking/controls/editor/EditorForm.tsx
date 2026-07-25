@@ -1,25 +1,15 @@
-import * as Headless from '@headlessui/react'
 import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
-import clsx from 'clsx'
-import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
-import { Label } from '../../../../components/catalyst/fieldset'
-import { Switch } from '../../../../components/catalyst/switch'
-import { Tooltip } from '../../../../components/Tooltip/Tooltip'
-import { applyTagMigration, hasTagMigration } from '../../domain/editor/tag-migration'
+import { applyTagMigration } from '../../domain/editor/tag-migration'
 import { AllTagsBlock } from '../LaneInfo'
 import { SideGroup } from './SideGroup'
-import {
-  tagEditorToolbarButtonClassName,
-  tagEditorToolbarButtonGroupClassName,
-} from './tag-editor-controls'
+import { SideModeSwitcher } from './SideModeSwitcher'
+import { TagMigrationToolbar } from './TagMigrationToolbar'
 import { TagUpdaterModal } from './TagUpdaterModal'
 
 const tagsSchema = z.record(z.string(), z.string())
-
-const sideSwitcherLabelClassName = 'text-xs select-none'
 
 export function LaneEditForm(props: {
   osm: OsmWay
@@ -55,51 +45,20 @@ export function LaneEditForm(props: {
       className="editor-form text-zinc-900"
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <Headless.Field className="flex items-center gap-2">
-          <Label
-            className={clsx(
-              sideSwitcherLabelClassName,
-              bothBlockShown ? 'text-zinc-500' : 'font-semibold text-zinc-950',
-            )}
-          >
-            Left/Right
-          </Label>
-          <form.Field name="bothBlockShown">
-            {(field) => (
-              <Switch
-                checked={field.state.value}
-                disabled={readOnly}
-                onChange={field.handleChange}
-                aria-label="Toggle both sides editor"
-              />
-            )}
-          </form.Field>
-          <Label
-            className={clsx(
-              sideSwitcherLabelClassName,
-              bothBlockShown ? 'font-semibold text-zinc-950' : 'text-zinc-500',
-            )}
-          >
-            Both
-          </Label>
-        </Headless.Field>
-        {!readOnly ? (
-          <div className={tagEditorToolbarButtonGroupClassName}>
-            {canUpdateTags(props.osm) ? (
-              <Tooltip content="Update tags to new scheme" wrapperClassName="shrink-0">
-                <button
-                  type="button"
-                  aria-label="Update tags to new scheme"
-                  title="Update tags to new scheme"
-                  className={tagEditorToolbarButtonClassName}
-                  onClick={() => setTagUpdaterModalShown(true)}
-                >
-                  <RefreshCw className="size-4 shrink-0" aria-hidden />
-                </button>
-              </Tooltip>
-            ) : null}
-          </div>
-        ) : null}
+        <form.Field name="bothBlockShown">
+          {(field) => (
+            <SideModeSwitcher
+              bothBlockShown={bothBlockShown}
+              readOnly={readOnly}
+              onBothBlockShownChange={field.handleChange}
+            />
+          )}
+        </form.Field>
+        <TagMigrationToolbar
+          osm={props.osm}
+          readOnly={readOnly}
+          onOpenTagUpdater={() => setTagUpdaterModalShown(true)}
+        />
       </div>
       <div id="tags-block" className="font-mono">
         <SideGroup
@@ -160,8 +119,4 @@ export function LaneEditForm(props: {
 function existsSideTags(tags: OsmTags, side: string) {
   const regex = new RegExp(`^parking:.*${side}`)
   return Object.keys(tags).some((x) => regex.test(x))
-}
-
-function canUpdateTags(way: OsmWay) {
-  return hasTagMigration(way.tags)
 }
