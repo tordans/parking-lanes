@@ -1,24 +1,27 @@
+import { useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
-import { useActiveMode, useAppActions } from '../app-store'
+import { useAppActions } from '../app-store'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
 } from '../map/mobileMapChrome.const'
+import { serializeMapSearch } from '../map/search-schema'
 import { MapToolbarLoadingIndicator } from './MapToolbarLoadingIndicator'
 
 export function ModeSwitcher() {
-  const activeMode = useActiveMode()
+  const navigate = useNavigate({ from: '/{-$mode}' })
+  const { mode: currentMode } = useParams({ from: '/{-$mode}' })
   const { setActiveMode } = useAppActions()
 
   return (
     <div className="flex items-center gap-2">
       <div className={mapToolbarButtonGroupClassName} role="tablist" aria-label="Street space mode">
         {streetSpaceModes.map((mode, index) => {
-          const isActive = mode.id === activeMode
+          const isActive = mode.id === currentMode
           const Icon = modeIcons[mode.id]
           const tooltip = mode.enabled ? mode.label : `${mode.label} (coming soon)`
 
@@ -33,8 +36,17 @@ export function ModeSwitcher() {
                   disabled={!mode.enabled}
                   className={clsxModeButton({ isActive, enabled: mode.enabled, index })}
                   onClick={() => {
-                    if (!mode.enabled) return
+                    if (!mode.enabled || isActive) return
                     setActiveMode(mode.id as StreetSpaceModeId)
+                    void navigate({
+                      to: '/{-$mode}',
+                      params: { mode: mode.id },
+                      search: (prev) => ({
+                        ...serializeMapSearch(prev),
+                        f: undefined,
+                      }),
+                      replace: true,
+                    })
                   }}
                 >
                   <Icon className="size-5 shrink-0" aria-hidden />
@@ -64,7 +76,6 @@ function clsxModeButton({
   enabled: boolean
   index: number
 }) {
-  // Match PanelModeSwitcher / map toolbar segment height (size-10).
   const sizing = isActive ? 'h-10 gap-1.5 px-2.5' : 'size-10 justify-center'
 
   const tone = isActive

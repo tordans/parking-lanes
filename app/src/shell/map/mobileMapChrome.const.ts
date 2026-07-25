@@ -20,8 +20,8 @@ export const mapToolbarIconSegmentClassName = `${mapToolbarIconSegmentLayoutClas
 
 export const mapToolbarIconSegmentActiveClassName = `${mapToolbarIconSegmentLayoutClassName} cursor-default bg-zinc-950 text-white hover:bg-zinc-950 active:bg-zinc-950`
 
-/** Standalone toolbar loading chip (matches map control rounding, not a button). */
-export const mapToolbarLoadingSegmentClassName = `flex size-10 shrink-0 items-center justify-center rounded-lg bg-white ${floatingChromeElevationClassName}`
+/** Standalone toolbar loading chip — inverted from white toolbar buttons. */
+export const mapToolbarLoadingSegmentClassName = `flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-white ${floatingChromeElevationClassName}`
 
 /** Floating map navigation controls (locate, compass). */
 export const mapControlsClassName =

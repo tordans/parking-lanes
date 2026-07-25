@@ -28,6 +28,11 @@
         "@tanstack/react-pacer": "^0.22.1",
         "@tanstack/react-query": "^5.85.5",
         "@tanstack/react-router": "^1.131.28",
+        "@turf/along": "^7.3.5",
+        "@turf/bearing": "^7.3.5",
+        "@turf/destination": "^7.3.5",
+        "@turf/helpers": "^7.3.5",
+        "@turf/length": "^7.3.5",
         "axios": "^1.11.0",
         "clsx": "^2.1.1",
         "dayjs": "^1.11.13",
@@ -541,19 +546,31 @@
 
     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.162.0", "", {}, "sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA=="],
 
+    "@turf/along": ["@turf/along@7.3.5", "", { "dependencies": { "@turf/bearing": "7.3.5", "@turf/destination": "7.3.5", "@turf/distance": "7.3.5", "@turf/helpers": "7.3.5", "@turf/invariant": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-Ee4AHV9j2Bnlm/5nm4ChY7nkwpaaMffSez9nsJ9HcMbzG+GgTkt0F5pn9d02U7YvuWqckM5lfr3kBI+w2uTz+g=="],
+
     "@turf/area": ["@turf/area@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-sSn80wPT7XfBIDN3vurCPxhk9W4U8ozS/XImSqeLN8qveTICOxzZkhsGDMp0CuncaN+plWut4a2TdNM7mzZB6Q=="],
 
     "@turf/bbox": ["@turf/bbox@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-oG1ya/HtBjAIg4TimbWx+nOYPbY0bCvt82Bq8tm6sBw3qqtbOyRSfDz79Sq90TnH7DXJprJ1qnVGKNtZ6jemfw=="],
 
     "@turf/bbox-polygon": ["@turf/bbox-polygon@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-Cs9Laej8zfSY51kORM9UcbY4Uf/7X3OIZr/LydbrmmARFSpYH/FZsEQjAGi1S1Q0aYbibVqjEUReHN3ZVsV5eA=="],
 
+    "@turf/bearing": ["@turf/bearing@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/invariant": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-/qabIt/IuPsGlE6RukJ0zOirc6afNxoK7fK1WBNVnHuJjeOpSkW+7q1QW5XQGXBMv3odcD0ZgRR+MBiAHduYSA=="],
+
+    "@turf/destination": ["@turf/destination@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/invariant": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-x6ylChhOlIbucRSw7wF6z2gSEqqQl+dE0nSH5AL/ojZkqqGYahiw+2P4A8ZMuDM6rzH+FIqRYDes0o4nSArZCw=="],
+
     "@turf/difference": ["@turf/difference@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "polyclip-ts": "^0.16.8", "tslib": "^2.8.1" } }, "sha512-iDyWYCvgS3vgB8W1ai2cvfJaTq9bOt1QghiVkCNIyccF97CgtYJzenREVVUlp8qU9lJlbQ/ameyKvXPA1uOAlA=="],
+
+    "@turf/distance": ["@turf/distance@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/invariant": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-uQAC63zg/l91KUxzfhqio7Ii3+UXTrPOVJScIdRj6EO6+9XHI4kC+AdyIS4cPAv14sZfJLIBxzMnzcGrss+kEA=="],
 
     "@turf/flatten": ["@turf/flatten@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-4dDAyoY8wf4UCIJ2lH3JbypmEeqyuRFExHEPu6eJeaOybdpOV9kn3LqB0lsWArizFjJWQNS+0qpv08jD85jSPg=="],
 
     "@turf/helpers": ["@turf/helpers@7.3.5", "", { "dependencies": { "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-E/NMGV5MwbjjP7AJXBtsanC3yY8N2MQ87IGdIgkB2ji5AtBpwnH4L3gEqpYN4RlCJJWbLbzO91BbKv2waUd0eg=="],
 
     "@turf/intersect": ["@turf/intersect@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "polyclip-ts": "^0.16.8", "tslib": "^2.8.1" } }, "sha512-v11Do9ySbsE08ffiwboQeFKvYByyxzvAz0ls837A9T3rSC+8vKMmK815S+C5v8CBMLNhuBCSgqnOIV3zonNICQ=="],
+
+    "@turf/invariant": ["@turf/invariant@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-ZVIvsBvjr8lO7WxC5zYNjRsjSDvyGvWkJMjuWaJjTU8x+1tmfNnw3gDX/TI2Sit83gcRYLYkNo23lB/udqx/Hg=="],
+
+    "@turf/length": ["@turf/length@7.3.5", "", { "dependencies": { "@turf/distance": "7.3.5", "@turf/helpers": "7.3.5", "@turf/meta": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-Bi+vEP54wt1ly3BRcCOP0nd2kGTYEhGk6haQxTpkrqr3XtmqDh8c3NowSgseN2cegIZRjwCOEC8eSsZ0JemJdA=="],
 
     "@turf/meta": ["@turf/meta@7.3.5", "", { "dependencies": { "@turf/helpers": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-r+ohqxoyqeigFB0oFrQx/YEHIkOKqcKpCjvZkvZs7Tkv+IFco5MezAd2zd4rzK+0DfFgDP3KpJc7HqrYjvEjhg=="],
 

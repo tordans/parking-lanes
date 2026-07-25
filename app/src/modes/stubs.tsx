@@ -18,6 +18,13 @@ export function createStubMode(id: StreetSpaceModeId, label: string): StreetSpac
     id,
     label,
     enabled: false,
+    about: {
+      description: `${label} editing is coming soon.`,
+      taggingGuide: {
+        label: 'OpenStreetMap wiki',
+        href: 'https://wiki.openstreetmap.org/wiki/Main_Page',
+      },
+    },
     MapLayers: StubMapLayers,
     Panel: StubPanel,
     interactiveLayerIds: [],

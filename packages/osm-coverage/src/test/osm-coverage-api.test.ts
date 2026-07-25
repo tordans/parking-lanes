@@ -79,4 +79,32 @@ describe('ensureCoverage', () => {
     expect(stored?.fetchHistory.features).toHaveLength(1)
     expect(stored?.fetchHistory.features[0]?.properties.kind).toBe('initial')
   })
+
+  test('skips network when isNetworkEnabled returns false', async () => {
+    let downloads = 0
+    const api = createOsmCoverageApi<TestSessionParams>({
+      getSessionKey: ({ editorMode, osmDataSource }) =>
+        ['test-osm-disabled', editorMode, osmDataSource] as const,
+      minZoom: 14,
+      getDownloadUrl: () => 'https://example.test/overpass',
+      download: async () => {
+        downloads += 1
+        return emptyParsedOsmData()
+      },
+      isNetworkEnabled: () => false,
+    })
+
+    const queryClient = new QueryClient()
+    const params = { editorMode: false, osmDataSource: OsmDataSource.OverpassVk }
+
+    const result = await api.ensureCoverage(queryClient, {
+      bounds: viewport,
+      zoom: 18,
+      mapSizePx,
+      ...params,
+    })
+
+    expect(result.skipped).toBe(true)
+    expect(downloads).toBe(0)
+  })
 })

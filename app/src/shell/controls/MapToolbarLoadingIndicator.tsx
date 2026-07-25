@@ -16,7 +16,7 @@ export function MapToolbarLoadingIndicator() {
       >
         <span
           aria-hidden
-          className="size-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700"
+          className="size-4 animate-spin rounded-full border-2 border-zinc-600 border-t-white"
         />
       </span>
     </Tooltip>

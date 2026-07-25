@@ -7,6 +7,7 @@ import {
 import { z } from 'zod'
 import { parseDebugSearch } from '../debug'
 
+/** Shared map search params (mode is the optional path slug on `/{-$mode}`). */
 export const mapSearchSchema = z.object({
   map: z
     .string()

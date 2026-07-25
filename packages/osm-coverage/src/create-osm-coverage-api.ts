@@ -31,6 +31,8 @@ export type CreateOsmCoverageApiOptions<TSessionParams> = {
   minZoom: number
   getDownloadUrl: (bounds: MapBounds, params: TSessionParams) => string
   download?: (url: string) => Promise<ParsedOsmData>
+  /** When false, session queries stay enabled=false and ensureCoverage skips network. */
+  isNetworkEnabled?: () => boolean
 }
 
 export function createOsmCoverageApi<TSessionParams>({
@@ -38,8 +40,10 @@ export function createOsmCoverageApi<TSessionParams>({
   minZoom,
   getDownloadUrl,
   download = downloadOsmData,
+  isNetworkEnabled,
 }: CreateOsmCoverageApiOptions<TSessionParams>) {
   const getCoverageKey = (params: TSessionParams) => [...getSessionKey(params), 'coverage'] as const
+  const networkEnabled = () => isNetworkEnabled?.() ?? true
 
   function emptyData(): OsmCoverageQueryData {
     return {
@@ -64,6 +68,10 @@ export function createOsmCoverageApi<TSessionParams>({
       force?: boolean
     } & TSessionParams,
   ): Promise<{ skipped: boolean }> {
+    if (!networkEnabled()) {
+      return { skipped: true }
+    }
+
     const params = sessionParams as TSessionParams
     const sessionKey = getSessionKey(params)
     const coverageKey = getCoverageKey(params)
@@ -131,6 +139,7 @@ export function createOsmCoverageApi<TSessionParams>({
         queryFn: () => emptyData(),
         initialData: emptyData(),
         staleTime: Number.POSITIVE_INFINITY,
+        enabled: networkEnabled(),
         select: options?.select,
       })
     }

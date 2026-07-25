@@ -1,11 +1,12 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import {
   AttributionControl,
   type MapLayerMouseEvent,
   type MapEvent,
+  type MapMouseEvent,
   type ViewStateChangeEvent,
   useMap,
 } from 'react-map-gl/maplibre'
@@ -28,6 +29,18 @@ import {
   useParkingOsmChangeHandler,
 } from '../../modes/parking/use-parking-mode-handlers'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
+import type { StreetSpaceModeId } from '../../modes/types'
+import {
+  remapWidthOsmWayId,
+  useWidthCoveragePace,
+  viewMinZoom as widthViewMinZoom,
+} from '../../modes/width'
+import { useWidthMapActions } from '../../modes/width/map/width-map-store'
+import {
+  useWidthCutLaneHandler,
+  useWidthModeHandlers,
+  useWidthOsmChangeHandler,
+} from '../../modes/width/use-width-mode-handlers'
 import { changesStore } from '../../utils/changes-store'
 import {
   OPENFREEMAP_POSITRON_STYLE_URL,
@@ -75,8 +88,9 @@ function MapPageContent({
 }: {
   initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
-  const navigate = useNavigate({ from: '/' })
-  const { debug, map: mapSearch } = useSearch({ from: '/' })
+  const navigate = useNavigate({ from: '/{-$mode}' })
+  const { debug, map: mapSearch } = useSearch({ from: '/{-$mode}' })
+  const { mode: modeSlug } = useParams({ from: '/{-$mode}' })
   const { zoom: mapZoom } = useMapViewport()
   const queryClient = useQueryClient()
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -84,13 +98,17 @@ function MapPageContent({
   const maps = useMap()
   const mainMap = maps[MAIN_MAP_ID]
 
-  const { setMapBounds, setChangesCount } = useAppActions()
+  const { setMapBounds, setChangesCount, setActiveMode } = useAppActions()
   const { markMapLoaded, resetMapChrome, setMapTilesLoading } = useMapActions()
   const mapBounds = useMapBounds()
   const activeModeId = useActiveMode()
-  const mode = useActiveStreetSpaceMode(activeModeId)
+  const resolvedModeId = modeSlug as StreetSpaceModeId
+  const mode = useActiveStreetSpaceMode(resolvedModeId)
+  const isWidthMode = resolvedModeId === 'width'
   const selectedOsmRef = useSelectedOsmRef()
   const { updateFeatureRef, clearSelection, selectionEpoch } = useFeatureSelection()
+  const { clearDraft: clearWidthDraft } = useWidthMapActions()
+  const prevModeRef = useRef(resolvedModeId)
 
   const [cursorStyle, setCursorStyle] = useState('grab')
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
@@ -102,7 +120,30 @@ function MapPageContent({
     groupId: string
   } | null>(null)
 
-  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = useParkingCoveragePace()
+  const parkingCoverage = useParkingCoveragePace(!isWidthMode)
+  const widthCoverage = useWidthCoveragePace(isWidthMode)
+  const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = isWidthMode
+    ? widthCoverage
+    : parkingCoverage
+
+  useEffect(
+    function syncActiveModeFromSlug() {
+      if (resolvedModeId !== activeModeId) {
+        setActiveMode(resolvedModeId)
+      }
+    },
+    [activeModeId, resolvedModeId, setActiveMode],
+  )
+
+  useEffect(
+    function clearSelectionOnModeSwitch() {
+      if (prevModeRef.current === resolvedModeId) return
+      clearSelection()
+      clearWidthDraft()
+      prevModeRef.current = resolvedModeId
+    },
+    [clearSelection, clearWidthDraft, resolvedModeId],
+  )
 
   useEffect(
     function resetMapChromeOnUnmount() {
@@ -111,11 +152,21 @@ function MapPageContent({
     [resetMapChrome],
   )
 
-  const handleOsmChange = useParkingOsmChangeHandler()
-  const handleLayerClick = useParkingLayerClickHandler()
-  const handleMapClick = useParkingMapClickHandler()
-  const handleCutLane = useParkingCutLaneHandler()
+  const handleParkingOsmChange = useParkingOsmChangeHandler()
+  const handleWidthOsmChange = useWidthOsmChangeHandler()
+  const handleOsmChange = isWidthMode ? handleWidthOsmChange : handleParkingOsmChange
+
+  const parkingLayerClick = useParkingLayerClickHandler()
+  const parkingMapClick = useParkingMapClickHandler()
+  const parkingCutLane = useParkingCutLaneHandler()
+  const widthHandlers = useWidthModeHandlers()
+  const widthCutLane = useWidthCutLaneHandler()
+
+  const handleLayerClick = isWidthMode ? widthHandlers.handleLayerClick : parkingLayerClick
+  const handleMapClick = isWidthMode ? widthHandlers.handleMapClick : parkingMapClick
+  const handleCutLane = isWidthMode ? widthCutLane : parkingCutLane
   const ModeMapLayers = mode.MapLayers
+  const minZoom = isWidthMode ? widthViewMinZoom : viewMinZoom
 
   const interactiveLayerIds = debug
     ? [...mode.interactiveLayerIds, coverageDebugFetchFillLayerId]
@@ -194,12 +245,16 @@ function MapPageContent({
       })
     }
 
-    if (zoom >= viewMinZoom) {
+    if (zoom >= minZoom) {
       void loadCoverageNow(bounds, zoom, { mapSizePx: getMapSizePx(map) })
     }
   }
 
   function handleMouseMove(event: MapLayerMouseEvent) {
+    if (isWidthMode) {
+      widthHandlers.handleMouseMove(event)
+    }
+
     setCursorStyle(event.features?.length ? 'pointer' : 'grab')
 
     if (!debug) {
@@ -238,9 +293,22 @@ function MapPageContent({
   }
 
   function handleMouseLeave() {
+    if (isWidthMode) {
+      widthHandlers.handleMouseUp()
+    }
     setCursorStyle('grab')
     setHoveredGroupId(null)
     setCoverageHoverInfo(null)
+  }
+
+  function handleMouseDown(event: MapLayerMouseEvent) {
+    if (!isWidthMode) return
+    widthHandlers.handleMouseDown(event)
+  }
+
+  function handleMouseUp(_event: MapMouseEvent) {
+    if (!isWidthMode) return
+    widthHandlers.handleMouseUp()
   }
 
   function handleClick(event: MapLayerMouseEvent) {
@@ -256,7 +324,8 @@ function MapPageContent({
       const changedIdMap = await uploadChanges(editorName, version, changesStore)
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
-        const remappedWay = remapParkingOsmWayId(queryClient, Number(oldId), Number(newId))
+        const remap = isWidthMode ? remapWidthOsmWayId : remapParkingOsmWayId
+        const remappedWay = remap(queryClient, Number(oldId), Number(newId))
 
         if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === Number(oldId) && remappedWay) {
           updateFeatureRef({ type: 'way', id: remappedWay.id })
@@ -264,13 +333,10 @@ function MapPageContent({
       }
       setChangesCount(0)
 
-      if (mapBounds && mapZoom >= viewMinZoom) {
+      if (mapBounds && mapZoom >= minZoom) {
         const maplibreMap = mainMap?.getMap()
-        await refetchAfterSave(
-          mapBounds,
-          mapZoom,
-          maplibreMap ? getMapSizePx(maplibreMap) : undefined,
-        )
+        const sizePx = maplibreMap ? getMapSizePx(maplibreMap) : undefined
+        await refetchAfterSave(mapBounds, mapZoom, sizePx)
       }
     } catch (err) {
       if (err instanceof OsmApiRequestError) toast.error(err.responseText || err.message)
@@ -286,6 +352,7 @@ function MapPageContent({
             <div className="relative h-full w-full">
               <MapGL
                 id={MAIN_MAP_ID}
+                reuseMaps
                 mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
                 initialViewState={{
                   longitude: initialView.longitude,
@@ -305,7 +372,9 @@ function MapPageContent({
                 onIdle={onMapIdle}
                 onMove={onMove}
                 onMoveEnd={onMoveEnd}
+                onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
                 onClick={handleClick}
               >

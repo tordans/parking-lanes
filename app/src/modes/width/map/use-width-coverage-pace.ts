@@ -3,9 +3,9 @@ import { useAsyncDebouncer } from '@tanstack/react-pacer'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { useEffect, useEffectEvent } from 'react'
 import { useMapActions } from '../../../shell/map/map-store'
+import { getMapSizePx, toBounds } from '../../parking/map/use-parking-map'
 import { coverageFetchDebounceMs, viewMinZoom } from './constants'
-import { useParkingOsmFetch } from './parking-osm-query'
-import { getMapSizePx, toBounds } from './use-parking-map'
+import { useWidthOsmFetch } from './width-osm-query'
 
 type CoverageFetchArgs = {
   bounds: MapBounds
@@ -13,16 +13,12 @@ type CoverageFetchArgs = {
   mapSizePx: { width: number; height: number }
 }
 
-/**
- * Debounces OSM coverage checks until the map viewport settles ([TanStack Pacer](https://tanstack.com/pacer/latest)).
- * Publishes busy state to map-store for the toolbar spinner.
- */
-export function useParkingCoveragePace(enabled = true) {
-  const { loadParkingData, refetchAfterSave, isFetching } = useParkingOsmFetch()
+export function useWidthCoveragePace(enabled = true) {
+  const { loadWidthData, refetchAfterSave, isFetching } = useWidthOsmFetch()
   const { setOsmDataBusy } = useMapActions()
 
   const runCoverageCheck = useEffectEvent(async (args: CoverageFetchArgs) => {
-    await loadParkingData(args.bounds, args.zoom, { mapSizePx: args.mapSizePx })
+    await loadWidthData(args.bounds, args.zoom, { mapSizePx: args.mapSizePx })
   })
 
   const coverageDebouncer = useAsyncDebouncer(
@@ -68,7 +64,7 @@ export function useParkingCoveragePace(enabled = true) {
       options?: { force?: boolean; mapSizePx?: { width: number; height: number } },
     ) => {
       coverageDebouncer.cancel()
-      await loadParkingData(bounds, zoom, options)
+      await loadWidthData(bounds, zoom, options)
     },
   )
 

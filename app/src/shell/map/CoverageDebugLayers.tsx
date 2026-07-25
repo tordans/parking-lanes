@@ -2,8 +2,8 @@ import type { CoverageFetchProps } from '@osm-editor-kit/osm-coverage'
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'
-import { useParkingOsmQuery } from '../../modes/parking/map/use-parking-osm-fetch'
 import { colorForGroupId } from '../debug'
+import { useOsmCoverageQuery } from '../map/osm-coverage-query'
 
 export const coverageDebugFetchFillLayerId = 'coverage-debug-fetch-fill'
 export const coverageDebugFetchLineLayerId = 'coverage-debug-fetch-line'
@@ -19,8 +19,8 @@ const emptyStyledFetchHistory = (): FeatureCollection<Polygon, StyledFetchProps>
 })
 
 export function CoverageDebugLayers({ hoveredGroupId }: { hoveredGroupId: string | null }) {
-  const { data: coverage } = useParkingOsmQuery({ select: (data) => data.coverage })
-  const { data: fetchHistory } = useParkingOsmQuery({ select: (data) => data.fetchHistory })
+  const { data: coverage } = useOsmCoverageQuery({ select: (data) => data.coverage })
+  const { data: fetchHistory } = useOsmCoverageQuery({ select: (data) => data.fetchHistory })
 
   const styledFetchHistory = useMemo((): FeatureCollection<Polygon, StyledFetchProps> => {
     if (!fetchHistory?.features.length) return emptyStyledFetchHistory()

@@ -6,6 +6,7 @@ import { useSelectedOsmRef } from '../../modes/parking'
 import type { StreetSpaceMode } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
+import { AccountCallout } from './AccountCallout'
 import { AppAboutContent } from './AppAboutContent'
 import { DatetimeInput } from './Datetime'
 import { DebugUserSettingsSection } from './DebugPanelContent'
@@ -25,6 +26,10 @@ export function SettingsPanelContent(props: {
   return (
     <div className="flex flex-col gap-4 p-1">
       <section className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-zinc-900">Account</h3>
+        <AccountCallout />
+      </section>
+      <section className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
         <DatetimeInput fullWidth />
         {props.showSaveButton !== false ? <SaveButton onClick={props.onSave} /> : null}
@@ -35,13 +40,14 @@ export function SettingsPanelContent(props: {
 }
 
 export function InfoPanelContent(props: {
+  about: StreetSpaceMode['about']
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
 }) {
   const Legend = props.Legend
 
   return (
     <div className="flex flex-col p-1">
-      <AppAboutContent variant="panel" />
+      <AppAboutContent about={props.about} />
       {Legend ? (
         <>
           <PanelSectionDivider />
@@ -64,7 +70,7 @@ export function ControlPanel(props: {
 }) {
   const { Panel, Legend } = props.mode
   const selectedOsmRef = useSelectedOsmRef()
-  const { debug } = useSearch({ from: '/' })
+  const { debug } = useSearch({ from: '/{-$mode}' })
   const osmDisplayName = useOsmDisplayName()
   const showDebug = canShowDebugToggle(osmDisplayName, debug)
   const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
@@ -76,7 +82,9 @@ export function ControlPanel(props: {
     <div className="flex h-full flex-col overflow-hidden text-sm">
       <PanelModeSwitcher className="shrink-0" mode={activePanelMode} onChange={setPanelMode} />
       <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
-        {activePanelMode === 'info' ? <InfoPanelContent Legend={Legend} /> : null}
+        {activePanelMode === 'info' ? (
+          <InfoPanelContent about={props.mode.about} Legend={Legend} />
+        ) : null}
         {activePanelMode === 'inspector' ? (
           <Panel
             onCutLane={props.onCutLane}

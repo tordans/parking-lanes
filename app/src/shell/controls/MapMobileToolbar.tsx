@@ -29,7 +29,7 @@ export function MapMobileToolbar(
 ) {
   const isDesktop = useBreakpoint('sm')
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
-  const { debug } = useSearch({ from: '/' })
+  const { debug } = useSearch({ from: '/{-$mode}' })
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
   const { selectionEpoch } = useFeatureSelection()
@@ -93,7 +93,7 @@ export function MapMobileToolbar(
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
-          <InfoPanelContent Legend={Legend} />
+          <InfoPanelContent about={props.mode.about} Legend={Legend} />
         </div>
       </MobileBottomSheet>
 

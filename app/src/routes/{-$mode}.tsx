@@ -1,14 +1,26 @@
 import { getLocationFromCookie } from '@osm-editor-kit/osm-map-url'
 import { createFileRoute } from '@tanstack/react-router'
+import type { StreetSpaceModeId } from '../modes/types'
 import { MapPage } from '../shell/map/MapPage'
+import { isStreetSpaceModeId } from '../shell/map/mode-params'
 import { mapSearchSchema } from '../shell/map/search-schema'
 
-export const Route = createFileRoute('/')({
+/** Optional mode slug: `/` = parking, `/width` = width. Same route → map stays mounted. */
+export const Route = createFileRoute('/{-$mode}')({
+  params: {
+    parse: (raw): { mode: StreetSpaceModeId } => ({
+      mode: raw.mode && isStreetSpaceModeId(raw.mode) ? raw.mode : 'parking',
+    }),
+    stringify: ({ mode }) => ({
+      // Omit parking so the default mode stays at `/`
+      mode: mode === 'parking' ? undefined : mode,
+    }),
+  },
   validateSearch: mapSearchSchema,
-  component: IndexPage,
+  component: ModePage,
 })
 
-function IndexPage() {
+function ModePage() {
   const search = Route.useSearch()
   const cookieLocation = getLocationFromCookie()
 

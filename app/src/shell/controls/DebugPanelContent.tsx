@@ -3,11 +3,6 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
 import { Label } from '../../components/catalyst/fieldset'
 import { viewMinZoom } from '../../modes/parking/map/constants'
-import {
-  clearDevOsmFixtureSession,
-  seedDevOsmFixture,
-} from '../../modes/parking/map/dev-osm-fixture'
-import { useParkingOsmFetch } from '../../modes/parking/map/parking-osm-query'
 import { useMapBounds, useOsmDisplayName } from '../app-store'
 import {
   DEBUG_USERS,
@@ -18,12 +13,14 @@ import {
 } from '../debug'
 import { useDebugSettingsActions, useUseOsmDevServer } from '../debug-settings-store'
 import { useDevOsmFixtureActions, useLiveViewportOsmFetch } from '../dev-osm-fixture-store'
+import { clearDevOsmFixtureSession, seedDevOsmFixture } from '../map/dev-osm-fixture'
 import { useMapViewport } from '../map/map-viewport'
+import { useOsmCoverageFetch } from '../map/osm-coverage-query'
 import { serializeMapSearch } from '../map/search-schema'
 
 export function DebugUserSettingsSection() {
-  const navigate = useNavigate({ from: '/' })
-  const { debug } = useSearch({ from: '/' })
+  const navigate = useNavigate({ from: '/{-$mode}' })
+  const { debug } = useSearch({ from: '/{-$mode}' })
   const queryClient = useQueryClient()
   const osmDisplayName = useOsmDisplayName()
   const liveViewportOsmFetch = useLiveViewportOsmFetch()
@@ -32,7 +29,7 @@ export function DebugUserSettingsSection() {
   const { setUseOsmDevServer } = useDebugSettingsActions()
   const mapBounds = useMapBounds()
   const { zoom: mapZoom } = useMapViewport()
-  const { loadParkingData } = useParkingOsmFetch()
+  const { loadOsmData } = useOsmCoverageFetch()
 
   return (
     <section
@@ -86,7 +83,7 @@ export function DebugUserSettingsSection() {
                   if (checked) {
                     clearDevOsmFixtureSession(queryClient)
                     if (mapBounds && mapZoom >= viewMinZoom) {
-                      void loadParkingData(mapBounds, mapZoom, { force: true })
+                      void loadOsmData(mapBounds, mapZoom, { force: true })
                     }
                   } else {
                     seedDevOsmFixture(queryClient)
@@ -97,8 +94,8 @@ export function DebugUserSettingsSection() {
             </CheckboxField>
             <p className="text-xs text-zinc-600">
               {liveViewportOsmFetch
-                ? 'OSM map API loads for the current viewport (fixture off).'
-                : 'Local Berlin fixture — no OSM map API on startup.'}
+                ? 'OSM map API loads for the current viewport (fixture off). Shared by all modes.'
+                : 'Local Berlin fixture — no OSM map API on startup. Shared by all modes.'}
             </p>
           </section>
         ) : null}

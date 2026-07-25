@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { canShowDebugToggle, colorForGroupId, isDebugUser, parseDebugSearch } from '../shell/debug'
-import { mapSearchSchema } from '../shell/map/search-schema'
+import { mapSearchSchema, serializeMapSearch } from '../shell/map/search-schema'
 
 describe('parseDebugSearch', () => {
   test('accepts boolean, number, and string literals', () => {
@@ -38,6 +38,15 @@ describe('colorForGroupId', () => {
 })
 
 describe('mapSearchSchema', () => {
+  test('serializeMapSearch omits empty fields', () => {
+    expect(serializeMapSearch({})).toEqual({})
+    expect(
+      serializeMapSearch({
+        debug: true,
+      }),
+    ).toEqual({ debug: true })
+  })
+
   test('coerces debug search param to boolean', () => {
     expect(mapSearchSchema.parse({ debug: 1 }).debug).toBe(true)
     expect(mapSearchSchema.parse({ debug: '1' }).debug).toBe(true)
@@ -45,5 +54,16 @@ describe('mapSearchSchema', () => {
     expect(mapSearchSchema.parse({ debug: 0 }).debug).toBe(false)
     expect(mapSearchSchema.parse({ debug: '0' }).debug).toBe(false)
     expect(mapSearchSchema.parse({}).debug).toBeUndefined()
+  })
+})
+
+describe('mode slug helpers', () => {
+  test('parseModeSlug accepts known modes and defaults unknown', async () => {
+    const { parseModeSlug, isStreetSpaceModeId } = await import('../shell/map/mode-params')
+    expect(isStreetSpaceModeId('width')).toBe(true)
+    expect(isStreetSpaceModeId('nope')).toBe(false)
+    expect(parseModeSlug('width')).toBe('width')
+    expect(parseModeSlug('nope')).toBe('parking')
+    expect(parseModeSlug(undefined)).toBe('parking')
   })
 })

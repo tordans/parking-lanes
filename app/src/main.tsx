@@ -6,10 +6,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'sonner'
 import { createAppQueryClient } from './lib/query-client'
-import { seedDevOsmFixture } from './modes/parking/map/dev-osm-fixture'
+import { routeTree } from './routeTree.gen'
 import './styles/tailwind.css'
 import './styles/main.scss'
-import { routeTree } from './routeTree.gen'
+import { seedDevOsmFixture } from './shell/map/dev-osm-fixture'
 
 redirectLegacyMapHash()
 
