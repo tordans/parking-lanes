@@ -8,9 +8,10 @@ One app with a shared OSM shell (auth, fetch, changeset upload) and **modes** fo
 | Mode | Status |
 | --- | --- |
 | Parking | Active |
-| Width | Planned |
+| Width | Active |
+| Bicycle | Active |
 | Lanes | Planned |
-| Surface | Planned |
+| Surface | Active |
 | Sidewalks | Planned |
 
 Modes plug into `app/src/modes/`; the shell lives in `app/src/shell/`. Shared kit packages remain under `packages/*`.

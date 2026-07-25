@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-export type StreetSpaceModeId = 'parking' | 'width' | 'lanes' | 'surface' | 'sidewalks'
+export type StreetSpaceModeId = 'parking' | 'width' | 'bicycle' | 'lanes' | 'surface' | 'sidewalks'
 
 export type ModeMapProps = Record<string, never>
 

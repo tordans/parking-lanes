@@ -2,6 +2,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import type { StreetSpaceModeId } from '../../modes/types'
 import {
+  type BicycleFocus,
   type MapFocus,
   type ParkingFocus,
   type SurfaceFocus,
@@ -9,7 +10,7 @@ import {
   serializeMapSearch,
 } from './search-schema'
 
-const focusModes = new Set<StreetSpaceModeId>(['parking', 'width', 'surface'])
+const focusModes = new Set<StreetSpaceModeId>(['parking', 'width', 'bicycle', 'surface'])
 
 export function useMapFocusSupportsCurrentMode(): boolean {
   const { mode } = useParams({ from: '/$mode' })
@@ -17,8 +18,8 @@ export function useMapFocusSupportsCurrentMode(): boolean {
 }
 
 export function useMapFocus(): {
-  focus: ParkingFocus | WidthFocus | SurfaceFocus
-  setFocus: (value: ParkingFocus | WidthFocus | SurfaceFocus) => void
+  focus: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus
+  setFocus: (value: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus) => void
   isActive: boolean
 } {
   const { mode } = useParams({ from: '/$mode' })
@@ -29,7 +30,7 @@ export function useMapFocus(): {
   const isActive = focus !== 'all'
 
   const setFocus = useCallback(
-    (value: ParkingFocus | WidthFocus | SurfaceFocus) => {
+    (value: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus) => {
       void navigate({
         search: (prev) => ({
           ...serializeMapSearch(prev),
@@ -47,9 +48,10 @@ export function useMapFocus(): {
 function readFocusForMode(
   mode: StreetSpaceModeId,
   focus: MapFocus | undefined,
-): ParkingFocus | WidthFocus | SurfaceFocus {
+): ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus {
   if (mode === 'parking') return focus?.parking ?? 'all'
   if (mode === 'width') return focus?.width ?? 'all'
+  if (mode === 'bicycle') return focus?.bicycle ?? 'all'
   if (mode === 'surface') return focus?.surface ?? 'all'
   return 'all'
 }
@@ -57,7 +59,7 @@ function readFocusForMode(
 function nextFocusState(
   current: MapFocus | undefined,
   mode: StreetSpaceModeId,
-  value: ParkingFocus | WidthFocus | SurfaceFocus,
+  value: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus,
 ): MapFocus | undefined {
   const next: NonNullable<MapFocus> = { ...current }
 
@@ -69,12 +71,16 @@ function nextFocusState(
     const widthValue = value as WidthFocus
     if (widthValue === 'all') delete next.width
     else next.width = widthValue
+  } else if (mode === 'bicycle') {
+    const bicycleValue = value as BicycleFocus
+    if (bicycleValue === 'all') delete next.bicycle
+    else next.bicycle = bicycleValue
   } else if (mode === 'surface') {
     const surfaceValue = value as SurfaceFocus
     if (surfaceValue === 'all') delete next.surface
     else next.surface = surfaceValue
   }
 
-  if (!next.parking && !next.width && !next.surface) return undefined
+  if (!next.parking && !next.width && !next.bicycle && !next.surface) return undefined
   return next
 }

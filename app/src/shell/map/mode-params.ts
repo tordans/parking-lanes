@@ -3,6 +3,7 @@ import type { StreetSpaceModeId } from '../../modes/types'
 export const streetSpaceModeIds = [
   'parking',
   'width',
+  'bicycle',
   'lanes',
   'surface',
   'sidewalks',

@@ -33,6 +33,25 @@ function isSurfaceTagKey(key: string): boolean {
   return SIDEPATH_SURFACE_TAG_PATTERN.test(key)
 }
 
+const BICYCLE_TOP_LEVEL_KEYS = new Set([
+  'bicycle',
+  'cycleway',
+  'foot',
+  'is_sidepath',
+  'segregated',
+  'traffic_sign',
+  'surface',
+  'smoothness',
+])
+
+const BICYCLE_TAG_PATTERN =
+  /^(?:cycleway|bicycle|separation|traffic_mode|marking|buffer)(?::(?:left|right|both))?(?::|$)/
+
+function isBicycleTagKey(key: string): boolean {
+  if (BICYCLE_TOP_LEVEL_KEYS.has(key)) return true
+  return BICYCLE_TAG_PATTERN.test(key)
+}
+
 function pickWidthTags(tags: OsmTags): OsmTags {
   const picked: OsmTags = {}
   for (const [key, value] of Object.entries(tags)) {
@@ -45,6 +64,14 @@ function pickSurfaceTags(tags: OsmTags): OsmTags {
   const picked: OsmTags = {}
   for (const [key, value] of Object.entries(tags)) {
     if (value !== undefined && isSurfaceTagKey(key)) picked[key] = value
+  }
+  return picked
+}
+
+function pickBicycleTags(tags: OsmTags): OsmTags {
+  const picked: OsmTags = {}
+  for (const [key, value] of Object.entries(tags)) {
+    if (value !== undefined && isBicycleTagKey(key)) picked[key] = value
   }
   return picked
 }
@@ -83,6 +110,18 @@ export function mergeWayEdit(base: OsmWay, incoming: OsmWay, source: ChangeSourc
       tags: {
         ...base.tags,
         ...pickSurfaceTags(incoming.tags),
+      },
+    }
+  }
+
+  if (source === 'bicycle') {
+    return {
+      ...base,
+      ...incoming,
+      nodes: incoming.nodes ?? base.nodes,
+      tags: {
+        ...base.tags,
+        ...pickBicycleTags(incoming.tags),
       },
     }
   }

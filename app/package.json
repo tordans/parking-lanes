@@ -34,6 +34,7 @@
     "@tanstack/react-pacer": "^0.22.1",
     "@tanstack/react-query": "^5.85.5",
     "@tanstack/react-router": "^1.131.28",
+    "@tilda-geo/bicycle-infrastructure": "file:../../../FMC/tilda-geo-schema-spec-and-library-workspace/tilda-geo-bicycle-infrastructure-ts",
     "@turf/along": "^7.3.5",
     "@turf/bearing": "^7.3.5",
     "@turf/destination": "^7.3.5",

@@ -1,6 +1,7 @@
 import { useParams, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
+import { useBicycleModeHandlers } from '../../modes/bicycle/use-bicycle-mode-handlers'
 import {
   useParkingLayerClickHandler,
   useParkingMapClickHandler,
@@ -24,6 +25,7 @@ export function useMapPageInteractions() {
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const mode = useActiveStreetSpaceMode(resolvedModeId)
   const isWidthMode = resolvedModeId === 'width'
+  const isBicycleMode = resolvedModeId === 'bicycle'
   const isSurfaceMode = resolvedModeId === 'surface'
 
   const [cursorStyle, setCursorStyle] = useState('grab')
@@ -33,6 +35,7 @@ export function useMapPageInteractions() {
   const parkingLayerClick = useParkingLayerClickHandler()
   const parkingMapClick = useParkingMapClickHandler()
   const widthHandlers = useWidthModeHandlers()
+  const bicycleHandlers = useBicycleModeHandlers()
   const surfaceHandlers = useSurfaceModeHandlers()
 
   const interactiveLayerIds = [
@@ -48,6 +51,10 @@ export function useMapPageInteractions() {
       widthHandlers.handleLayerClick(event)
       return
     }
+    if (isBicycleMode) {
+      bicycleHandlers.handleLayerClick(event)
+      return
+    }
     if (isSurfaceMode) {
       surfaceHandlers.handleLayerClick(event)
       return
@@ -59,6 +66,10 @@ export function useMapPageInteractions() {
     if (isCutActive && handleCutClick(event)) return
     if (isWidthMode) {
       widthHandlers.handleMapClick()
+      return
+    }
+    if (isBicycleMode) {
+      bicycleHandlers.handleMapClick()
       return
     }
     if (isSurfaceMode) {

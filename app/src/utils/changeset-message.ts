@@ -4,11 +4,19 @@ import type { StreetSpaceModeId } from '../modes/types'
 
 export type ChangeSource = StreetSpaceModeId | 'split'
 
-const MODE_ORDER: StreetSpaceModeId[] = ['parking', 'width', 'lanes', 'surface', 'sidewalks']
+const MODE_ORDER: StreetSpaceModeId[] = [
+  'parking',
+  'width',
+  'bicycle',
+  'lanes',
+  'surface',
+  'sidewalks',
+]
 
 const MODE_LABELS: Record<StreetSpaceModeId, string> = {
   parking: 'parking',
   width: 'width',
+  bicycle: 'bicycle',
   lanes: 'lanes',
   surface: 'surface',
   sidewalks: 'sidewalks',
