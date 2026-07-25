@@ -1,0 +1,35 @@
+name: Mode feedback
+description: Report unexpected behaviour or suggest improvements while modes are experimental (alpha).
+title: '[Feedback]: '
+labels: ['feedback']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Street Space Editor. Modes are currently **experimental (alpha)** — feedback helps shape the UI and editing flows.
+
+        Please fill in each section below. Screenshots or a short screen recording are welcome.
+  - type: input
+    id: example-url
+    attributes:
+      label: Example URL
+      description: Link to the map view that shows the issue (copy from the browser address bar).
+      placeholder: https://…
+    validations:
+      required: true
+  - type: textarea
+    id: current-behaviour
+    attributes:
+      label: Current behaviour and UI
+      description: What happens today? Describe the steps and what you see.
+      placeholder: …
+    validations:
+      required: true
+  - type: textarea
+    id: target-behaviour
+    attributes:
+      label: Target behaviour and UI
+      description: What did you expect or want instead?
+      placeholder: …
+    validations:
+      required: true

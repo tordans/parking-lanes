@@ -1,6 +1,7 @@
 import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import { handleJosmLinkClick, idEditorUrl, josmUrl } from '@osm-editor-kit/osm-editor-links'
-import { APP_REPO_URL } from '../../lib/app-identity'
+import { Badge } from '../../components/catalyst/badge'
+import { APP_FEEDBACK_URL, APP_REPO_URL } from '../../lib/app-identity'
 import type { ModeAboutContent } from '../../modes/types'
 import { useMapBounds } from '../app-store'
 import { useMapViewport } from '../map/map-viewport'
@@ -19,8 +20,22 @@ export function AppAboutContent({ about }: Props) {
   return (
     <div className="flex flex-col text-sm">
       <section className="pb-4">
-        <h3 className="mb-1 font-semibold text-zinc-900">About</h3>
+        <div className="mb-1 flex items-center gap-2">
+          <h3 className="font-semibold text-zinc-900">About</h3>
+          <Badge color="amber" className="uppercase tracking-wide">
+            Alpha
+          </Badge>
+        </div>
         <p className="text-zinc-700">{about.description}</p>
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
+          <p>
+            This mode is currently experimental. Feedback is welcome in{' '}
+            <a href={APP_FEEDBACK_URL} target="_blank" rel="noreferrer" className={linkClass}>
+              GitHub issues
+            </a>
+            .
+          </p>
+        </div>
       </section>
 
       <PanelSectionDivider />
