@@ -5,16 +5,13 @@ import { MapPage } from '../shell/map/MapPage'
 import { isStreetSpaceModeId } from '../shell/map/mode-params'
 import { mapSearchSchema } from '../shell/map/search-schema'
 
-/** Optional mode slug: `/` = parking, `/width` = width. Same route → map stays mounted. */
-export const Route = createFileRoute('/{-$mode}')({
+/** Mode slug route: `/parking`, `/width`, … — same component so the map stays mounted. */
+export const Route = createFileRoute('/$mode')({
   params: {
     parse: (raw): { mode: StreetSpaceModeId } => ({
-      mode: raw.mode && isStreetSpaceModeId(raw.mode) ? raw.mode : 'parking',
+      mode: isStreetSpaceModeId(raw.mode) ? raw.mode : 'parking',
     }),
-    stringify: ({ mode }) => ({
-      // Omit parking so the default mode stays at `/`
-      mode: mode === 'parking' ? undefined : mode,
-    }),
+    stringify: ({ mode }) => ({ mode }),
   },
   validateSearch: mapSearchSchema,
   component: ModePage,

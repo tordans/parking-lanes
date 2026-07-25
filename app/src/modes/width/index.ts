@@ -1,4 +1,5 @@
 import type { StreetSpaceMode } from '../types'
+import { WidthLegendPanel } from './controls/LegendPanel'
 import { interactiveLayerIds } from './use-width-mode-handlers'
 import { WidthModeLayers } from './WidthModeLayers'
 import { WidthModePanel } from './WidthModePanel'
@@ -17,6 +18,7 @@ export const widthMode: StreetSpaceMode = {
   },
   MapLayers: WidthModeLayers,
   Panel: WidthModePanel,
+  Legend: WidthLegendPanel,
   interactiveLayerIds,
 }
 

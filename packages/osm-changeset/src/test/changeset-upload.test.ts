@@ -1,7 +1,11 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangesStore } from '../changes-store'
 import { buildChangesetTags } from '../changeset-tags'
-import { applyUploadResult, changesStoreToOsmChange } from '../changeset-upload'
+import {
+  applyUploadResult,
+  changesStoreToOsmChange,
+  changesStoreToOsmChangeXml,
+} from '../changeset-upload'
 
 function createWay(id: number, overrides: Partial<OsmWay> = {}): OsmWay {
   return {
@@ -68,6 +72,29 @@ describe('changesStoreToOsmChange', () => {
     expect(diff.create[0]!.id).toBe(-1)
     expect(diff.modify).toHaveLength(0)
     expect(diff.delete).toEqual([])
+  })
+})
+
+describe('changesStoreToOsmChangeXml', () => {
+  test('builds osmChange XML with comment metadata via createOsmChangeXml', () => {
+    const store: ChangesStore = {
+      modify: { way: [createWay(42, { tags: { highway: 'residential', width: '6' } })] },
+      create: { way: [] },
+    }
+
+    const xml = changesStoreToOsmChangeXml(store, {
+      tags: {
+        comment: 'Update street space width for ways Test',
+        created_by: 'Street Space Editor',
+      },
+    })
+
+    expect(xml).toContain('<osmChange')
+    expect(xml).toContain('<modify>')
+    expect(xml).toContain('id="42"')
+    expect(xml).toContain('k="width"')
+    expect(xml).toContain('v="6"')
+    expect(xml).toContain('Update street space width for ways Test')
   })
 })
 

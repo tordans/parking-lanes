@@ -1,17 +1,20 @@
 import type { OsmTags } from '@osm-editor-kit/osm-data'
 import {
   deriveHighwayWidthFallback,
-  isOnewayHighway,
+  isOnewayFromOsmTags,
   type HighwayWidthFallbackSource,
 } from './highway-width-fallbacks'
 
 export type RoadWidthConfidence = 'high' | 'medium'
-export type RoadWidthSource = 'tag' | HighwayWidthFallbackSource
+export type RoadWidthExplicitSource = 'width' | 'est_width'
+export type RoadWidthSource = RoadWidthExplicitSource | HighwayWidthFallbackSource
+export type RoadWidthKind = 'explicit' | 'default'
 
 export type RoadWidthFromTags = {
   value: number
   confidence: RoadWidthConfidence
   source: RoadWidthSource
+  kind: RoadWidthKind
 }
 
 /** Parse OSM width tag (m / cm / km) into metres. */
@@ -30,23 +33,36 @@ export function parseOsmWidth(width: string): number | null {
   return null
 }
 
-/** Tag width first, else highway fallback — mirrors tilda-geo-cqi `road_width_tags.lua`. */
-export function roadWidthFromTags(tags: OsmTags): RoadWidthFromTags {
+function explicitWidthFromTags(tags: OsmTags): Omit<RoadWidthFromTags, 'kind'> | null {
   if (tags.width) {
     const parsed = parseOsmWidth(tags.width)
     if (parsed != null) {
-      return {
-        value: parsed,
-        confidence: 'high',
-        source: 'tag',
-      }
+      return { value: parsed, confidence: 'high', source: 'width' }
     }
   }
 
-  const fallback = deriveHighwayWidthFallback(tags.highway, isOnewayHighway(tags.oneway))
+  if (tags.est_width) {
+    const parsed = parseOsmWidth(tags.est_width)
+    if (parsed != null) {
+      return { value: parsed, confidence: 'high', source: 'est_width' }
+    }
+  }
+
+  return null
+}
+
+/** Tag width / est_width first, else highway fallback — mirrors tilda-geo-cqi `road_width_tags.lua`. */
+export function roadWidthFromTags(tags: OsmTags): RoadWidthFromTags {
+  const explicit = explicitWidthFromTags(tags)
+  if (explicit) {
+    return { ...explicit, kind: 'explicit' }
+  }
+
+  const fallback = deriveHighwayWidthFallback(tags.highway, isOnewayFromOsmTags(tags))
   return {
     value: fallback.value,
     confidence: 'medium',
     source: fallback.source,
+    kind: 'default',
   }
 }

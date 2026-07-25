@@ -11,10 +11,11 @@ import {
 } from '../map/mobileMapChrome.const'
 import { serializeMapSearch } from '../map/search-schema'
 import { MapToolbarLoadingIndicator } from './MapToolbarLoadingIndicator'
+import { SplitWayButton } from './SplitWayButton'
 
 export function ModeSwitcher() {
-  const navigate = useNavigate({ from: '/{-$mode}' })
-  const { mode: currentMode } = useParams({ from: '/{-$mode}' })
+  const navigate = useNavigate({ from: '/$mode' })
+  const { mode: currentMode } = useParams({ from: '/$mode' })
   const { setActiveMode } = useAppActions()
 
   return (
@@ -39,7 +40,7 @@ export function ModeSwitcher() {
                     if (!mode.enabled || isActive) return
                     setActiveMode(mode.id as StreetSpaceModeId)
                     void navigate({
-                      to: '/{-$mode}',
+                      to: '/$mode',
                       params: { mode: mode.id },
                       search: (prev) => ({
                         ...serializeMapSearch(prev),
@@ -62,6 +63,7 @@ export function ModeSwitcher() {
           )
         })}
       </div>
+      <SplitWayButton />
       <MapToolbarLoadingIndicator />
     </div>
   )

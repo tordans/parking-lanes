@@ -59,7 +59,7 @@ function FeatureLayers({
 }: {
   id: string
   collection: ParkingFeatureCollection
-  layerType: 'lane' | 'area' | 'point' | 'backlight' | 'cut'
+  layerType: 'lane' | 'area' | 'point' | 'backlight'
 }) {
   if (!collection.features.length) return null
 
@@ -74,7 +74,7 @@ function FeatureLayers({
     )
   }
 
-  if (layerType === 'point' || layerType === 'cut') {
+  if (layerType === 'point') {
     const hitAreaLayerId = `${id}-hitarea-layer`
     return (
       <Source id={sourceId} type="geojson" data={collection}>
@@ -106,13 +106,11 @@ export function ParkingLayers({
   areas,
   points,
   backlights,
-  cutMarkers,
 }: {
   lanes: ParkingFeatureCollection
   areas: ParkingFeatureCollection
   points: ParkingFeatureCollection
   backlights: ParkingFeatureCollection
-  cutMarkers: ParkingFeatureCollection
 }) {
   return (
     <>
@@ -120,7 +118,6 @@ export function ParkingLayers({
       <FeatureLayers id="parking-lanes" collection={lanes} layerType="lane" />
       <FeatureLayers id="parking-points" collection={points} layerType="point" />
       <FeatureLayers id="parking-backlights" collection={backlights} layerType="backlight" />
-      <FeatureLayers id="parking-cut-markers" collection={cutMarkers} layerType="cut" />
     </>
   )
 }

@@ -4,6 +4,8 @@ import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm
 export const josmUrl = 'http://127.0.0.1:8111/import?url='
 
 export const osmProdUrl = 'https://www.openstreetmap.org'
+/** Production OSM API host (OAuth, map downloads, changeset upload). */
+export const osmProdApiUrl = 'https://api.openstreetmap.org'
 export const osmDevUrl = 'https://master.apis.dev.openstreetmap.org'
 
 export function mapillaryUrl(center: LatLngLiteral) {

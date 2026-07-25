@@ -24,6 +24,7 @@
         "@osm-editor-kit/osm-oauth": "workspace:*",
         "@osm-editor-kit/osm-tag-syntax": "workspace:*",
         "@osm-editor-kit/osm-ui": "workspace:*",
+        "@osm-editor-kit/osm-way-edit": "workspace:*",
         "@tanstack/react-form": "^1.19.2",
         "@tanstack/react-pacer": "^0.22.1",
         "@tanstack/react-query": "^5.85.5",
@@ -176,6 +177,17 @@
         "typescript": "^7.0.0",
       },
     },
+    "packages/osm-way-edit": {
+      "name": "@osm-editor-kit/osm-way-edit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@osm-editor-kit/osm-data": "workspace:*",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
@@ -317,6 +329,8 @@
     "@osm-editor-kit/osm-tag-syntax": ["@osm-editor-kit/osm-tag-syntax@workspace:packages/osm-tag-syntax"],
 
     "@osm-editor-kit/osm-ui": ["@osm-editor-kit/osm-ui@workspace:packages/osm-ui"],
+
+    "@osm-editor-kit/osm-way-edit": ["@osm-editor-kit/osm-way-edit@workspace:packages/osm-way-edit"],
 
     "@osm-editor-kit/street-space-editor": ["@osm-editor-kit/street-space-editor@workspace:app"],
 

@@ -11,6 +11,7 @@ import {
   useMap,
 } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
 import { APP_NAME, APP_VERSION } from '../../lib/app-identity'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
@@ -24,7 +25,6 @@ import {
   viewMinZoom,
 } from '../../modes/parking'
 import {
-  useParkingCutLaneHandler,
   useParkingLayerClickHandler,
   useParkingMapClickHandler,
   useParkingOsmChangeHandler,
@@ -38,11 +38,10 @@ import {
 } from '../../modes/width'
 import { useWidthMapActions } from '../../modes/width/map/width-map-store'
 import {
-  useWidthCutLaneHandler,
   useWidthModeHandlers,
   useWidthOsmChangeHandler,
 } from '../../modes/width/use-width-mode-handlers'
-import { changesStore } from '../../utils/changes-store'
+import { changesStore, clearChanges, removeChangedEntity } from '../../utils/changes-store'
 import {
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
@@ -51,6 +50,7 @@ import { useActiveMode, useAppActions, useMapBounds } from '../app-store'
 import { ControlPanel } from '../controls/ControlPanel'
 import { MapMobileToolbar } from '../controls/MapMobileToolbar'
 import { ModeSwitcher } from '../controls/ModeSwitcher'
+import { SaveChangesControl } from '../controls/SaveChangesControl'
 import { coverageDebugFetchFillLayerId, CoverageDebugLayers } from './CoverageDebugLayers'
 import {
   FeatureSelectionProvider,
@@ -63,9 +63,13 @@ import { useMapActions } from './map-store'
 import { useMapViewport } from './map-viewport'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
+import { removeOsmWayFromSession, restoreOsmWayInSession } from './osm-session-way-edits'
 import { serializeMapSearch } from './search-schema'
 import { useSelectionBacklights } from './use-selection-backlights'
+import { WAY_CUT_MARKERS_HITAREA_LAYER_ID, useWayCutHandler } from './use-way-cut'
 import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
+import { useWayCutActions } from './way-cut-store'
+import { WayCutLayers } from './WayCutLayers'
 
 export function MapPage({
   initialView,
@@ -86,9 +90,9 @@ function MapPageContent({
 }: {
   initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
-  const navigate = useNavigate({ from: '/{-$mode}' })
-  const { debug, map: mapSearch } = useSearch({ from: '/{-$mode}' })
-  const { mode: modeSlug } = useParams({ from: '/{-$mode}' })
+  const navigate = useNavigate({ from: '/$mode' })
+  const { debug, map: mapSearch } = useSearch({ from: '/$mode' })
+  const { mode: modeSlug } = useParams({ from: '/$mode' })
   const { zoom: mapZoom } = useMapViewport()
   const queryClient = useQueryClient()
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -106,6 +110,8 @@ function MapPageContent({
   const selectedOsmRef = useSelectedOsmRef()
   const { updateFeatureRef, clearSelection, selectionEpoch } = useFeatureSelection()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
+  const { clearCutMarkers } = useWayCutActions()
+  const { handleCutMarkerClick } = useWayCutHandler()
   const prevModeRef = useRef(resolvedModeId)
 
   const [cursorStyle, setCursorStyle] = useState('grab')
@@ -123,6 +129,7 @@ function MapPageContent({
   const { scheduleCoverageCheck, loadCoverageNow, refetchAfterSave } = isWidthMode
     ? widthCoverage
     : parkingCoverage
+  const isDesktop = useBreakpoint('sm')
 
   useEffect(
     function syncActiveModeFromSlug() {
@@ -138,9 +145,17 @@ function MapPageContent({
       if (prevModeRef.current === resolvedModeId) return
       clearSelection()
       clearWidthDraft()
+      clearCutMarkers()
       prevModeRef.current = resolvedModeId
     },
-    [clearSelection, clearWidthDraft, resolvedModeId],
+    [clearCutMarkers, clearSelection, clearWidthDraft, resolvedModeId],
+  )
+
+  useEffect(
+    function clearCutMarkersOnSelectionChange() {
+      clearCutMarkers()
+    },
+    [clearCutMarkers, selectedOsmRef?.id, selectedOsmRef?.type],
   )
 
   useEffect(
@@ -156,19 +171,29 @@ function MapPageContent({
 
   const parkingLayerClick = useParkingLayerClickHandler()
   const parkingMapClick = useParkingMapClickHandler()
-  const parkingCutLane = useParkingCutLaneHandler()
   const widthHandlers = useWidthModeHandlers()
-  const widthCutLane = useWidthCutLaneHandler()
 
-  const handleLayerClick = isWidthMode ? widthHandlers.handleLayerClick : parkingLayerClick
+  const handleLayerClick = (event: MapLayerMouseEvent) => {
+    const layerId = event.features?.[0]?.layer?.id
+    if (layerId === WAY_CUT_MARKERS_HITAREA_LAYER_ID) {
+      handleCutMarkerClick(event)
+      return
+    }
+    if (isWidthMode) {
+      widthHandlers.handleLayerClick(event)
+      return
+    }
+    parkingLayerClick(event)
+  }
   const handleMapClick = isWidthMode ? widthHandlers.handleMapClick : parkingMapClick
-  const handleCutLane = isWidthMode ? widthCutLane : parkingCutLane
   const ModeMapLayers = mode.MapLayers
   const minZoom = isWidthMode ? widthViewMinZoom : viewMinZoom
 
-  const interactiveLayerIds = debug
-    ? [...mode.interactiveLayerIds, coverageDebugFetchFillLayerId]
-    : mode.interactiveLayerIds
+  const interactiveLayerIds = [
+    ...mode.interactiveLayerIds,
+    WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+    ...(debug ? [coverageDebugFetchFillLayerId] : []),
+  ]
 
   useVisibleViewportHeightVar(true)
   useSelectionBacklights()
@@ -317,9 +342,9 @@ function MapPageContent({
     handleMapClick()
   }
 
-  async function handleSave() {
+  async function handleSave(comment: string) {
     try {
-      const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore)
+      const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore, { comment })
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
         const remap = isWidthMode ? remapWidthOsmWayId : remapParkingOsmWayId
@@ -329,6 +354,7 @@ function MapPageContent({
           updateFeatureRef({ type: 'way', id: remappedWay.id })
         }
       }
+      clearChanges()
       setChangesCount(0)
 
       if (mapBounds && mapZoom >= minZoom) {
@@ -339,6 +365,17 @@ function MapPageContent({
     } catch (err) {
       if (err instanceof OsmApiRequestError) toast.error(err.responseText || err.message)
       else toast.fromError(err, 'Could not save changes')
+      throw err
+    }
+  }
+
+  function handleDiscardWay(wayId: number, result: ReturnType<typeof removeChangedEntity>) {
+    if (result.wasCreate) {
+      removeOsmWayFromSession(queryClient, wayId)
+      return
+    }
+    if (result.original) {
+      restoreOsmWayInSession(queryClient, result.original)
     }
   }
 
@@ -380,6 +417,7 @@ function MapPageContent({
                 <AttributionControl compact position="bottom-left" />
                 {debug ? <CoverageDebugLayers hoveredGroupId={hoveredGroupId} /> : null}
                 <ModeMapLayers />
+                <WayCutLayers />
               </MapGL>
               <ViewMinZoomOverlay />
             </div>
@@ -387,15 +425,17 @@ function MapPageContent({
 
           <MapMobileToolbar
             mode={mode}
-            onSave={() => void handleSave()}
-            onCutLane={handleCutLane}
             onOsmChange={handleOsmChange}
             onClose={clearSelection}
+            saveControl={<SaveChangesControl onSave={handleSave} onDiscardWay={handleDiscardWay} />}
           />
 
-          <div className="pointer-events-auto absolute top-4 left-2.5 z-30 hidden sm:block">
-            <ModeSwitcher />
-          </div>
+          {isDesktop ? (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2.5 [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+              <ModeSwitcher />
+              <SaveChangesControl onSave={handleSave} onDiscardWay={handleDiscardWay} />
+            </div>
+          ) : null}
 
           <MapNavigationControls />
 
@@ -424,8 +464,6 @@ function MapPageContent({
               : 'none'
           }
           mode={mode}
-          onSave={() => void handleSave()}
-          onCutLane={handleCutLane}
           onOsmChange={handleOsmChange}
           onClose={clearSelection}
         />

@@ -6,7 +6,7 @@ import { serializeMapSearch } from './search-schema'
 
 /** Selected OSM feature from URL search (`f` param) — single source of truth. */
 export function useSelectedOsmRef(): OsmFeatureRef | undefined {
-  const { f } = useSearch({ from: '/{-$mode}' })
+  const { f } = useSearch({ from: '/$mode' })
   return f
 }
 
@@ -21,7 +21,7 @@ type FeatureSelectionContextValue = {
 const FeatureSelectionContext = createContext<FeatureSelectionContextValue | null>(null)
 
 export function FeatureSelectionProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate({ from: '/{-$mode}' })
+  const navigate = useNavigate({ from: '/$mode' })
   const [selectionEpoch, setSelectionEpoch] = useState(0)
 
   const selectFeature = useCallback(

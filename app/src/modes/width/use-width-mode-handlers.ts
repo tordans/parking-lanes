@@ -7,6 +7,7 @@ import { useMap } from 'react-map-gl/maplibre'
 import { AuthState, useAppActions, useAuthState } from '../../shell/app-store'
 import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
+import { getOsmWayFromSession } from '../../shell/map/osm-session-way-edits'
 import { addChangedEntity } from '../../utils/changes-store'
 import {
   buildHandleGeometry,
@@ -17,7 +18,7 @@ import { metersPerPixel } from './domain/meters-to-pixels'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { highwaysToCollection } from './map/parse-highways'
 import { useWidthMapActions, useWidthDragSide, useDraftWidthM } from './map/width-map-store'
-import { stageWidthOnWay, updateWidthOsmWay } from './map/width-osm-edits'
+import { stageWidthOnWay, updateWidthOsmWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 import { widthInteractiveLayerIds } from './map/WidthLayers'
 
@@ -31,8 +32,9 @@ export function useWidthOsmChangeHandler() {
   return useCallback(
     (newOsm: OsmWay) => {
       if (authState !== AuthState.success) return
+      const original = getOsmWayFromSession(queryClient, newOsm.id)
       updateWidthOsmWay(queryClient, newOsm)
-      const changesCount = addChangedEntity(newOsm)
+      const changesCount = addChangedEntity(newOsm, { original, source: 'width' })
       setChangesCount(changesCount)
     },
     [authState, queryClient, setChangesCount],
@@ -59,7 +61,7 @@ export function useWidthModeHandlers() {
 
   const applyWidth = useCallback(
     (way: OsmWay, widthM: number) => {
-      const clamped = Math.max(MIN_WIDTH_M, widthM)
+      const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
       setDraftWidthM(clamped)
       const geometry = buildHandleGeometry(
         way.nodes
@@ -196,10 +198,6 @@ export function useWidthModeHandlers() {
     handleMouseUp,
     applyWidth,
   }
-}
-
-export function useWidthCutLaneHandler() {
-  return useCallback((_way: OsmWay) => {}, [])
 }
 
 export function selectedWidthCenterline(

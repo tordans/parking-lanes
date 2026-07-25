@@ -9,50 +9,68 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Char123ModeChar125RouteImport } from './routes/{-$mode}'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ModeRouteImport } from './routes/$mode'
 
-const Char123ModeChar125Route = Char123ModeChar125RouteImport.update({
-  id: '/{-$mode}',
-  path: '/{-$mode}',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModeRoute = ModeRouteImport.update({
+  id: '/$mode',
+  path: '/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/{-$mode}': typeof Char123ModeChar125Route
+  '/': typeof IndexRoute
+  '/$mode': typeof ModeRoute
 }
 export interface FileRoutesByTo {
-  '/{-$mode}': typeof Char123ModeChar125Route
+  '/': typeof IndexRoute
+  '/$mode': typeof ModeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/{-$mode}': typeof Char123ModeChar125Route
+  '/': typeof IndexRoute
+  '/$mode': typeof ModeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/{-$mode}'
+  fullPaths: '/' | '/$mode'
   fileRoutesByTo: FileRoutesByTo
-  to: '/{-$mode}'
-  id: '__root__' | '/{-$mode}'
+  to: '/' | '/$mode'
+  id: '__root__' | '/' | '/$mode'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  Char123ModeChar125Route: typeof Char123ModeChar125Route
+  IndexRoute: typeof IndexRoute
+  ModeRoute: typeof ModeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/{-$mode}': {
-      id: '/{-$mode}'
-      path: '/{-$mode}'
-      fullPath: '/{-$mode}'
-      preLoaderRoute: typeof Char123ModeChar125RouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$mode': {
+      id: '/$mode'
+      path: '/$mode'
+      fullPath: '/$mode'
+      preLoaderRoute: typeof ModeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  Char123ModeChar125Route: Char123ModeChar125Route,
+  IndexRoute: IndexRoute,
+  ModeRoute: ModeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

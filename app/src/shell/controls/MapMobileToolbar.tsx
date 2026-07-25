@@ -17,19 +17,18 @@ import {
 import { InfoPanelContent, SettingsPanelContent } from './ControlPanel'
 import { MobileBottomSheet } from './MobileBottomSheet'
 import { ModeSwitcher } from './ModeSwitcher'
-import { SaveButton } from './SaveButton'
 
 type MobilePanel = 'info' | 'inspector' | 'settings' | null
 
 export function MapMobileToolbar(
   props: {
     mode: StreetSpaceMode
-    onSave: () => void
+    saveControl?: ReactNode
   } & ModePanelProps,
 ) {
   const isDesktop = useBreakpoint('sm')
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
-  const { debug } = useSearch({ from: '/{-$mode}' })
+  const { debug } = useSearch({ from: '/$mode' })
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
   const { selectionEpoch } = useFeatureSelection()
@@ -84,7 +83,7 @@ export function MapMobileToolbar(
             </MapToolbarIconButton>
           </div>
         </div>
-        <SaveButton onClick={props.onSave} />
+        {props.saveControl}
       </div>
 
       <MobileBottomSheet
@@ -105,7 +104,6 @@ export function MapMobileToolbar(
         <div className="pb-4">
           <Panel
             key={selectedOsmRef ? `${selectedOsmRef.type}/${selectedOsmRef.id}` : 'none'}
-            onCutLane={props.onCutLane}
             onOsmChange={props.onOsmChange}
             onClose={handleInspectorClose}
           />
@@ -118,11 +116,7 @@ export function MapMobileToolbar(
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
-          <SettingsPanelContent
-            onSave={props.onSave}
-            showSaveButton={false}
-            showDebug={showDebug}
-          />
+          <SettingsPanelContent showDebug={showDebug} />
         </div>
       </MobileBottomSheet>
     </>

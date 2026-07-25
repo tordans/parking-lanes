@@ -2,8 +2,17 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Checkbox, CheckboxField } from '../../components/catalyst/checkbox'
 import { Label } from '../../components/catalyst/fieldset'
+import { logout } from '../../lib/osm-client'
+import { toast } from '../../lib/toast'
 import { viewMinZoom } from '../../modes/parking/map/constants'
-import { useMapBounds, useOsmDisplayName } from '../app-store'
+import { clearChanges } from '../../utils/changes-store'
+import {
+  AuthState,
+  useAppActions,
+  useAuthState,
+  useMapBounds,
+  useOsmDisplayName,
+} from '../app-store'
 import {
   DEBUG_USERS,
   debugUserSettingsHeaderClassName,
@@ -19,14 +28,16 @@ import { useOsmCoverageFetch } from '../map/osm-coverage-query'
 import { serializeMapSearch } from '../map/search-schema'
 
 export function DebugUserSettingsSection() {
-  const navigate = useNavigate({ from: '/{-$mode}' })
-  const { debug } = useSearch({ from: '/{-$mode}' })
+  const navigate = useNavigate({ from: '/$mode' })
+  const { debug } = useSearch({ from: '/$mode' })
   const queryClient = useQueryClient()
   const osmDisplayName = useOsmDisplayName()
+  const authState = useAuthState()
   const liveViewportOsmFetch = useLiveViewportOsmFetch()
   const useOsmDevServer = useUseOsmDevServer()
   const { setLiveViewportOsmFetch } = useDevOsmFixtureActions()
   const { setUseOsmDevServer } = useDebugSettingsActions()
+  const { setAuthState, setOsmDisplayName, setChangesCount } = useAppActions()
   const mapBounds = useMapBounds()
   const { zoom: mapZoom } = useMapViewport()
   const { loadOsmData } = useOsmCoverageFetch()
@@ -61,14 +72,27 @@ export function DebugUserSettingsSection() {
           <CheckboxField>
             <Checkbox
               checked={useOsmDevServer}
-              onChange={(checked) => setUseOsmDevServer(checked)}
+              onChange={(checked) => {
+                setUseOsmDevServer(checked)
+                if (authState === AuthState.success) {
+                  logout()
+                  setAuthState(AuthState.initial)
+                  setOsmDisplayName(null)
+                  setChangesCount(clearChanges())
+                  toast.message(
+                    checked
+                      ? 'Switched to OSM dev server — sign in again before uploading.'
+                      : 'Switched to OSM production — sign in again before uploading.',
+                  )
+                }
+              }}
             />
             <Label>Use OSM dev server</Label>
           </CheckboxField>
           <p className="text-xs text-zinc-600">
             {useOsmDevServer
-              ? 'OAuth and map API use api06.dev.openstreetmap.org (next login / fetch).'
-              : 'OAuth and map API use production openstreetmap.org.'}
+              ? 'Map fetch, OAuth, and uploads use master.apis.dev.openstreetmap.org. Requires a separate login.'
+              : 'Map fetch, OAuth, and uploads use api.openstreetmap.org (production).'}
           </p>
         </section>
 

@@ -1,9 +1,8 @@
 import * as Headless from '@headlessui/react'
 import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
-import { type WaysInRelation } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
 import clsx from 'clsx'
-import { RefreshCw, Scissors } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import { Label } from '../../../../components/catalyst/fieldset'
@@ -15,7 +14,6 @@ import { SideGroup } from './SideGroup'
 import {
   tagEditorToolbarButtonClassName,
   tagEditorToolbarButtonGroupClassName,
-  tagEditorValueButtonDividerClassName,
 } from './tag-editor-controls'
 import { TagUpdaterModal } from './TagUpdaterModal'
 
@@ -25,9 +23,7 @@ const sideSwitcherLabelClassName = 'text-xs select-none'
 
 export function LaneEditForm(props: {
   osm: OsmWay
-  waysInRelation: WaysInRelation
   readOnly?: boolean
-  onCutLane: (way: OsmWay) => void
   onChange: (way: OsmWay) => void
 }) {
   const readOnly = props.readOnly ?? false
@@ -89,29 +85,13 @@ export function LaneEditForm(props: {
         </Headless.Field>
         {!readOnly ? (
           <div className={tagEditorToolbarButtonGroupClassName}>
-            {!props.waysInRelation[props.osm.id] ? (
-              <Tooltip content="Cut lane" wrapperClassName="shrink-0">
-                <button
-                  type="button"
-                  aria-label="Cut lane"
-                  title="Cut lane"
-                  className={tagEditorToolbarButtonClassName}
-                  onClick={() => props.onCutLane(props.osm)}
-                >
-                  <Scissors className="size-4 shrink-0" aria-hidden />
-                </button>
-              </Tooltip>
-            ) : null}
             {canUpdateTags(props.osm) ? (
               <Tooltip content="Update tags to new scheme" wrapperClassName="shrink-0">
                 <button
                   type="button"
                   aria-label="Update tags to new scheme"
                   title="Update tags to new scheme"
-                  className={clsx(
-                    tagEditorToolbarButtonClassName,
-                    !props.waysInRelation[props.osm.id] && tagEditorValueButtonDividerClassName,
-                  )}
+                  className={tagEditorToolbarButtonClassName}
                   onClick={() => setTagUpdaterModalShown(true)}
                 >
                   <RefreshCw className="size-4 shrink-0" aria-hidden />

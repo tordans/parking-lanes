@@ -1,5 +1,10 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
-import { type OsmChange, type OsmWay as OsmApiWay, type UploadResult } from 'osm-api'
+import {
+  createOsmChangeXml,
+  type OsmChange,
+  type OsmWay as OsmApiWay,
+  type UploadResult,
+} from 'osm-api'
 import { type ChangedIdMap, type ChangesStore } from './changes-store'
 
 function wayToOsmApiFeature(way: OsmWay): OsmApiWay {
@@ -22,6 +27,18 @@ export function changesStoreToOsmChange(changesStore: ChangesStore): OsmChange {
     modify: changesStore.modify.way.map(wayToOsmApiFeature),
     delete: [],
   }
+}
+
+/** Build an osmChange XML document (`.osc`) via osm-api’s `createOsmChangeXml`. */
+export function changesStoreToOsmChangeXml(
+  changesStore: ChangesStore,
+  options: { changesetId?: number; tags?: Record<string, string> } = {},
+): string {
+  return createOsmChangeXml(
+    options.changesetId ?? 0,
+    changesStoreToOsmChange(changesStore),
+    options.tags,
+  )
 }
 
 export function applyUploadResult(changesStore: ChangesStore, result: UploadResult): ChangedIdMap {

@@ -2,16 +2,32 @@ import { describe, expect, test } from 'bun:test'
 import {
   DEFAULT_FALLBACK,
   deriveHighwayWidthFallback,
-  isOnewayHighway,
+  isOnewayFromOsmTags,
 } from '../modes/width/domain/highway-width-fallbacks'
 
-describe('isOnewayHighway', () => {
-  test('recognises yes, implicit_yes, and car_not_bike', () => {
-    expect(isOnewayHighway('yes')).toBe(true)
-    expect(isOnewayHighway('implicit_yes')).toBe(true)
-    expect(isOnewayHighway('car_not_bike')).toBe(true)
-    expect(isOnewayHighway('no')).toBe(false)
-    expect(isOnewayHighway(undefined)).toBe(false)
+describe('isOnewayFromOsmTags', () => {
+  test('recognises explicit oneway tags', () => {
+    expect(isOnewayFromOsmTags({ oneway: 'yes' })).toBe(true)
+    expect(isOnewayFromOsmTags({ oneway: '-1' })).toBe(true)
+    expect(isOnewayFromOsmTags({ oneway: 'no' })).toBe(false)
+    expect(isOnewayFromOsmTags({})).toBe(false)
+  })
+
+  test('recognises implicit oneway from highway and junction', () => {
+    expect(isOnewayFromOsmTags({ highway: 'motorway' })).toBe(true)
+    expect(isOnewayFromOsmTags({ highway: 'motorway_link' })).toBe(true)
+    expect(isOnewayFromOsmTags({ junction: 'roundabout', highway: 'secondary' })).toBe(true)
+    expect(isOnewayFromOsmTags({ highway: 'motorway', oneway: 'no' })).toBe(false)
+  })
+
+  test('recognises car-only oneway when bicycles may use both directions', () => {
+    expect(
+      isOnewayFromOsmTags({ oneway: 'yes', 'oneway:bicycle': 'no', highway: 'secondary' }),
+    ).toBe(true)
+    expect(
+      isOnewayFromOsmTags({ oneway: '-1', 'oneway:bicycle': 'no', highway: 'secondary' }),
+    ).toBe(true)
+    expect(isOnewayFromOsmTags({ oneway: 'no', 'oneway:bicycle': 'no' })).toBe(false)
   })
 })
 

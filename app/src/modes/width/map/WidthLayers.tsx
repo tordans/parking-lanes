@@ -2,19 +2,29 @@ import { Layer, Source } from 'react-map-gl/maplibre'
 import type { HandleGeometry } from '../domain/handle-geometry'
 import { lineWidthFromMeters, selectedCenterlineWidth } from '../domain/meters-to-pixels'
 import type { WidthHighwayCollection } from './parse-highways'
+import { WIDTH_KIND_COLORS } from './width-colors'
 
 const lineLayout = { 'line-cap': 'round', 'line-join': 'round' } as const
 
 const bandPaint = {
-  'line-color': '#94a3b8',
-  'line-opacity': 0.45,
+  'line-color': [
+    'match',
+    ['get', 'widthKind'],
+    'explicit',
+    WIDTH_KIND_COLORS.explicit,
+    'default',
+    WIDTH_KIND_COLORS.default,
+    WIDTH_KIND_COLORS.default,
+  ],
+  'line-opacity': 0.55,
   'line-width': lineWidthFromMeters('roadWidthM'),
 } as Record<string, unknown>
 
 const hitAreaPaint = {
   'line-color': '#000',
   'line-opacity': 0,
-  'line-width': ['+', lineWidthFromMeters('roadWidthM'), 8],
+  // Extra metres (not px): zoom must stay a top-level interpolate input.
+  'line-width': lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 } as Record<string, unknown>
 
 const selectedCenterlinePaint = {

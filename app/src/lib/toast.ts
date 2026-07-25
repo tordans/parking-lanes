@@ -10,6 +10,9 @@ export const toast = {
   error(message: string) {
     sonnerToast.error(message)
   },
+  message(message: string) {
+    sonnerToast.message(message)
+  },
   fromError(error: unknown, fallback = 'Something went wrong') {
     sonnerToast.error(messageFromUnknown(error) || fallback)
   },

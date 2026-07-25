@@ -2,7 +2,7 @@ export type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
 
 export interface ParkingFeatureProperties {
   featureId: string
-  kind: 'lane' | 'area' | 'point' | 'backlight-right' | 'backlight-left' | 'cut-marker'
+  kind: 'lane' | 'area' | 'point' | 'backlight-right' | 'backlight-left'
   color: string
   weight: number
   offset: number

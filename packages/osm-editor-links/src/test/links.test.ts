@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { idEditorUrl, osmDevUrl, osmProdUrl } from '../index'
+import { idEditorUrl, osmDevUrl, osmProdApiUrl, osmProdUrl } from '../index'
 
 describe('editor links', () => {
-  test('exports OSM website URLs', () => {
+  test('exports OSM website and API URLs', () => {
     expect(osmProdUrl).toBe('https://www.openstreetmap.org')
+    expect(osmProdApiUrl).toBe('https://api.openstreetmap.org')
     expect(osmDevUrl).toBe('https://master.apis.dev.openstreetmap.org')
   })
 

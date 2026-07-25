@@ -12,6 +12,6 @@ function defaultMapParam(): MapParam {
 
 /** Map viewport from router search (`map` param) — single source of truth for zoom, center, bearing. */
 export function useMapViewport(): MapParam {
-  const { map } = useSearch({ from: '/{-$mode}' })
+  const { map } = useSearch({ from: '/$mode' })
   return map ?? defaultMapParam()
 }

@@ -1,10 +1,18 @@
 // From tilda-geo-cqi `docs/MapLibre-Line-Width-Offset-Units.md` (Germany φ=51°); adjust GERMANY_LAT / factor if targeting other regions.
+//
+// MapLibre only allows `["zoom"]` as the input to a *top-level* `interpolate` / `step`.
+// Mercator metres→pixels is `meters * 2^zoom / PIXEL_SCALE`, expressed as exponential
+// interpolate with base 2 and stops whose outputs are in ratio `2^(z1-z0)`.
 
 export const EARTH_CIRCUMFERENCE = 40075016.686
 export const TILE_SIZE = 512
 export const GERMANY_LAT = 51
 
 export const PIXEL_SCALE_GERMANY = pixelScaleFactorAtLat(GERMANY_LAT)
+
+/** Zoom range covering normal editor use; outputs stay in exact 2^z ratio. */
+const WIDTH_ZOOM_MIN = 0
+const WIDTH_ZOOM_MAX = 22
 
 export function pixelScaleFactorAtLat(latitudeDeg: number): number {
   return (EARTH_CIRCUMFERENCE * Math.cos((latitudeDeg * Math.PI) / 180)) / TILE_SIZE
@@ -18,12 +26,45 @@ export function pixelsFromMeters(meters: number, zoom: number, latitudeDeg: numb
   return meters / metersPerPixel(zoom, latitudeDeg)
 }
 
-export function lineWidthFromMeters(property = 'roadWidthM'): readonly unknown[] {
-  return ['*', ['get', property], ['/', ['^', 2, ['zoom']], PIXEL_SCALE_GERMANY]]
+function scaleAtZoom(zoom: number, multiplier: number): number {
+  return (multiplier * 2 ** zoom) / PIXEL_SCALE_GERMANY
+}
+
+/**
+ * Line width in px from a numeric feature property in metres.
+ * Optional `extraMeters` expands the line (e.g. hit targets) in ground units so zoom stays top-level.
+ */
+export function lineWidthFromMeters(
+  property = 'roadWidthM',
+  options?: { extraMeters?: number },
+): readonly unknown[] {
+  const extraMeters = options?.extraMeters ?? 0
+  const widthExpr =
+    extraMeters === 0
+      ? (['get', property] as const)
+      : (['+', ['get', property], extraMeters] as const)
+
+  return [
+    'interpolate',
+    ['exponential', 2],
+    ['zoom'],
+    WIDTH_ZOOM_MIN,
+    ['*', widthExpr, scaleAtZoom(WIDTH_ZOOM_MIN, 1)],
+    WIDTH_ZOOM_MAX,
+    ['*', widthExpr, scaleAtZoom(WIDTH_ZOOM_MAX, 1)],
+  ]
 }
 
 export function lineOffsetFromMeters(property = 'roadWidthM', fraction = 0.5): readonly unknown[] {
-  return ['*', ['*', ['get', property], fraction], ['/', ['^', 2, ['zoom']], PIXEL_SCALE_GERMANY]]
+  return [
+    'interpolate',
+    ['exponential', 2],
+    ['zoom'],
+    WIDTH_ZOOM_MIN,
+    ['*', ['get', property], scaleAtZoom(WIDTH_ZOOM_MIN, fraction)],
+    WIDTH_ZOOM_MAX,
+    ['*', ['get', property], scaleAtZoom(WIDTH_ZOOM_MAX, fraction)],
+  ]
 }
 
 /** Fixed pixel ramp for selected centerline chrome (from tilda-geo-cqi radinfra_cqi). */

@@ -8,13 +8,15 @@ import { buildHandleGeometry, MIN_WIDTH_M } from './domain/handle-geometry'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { viewMinZoom } from './map/constants'
 import { useDraftWidthM, useWidthMapActions } from './map/width-map-store'
-import { stageWidthOnWay } from './map/width-osm-edits'
+import { stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 
 function formatSourceLabel(source: string): string {
   switch (source) {
-    case 'tag':
+    case 'width':
       return 'OSM width tag'
+    case 'est_width':
+      return 'OSM est_width tag'
     case 'highway_default':
       return 'Highway default'
     case 'highway_default_and_oneway':
@@ -67,7 +69,7 @@ export function WidthModePanel(props: ModePanelProps) {
   const displayWidth = draftWidthM ?? derived.value
 
   function applyWidth(widthM: number) {
-    const clamped = Math.max(MIN_WIDTH_M, widthM)
+    const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
     const coordinates = selectedWay!.nodes
       .map((nodeId) => {
         const coord = graph?.nodeCoords[nodeId]

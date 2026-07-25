@@ -13,6 +13,14 @@ export function upsertChangedWay(store: ChangesStore, osm: OsmWay): void {
   }
 }
 
+export function removeChangedWay(store: ChangesStore, wayId: number): OsmWay | null {
+  const bucket = wayId > 0 ? store.modify.way : store.create.way
+  const index = bucket.findIndex((x) => x.id === wayId)
+  if (index < 0) return null
+  const [removed] = bucket.splice(index, 1)
+  return removed ?? null
+}
+
 export function countChanges(store: ChangesStore): number {
   return store.modify.way.length + store.create.way.length
 }

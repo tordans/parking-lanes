@@ -12,19 +12,12 @@ import { AppAboutContent } from './AppAboutContent'
 import { DebugUserSettingsSection } from './DebugPanelContent'
 import { PanelModeSwitcher, type MapPanelMode } from './PanelModeSwitcher'
 import { PanelSectionDivider } from './PanelSectionDivider'
-import { SaveButton } from './SaveButton'
 
 function initialPanelMode(selected: boolean): MapPanelMode {
   return selected ? 'inspector' : 'info'
 }
 
-export function SettingsPanelContent(props: {
-  onSave: () => void
-  showSaveButton?: boolean
-  showDebug?: boolean
-}) {
-  const showSaveButton = props.showSaveButton !== false
-
+export function SettingsPanelContent(props: { showDebug?: boolean }) {
   return (
     <div className="flex flex-col gap-4 p-1">
       <section className="flex flex-col gap-2">
@@ -32,7 +25,6 @@ export function SettingsPanelContent(props: {
         <AccountCallout />
       </section>
       <ParkingDatetimeFilter fullWidth />
-      {showSaveButton ? <SaveButton onClick={props.onSave} /> : null}
       {props.showDebug ? <DebugUserSettingsSection /> : null}
     </div>
   )
@@ -62,14 +54,12 @@ export function InfoPanelContent(props: {
 
 export function ControlPanel(props: {
   mode: StreetSpaceMode
-  onSave: () => void
-  onCutLane: (way: OsmWay) => void
   onOsmChange: (way: OsmWay) => void
   onClose: () => void
 }) {
   const { Panel, Legend } = props.mode
   const selectedOsmRef = useSelectedOsmRef()
-  const { debug } = useSearch({ from: '/{-$mode}' })
+  const { debug } = useSearch({ from: '/$mode' })
   const osmDisplayName = useOsmDisplayName()
   const showDebug = canShowDebugToggle(osmDisplayName, debug)
   const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
@@ -85,15 +75,9 @@ export function ControlPanel(props: {
           <InfoPanelContent about={props.mode.about} Legend={Legend} />
         ) : null}
         {activePanelMode === 'inspector' ? (
-          <Panel
-            onCutLane={props.onCutLane}
-            onOsmChange={props.onOsmChange}
-            onClose={props.onClose}
-          />
+          <Panel onOsmChange={props.onOsmChange} onClose={props.onClose} />
         ) : null}
-        {activePanelMode === 'settings' ? (
-          <SettingsPanelContent onSave={props.onSave} showDebug={showDebug} />
-        ) : null}
+        {activePanelMode === 'settings' ? <SettingsPanelContent showDebug={showDebug} /> : null}
       </div>
     </div>
   )

@@ -1,15 +1,21 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import type { Feature, LineString } from 'geojson'
 import type { MapBounds } from '../../parking/map/types'
-import { roadWidthFromTags } from '../domain/road-width-from-tags'
+import {
+  roadWidthFromTags,
+  type RoadWidthKind,
+  type RoadWidthSource,
+} from '../domain/road-width-from-tags'
+import { isWidthModeLinkWay } from '../domain/width-link-filter'
 
 export type WidthHighwayProperties = {
   osmId: number
   osmType: 'way'
   highway: string
   roadWidthM: number
-  widthSource: string
+  widthSource: RoadWidthSource
   widthConfidence: string
+  widthKind: RoadWidthKind
 }
 
 export type WidthHighwayFeature = Feature<LineString, WidthHighwayProperties>
@@ -39,6 +45,7 @@ export function parseHighwayFeaturesFromData(
 
   for (const way of Object.values(data.ways)) {
     if (!way.tags?.highway) continue
+    if (isWidthModeLinkWay(way.tags)) continue
     if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
 
     const coordinates = way.nodes
@@ -67,6 +74,7 @@ export function parseHighwayFeaturesFromData(
         roadWidthM: width.value,
         widthSource: width.source,
         widthConfidence: width.confidence,
+        widthKind: width.kind,
       },
     })
   }

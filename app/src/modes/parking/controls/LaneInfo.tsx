@@ -15,19 +15,12 @@ import { useOsmAuth } from '../map/use-osm-auth'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
 
-export function OsmObjectPanel(props: {
-  onCutLane?: (way: OsmWay) => void
-  onChange?: (way: OsmWay) => void
-  onClose?: () => void
-}) {
+export function OsmObjectPanel(props: { onChange?: (way: OsmWay) => void; onClose?: () => void }) {
   const mapViewport = useMapViewport()
   const selectedOsmRef = useSelectedOsmRef()
   const authState = useAuthState()
   const { login } = useOsmAuth()
   const { data: graph, isFetching } = useParkingOsmQuery({ select: (osmData) => osmData.graph })
-  const { data: waysInRelation = {} } = useParkingOsmQuery({
-    select: (osmData) => osmData.graph.waysInRelation,
-  })
 
   if (!selectedOsmRef) {
     return (
@@ -121,9 +114,7 @@ export function OsmObjectPanel(props: {
           ) : null}
           <LaneEditForm
             osm={selectedOsmObject as OsmWay}
-            waysInRelation={waysInRelation}
             readOnly={readOnly}
-            onCutLane={props.onCutLane!}
             onChange={props.onChange!}
           />
         </>

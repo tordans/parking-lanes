@@ -20,12 +20,16 @@ import {
 type OsmLoginOptions = Parameters<typeof osmLogin>[0]
 type OsmLoginMode = OsmLoginOptions['mode']
 
+const AUTH_SERVER_STORAGE_KEY = '__osmAuthServer'
+
 export interface OsmOAuthConfig {
   userAgent: string
   scopes: OsmLoginOptions['scopes']
   getClientId: (useDevServer: boolean) => string
   getRedirectUrl: () => string
   getApiUrl: (useDevServer: boolean) => string
+  /** Current UI toggle — used so uploads/profile calls match the selected OSM server. */
+  getUseDevServer?: () => boolean
   getLoginMode?: () => OsmLoginMode
 }
 
@@ -50,6 +54,24 @@ function wrapOsmApiError(err: unknown): never {
   throw err
 }
 
+function readAuthServer(): boolean | null {
+  if (typeof localStorage === 'undefined') return null
+  const value = localStorage.getItem(AUTH_SERVER_STORAGE_KEY)
+  if (value === 'dev') return true
+  if (value === 'prod') return false
+  return null
+}
+
+function writeAuthServer(useDevServer: boolean): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(AUTH_SERVER_STORAGE_KEY, useDevServer ? 'dev' : 'prod')
+}
+
+function clearAuthServer(): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.removeItem(AUTH_SERVER_STORAGE_KEY)
+}
+
 export interface OsmOAuthClient {
   authenticate: (useDevServer: boolean) => Promise<void>
   restoreSession: (useDevServer: boolean) => Promise<boolean>
@@ -59,6 +81,7 @@ export interface OsmOAuthClient {
     editorName: string,
     editorVersion: string,
     changesStore: ChangesStore,
+    options?: Pick<BuildChangesetTagsOptions, 'comment'>,
   ) => Promise<ChangedIdMap>
 }
 
@@ -74,7 +97,10 @@ export function createOsmOAuthClient(
   }
 
   function ensureOsmApiConfigured(useDevServer: boolean): void {
-    if (configuredForDev === useDevServer) return
+    if (configuredForDev === useDevServer) {
+      syncAuthHeader()
+      return
+    }
 
     configure({
       apiUrl: oauthConfig.getApiUrl(useDevServer),
@@ -84,17 +110,50 @@ export function createOsmOAuthClient(
     syncAuthHeader()
   }
 
+  function resolveUseDevServer(override?: boolean): boolean {
+    return override ?? oauthConfig.getUseDevServer?.() ?? false
+  }
+
   async function restoreSession(useDevServer: boolean): Promise<boolean> {
     ensureOsmApiConfigured(useDevServer)
     await authReady
     syncAuthHeader()
-    return isLoggedIn()
+    if (!isLoggedIn()) return false
+
+    const tokenServer = readAuthServer()
+    if (tokenServer === null) {
+      // Legacy sessions predate the server stamp — treat as production-only.
+      if (useDevServer) {
+        osmLogout()
+        clearAuthServer()
+        syncAuthHeader()
+        return false
+      }
+      writeAuthServer(false)
+      return true
+    }
+
+    if (tokenServer !== useDevServer) {
+      osmLogout()
+      clearAuthServer()
+      syncAuthHeader()
+      return false
+    }
+
+    return true
   }
 
   async function authenticate(useDevServer: boolean): Promise<void> {
     ensureOsmApiConfigured(useDevServer)
     await authReady
     syncAuthHeader()
+
+    const tokenServer = readAuthServer()
+    if (isLoggedIn() && tokenServer !== null && tokenServer !== useDevServer) {
+      osmLogout()
+      clearAuthServer()
+      syncAuthHeader()
+    }
 
     if (!isLoggedIn()) {
       await osmLogin({
@@ -105,15 +164,18 @@ export function createOsmOAuthClient(
       })
       syncAuthHeader()
     }
+
+    writeAuthServer(useDevServer)
   }
 
   function logout(): void {
     osmLogout()
+    clearAuthServer()
     syncAuthHeader()
   }
 
   function userInfo() {
-    syncAuthHeader()
+    ensureOsmApiConfigured(resolveUseDevServer())
     return getUser('me')
   }
 
@@ -121,9 +183,14 @@ export function createOsmOAuthClient(
     editorName: string,
     editorVersion: string,
     changesStore: ChangesStore,
+    options?: Pick<BuildChangesetTagsOptions, 'comment'>,
   ): Promise<ChangedIdMap> {
     try {
-      const tags = buildChangesetTags(editorName, editorVersion, uploadConfig.changesetTags)
+      ensureOsmApiConfigured(resolveUseDevServer())
+      const tags = buildChangesetTags(editorName, editorVersion, {
+        ...uploadConfig.changesetTags,
+        ...options,
+      })
       const diff = changesStoreToOsmChange(changesStore)
       const result = await uploadChangeset(tags, diff)
 

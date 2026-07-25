@@ -43,8 +43,13 @@ export function remapWidthOsmWayId(
   return remappedWay
 }
 
+/** Round edited widths to 10 cm. Do not use when only displaying an existing OSM value. */
+export function roundWidthMetres(widthM: number): number {
+  return Math.round(widthM * 10) / 10
+}
+
 export function formatWidthTag(widthM: number): string {
-  const rounded = Math.round(widthM * 10) / 10
+  const rounded = roundWidthMetres(widthM)
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
 }
 

@@ -4,12 +4,9 @@ import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 interface ParkingMapStore {
   backlights: ParkingFeatureCollection
-  cutMarkers: ParkingFeatureCollection
   actions: {
     setBacklights: (backlights: ParkingFeatureCollection) => void
     clearBacklights: () => void
-    setCutMarkers: (markers: ParkingFeatureCollection) => void
-    clearCutMarkers: () => void
   }
 }
 
@@ -20,17 +17,13 @@ const emptyCollection = (): ParkingFeatureCollection => ({
 
 const useParkingMapStore = create<ParkingMapStore>()((set) => ({
   backlights: emptyCollection(),
-  cutMarkers: emptyCollection(),
   actions: {
     setBacklights: (backlights) => set({ backlights }),
     clearBacklights: () => set({ backlights: emptyCollection() }),
-    setCutMarkers: (cutMarkers) => set({ cutMarkers }),
-    clearCutMarkers: () => set({ cutMarkers: emptyCollection() }),
   },
 }))
 
 export const useBacklightFeatures = () => useParkingMapStore((s) => s.backlights)
-export const useCutMarkerFeatures = () => useParkingMapStore((s) => s.cutMarkers)
 export const useParkingMapActions = () => useParkingMapStore((s) => s.actions)
 
 export function getLaneFeatureByOsmId(

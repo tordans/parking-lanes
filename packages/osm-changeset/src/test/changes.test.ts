@@ -1,5 +1,5 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
-import { countChanges, upsertChangedWay } from '../changes'
+import { countChanges, removeChangedWay, upsertChangedWay } from '../changes'
 import { type ChangesStore } from '../changes-store'
 
 function createWay(id: number): OsmWay {
@@ -36,5 +36,18 @@ describe('changes store helpers', () => {
     expect(store.create.way).toHaveLength(1)
     expect(store.modify.way).toHaveLength(0)
     expect(countChanges(store)).toBe(1)
+  })
+
+  test('removeChangedWay removes modify and create entries', () => {
+    const store: ChangesStore = {
+      modify: { way: [createWay(5)] },
+      create: { way: [createWay(-2)] },
+    }
+
+    expect(removeChangedWay(store, 5)?.id).toBe(5)
+    expect(store.modify.way).toHaveLength(0)
+    expect(removeChangedWay(store, -2)?.id).toBe(-2)
+    expect(store.create.way).toHaveLength(0)
+    expect(removeChangedWay(store, 99)).toBeNull()
   })
 })

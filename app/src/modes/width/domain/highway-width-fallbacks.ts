@@ -66,8 +66,28 @@ export type HighwayWidthFallback = {
   source: HighwayWidthFallbackSource
 }
 
-export function isOnewayHighway(oneway: string | undefined): boolean {
-  return oneway === 'yes' || oneway === 'implicit_yes' || oneway === 'car_not_bike'
+/** Whether motor traffic is one-way — from raw OSM tags (not TILDA-derived oneway). */
+export function isOnewayFromOsmTags(tags: {
+  oneway?: string
+  'oneway:bicycle'?: string
+  highway?: string
+  junction?: string
+}): boolean {
+  const oneway = tags.oneway
+  const onewayBicycle = tags['oneway:bicycle']
+
+  if (onewayBicycle === 'yes') return true
+  if (onewayBicycle === 'no') {
+    return oneway === 'yes' || oneway === '-1'
+  }
+
+  if (oneway === 'yes' || oneway === '-1') return true
+  if (oneway === 'no') return false
+
+  if (tags.junction === 'roundabout') return true
+  if (tags.highway === 'motorway' || tags.highway === 'motorway_link') return true
+
+  return false
 }
 
 export function deriveHighwayWidthFallback(

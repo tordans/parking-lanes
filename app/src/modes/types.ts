@@ -6,7 +6,6 @@ export type StreetSpaceModeId = 'parking' | 'width' | 'lanes' | 'surface' | 'sid
 export type ModeMapProps = Record<string, never>
 
 export type ModePanelProps = {
-  onCutLane: (way: OsmWay) => void
   onOsmChange: (way: OsmWay) => void
   onClose: () => void
 }
