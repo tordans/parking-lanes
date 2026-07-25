@@ -22,18 +22,26 @@ export function SettingsPanelContent(props: {
   onSave: () => void
   showSaveButton?: boolean
   showDebug?: boolean
+  /** Parking-only: colors conditional parking access by date/time. */
+  showDatetime?: boolean
 }) {
+  const showSaveButton = props.showSaveButton !== false
+  const showDatetime = props.showDatetime === true
+  const showDataSection = showDatetime || showSaveButton
+
   return (
     <div className="flex flex-col gap-4 p-1">
       <section className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-zinc-900">Account</h3>
         <AccountCallout />
       </section>
-      <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
-        <DatetimeInput fullWidth />
-        {props.showSaveButton !== false ? <SaveButton onClick={props.onSave} /> : null}
-      </section>
+      {showDataSection ? (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
+          {showDatetime ? <DatetimeInput fullWidth /> : null}
+          {showSaveButton ? <SaveButton onClick={props.onSave} /> : null}
+        </section>
+      ) : null}
       {props.showDebug ? <DebugUserSettingsSection /> : null}
     </div>
   )
@@ -93,7 +101,11 @@ export function ControlPanel(props: {
           />
         ) : null}
         {activePanelMode === 'settings' ? (
-          <SettingsPanelContent onSave={props.onSave} showDebug={showDebug} />
+          <SettingsPanelContent
+            onSave={props.onSave}
+            showDebug={showDebug}
+            showDatetime={props.mode.id === 'parking'}
+          />
         ) : null}
       </div>
     </div>
