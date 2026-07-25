@@ -1,11 +1,11 @@
 {
   "data_format": 1,
-  "data_url": "https://osmberlin.github.io/street-parking-editor/taginfo.json",
+  "data_url": "https://osmberlin.github.io/street-space-editor/taginfo.json",
   "project": {
     "name": "Street Space Editor",
     "description": "Street Space Editor for OpenStreetMap (parking mode)",
-    "project_url": "https://osmberlin.github.io/street-parking-editor/",
-    "icon_url": "https://osmberlin.github.io/street-parking-editor/assets/free_parking/free_parking_russia.svg"
+    "project_url": "https://osmberlin.github.io/street-space-editor/",
+    "icon_url": "https://osmberlin.github.io/street-space-editor/assets/free_parking/free_parking_russia.svg"
   },
   "tags": [
     { "key": "amenity", "value": "parking", "object_types": ["node", "way"] },

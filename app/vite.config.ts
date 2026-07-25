@@ -12,7 +12,7 @@ const monorepoRoot = path.resolve(projectRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
 
 export default defineConfig({
-  base: '/street-parking-editor/',
+  base: '/street-space-editor/',
   plugins: [
     tailwindcss(),
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),

@@ -1,6 +1,6 @@
 /**
  * Product identity for UI, OSM `created_by`, and HTTP User-Agent.
- * Deploy path / GitHub repo URLs stay `street-parking-editor` until those are renamed.
+ * Deploy path is `/street-space-editor/`. GitHub remote may still be `street-parking-editor`.
  */
 export const APP_NAME = 'Street Space Editor'
 export const APP_VERSION = '0.9.0'
@@ -8,7 +8,7 @@ export const APP_VERSION = '0.9.0'
 /** Compact token for User-Agent product/version (no spaces). */
 export const APP_USER_AGENT_TOKEN = 'StreetSpaceEditor'
 
-/** GitHub repo URL — update when the remote is renamed. */
+/** GitHub repo URL — update when the remote is renamed to street-space-editor. */
 export const APP_REPO_URL = 'https://github.com/osmberlin/street-parking-editor'
 
 /**
