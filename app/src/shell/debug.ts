@@ -37,11 +37,9 @@ export function isDebugUser(displayName: string | null | undefined): displayName
   return (DEBUG_USERS as readonly string[]).includes(displayName)
 }
 
-export function canShowDebugToggle(
-  displayName: string | null | undefined,
-  debugOn: boolean | undefined,
-): boolean {
-  return isDebugUser(displayName) || debugOn === true
+export function canShowDebugToggle(displayName: string | null | undefined): boolean {
+  // Vite DEV: always. Production: only allowlisted debug users (must be signed in).
+  return import.meta.env.DEV === true || isDebugUser(displayName)
 }
 
 export function colorForGroupId(groupId: string): string {

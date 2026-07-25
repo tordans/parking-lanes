@@ -1,4 +1,3 @@
-import { useSearch } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -28,11 +27,10 @@ export function MapMobileToolbar(
 ) {
   const isDesktop = useBreakpoint('sm')
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
-  const { debug } = useSearch({ from: '/$mode' })
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
   const { selectionEpoch } = useFeatureSelection()
-  const showDebug = canShowDebugToggle(osmDisplayName, debug)
+  const showDebug = canShowDebugToggle(osmDisplayName)
   const { Panel, Legend } = props.mode
   const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
 

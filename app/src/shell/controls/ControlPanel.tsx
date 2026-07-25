@@ -1,5 +1,4 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import { useSearch } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
 import { useState } from 'react'
 import { useSelectedOsmRef } from '../../modes/parking'
@@ -59,9 +58,8 @@ export function ControlPanel(props: {
 }) {
   const { Panel, Legend } = props.mode
   const selectedOsmRef = useSelectedOsmRef()
-  const { debug } = useSearch({ from: '/$mode' })
   const osmDisplayName = useOsmDisplayName()
-  const showDebug = canShowDebugToggle(osmDisplayName, debug)
+  const showDebug = canShowDebugToggle(osmDisplayName)
   const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
     initialPanelMode(selectedOsmRef != null),
   )

@@ -23,10 +23,12 @@ describe('debug enablement helpers', () => {
     expect(isDebugUser(null)).toBe(false)
   })
 
-  test('shows toggle for allowlisted users or active debug', () => {
-    expect(canShowDebugToggle('tordans', false)).toBe(true)
-    expect(canShowDebugToggle('other', false)).toBe(false)
-    expect(canShowDebugToggle('other', true)).toBe(true)
+  test('shows toggle in Vite DEV or for allowlisted users', () => {
+    // Bun test does not set Vite's import.meta.env.DEV to true.
+    expect(import.meta.env.DEV === true).toBe(false)
+    expect(canShowDebugToggle('tordans')).toBe(true)
+    expect(canShowDebugToggle('other')).toBe(false)
+    expect(canShowDebugToggle(null)).toBe(false)
   })
 })
 
