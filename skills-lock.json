@@ -37,6 +37,12 @@
       "skillPath": "skills/review-dependabot/SKILL.md",
       "computedHash": "54dc6601d6cfc270e36ea892bf56df8ad09f2f3365514241100ec9842313fb48"
     },
+    "tanstack-router-conventions": {
+      "source": "FixMyBerlin/fixmyskills",
+      "sourceType": "github",
+      "skillPath": "skills/tanstack-router-conventions/SKILL.md",
+      "computedHash": "22da9e27a683b4038be4ed2661a1cb4122bd3dfa3ab9489e94479680a0f67149"
+    },
     "tech-stack": {
       "source": "FixMyBerlin/fixmyskills",
       "sourceType": "github",
