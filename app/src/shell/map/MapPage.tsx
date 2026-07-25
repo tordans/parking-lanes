@@ -17,13 +17,7 @@ import { APP_NAME, APP_VERSION } from '../../lib/app-identity'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
 import { toast } from '../../lib/toast'
-import {
-  getMapSizePx,
-  remapParkingOsmWayId,
-  toBounds,
-  useParkingCoveragePace,
-  viewMinZoom,
-} from '../../modes/parking'
+import { getMapSizePx, toBounds, useParkingCoveragePace, viewMinZoom } from '../../modes/parking'
 import {
   useParkingLayerClickHandler,
   useParkingMapClickHandler,
@@ -31,11 +25,7 @@ import {
 } from '../../modes/parking/use-parking-mode-handlers'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
-import {
-  remapWidthOsmWayId,
-  useWidthCoveragePace,
-  viewMinZoom as widthViewMinZoom,
-} from '../../modes/width'
+import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
 import { useWidthMapActions } from '../../modes/width/map/width-map-store'
 import {
   useWidthModeHandlers,
@@ -63,7 +53,11 @@ import { useMapActions } from './map-store'
 import { useMapViewport } from './map-viewport'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
-import { removeOsmWayFromSession, restoreOsmWayInSession } from './osm-session-way-edits'
+import {
+  remapOsmWayIdInSession,
+  removeOsmWayFromSession,
+  restoreOsmWayInSession,
+} from './osm-session-way-edits'
 import { serializeMapSearch } from './search-schema'
 import { useSelectionBacklights } from './use-selection-backlights'
 import { WAY_CUT_MARKERS_HITAREA_LAYER_ID, useWayCutHandler } from './use-way-cut'
@@ -347,8 +341,7 @@ function MapPageContent({
       const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore, { comment })
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
-        const remap = isWidthMode ? remapWidthOsmWayId : remapParkingOsmWayId
-        const remappedWay = remap(queryClient, Number(oldId), Number(newId))
+        const remappedWay = remapOsmWayIdInSession(queryClient, Number(oldId), Number(newId))
 
         if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === Number(oldId) && remappedWay) {
           updateFeatureRef({ type: 'way', id: remappedWay.id })

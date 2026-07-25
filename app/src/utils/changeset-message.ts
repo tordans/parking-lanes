@@ -56,6 +56,25 @@ export function orderedModeLabels(sources: Iterable<ChangeSource>): string[] {
   return MODE_ORDER.filter((id) => modeSet.has(id)).map((id) => MODE_LABELS[id])
 }
 
+/** Ordered sources for UI chips/icons (modes in registry order, then split). */
+export function orderedChangeSources(sources: Iterable<ChangeSource>): ChangeSource[] {
+  const sourceSet = new Set(sources)
+  const ordered: ChangeSource[] = MODE_ORDER.filter((id) => sourceSet.has(id))
+  if (sourceSet.has('split')) ordered.push('split')
+  return ordered
+}
+
+/** Human labels for pending-change source chips (modes + split). */
+export function changeSourceLabels(sources: Iterable<ChangeSource>): string[] {
+  return orderedChangeSources(sources).map((source) =>
+    source === 'split' ? 'split' : MODE_LABELS[source],
+  )
+}
+
+export function changeSourceLabel(source: ChangeSource): string {
+  return source === 'split' ? 'split' : MODE_LABELS[source]
+}
+
 /** Auto changeset comment: modes + up to three longest road names. */
 export function buildChangesetComment(ways: OsmWay[], sources: Iterable<ChangeSource>): string {
   const modeLabels = orderedModeLabels(sources)

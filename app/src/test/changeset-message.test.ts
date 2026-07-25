@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import {
   buildChangesetComment,
+  changeSourceLabels,
   diffWayTags,
+  orderedChangeSources,
   orderedModeLabels,
   wayDisplayName,
 } from '../utils/changeset-message'
@@ -61,5 +63,17 @@ describe('changeset-message', () => {
     expect(buildChangesetComment([way(9, { highway: 'residential' })], ['width'])).toBe(
       'Update street space width for 1 way',
     )
+  })
+
+  test('changeSourceLabels includes ordered modes and split', () => {
+    expect(changeSourceLabels(['width', 'split', 'parking'])).toEqual(['parking', 'width', 'split'])
+  })
+
+  test('orderedChangeSources keeps mode order then split', () => {
+    expect(orderedChangeSources(['width', 'split', 'parking'])).toEqual([
+      'parking',
+      'width',
+      'split',
+    ])
   })
 })

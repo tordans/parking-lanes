@@ -32,6 +32,13 @@ function cloneWay(way: OsmWay): OsmWay {
   }
 }
 
+/** Latest pending way for an id, if any (modify or create bucket). */
+export function getPendingWay(wayId: number): OsmWay | null {
+  const modified = changesStore.modify.way.find((way) => way.id === wayId)
+  if (modified) return modified
+  return changesStore.create.way.find((way) => way.id === wayId) ?? null
+}
+
 export function addChangedEntity(
   osm: OsmWay,
   options: { original?: OsmWay | null; source?: ChangeSource } = {},

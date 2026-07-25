@@ -1,6 +1,6 @@
 import { osmDevUrl } from '@osm-editor-kit/osm-editor-links'
 import clsx from 'clsx'
-import { Download, Trash2, Upload } from 'lucide-react'
+import { Download, Scissors, Trash2, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../../components/catalyst/button'
 import {
@@ -13,17 +13,37 @@ import {
 import { Field, Label } from '../../components/catalyst/fieldset'
 import { Textarea } from '../../components/catalyst/textarea'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
+import { modeIcons } from '../../modes/mode-icons'
 import {
   allPendingSources,
   listPendingChanges,
   removeChangedEntity,
   type PendingChange,
 } from '../../utils/changes-store'
-import { buildChangesetComment, wayHasStreetName } from '../../utils/changeset-message'
+import {
+  buildChangesetComment,
+  changeSourceLabel,
+  orderedChangeSources,
+  wayHasStreetName,
+  type ChangeSource,
+} from '../../utils/changeset-message'
 import { downloadPendingChangesOsc } from '../../utils/download-pending-osc'
 import { useAppActions, useChangesCount } from '../app-store'
 import { useUseOsmDevServer } from '../debug-settings-store'
 import { floatingChromeElevationClassName } from '../map/mobileMapChrome.const'
+
+function ChangeSourceIcon(props: { source: ChangeSource }) {
+  const label = changeSourceLabel(props.source)
+  const Icon = props.source === 'split' ? Scissors : modeIcons[props.source]
+
+  return (
+    <Tooltip content={label} placement="top">
+      <span className="inline-flex text-zinc-500" aria-label={label}>
+        <Icon className="size-3.5 shrink-0" aria-hidden />
+      </span>
+    </Tooltip>
+  )
+}
 
 export function SaveChangesControl(props: {
   onSave: (comment: string) => Promise<void>
@@ -124,8 +144,19 @@ export function SaveChangesControl(props: {
       </Tooltip>
 
       <Dialog open={open} onClose={setOpen} size="lg">
-        <DialogTitle>Save changes</DialogTitle>
-        <DialogDescription>
+        <div className="flex items-start justify-between gap-3">
+          <DialogTitle>Save changes</DialogTitle>
+          <button
+            type="button"
+            aria-label="Close"
+            disabled={saving}
+            className="shrink-0 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 disabled:opacity-50"
+            onClick={() => setOpen(false)}
+          >
+            <X className="size-5" aria-hidden />
+          </button>
+        </div>
+        <DialogDescription className="!text-base/5 sm:!text-sm/5">
           Review pending OSM edits before uploading a changeset to {uploadHost}.
         </DialogDescription>
         <DialogBody>
@@ -133,10 +164,19 @@ export function SaveChangesControl(props: {
             {pending.map((change) => (
               <li key={change.way.id} className="rounded-md bg-white p-3 ring-1 ring-zinc-950/5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-zinc-950">way/{change.way.id}</div>
-                    {wayHasStreetName(change.way) ? (
-                      <div className="truncate text-xs text-zinc-500">{change.displayName}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="truncate font-medium text-zinc-950">
+                      way/{change.way.id}
+                      {wayHasStreetName(change.way) ? (
+                        <span className="font-normal text-zinc-500"> · {change.displayName}</span>
+                      ) : null}
+                    </div>
+                    {change.sources.length > 0 ? (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {orderedChangeSources(change.sources).map((source) => (
+                          <ChangeSourceIcon key={source} source={source} />
+                        ))}
+                      </div>
                     ) : null}
                   </div>
                   <button
@@ -174,7 +214,7 @@ export function SaveChangesControl(props: {
             ))}
           </ul>
 
-          <Field className="mt-6">
+          <Field className="mt-4 [&>[data-slot=label]+[data-slot=control]]:mt-1.5">
             <Label>Changeset message</Label>
             <Textarea
               rows={3}
@@ -196,18 +236,13 @@ export function SaveChangesControl(props: {
               <Download data-slot="icon" />
             </Button>
           </Tooltip>
-          <div className="flex w-full flex-col-reverse items-center justify-end gap-3 sm:w-auto sm:flex-row">
-            <Button plain onClick={() => setOpen(false)} disabled={saving}>
-              Cancel
-            </Button>
-            <Button
-              color="yellow"
-              onClick={() => void handleSave()}
-              disabled={saving || !comment.trim()}
-            >
-              {uploadLabel}
-            </Button>
-          </div>
+          <Button
+            color="yellow"
+            onClick={() => void handleSave()}
+            disabled={saving || !comment.trim()}
+          >
+            {uploadLabel}
+          </Button>
         </DialogActions>
       </Dialog>
     </>

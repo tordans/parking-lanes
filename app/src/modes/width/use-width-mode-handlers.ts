@@ -1,14 +1,11 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
-import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
 import { useMap } from 'react-map-gl/maplibre'
-import { AuthState, useAppActions, useAuthState } from '../../shell/app-store'
 import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
-import { getOsmWayFromSession } from '../../shell/map/osm-session-way-edits'
-import { addChangedEntity } from '../../utils/changes-store'
+import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import {
   buildHandleGeometry,
   MIN_WIDTH_M,
@@ -18,27 +15,14 @@ import { metersPerPixel } from './domain/meters-to-pixels'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { highwaysToCollection } from './map/parse-highways'
 import { useWidthMapActions, useWidthDragSide, useDraftWidthM } from './map/width-map-store'
-import { stageWidthOnWay, updateWidthOsmWay, roundWidthMetres } from './map/width-osm-edits'
+import { stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 import { widthInteractiveLayerIds } from './map/WidthLayers'
 
 export { widthInteractiveLayerIds as interactiveLayerIds }
 
 export function useWidthOsmChangeHandler() {
-  const queryClient = useQueryClient()
-  const authState = useAuthState()
-  const { setChangesCount } = useAppActions()
-
-  return useCallback(
-    (newOsm: OsmWay) => {
-      if (authState !== AuthState.success) return
-      const original = getOsmWayFromSession(queryClient, newOsm.id)
-      updateWidthOsmWay(queryClient, newOsm)
-      const changesCount = addChangedEntity(newOsm, { original, source: 'width' })
-      setChangesCount(changesCount)
-    },
-    [authState, queryClient, setChangesCount],
-  )
+  return useOsmChangeHandler('width')
 }
 
 export function useWidthModeHandlers() {

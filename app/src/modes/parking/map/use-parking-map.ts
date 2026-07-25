@@ -1,13 +1,8 @@
-import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
-import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { AuthState, useAppActions, useAuthState } from '../../../shell/app-store'
 import { useFeatureSelection } from '../../../shell/map/feature-selection'
-import { getOsmWayFromSession } from '../../../shell/map/osm-session-way-edits'
-import { addChangedEntity } from '../../../utils/changes-store'
-import { updateParkingOsmWay } from './parking-osm-edits'
+import { useOsmChangeHandler as useSharedOsmChangeHandler } from '../../../shell/map/use-osm-change-handler'
 import type { MapBounds, ParkingFeatureCollection } from './types'
 
 export { viewMinZoom } from './constants'
@@ -21,20 +16,7 @@ export { useParkingMapFeatures } from './use-parking-map-features'
 export { useOsmAuth } from './use-osm-auth'
 
 export function useOsmChangeHandler() {
-  const queryClient = useQueryClient()
-  const authState = useAuthState()
-  const { setChangesCount } = useAppActions()
-
-  return useCallback(
-    (newOsm: OsmWay) => {
-      if (authState !== AuthState.success) return
-      const original = getOsmWayFromSession(queryClient, newOsm.id)
-      updateParkingOsmWay(queryClient, newOsm)
-      const changesCount = addChangedEntity(newOsm, { original, source: 'parking' })
-      setChangesCount(changesCount)
-    },
-    [authState, queryClient, setChangesCount],
-  )
+  return useSharedOsmChangeHandler('parking')
 }
 
 export function useLaneClickHandler() {
