@@ -122,7 +122,6 @@ export function MapMobileToolbar(
             onSave={props.onSave}
             showSaveButton={false}
             showDebug={showDebug}
-            showDatetime={props.mode.id === 'parking'}
           />
         </div>
       </MobileBottomSheet>

@@ -1,23 +1,33 @@
 import dayjs from 'dayjs'
 import { Field, Label } from '../../components/catalyst/fieldset'
 import { Input } from '../../components/catalyst/input'
-import { useAppActions, useDatetime } from '../app-store'
+import { useActiveMode, useAppActions, useDatetime } from '../app-store'
 
+/**
+ * Parking-only filter: colors conditional parking access by date/time.
+ * Renders nothing outside parking mode.
+ */
 export function DatetimeInput({ fullWidth = false }: { fullWidth?: boolean }) {
+  const activeMode = useActiveMode()
   const datetime = useDatetime()
   const { setDatetime } = useAppActions()
 
+  if (activeMode !== 'parking') return null
+
   return (
-    <Field className="min-w-0 shrink">
-      <Label className={fullWidth ? undefined : 'sr-only'}>Date and time</Label>
-      <Input
-        id="datetime-input"
-        value={dayjs(datetime).format('YYYY-MM-DDTHH:mm')}
-        className={fullWidth ? 'max-w-none' : 'max-w-40'}
-        type="datetime-local"
-        title="If parking:condition present, show kind of parking at this time of day and day of week."
-        onChange={(e) => setDatetime(new Date(e.target.value))}
-      />
-    </Field>
+    <section className="flex flex-col gap-2">
+      <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
+      <Field className="min-w-0 shrink">
+        <Label className={fullWidth ? undefined : 'sr-only'}>Date and time</Label>
+        <Input
+          id="datetime-input"
+          value={dayjs(datetime).format('YYYY-MM-DDTHH:mm')}
+          className={fullWidth ? 'max-w-none' : 'max-w-40'}
+          type="datetime-local"
+          title="If parking:condition present, show kind of parking at this time of day and day of week."
+          onChange={(e) => setDatetime(new Date(e.target.value))}
+        />
+      </Field>
+    </section>
   )
 }
