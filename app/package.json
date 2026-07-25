@@ -8,7 +8,7 @@
   "author": "Zlant",
   "type": "module",
   "scripts": {
-    "predev": "bun run scripts/ensure-dev-osm-fixture.ts",
+    "predev": "bun run scripts/ensure-tilda-bicycle-infra.ts && bun run scripts/ensure-dev-osm-fixture.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
