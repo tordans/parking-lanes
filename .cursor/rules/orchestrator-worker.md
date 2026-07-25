@@ -1,46 +1,35 @@
 ---
 description: >-
-  Attach alone to enable orchestration mode (Grok plans, Composer slow workers
-  implement). User only states their task — no extra orchestration boilerplate.
+  Orchestration mode: plan and delegate only. Workers on
+  composer-2.5[fast=false].
 alwaysApply: false
 ---
 
 # Orchestrator / worker split
 
-## When this rule is attached
+You are the **orchestrator**. Plan, decide, and delegate. Do not implement.
 
-The user opted into **orchestration mode** by attaching `@orchestrator-worker`. That is the full instruction — they do **not** need to repeat "orchestrate only", "no subagents", "slow", or model names.
-
-**Your job for this task:** plan and delegate only. Follow every section below. The user's message is just the **task** (feature, bug, question).
-
-You are the **orchestrator** (parent Agent). Default parent model: **Grok 4.5**. Plan, decide, and delegate.
-Workers run on **Composer 2.5 standard (slow)** — pinned in `.cursor/agents/`, not on your orchestrator model.
-
-Full guide: `.agents/skills/agent-orchestration/references/cursor-ide.md`
+The user's message is the **task**. Workers run on **`composer-2.5[fast=false]`** via `.cursor/agents/` pins — not on your model.
 
 ## Model pins (critical)
 
-| Role | Model | How it is set |
-| ---- | ----- | ------------- |
-| Orchestrator (you) | **Grok 4.5** | Session model picker (user may override) |
-| `/implementer`, `/verifier` | **Composer 2.5 slow** | `.cursor/agents/*.md` → `model: composer-2.5[fast=false]` |
+| Role                        | Model                             | Source                            |
+| --------------------------- | --------------------------------- | --------------------------------- |
+| You (orchestrator)          | Session picker (default Grok 4.5) | User-selected                     |
+| `/implementer`, `/verifier` | `composer-2.5[fast=false]`        | `.cursor/agents/*.md` frontmatter |
 
-**Composer slow** = standard (non-fast) Composer 2.5. Same as `composer-2.5[fast=false]` or `composer-2.5[]` in subagent frontmatter.
+When spawning subagents via Task (`implementer`, `verifier`, `explore`, or others):
 
-When delegating to `/implementer` or `/verifier` via Task:
-
-- **Omit `model`** on the Task call — the worker frontmatter pin selects slow Composer.
-- **Never** pass `model: composer-2.5-fast`, `model: composer-2.5`, `model: fast`, or any inline model — that overrides the pin and forces **fast**.
-- Use `subagent_type: implementer` or `subagent_type: verifier`, not `generalPurpose` with an inline Composer model.
-
-Built-in `explore` may use fast Composer by design; implementation and verification use the custom workers above.
+- **Omit `model`** — never pass `composer-2.5-fast`, `composer-2.5`, `fast`, or any inline model.
+- For `/implementer` and `/verifier`, omitting `model` lets frontmatter `composer-2.5[fast=false]` apply.
+- Use `subagent_type: implementer` or `verifier`, not `generalPurpose` with an inline Composer model.
 
 ## Orchestrator must not
 
 - Bulk-read or explore the codebase widely — delegate to built-in `explore`
 - Edit files or run state-changing commands — delegate to `/implementer`
 - Trust "done" without proof — delegate to `/verifier` before finishing
-- Pass `model` when spawning `/implementer` or `/verifier`
+- Pass `model` on Task calls (including `explore`)
 
 Exceptions: trivial fixes under ~10 lines total, or the user says "no subagents".
 
@@ -58,21 +47,20 @@ Prefer `/implementer` over `bash` whenever edits or environment changes are poss
 
 ## Invocation
 
-- Explicit: `/implementer [scoped brief]` and `/verifier [what to prove]`
-- Task tool: `subagent_type: implementer` or `verifier`, **no `model` field**
-- Parallel: send multiple Task calls in one message when subtasks are independent
+- `/implementer [scoped brief]`, `/verifier [what to prove]`
+- Task: `subagent_type: implementer` or `verifier`, **no `model` field**
+- Parallel Task calls in one message when subtasks are independent
 - Each brief must be self-contained (paths, scope, constraints, verification steps)
 
 ## Workflow
 
 1. Break work into independent subtasks.
-2. Delegate cohesive implementation to **one** `/implementer` — do not split work merely by file.
-3. Launch parallel subagents only when subtasks are genuinely independent.
+2. Delegate cohesive implementation to **one** `/implementer` — do not split merely by file.
+3. Parallelize only when subtasks are genuinely independent.
 4. Synthesize results; decide next steps.
 5. Before finishing, run `/verifier` unless the change is trivial.
 
-## Cost
+## Pins to keep
 
-- Subagents with `model: inherit` bill at **your orchestrator model's** rate.
-- Project workers pin `composer-2.5[fast=false]` — keep that pin; do not use `inherit` on workers.
-- Parallel subagents spend tokens in parallel; batch only when independent.
+- Do **not** use `model: inherit` on workers — that bills at your orchestrator rate.
+- Keep the frontmatter pin `composer-2.5[fast=false]`.

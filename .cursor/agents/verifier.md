@@ -2,7 +2,9 @@
 name: verifier
 description: >-
   Skeptically validates completed work. Always use before declaring a task done.
-  Runs on Composer 2.5 slow (frontmatter pin). Parent must omit Task inline model.
+  Runs relevant checks, inspects diffs, and reports what actually passed vs what
+  was only claimed. Runs on composer-2.5[fast=false] (frontmatter pin). Parent
+  must omit Task inline model.
 model: composer-2.5[fast=false]
 readonly: true
 ---

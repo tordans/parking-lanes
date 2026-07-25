@@ -34,21 +34,23 @@ Load [references/llm-resources.md](references/llm-resources.md) **only for the a
 
 Prefer installed skill names when present; otherwise fetch from git.
 
-| Area                                      | Skill                        | GitHub                                                                                                                         |
-| ----------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Rust/WASM geo                             | `rust-wasm-geo`              | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/rust-wasm-geo>                                                    |
-| Maps (react-map-gl)                       | `react-map-gl`               | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/react-map-gl>                                                     |
-| React TS patterns, useEffect discipline   | `react-dev`                  | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/react-dev>                                                        |
-| TanStack Start (boundaries, SSR, loaders) | `tanstack-start-conventions` | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/tanstack-start-conventions>                                       |
-| Router search params (UI routes)          | —                            | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/params-search-ui-vs-api.md> |
-| Router + Query loaders                    | —                            | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/router-and-query.md>        |
-| Devtools debug panel                      | —                            | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/devtools.md>                |
-| App folder layout                         | —                            | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/app-structure.md>           |
-| URL state (TanStack Router apps)          | `tanstack-start-conventions` | `params-search-ui-vs-api.md`                                                                                                   |
-| URL state (Next.js / legacy)              | `nuqs`                       | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/nuqs>                                                             |
-| Client global state                       | `zustand-state-management`   | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/zustand-state-management>                                         |
-| Prisma schema naming, migrations          | `prisma`                     | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/prisma>                                                           |
-| E2E / Playwright                          | `playwright-skill`           | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/playwright-skill>                                                 |
+| Area                                      | Skill                         | GitHub                                                                                                                              |
+| ----------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Rust/WASM geo                             | `rust-wasm-geo`               | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/rust-wasm-geo>                                                         |
+| Maps (react-map-gl)                       | `react-map-gl`                | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/react-map-gl>                                                          |
+| React TS patterns, useEffect discipline   | `react-dev`                   | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/react-dev>                                                             |
+| TanStack Router (search, loaders, Query)  | `tanstack-router-conventions` | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/tanstack-router-conventions>                                           |
+| Router search params (UI routes)          | —                             | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-router-conventions/references/params-search-ui-routes.md>     |
+| Router search serialization (pretty URLs) | —                             | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-router-conventions/references/router-search-serialization.md> |
+| Router + Query loaders                    | —                             | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-router-conventions/references/router-and-query.md>            |
+| Devtools debug panel                      | —                             | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-router-conventions/references/devtools.md>                    |
+| TanStack Start (boundaries, SSR, server)  | `tanstack-start-conventions`  | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/tanstack-start-conventions>                                            |
+| App folder layout (Start)                 | —                             | <https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/app-structure.md>                |
+| URL state (TanStack Router apps)          | `tanstack-router-conventions` | `params-search-ui-routes.md`                                                                                                        |
+| URL state (Next.js / legacy)              | `nuqs`                        | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/nuqs>                                                                  |
+| Client global state                       | `zustand-state-management`    | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/zustand-state-management>                                              |
+| Prisma schema naming, migrations          | `prisma`                      | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/prisma>                                                                |
+| E2E / Playwright                          | `playwright-skill`            | <https://github.com/FixMyBerlin/fixmyskills/tree/main/skills/playwright-skill>                                                      |
 
 ## Runtime and build
 
@@ -112,19 +114,19 @@ Component typing, Compiler, oxlint React rules, and useEffect discipline: skill 
 
 ## Data and state
 
-| Need                                | Choice                                                                                         |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Server / async data                 | TanStack Query — no raw `useEffect` fetch; Suspense where the router supports it               |
-| Forms (non-trivial)                 | TanStack Form                                                                                  |
-| Routing                             | TanStack Router / Start                                                                        |
-| Shareable URL state (TanStack apps) | Route `validateSearch` (Zod) — see `tanstack-start-conventions` → `params-search-ui-vs-api.md` |
-| Shareable URL state (Next.js)       | nuqs — see skill `nuqs`                                                                        |
-| High-frequency URL updates          | `@tanstack/react-pacer` — see <https://tanstack.com/pacer/latest>                              |
-| Global client state                 | Zustand (tkdodo patterns) — skill `zustand-state-management`                                   |
-| Local UI state                      | `useState`                                                                                     |
-| Prisma schema / migrations          | skill `prisma` — naming, relation fields, migrate workflows                                    |
+| Need                                | Choice                                                                                          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Server / async data                 | TanStack Query — no raw `useEffect` fetch; Suspense where the router supports it                |
+| Forms (non-trivial)                 | TanStack Form                                                                                   |
+| Routing                             | TanStack Router / Start                                                                         |
+| Shareable URL state (TanStack apps) | Route `validateSearch` (Zod) — see `tanstack-router-conventions` → `params-search-ui-routes.md` |
+| Shareable URL state (Next.js)       | nuqs — see skill `nuqs`                                                                         |
+| High-frequency URL updates          | `@tanstack/react-pacer` — see <https://tanstack.com/pacer/latest>                               |
+| Global client state                 | Zustand (tkdodo patterns) — skill `zustand-state-management`                                    |
+| Local UI state                      | `useState`                                                                                      |
+| Prisma schema / migrations          | skill `prisma` — naming, relation fields, migrate workflows                                     |
 
-Loader + Query integration: [router-and-query.md](https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-start-conventions/references/router-and-query.md).
+Loader + Query integration: [router-and-query.md](https://github.com/FixMyBerlin/fixmyskills/blob/main/skills/tanstack-router-conventions/references/router-and-query.md).
 
 ## Styling and UI
 
@@ -158,7 +160,7 @@ Turf vs WASM, crates, Vite wiring: skill `rust-wasm-geo`.
 
 ## CI (GitHub Actions)
 
-- PR dependency review: permissive `allow-licenses` (not deprecated `deny-licenses`) — template: [examples/ci.yml.template](examples/ci.yml.template)
+- PR dependency review: permissive `allow-licenses` (not deprecated `deny-licenses`); include `AGPL-3.0` and `AGPL-3.0-or-later` when the project is AGPL — template: [examples/ci.yml.template](examples/ci.yml.template)
 
 ## Tests and quality
 
@@ -177,7 +179,7 @@ flowchart TD
   maps -->|yes| reactMapGl[react-map-gl skill]
   maps -->|no| data{Server or URL state?}
   data -->|server| tanstackQuery[router-and-query.md]
-  data -->|URL TanStack| validateSearch[params-search-ui-vs-api.md]
+  data -->|URL TanStack| validateSearch[params-search-ui-routes.md]
   data -->|URL Next/shared| nuqsSkill[nuqs skill]
   data -->|client global| zustandSkill[zustand-state-management]
   maps -->|slow geo compute| rustWasm[rust-wasm-geo skill]

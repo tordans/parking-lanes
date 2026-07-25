@@ -1,13 +1,13 @@
 ---
 name: playwright-skill
-description: E2E testing and browser automation for TanStack Start apps (FMC/TILDA) and OSM map viewers. Use @playwright/test for committed suites/CI; agent-browser MCP (skill tech-stack) for agent exploration; this skill for smoke tests, stubbed auth, map hooks, Overpass fixtures (never live Overpass in CI), and quick /tmp scripts. Not for Next.js.
+description: E2E testing and browser automation for TanStack Start apps (FMC/TILDA). Use @playwright/test for committed suites/CI; agent-browser MCP (skill tech-stack) for agent exploration; this skill for smoke tests, stubbed auth, map hooks, and quick /tmp scripts. Not for Next.js.
 ---
 
 **Path resolution:** Discover `$SKILL_DIR` from where this file was loaded (plugin, global `~/.claude/skills/`, or project `.agents/skills/`).
 
 **Read the project’s `tests/README.md` first** — env vars, Docker, and scripts live there.
 
-**Related FMC skills:** `tanstack-start-auth` (sessions), `tanstack-start-conventions`.
+**Related FMC skills:** `tanstack-router-conventions` (routes/search), `tanstack-start-auth` (sessions), `tanstack-start-conventions`.
 
 ---
 
@@ -48,26 +48,6 @@ For in-repo work, **prefer project E2E** for anything that should regress. Use *
 | Maps (WebGL)                                 | `waitForMapLoad`, tile/network helpers, MapGrab | Annotated screenshots, `eval` |
 
 Exploration findings that should stick → add `tests/*.spec.ts` and run `bun run e2e`.
-
----
-
-## Overpass / OSM data — fixtures only (mandatory)
-
-**Never hit live Overpass interpreters in default E2E or CI.** Map pan/zoom triggers bbox fetches (`downloadBbox` in `src/utils/data-client.ts` → Overpass URLs in `src/utils/links.ts`). Unmocked suites hammer public instances (`overpass-api.de`, Mail.ru) and flake on 429/timeouts.
-
-| Mode                      | Overpass                         |
-| ------------------------- | -------------------------------- |
-| **Default E2E / CI**      | `page.route()` → committed JSON in `tests/fixtures/overpass/` |
-| **Manual debug only**     | `RUN_LIVE_OVERPASS_E2E=1` (never in CI) |
-
-**Agents:** When adding or running E2E for street-space-editor (or any Overpass-backed viewer):
-
-1. Add or reuse a fixture under `tests/fixtures/overpass/` (small bbox; capture once locally — not in a test).
-2. Wire `installOverpassFixtures(page)` via a shared Playwright fixture or `beforeEach`.
-3. Import `test` from the base fixture in map/data specs — do not `@playwright/test` directly unless live Overpass is explicitly opted in.
-4. Mock editor `…/api/0.6/map?bbox=` separately when testing editor mode.
-
-Full patterns, host regex, base fixture, and capture steps: [overpass-fixtures.md](references/overpass-fixtures.md).
 
 ---
 
@@ -301,8 +281,6 @@ Multiple headers: `PW_EXTRA_HEADERS='{"X-Automated-By":"playwright-skill"}'`.
 
 **Defaults:** Use `headless: false` for ad-hoc unless the user asks for headless. Prefer semantic locators in ad-hoc scripts too.
 
-**Overpass:** Ad-hoc scripts must not drive the app against live Overpass either — use fixtures or a local mock (see [overpass-fixtures.md](references/overpass-fixtures.md)).
-
 **Helpers** (`lib/helpers.js`): `detectDevServers`, `createContext` / `getExtraHeadersFromEnv`, `takeScreenshot`. Avoid custom retry click helpers — use Playwright auto-waiting.
 
 ---
@@ -316,7 +294,6 @@ Multiple headers: `PW_EXTRA_HEADERS='{"X-Automated-By":"playwright-skill"}'`.
 - [ ] Stubbed auth fixtures if admin or role-gated routes need login
 - [ ] `collectConsoleErrors` / `collectServerErrors` on critical suites
 - [ ] Map: `mapLoaded` event + `waitForMapLoad` + optional `verifyMapNetworkRequests` (MapGrab if clicking the map)
-- [ ] **Overpass:** `tests/fixtures/overpass/*.json` + `installOverpassFixtures` — no live interpreter calls in CI (see [overpass-fixtures.md](references/overpass-fixtures.md))
 
 ---
 

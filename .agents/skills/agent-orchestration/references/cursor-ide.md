@@ -1,6 +1,6 @@
 # Agent orchestration — Cursor IDE
 
-**Grok 4.5** (default orchestrator) plans in Cursor Agent chat. **Composer 2.5 slow** workers run as subagents with explicit `model:` pins in `.cursor/agents/`. Other orchestrators (Fable 5, Sonnet 5, GPT-5.6 Sol) work the same way.
+**Grok 4.5** (default orchestrator) plans in Cursor Agent chat. **`composer-2.5[fast=false]`** workers run as subagents with explicit `model:` pins in `.cursor/agents/`. Other orchestrators (Fable 5, Sonnet 5, GPT-5.6 Sol) work the same way.
 
 ---
 
@@ -43,14 +43,14 @@ Reset templates: re-run `init-cursor.sh` (overwrites).
 
 ## Picking an orchestrator
 
-| Model           | Good for                                                                                                                          |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Model           | Good for                                                                                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Grok 4.5** ⭐ | **Default.** Long-running, multi-step work; Cursor's first-party orchestrator (shares included usage pool with Composer). Not available in EU. |
-| **Fable 5**     | Complex, long-running, multi-step agentic work; highest capability                                                                |
-| **Sonnet 5**    | Everyday coding with strong multi-step reasoning and reliable tool use                                                            |
-| **GPT-5.6 Sol** | Long-running agent work; can over-delegate on mid-sized tasks — keep one `/implementer` per cohesive task                         |
+| **Fable 5**     | Complex, long-running, multi-step agentic work; highest capability                                                                             |
+| **Sonnet 5**    | Everyday coding with strong multi-step reasoning and reliable tool use                                                                         |
+| **GPT-5.6 Sol** | Long-running agent work; can over-delegate on mid-sized tasks — keep one `/implementer` per cohesive task                                      |
 
-Workers stay on **Composer 2.5 slow** (`composer-2.5[fast=false]`) regardless of orchestrator choice.
+Workers stay on **`composer-2.5[fast=false]`** regardless of orchestrator choice.
 
 ---
 
@@ -64,9 +64,9 @@ Workers stay on **Composer 2.5 slow** (`composer-2.5[fast=false]`) regardless of
 Fix the parking map zoom bug.
 ```
 
-The rule is the complete orchestration instruction. Do **not** paste delegation boilerplate ("orchestrate only", "no Task inline model", "slow", etc.) — those live in `.cursor/rules/orchestrator-worker.md`.
+The rule is the complete orchestration instruction. Do **not** paste delegation boilerplate ("orchestrate only", "omit Task model", etc.) — those live in `.cursor/rules/orchestrator-worker.md`.
 
-Workers use **Composer 2.5 slow** automatically via `.cursor/agents/` frontmatter.
+Workers use **`composer-2.5[fast=false]`** automatically via `.cursor/agents/` frontmatter.
 
 **Skip** `@orchestrator-worker` for trivial one-file edits — subagent startup costs more than inline work.
 
@@ -90,22 +90,22 @@ Orchestrator may inline only trivial fixes (~10 lines) or when user says "no sub
 
 ## Worker model pins
 
-`.cursor/agents/` frontmatter: `model: composer-2.5[fast=false]` (Composer **slow** / standard variant). Equivalent: `composer-2.5[]`. Verifier adds `readonly: true`. **Avoid** `inherit` on workers — bills at your orchestrator's rate.
+`.cursor/agents/` frontmatter: `model: composer-2.5[fast=false]` (non-fast / standard Composer). Equivalent: `composer-2.5[]`. Verifier adds `readonly: true`. **Avoid** `inherit` on workers — bills at your orchestrator's rate.
 
 ### Task tool vs frontmatter (common fast-mode bug)
 
-The Task tool's inline `model` parameter only exposes **`composer-2.5-fast`** for Composer. Passing any inline `model` on `/implementer` or `/verifier` **overrides** the frontmatter pin and forces fast — even if the user says "slow" in the prompt.
+The Task tool's inline `model` parameter only exposes **`composer-2.5-fast`** for Composer. Passing any inline `model` on `/implementer` or `/verifier` **overrides** the frontmatter pin and forces fast — saying "slow" in the prompt does nothing.
 
-**Fix:** when spawning custom workers, use `subagent_type: implementer` or `verifier` and **omit `model` entirely**. The frontmatter pin then selects slow Composer by default; no per-task "slow" callout needed.
+**Fix:** when spawning custom workers, use `subagent_type: implementer` or `verifier` and **omit `model` entirely**. The frontmatter pin then applies `composer-2.5[fast=false]`.
 
-| Spawn style | `model` on Task call | Result |
-| ----------- | -------------------- | ------ |
-| `/implementer`, no inline model | omitted | **slow** (frontmatter pin) ✅ |
-| Task + `model: composer-2.5-fast` | set | **fast** ❌ |
-| Task + `model: composer-2.5` or `[fast=false]` | set | rejected or unpredictable ❌ |
-| `generalPurpose` + inline Composer | set | **fast** ❌ |
+| Spawn style                                    | `model` on Task call | Result                        |
+| ---------------------------------------------- | -------------------- | ----------------------------- |
+| `/implementer`, no inline model                | omitted              | `composer-2.5[fast=false]` ✅ |
+| Task + `model: composer-2.5-fast`              | set                  | **fast** ❌                   |
+| Task + `model: composer-2.5` or `[fast=false]` | set                  | rejected or unpredictable ❌  |
+| `generalPurpose` + inline Composer             | set                  | **fast** ❌                   |
 
-Built-in `explore` intentionally uses fast Composer for parallel search. Implementation and verification must use the custom workers above.
+Built-in `explore` is for search only. Do **not** pass Task `model: composer-2.5-fast` (or any inline model) for explore, implementer, or verifier — omit `model` so workers keep `composer-2.5[fast=false]`.
 
 Parallel subagents = parallel token spend. Cursor may fall back from a pinned worker model when blocked by admin, unavailable Max Mode, or plan limits.
 
