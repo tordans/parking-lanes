@@ -49,6 +49,24 @@ describe('mapSearchSchema', () => {
     ).toEqual({ debug: true })
   })
 
+  test('serializeMapSearch omits default focus values', () => {
+    expect(serializeMapSearch({ focus: { parking: 'all', width: 'all' } })).toEqual({})
+    expect(serializeMapSearch({ focus: { parking: 'noSurface' } })).toEqual({
+      focus: { parking: 'noSurface' },
+    })
+    expect(serializeMapSearch({ focus: { width: 'bicycle' } })).toEqual({
+      focus: { width: 'bicycle' },
+    })
+  })
+
+  test('parses focus search param', () => {
+    expect(
+      mapSearchSchema.parse({
+        focus: { parking: 'noSurface', width: 'car' },
+      }).focus,
+    ).toEqual({ parking: 'noSurface', width: 'car' })
+  })
+
   test('coerces debug search param to boolean', () => {
     expect(mapSearchSchema.parse({ debug: 1 }).debug).toBe(true)
     expect(mapSearchSchema.parse({ debug: '1' }).debug).toBe(true)

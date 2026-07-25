@@ -2,6 +2,7 @@ import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { ParkingConditions } from '../../../utils/types/conditions'
 import type { Side } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
+import { isMissingSurfaceForSide } from '../domain/missing-surface'
 import { getSideConditions } from '../domain/side-conditions'
 import { laneStyleByZoom } from '../lane-styles'
 import { parkingSideColors } from '../side-colors'
@@ -26,7 +27,7 @@ function toCoords(nodeCoords: Record<number, number[]>, way: OsmWay): [number, n
 function createLaneFeature(
   coords: [number, number][],
   conditions: ParkingConditions | undefined,
-  side: string,
+  side: Side,
   way: OsmWay,
   offset: number,
   isMajor: boolean,
@@ -47,6 +48,7 @@ function createLaneFeature(
       osmType: way.type,
       osmId: way.id,
       isMajor,
+      missingSurface: isMissingSurfaceForSide(way.tags, side) ? 1 : 0,
     },
   }
 }

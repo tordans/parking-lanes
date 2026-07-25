@@ -10,6 +10,7 @@ import {
   mapToolbarButtonGroupClassName,
 } from '../map/mobileMapChrome.const'
 import { serializeMapSearch } from '../map/search-schema'
+import { FocusFilterButton } from './FocusFilterButton'
 import { MapToolbarLoadingIndicator } from './MapToolbarLoadingIndicator'
 import { SplitWayButton } from './SplitWayButton'
 
@@ -64,6 +65,7 @@ export function ModeSwitcher() {
         })}
       </div>
       <SplitWayButton />
+      <FocusFilterButton />
       <MapToolbarLoadingIndicator />
     </div>
   )

@@ -6,12 +6,14 @@ import {
   type RoadWidthKind,
   type RoadWidthSource,
 } from '../domain/road-width-from-tags'
+import { classifyWidthInfra, type WidthInfraClass } from '../domain/width-infra-class'
 import { isWidthModeLinkWay } from '../domain/width-link-filter'
 
 export type WidthHighwayProperties = {
   osmId: number
   osmType: 'way'
   highway: string
+  infra: WidthInfraClass
   roadWidthM: number
   widthSource: RoadWidthSource
   widthConfidence: string
@@ -71,6 +73,7 @@ export function parseHighwayFeaturesFromData(
         osmId: way.id,
         osmType: 'way',
         highway: way.tags.highway,
+        infra: classifyWidthInfra(way.tags),
         roadWidthM: width.value,
         widthSource: width.source,
         widthConfidence: width.confidence,

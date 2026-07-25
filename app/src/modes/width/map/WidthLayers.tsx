@@ -1,4 +1,7 @@
+import { useMemo } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { focusCaseColor, focusCaseOpacity } from '../../../shell/map/map-focus-paint'
+import { useMapFocus } from '../../../shell/map/use-map-focus'
 import type { HandleGeometry } from '../domain/handle-geometry'
 import { lineWidthFromMeters, selectedCenterlineWidth } from '../domain/meters-to-pixels'
 import type { WidthHighwayCollection } from './parse-highways'
@@ -6,24 +9,39 @@ import { WIDTH_KIND_COLORS } from './width-colors'
 
 const lineLayout = { 'line-cap': 'round', 'line-join': 'round' } as const
 
-const bandPaint = {
-  'line-color': [
-    'match',
-    ['get', 'widthKind'],
-    'explicit',
-    WIDTH_KIND_COLORS.explicit,
-    'default',
-    WIDTH_KIND_COLORS.default,
-    WIDTH_KIND_COLORS.default,
-  ],
-  'line-opacity': 0.55,
-  'line-width': lineWidthFromMeters('roadWidthM'),
-} as Record<string, unknown>
+const bandActiveOpacity = 0.55
+
+const widthKindColor = [
+  'match',
+  ['get', 'widthKind'],
+  'explicit',
+  WIDTH_KIND_COLORS.explicit,
+  'default',
+  WIDTH_KIND_COLORS.default,
+  WIDTH_KIND_COLORS.default,
+] as const
+
+function buildBandPaint(focus: string) {
+  if (focus === 'all') {
+    return {
+      'line-color': widthKindColor,
+      'line-opacity': bandActiveOpacity,
+      'line-width': lineWidthFromMeters('roadWidthM'),
+    } as Record<string, unknown>
+  }
+
+  const matchExpr = ['==', ['get', 'infra'], focus]
+
+  return {
+    'line-color': focusCaseColor(matchExpr, widthKindColor),
+    'line-opacity': focusCaseOpacity(matchExpr, bandActiveOpacity),
+    'line-width': lineWidthFromMeters('roadWidthM'),
+  } as Record<string, unknown>
+}
 
 const hitAreaPaint = {
   'line-color': '#000',
   'line-opacity': 0,
-  // Extra metres (not px): zoom must stay a top-level interpolate input.
   'line-width': lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 } as Record<string, unknown>
 
@@ -64,6 +82,9 @@ type Props = {
 }
 
 export function WidthLayers({ highways, selectedOsmId, selectedCenterline, handles }: Props) {
+  const { focus } = useMapFocus()
+  const bandPaint = useMemo(() => buildBandPaint(focus), [focus])
+
   const unselectedHighways: WidthHighwayCollection = selectedOsmId
     ? {
         type: 'FeatureCollection',

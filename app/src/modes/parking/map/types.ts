@@ -9,6 +9,7 @@ export interface ParkingFeatureProperties {
   osmType: string
   osmId: number
   isMajor?: boolean
+  missingSurface?: 0 | 1
   nodeId?: number
   wayId?: number
 }
