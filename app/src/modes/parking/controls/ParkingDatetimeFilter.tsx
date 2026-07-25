@@ -1,13 +1,13 @@
 import dayjs from 'dayjs'
-import { Field, Label } from '../../components/catalyst/fieldset'
-import { Input } from '../../components/catalyst/input'
-import { useActiveMode, useAppActions, useDatetime } from '../app-store'
+import { Field, Label } from '../../../components/catalyst/fieldset'
+import { Input } from '../../../components/catalyst/input'
+import { useActiveMode, useAppActions, useDatetime } from '../../../shell/app-store'
 
 /**
  * Parking-only filter: colors conditional parking access by date/time.
  * Renders nothing outside parking mode.
  */
-export function DatetimeInput({ fullWidth = false }: { fullWidth?: boolean }) {
+export function ParkingDatetimeFilter({ fullWidth = false }: { fullWidth?: boolean }) {
   const activeMode = useActiveMode()
   const datetime = useDatetime()
   const { setDatetime } = useAppActions()

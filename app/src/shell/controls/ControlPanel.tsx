@@ -3,12 +3,12 @@ import { useSearch } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
 import { useState } from 'react'
 import { useSelectedOsmRef } from '../../modes/parking'
+import { ParkingDatetimeFilter } from '../../modes/parking/controls/ParkingDatetimeFilter'
 import type { StreetSpaceMode } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { AccountCallout } from './AccountCallout'
 import { AppAboutContent } from './AppAboutContent'
-import { DatetimeInput } from './Datetime'
 import { DebugUserSettingsSection } from './DebugPanelContent'
 import { PanelModeSwitcher, type MapPanelMode } from './PanelModeSwitcher'
 import { PanelSectionDivider } from './PanelSectionDivider'
@@ -31,7 +31,7 @@ export function SettingsPanelContent(props: {
         <h3 className="text-sm font-semibold text-zinc-900">Account</h3>
         <AccountCallout />
       </section>
-      <DatetimeInput fullWidth />
+      <ParkingDatetimeFilter fullWidth />
       {showSaveButton ? <SaveButton onClick={props.onSave} /> : null}
       {props.showDebug ? <DebugUserSettingsSection /> : null}
     </div>
