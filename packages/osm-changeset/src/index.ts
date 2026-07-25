@@ -1,4 +1,10 @@
-export { countChanges, removeChangedWay, upsertChangedNode, upsertChangedWay } from './changes'
+export {
+  countChanges,
+  removeChangedWay,
+  upsertChangedNode,
+  upsertChangedRelation,
+  upsertChangedWay,
+} from './changes'
 export {
   applyUploadResult,
   changesStoreToOsmChange,

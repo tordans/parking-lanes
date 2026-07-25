@@ -1,8 +1,9 @@
-import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 import {
   createOsmChangeXml,
   type OsmChange,
   type OsmNode as OsmApiNode,
+  type OsmRelation as OsmApiRelation,
   type OsmWay as OsmApiWay,
   type UploadResult,
 } from 'osm-api'
@@ -37,15 +38,31 @@ function nodeToOsmApiFeature(node: OsmNode): OsmApiNode {
   }
 }
 
+function relationToOsmApiFeature(relation: OsmRelation): OsmApiRelation {
+  return {
+    type: 'relation',
+    id: relation.id,
+    version: relation.version ?? 0,
+    members: relation.members,
+    tags: relation.tags,
+    changeset: relation.changeset ?? 0,
+    timestamp: relation.timestamp ?? '',
+    user: relation.user ?? '',
+    uid: relation.uid ?? 0,
+  }
+}
+
 export function changesStoreToOsmChange(changesStore: ChangesStore): OsmChange {
   return {
     create: [
       ...changesStore.create.node.map(nodeToOsmApiFeature),
       ...changesStore.create.way.map(wayToOsmApiFeature),
+      ...changesStore.create.relation.map(relationToOsmApiFeature),
     ],
     modify: [
       ...changesStore.modify.node.map(nodeToOsmApiFeature),
       ...changesStore.modify.way.map(wayToOsmApiFeature),
+      ...changesStore.modify.relation.map(relationToOsmApiFeature),
     ],
     delete: [],
   }
@@ -70,6 +87,7 @@ export function applyUploadResult(changesStore: ChangesStore, result: UploadResu
     const diffResult = result[Number(changesetId)].diffResult
     const nodeDiff = diffResult.node
     const wayDiff = diffResult.way
+    const relationDiff = diffResult.relation
 
     if (nodeDiff) {
       for (const [oldIdStr, mapping] of Object.entries(nodeDiff)) {
@@ -87,20 +105,36 @@ export function applyUploadResult(changesStore: ChangesStore, result: UploadResu
       }
     }
 
-    if (!wayDiff) continue
+    if (wayDiff) {
+      for (const [oldIdStr, mapping] of Object.entries(wayDiff)) {
+        const oldId = Number(oldIdStr)
+        const way =
+          changesStore.modify.way.find((x) => x.id === oldId) ??
+          changesStore.create.way.find((x) => x.id === oldId)
 
-    for (const [oldIdStr, mapping] of Object.entries(wayDiff)) {
-      const oldId = Number(oldIdStr)
-      const way =
-        changesStore.modify.way.find((x) => x.id === oldId) ??
-        changesStore.create.way.find((x) => x.id === oldId)
+        if (!way) continue
 
-      if (!way) continue
+        way.id = mapping.newId
+        way.version = mapping.newVersion
 
-      way.id = mapping.newId
-      way.version = mapping.newVersion
+        if (oldId !== mapping.newId) changedIdMap[String(oldId)] = String(mapping.newId)
+      }
+    }
 
-      if (oldId !== mapping.newId) changedIdMap[String(oldId)] = String(mapping.newId)
+    if (relationDiff) {
+      for (const [oldIdStr, mapping] of Object.entries(relationDiff)) {
+        const oldId = Number(oldIdStr)
+        const relation =
+          changesStore.modify.relation.find((x) => x.id === oldId) ??
+          changesStore.create.relation.find((x) => x.id === oldId)
+
+        if (!relation) continue
+
+        relation.id = mapping.newId
+        relation.version = mapping.newVersion
+
+        if (oldId !== mapping.newId) changedIdMap[String(oldId)] = String(mapping.newId)
+      }
     }
   }
 
@@ -110,12 +144,19 @@ export function applyUploadResult(changesStore: ChangesStore, result: UploadResu
     for (const way of [...changesStore.modify.way, ...changesStore.create.way]) {
       way.nodes = way.nodes.map((nodeId) => (nodeId === oldId ? newId : nodeId))
     }
+    for (const relation of [...changesStore.modify.relation, ...changesStore.create.relation]) {
+      relation.members = relation.members.map((member) =>
+        member.ref === oldId ? { ...member, ref: newId } : member,
+      )
+    }
   }
 
   changesStore.modify.way = []
   changesStore.create.way = []
   changesStore.modify.node = []
   changesStore.create.node = []
+  changesStore.modify.relation = []
+  changesStore.create.relation = []
 
   return changedIdMap
 }

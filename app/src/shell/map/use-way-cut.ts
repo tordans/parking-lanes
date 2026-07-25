@@ -1,11 +1,15 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import { wayCanSplit, wayHasSplittableInterior } from '@osm-editor-kit/osm-way-edit'
+import {
+  assessWaySplitRegardingRelations,
+  wayCanSplit,
+  wayHasSplittableInterior,
+} from '@osm-editor-kit/osm-way-edit'
 import { useQueryClient } from '@tanstack/react-query'
 import { lineString, point } from '@turf/helpers'
 import nearestPointOnLine from '@turf/nearest-point-on-line'
 import { useCallback, useRef } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { addChangedEntity, addChangedNode } from '../../utils/changes-store'
+import { addChangedEntity, addChangedNode, addChangedRelation } from '../../utils/changes-store'
 import { AuthState, useAppActions, useAuthState } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
 import { useOsmCoverageQuery } from './osm-coverage-query'
@@ -31,7 +35,8 @@ const CUT_PROXIMITY_PX = 15
 export type SplitWayDisabledReason =
   | 'sign-in'
   | 'select-way'
-  | 'in-relation'
+  | 'parent_incomplete'
+  | 'simple_roundabout'
   | 'too-few-nodes'
   | null
 
@@ -53,9 +58,16 @@ export function useSplitWayAvailability(): {
     disabledReason = 'sign-in'
   } else if (!selectedWay) {
     disabledReason = 'select-way'
-  } else if (graph?.waysInRelation[selectedWay.id]) {
-    disabledReason = 'in-relation'
-  } else if (!wayCanSplit(selectedWay)) {
+  } else if (graph) {
+    const relationAssessment = assessWaySplitRegardingRelations(graph, selectedWay.id)
+    if (relationAssessment === 'parent_incomplete') {
+      disabledReason = 'parent_incomplete'
+    } else if (relationAssessment === 'simple_roundabout') {
+      disabledReason = 'simple_roundabout'
+    }
+  }
+
+  if (disabledReason == null && selectedWay && !wayCanSplit(selectedWay)) {
     disabledReason = 'too-few-nodes'
   }
 
@@ -72,8 +84,10 @@ export function splitWayDisabledTooltip(reason: SplitWayDisabledReason): string 
       return 'Sign in to split a way'
     case 'select-way':
       return 'Select a way to split'
-    case 'in-relation':
-      return 'Ways that are members of a relation can’t be split here'
+    case 'parent_incomplete':
+      return 'Parent relation neighbors or vias are not loaded — pan the map to load more OSM data'
+    case 'simple_roundabout':
+      return 'This roundabout is part of a larger relation — remove it from the relation first'
     case 'too-few-nodes':
       return 'This way needs at least two nodes to split'
     default:
@@ -198,13 +212,13 @@ export function useWayCutHandler() {
   const activateCutForWay = useCallback(
     (osm: OsmWay) => {
       if (authState !== AuthState.success) return
-      if (graph?.waysInRelation[osm.id]) return
+      if (graph && assessWaySplitRegardingRelations(graph, osm.id) !== 'ok') return
       if (!wayCanSplit(osm)) return
 
       const markers = buildCutMarkers(osm, graph?.nodeCoords ?? {})
       activateCut({ type: 'FeatureCollection', features: markers })
     },
-    [activateCut, authState, graph?.nodeCoords, graph?.waysInRelation],
+    [activateCut, authState, graph],
   )
 
   const commitSplit = useCallback(
@@ -213,7 +227,15 @@ export function useWayCutHandler() {
         addChangedNode(result.newNode)
       }
       addChangedEntity(result.newWay, { source: 'split' })
-      const changesCount = addChangedEntity(result.oldWay, { original, source: 'split' })
+      let changesCount = addChangedEntity(result.oldWay, { original, source: 'split' })
+
+      const graphRelations = graph?.relations ?? {}
+      for (const relation of result.modifiedRelations) {
+        changesCount = addChangedRelation(relation, {
+          original: graphRelations[relation.id] ?? null,
+        })
+      }
+
       setChangesCount(changesCount)
 
       if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === wayId) {
@@ -222,7 +244,7 @@ export function useWayCutHandler() {
 
       cancelCut()
     },
-    [cancelCut, selectedOsmRef, setChangesCount, updateFeatureRef],
+    [cancelCut, graph?.relations, selectedOsmRef, setChangesCount, updateFeatureRef],
   )
 
   const handleCutMarkerClick = useCallback(

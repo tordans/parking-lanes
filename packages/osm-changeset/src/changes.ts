@@ -1,4 +1,4 @@
-import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangesStore } from './changes-store'
 
 export function upsertChangedWay(store: ChangesStore, osm: OsmWay): void {
@@ -25,6 +25,18 @@ export function upsertChangedNode(store: ChangesStore, osm: OsmNode): void {
   }
 }
 
+export function upsertChangedRelation(store: ChangesStore, osm: OsmRelation): void {
+  if (osm.id > 0) {
+    const index = store.modify.relation.findIndex((x) => x.id === osm.id)
+    if (index > -1) store.modify.relation[index] = osm
+    else store.modify.relation.push(osm)
+  } else {
+    const index = store.create.relation.findIndex((x) => x.id === osm.id)
+    if (index > -1) store.create.relation[index] = osm
+    else store.create.relation.push(osm)
+  }
+}
+
 export function removeChangedWay(store: ChangesStore, wayId: number): OsmWay | null {
   const bucket = wayId > 0 ? store.modify.way : store.create.way
   const index = bucket.findIndex((x) => x.id === wayId)
@@ -38,6 +50,8 @@ export function countChanges(store: ChangesStore): number {
     store.modify.way.length +
     store.create.way.length +
     store.modify.node.length +
-    store.create.node.length
+    store.create.node.length +
+    store.modify.relation.length +
+    store.create.relation.length
   )
 }

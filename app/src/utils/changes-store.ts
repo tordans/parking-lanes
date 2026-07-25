@@ -3,9 +3,10 @@ import {
   createEmptyChangesStore,
   removeChangedWay,
   upsertChangedNode,
+  upsertChangedRelation,
   upsertChangedWay,
 } from '@osm-editor-kit/osm-changeset'
-import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangeSource, diffWayTags, type TagChange, wayDisplayName } from './changeset-message'
 
 export type PendingChange = {
@@ -21,9 +22,14 @@ type PendingMeta = {
   sources: Set<ChangeSource>
 }
 
+type PendingRelationMeta = {
+  original: OsmRelation | null
+}
+
 export const changesStore = createEmptyChangesStore()
 
 const pendingMeta = new Map<number, PendingMeta>()
+const pendingRelationMeta = new Map<number, PendingRelationMeta>()
 
 function cloneWay(way: OsmWay): OsmWay {
   return {
@@ -38,6 +44,29 @@ export function getPendingWay(wayId: number): OsmWay | null {
   const modified = changesStore.modify.way.find((way) => way.id === wayId)
   if (modified) return modified
   return changesStore.create.way.find((way) => way.id === wayId) ?? null
+}
+
+function cloneRelation(relation: OsmRelation): OsmRelation {
+  return {
+    ...relation,
+    members: relation.members.map((member) => ({ ...member })),
+    tags: { ...relation.tags },
+  }
+}
+
+export function addChangedRelation(
+  relation: OsmRelation,
+  options: { original?: OsmRelation | null } = {},
+): number {
+  const existing = pendingRelationMeta.get(relation.id)
+  if (!existing) {
+    pendingRelationMeta.set(relation.id, {
+      original: options.original ? cloneRelation(options.original) : null,
+    })
+  }
+
+  upsertChangedRelation(changesStore, relation)
+  return countChanges(changesStore)
 }
 
 export function addChangedEntity(
@@ -107,6 +136,9 @@ export function clearChanges(): number {
   changesStore.create.way.length = 0
   changesStore.modify.node.length = 0
   changesStore.create.node.length = 0
+  changesStore.modify.relation.length = 0
+  changesStore.create.relation.length = 0
   pendingMeta.clear()
+  pendingRelationMeta.clear()
   return 0
 }
