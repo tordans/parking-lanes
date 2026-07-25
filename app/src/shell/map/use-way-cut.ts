@@ -1,24 +1,38 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import { wayHasSplittableInterior } from '@osm-editor-kit/osm-way-edit'
+import { wayCanSplit, wayHasSplittableInterior } from '@osm-editor-kit/osm-way-edit'
 import { useQueryClient } from '@tanstack/react-query'
+import { lineString, point } from '@turf/helpers'
+import nearestPointOnLine from '@turf/nearest-point-on-line'
 import { useCallback, useRef } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { addChangedEntity } from '../../utils/changes-store'
+import { addChangedEntity, addChangedNode } from '../../utils/changes-store'
 import { AuthState, useAppActions, useAuthState } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
 import { useOsmCoverageQuery } from './osm-coverage-query'
 import { getOsmWayFromSession } from './osm-session-way-edits'
-import { cutOsmWayInSession } from './way-cut-edits'
-import { useWayCutActions, useWayCutMarkers, type WayCutMarkerFeature } from './way-cut-store'
+import {
+  cutOsmWayInSession,
+  insertNodeAndCutOsmWayInSession,
+  type CutOsmWayResult,
+} from './way-cut-edits'
+import {
+  useIsCutActive,
+  useWayCutActions,
+  useWayCutPreview,
+  type WayCutMarkerFeature,
+  type WayCutPreview,
+} from './way-cut-store'
 
 export const WAY_CUT_MARKERS_HITAREA_LAYER_ID = 'way-cut-markers-hitarea-layer'
 export const WAY_CUT_MARKERS_LAYER_PREFIX = 'way-cut-markers'
+export const WAY_CUT_PREVIEW_HITAREA_LAYER_ID = 'way-cut-preview-hitarea-layer'
+const CUT_PROXIMITY_PX = 15
 
 export type SplitWayDisabledReason =
   | 'sign-in'
   | 'select-way'
   | 'in-relation'
-  | 'no-interior-node'
+  | 'too-few-nodes'
   | null
 
 export function useSplitWayAvailability(): {
@@ -28,7 +42,7 @@ export function useSplitWayAvailability(): {
 } {
   const authState = useAuthState()
   const selectedOsmRef = useSelectedOsmRef()
-  const cutMarkers = useWayCutMarkers()
+  const isCutActive = useIsCutActive()
   const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
 
   const selectedWay =
@@ -41,14 +55,14 @@ export function useSplitWayAvailability(): {
     disabledReason = 'select-way'
   } else if (graph?.waysInRelation[selectedWay.id]) {
     disabledReason = 'in-relation'
-  } else if (!wayHasSplittableInterior(selectedWay)) {
-    disabledReason = 'no-interior-node'
+  } else if (!wayCanSplit(selectedWay)) {
+    disabledReason = 'too-few-nodes'
   }
 
   return {
     disabledReason,
     selectedWay,
-    isCutActive: cutMarkers.features.length > 0,
+    isCutActive,
   }
 }
 
@@ -60,106 +74,344 @@ export function splitWayDisabledTooltip(reason: SplitWayDisabledReason): string 
       return 'Select a way to split'
     case 'in-relation':
       return 'Ways that are members of a relation can’t be split here'
-    case 'no-interior-node':
-      return 'This way has no interior nodes to split at'
+    case 'too-few-nodes':
+      return 'This way needs at least two nodes to split'
     default:
       return null
   }
+}
+
+function buildCutMarkers(
+  osm: OsmWay,
+  nodeCoords: Record<number, [number, number]>,
+): WayCutMarkerFeature[] {
+  if (!wayHasSplittableInterior(osm)) return []
+
+  return osm.nodes.slice(1, -1).flatMap((nd): WayCutMarkerFeature[] => {
+    const coord = nodeCoords[nd]
+    if (!coord) return []
+    return [
+      {
+        type: 'Feature',
+        id: `cut-${nd}`,
+        geometry: { type: 'Point', coordinates: [coord[1]!, coord[0]!] },
+        properties: {
+          featureId: `cut-${nd}`,
+          kind: 'cut-marker',
+          color: '#fffc7e',
+          weight: 8,
+          osmType: 'node',
+          osmId: nd,
+          nodeId: nd,
+          wayId: osm.id,
+        },
+      },
+    ]
+  })
+}
+
+function wayLineCoords(
+  way: OsmWay,
+  nodeCoords: Record<number, [number, number]>,
+): [number, number][] | null {
+  const coords = way.nodes.flatMap((nodeId): [number, number][] => {
+    const coord = nodeCoords[nodeId]
+    if (!coord) return []
+    return [[coord[1]!, coord[0]!]]
+  })
+  return coords.length >= 2 ? coords : null
+}
+
+function findNearbyInteriorNode(
+  way: OsmWay,
+  nodeCoords: Record<number, [number, number]>,
+  lngLat: { lng: number; lat: number },
+  project: (lngLat: { lng: number; lat: number }) => { x: number; y: number },
+): number | null {
+  const mousePx = project(lngLat)
+  for (const nodeId of way.nodes.slice(1, -1)) {
+    const coord = nodeCoords[nodeId]
+    if (!coord) continue
+    const nodePx = project({ lng: coord[1]!, lat: coord[0]! })
+    if (Math.hypot(mousePx.x - nodePx.x, mousePx.y - nodePx.y) <= CUT_PROXIMITY_PX) {
+      return nodeId
+    }
+  }
+  return null
+}
+
+function projectCutPreview(
+  way: OsmWay,
+  nodeCoords: Record<number, [number, number]>,
+  lngLat: { lng: number; lat: number },
+  project: (lngLat: { lng: number; lat: number }) => { x: number; y: number },
+): WayCutPreview | null {
+  const coords = wayLineCoords(way, nodeCoords)
+  if (!coords) return null
+
+  const nearest = nearestPointOnLine(lineString(coords), point([lngLat.lng, lngLat.lat]))
+  const [lng, lat] = nearest.geometry.coordinates as [number, number]
+  const mousePx = project(lngLat)
+  const nearestPx = project({ lng, lat })
+  const distPx = Math.hypot(mousePx.x - nearestPx.x, mousePx.y - nearestPx.y)
+  if (distPx > CUT_PROXIMITY_PX) return null
+
+  const segmentIndex = nearest.properties.index ?? 0
+  return { lng, lat, segmentIndex }
+}
+
+type CutTarget = { kind: 'node'; nodeId: number } | { kind: 'preview'; preview: WayCutPreview }
+
+function resolveCutTarget(
+  way: OsmWay,
+  nodeCoords: Record<number, [number, number]>,
+  lngLat: { lng: number; lat: number },
+  project: (lngLat: { lng: number; lat: number }) => { x: number; y: number },
+): CutTarget | null {
+  const nearbyNodeId = findNearbyInteriorNode(way, nodeCoords, lngLat, project)
+  if (nearbyNodeId != null) {
+    return { kind: 'node', nodeId: nearbyNodeId }
+  }
+
+  const preview = projectCutPreview(way, nodeCoords, lngLat, project)
+  if (!preview) return null
+  return { kind: 'preview', preview }
+}
+
+export type CutMouseMoveResult = {
+  nearCutTarget: boolean
 }
 
 export function useWayCutHandler() {
   const queryClient = useQueryClient()
   const authState = useAuthState()
   const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
-  const cutMarkers = useWayCutMarkers()
+  const isCutActive = useIsCutActive()
+  const preview = useWayCutPreview()
   const selectedOsmRef = useSelectedOsmRef()
-  const { setCutMarkers, clearCutMarkers } = useWayCutActions()
+  const { activateCut, cancelCut, setHoveredNodeId, setPreview } = useWayCutActions()
   const { updateFeatureRef } = useFeatureSelection()
   const { setChangesCount } = useAppActions()
   const newWayIdRef = useRef(-1)
+  const newNodeIdRef = useRef(-1)
 
-  const showCutMarkers = useCallback(
+  const activateCutForWay = useCallback(
     (osm: OsmWay) => {
       if (authState !== AuthState.success) return
       if (graph?.waysInRelation[osm.id]) return
-      if (!wayHasSplittableInterior(osm)) return
+      if (!wayCanSplit(osm)) return
 
-      const nodeCoords = graph?.nodeCoords ?? {}
-      const markers: WayCutMarkerFeature[] = osm.nodes
-        .slice(1, -1)
-        .flatMap((nd): WayCutMarkerFeature[] => {
-          const coord = nodeCoords[nd]
-          if (!coord) return []
-          return [
-            {
-              type: 'Feature',
-              id: `cut-${nd}`,
-              geometry: { type: 'Point', coordinates: [coord[1]!, coord[0]!] },
-              properties: {
-                featureId: `cut-${nd}`,
-                kind: 'cut-marker',
-                color: '#fffc7e',
-                weight: 8,
-                osmType: 'node',
-                osmId: nd,
-                nodeId: nd,
-                wayId: osm.id,
-              },
-            },
-          ]
-        })
-
-      setCutMarkers({ type: 'FeatureCollection', features: markers })
+      const markers = buildCutMarkers(osm, graph?.nodeCoords ?? {})
+      activateCut({ type: 'FeatureCollection', features: markers })
     },
-    [authState, graph, setCutMarkers],
+    [activateCut, authState, graph?.nodeCoords, graph?.waysInRelation],
   )
 
-  const cancelCut = useCallback(() => {
-    clearCutMarkers()
-  }, [clearCutMarkers])
-
-  const handleCutMarkerClick = useCallback(
-    (event: MapLayerMouseEvent) => {
-      if (authState !== AuthState.success) return
-
-      const nodeId = event.features?.[0]?.properties?.nodeId as number | undefined
-      const wayId = event.features?.[0]?.properties?.wayId as number | undefined
-      if (!nodeId || !wayId) return
-
-      const original = getOsmWayFromSession(queryClient, wayId)
-      const result = cutOsmWayInSession(queryClient, wayId, nodeId, newWayIdRef.current--)
-      if (!result) return
-
-      clearCutMarkers()
+  const commitSplit = useCallback(
+    (wayId: number, result: CutOsmWayResult, original: OsmWay | null) => {
+      if (result.newNode) {
+        addChangedNode(result.newNode)
+      }
+      addChangedEntity(result.newWay, { source: 'split' })
+      const changesCount = addChangedEntity(result.oldWay, { original, source: 'split' })
+      setChangesCount(changesCount)
 
       if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === wayId) {
         updateFeatureRef({ type: 'way', id: result.oldWay.id })
       }
 
-      addChangedEntity(result.newWay, { source: 'split' })
-      const changesCount = addChangedEntity(result.oldWay, { original, source: 'split' })
-      setChangesCount(changesCount)
-      event.originalEvent.stopPropagation()
+      cancelCut()
     },
-    [authState, clearCutMarkers, queryClient, selectedOsmRef, setChangesCount, updateFeatureRef],
+    [cancelCut, selectedOsmRef, setChangesCount, updateFeatureRef],
+  )
+
+  const handleCutMarkerClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      if (authState !== AuthState.success) return false
+
+      const markerFeature = event.features?.find(
+        (feature) => feature.layer?.id === WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+      )
+      const nodeId = markerFeature?.properties?.nodeId as number | undefined
+      const wayId = markerFeature?.properties?.wayId as number | undefined
+      if (!nodeId || !wayId) return false
+
+      const original = getOsmWayFromSession(queryClient, wayId)
+      const result = cutOsmWayInSession(queryClient, wayId, nodeId, newWayIdRef.current--)
+      if (!result) return false
+
+      commitSplit(wayId, result, original)
+      event.originalEvent.stopPropagation()
+      return true
+    },
+    [authState, commitSplit, queryClient],
+  )
+
+  const splitAtPreview = useCallback(
+    (wayId: number, cutPreview: WayCutPreview, event: MapLayerMouseEvent) => {
+      const original = getOsmWayFromSession(queryClient, wayId)
+      const result = insertNodeAndCutOsmWayInSession(
+        queryClient,
+        wayId,
+        cutPreview.segmentIndex,
+        { lat: cutPreview.lat, lon: cutPreview.lng },
+        newNodeIdRef.current--,
+        newWayIdRef.current--,
+      )
+      if (!result) return false
+
+      commitSplit(wayId, result, original)
+      event.originalEvent.stopPropagation()
+      return true
+    },
+    [commitSplit, queryClient],
+  )
+
+  const handleCutPreviewClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      if (authState !== AuthState.success || !preview || !selectedOsmRef) return false
+      if (selectedOsmRef.type !== 'way') return false
+      return splitAtPreview(selectedOsmRef.id, preview, event)
+    },
+    [authState, preview, selectedOsmRef, splitAtPreview],
+  )
+
+  const handleCutMapClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      if (!isCutActive || !selectedOsmRef || selectedOsmRef.type !== 'way') return false
+      if (preview) return splitAtPreview(selectedOsmRef.id, preview, event)
+
+      const way = graph?.ways[selectedOsmRef.id]
+      if (!way) return false
+
+      const map = event.target
+      const target = resolveCutTarget(
+        way,
+        graph?.nodeCoords ?? {},
+        { lng: event.lngLat.lng, lat: event.lngLat.lat },
+        (lngLat) => map.project([lngLat.lng, lngLat.lat]),
+      )
+      if (!target) return false
+
+      if (target.kind === 'node') {
+        const original = getOsmWayFromSession(queryClient, selectedOsmRef.id)
+        const result = cutOsmWayInSession(
+          queryClient,
+          selectedOsmRef.id,
+          target.nodeId,
+          newWayIdRef.current--,
+        )
+        if (!result) return false
+
+        commitSplit(selectedOsmRef.id, result, original)
+        event.originalEvent.stopPropagation()
+        return true
+      }
+
+      return splitAtPreview(selectedOsmRef.id, target.preview, event)
+    },
+    [
+      commitSplit,
+      graph?.nodeCoords,
+      graph?.ways,
+      isCutActive,
+      preview,
+      queryClient,
+      selectedOsmRef,
+      splitAtPreview,
+    ],
+  )
+
+  const handleCutClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      const markerFeature = event.features?.find(
+        (feature) => feature.layer?.id === WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+      )
+      if (markerFeature) {
+        return handleCutMarkerClick(event)
+      }
+      const previewFeature = event.features?.find(
+        (feature) => feature.layer?.id === WAY_CUT_PREVIEW_HITAREA_LAYER_ID,
+      )
+      if (previewFeature) {
+        return handleCutPreviewClick(event)
+      }
+      return handleCutMapClick(event)
+    },
+    [handleCutMapClick, handleCutMarkerClick, handleCutPreviewClick],
+  )
+
+  const clearCutHoverState = useCallback(() => {
+    setHoveredNodeId(null)
+    setPreview(null)
+  }, [setHoveredNodeId, setPreview])
+
+  const handleCutMouseMove = useCallback(
+    (event: MapLayerMouseEvent): CutMouseMoveResult | null => {
+      if (!isCutActive) return null
+
+      const markerFeature = event.features?.find(
+        (feature) => feature.layer?.id === WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+      )
+      const markerNodeId = markerFeature?.properties?.nodeId as number | undefined
+      if (markerNodeId) {
+        setHoveredNodeId(markerNodeId)
+        setPreview(null)
+        return { nearCutTarget: true }
+      }
+
+      setHoveredNodeId(null)
+
+      if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
+        setPreview(null)
+        return { nearCutTarget: false }
+      }
+
+      const way = graph?.ways[selectedOsmRef.id]
+      if (!way) {
+        setPreview(null)
+        return { nearCutTarget: false }
+      }
+
+      const map = event.target
+      const target = resolveCutTarget(
+        way,
+        graph?.nodeCoords ?? {},
+        { lng: event.lngLat.lng, lat: event.lngLat.lat },
+        (lngLat) => map.project([lngLat.lng, lngLat.lat]),
+      )
+
+      if (target?.kind === 'node') {
+        setHoveredNodeId(target.nodeId)
+        setPreview(null)
+        return { nearCutTarget: true }
+      }
+
+      setPreview(target?.preview ?? null)
+      return { nearCutTarget: target != null }
+    },
+    [graph?.nodeCoords, graph?.ways, isCutActive, selectedOsmRef, setHoveredNodeId, setPreview],
   )
 
   const toggleCutForSelectedWay = useCallback(() => {
-    if (cutMarkers.features.length > 0) {
-      clearCutMarkers()
+    if (isCutActive) {
+      cancelCut()
       return
     }
     if (!selectedOsmRef || selectedOsmRef.type !== 'way') return
     const way = graph?.ways[selectedOsmRef.id]
     if (!way) return
-    showCutMarkers(way)
-  }, [clearCutMarkers, cutMarkers.features.length, graph?.ways, selectedOsmRef, showCutMarkers])
+    activateCutForWay(way)
+  }, [activateCutForWay, cancelCut, graph?.ways, isCutActive, selectedOsmRef])
 
   return {
-    showCutMarkers,
+    activateCutForWay,
     cancelCut,
+    clearCutHoverState,
+    handleCutClick,
     handleCutMarkerClick,
+    handleCutMouseMove,
     toggleCutForSelectedWay,
-    isCutActive: cutMarkers.features.length > 0,
+    isCutActive,
   }
 }

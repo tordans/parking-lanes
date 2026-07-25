@@ -92,8 +92,8 @@ describe('uploadChanges', () => {
 
   test('calls uploadChangeset with tags and diff without real network', async () => {
     const store: ChangesStore = {
-      modify: { way: [createWay(7)] },
-      create: { way: [createWay(-2)] },
+      modify: { way: [createWay(7)], node: [] },
+      create: { way: [createWay(-2)], node: [] },
     }
 
     mockUploadChangeset.mockResolvedValue({
@@ -136,8 +136,8 @@ describe('uploadChanges', () => {
     })
 
     await uploadChanges('Street Space Editor', '0.9.0', {
-      modify: { way: [createWay(1)] },
-      create: { way: [] },
+      modify: { way: [createWay(1)], node: [] },
+      create: { way: [], node: [] },
     })
 
     expect(mockConfigure).toHaveBeenCalledWith(
@@ -151,8 +151,8 @@ describe('uploadChanges', () => {
     mockUploadChangeset.mockRejectedValue(new Error('OSM API: changeset required'))
 
     const store: ChangesStore = {
-      modify: { way: [createWay(1)] },
-      create: { way: [] },
+      modify: { way: [createWay(1)], node: [] },
+      create: { way: [], node: [] },
     }
 
     await expect(uploadChanges('Street Space Editor', '0.9.0', store)).rejects.toMatchObject({

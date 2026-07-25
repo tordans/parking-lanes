@@ -35,6 +35,7 @@
     "@turf/destination": "^7.3.5",
     "@turf/helpers": "^7.3.5",
     "@turf/length": "^7.3.5",
+    "@turf/nearest-point-on-line": "^7.3.5",
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",

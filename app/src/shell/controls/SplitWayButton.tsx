@@ -19,8 +19,8 @@ export function SplitWayButton() {
   const tooltip = disabled
     ? splitWayDisabledTooltip(disabledReason)
     : isCutActive
-      ? 'Cancel split — click a yellow node, or press again to cancel'
-      : 'Split way at a node'
+      ? 'Cancel split — click a node or along the line, or press again to cancel'
+      : 'Split way at a node or along the line'
 
   return (
     <div className={mapToolbarButtonGroupClassName}>

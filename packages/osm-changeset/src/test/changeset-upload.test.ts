@@ -1,4 +1,4 @@
-import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangesStore } from '../changes-store'
 import { buildChangesetTags } from '../changeset-tags'
 import {
@@ -15,6 +15,19 @@ function createWay(id: number, overrides: Partial<OsmWay> = {}): OsmWay {
     changeset: 100,
     nodes: [10, 20, 30],
     tags: { highway: 'residential' },
+    ...overrides,
+  }
+}
+
+function createNode(id: number, overrides: Partial<OsmNode> = {}): OsmNode {
+  return {
+    id,
+    type: 'node',
+    version: id > 0 ? 3 : 1,
+    changeset: 100,
+    lat: 52.5,
+    lon: 13.4,
+    tags: {},
     ...overrides,
   }
 }
@@ -37,8 +50,8 @@ describe('buildChangesetTags', () => {
 describe('changesStoreToOsmChange', () => {
   test('maps modify ways into osm-api feature format', () => {
     const store: ChangesStore = {
-      modify: { way: [createWay(42)] },
-      create: { way: [] },
+      modify: { way: [createWay(42)], node: [] },
+      create: { way: [], node: [] },
     }
 
     expect(changesStoreToOsmChange(store)).toEqual({
@@ -62,8 +75,8 @@ describe('changesStoreToOsmChange', () => {
 
   test('maps negative-id create ways (cut) into create bucket', () => {
     const store: ChangesStore = {
-      modify: { way: [] },
-      create: { way: [createWay(-1, { tags: { highway: 'service' } })] },
+      modify: { way: [], node: [] },
+      create: { way: [createWay(-1, { tags: { highway: 'service' } })], node: [] },
     }
 
     const diff = changesStoreToOsmChange(store)
@@ -73,13 +86,29 @@ describe('changesStoreToOsmChange', () => {
     expect(diff.modify).toHaveLength(0)
     expect(diff.delete).toEqual([])
   })
+
+  test('includes created nodes before created ways', () => {
+    const store: ChangesStore = {
+      modify: { way: [], node: [] },
+      create: {
+        node: [createNode(-5)],
+        way: [createWay(-1, { nodes: [-5, 20, 30] })],
+      },
+    }
+
+    const diff = changesStoreToOsmChange(store)
+
+    expect(diff.create.map((feature) => feature.type)).toEqual(['node', 'way'])
+    expect(diff.create[0]).toMatchObject({ type: 'node', id: -5 })
+    expect(diff.create[1]).toMatchObject({ type: 'way', id: -1, nodes: [-5, 20, 30] })
+  })
 })
 
 describe('changesStoreToOsmChangeXml', () => {
   test('builds osmChange XML with comment metadata via createOsmChangeXml', () => {
     const store: ChangesStore = {
-      modify: { way: [createWay(42, { tags: { highway: 'residential', width: '6' } })] },
-      create: { way: [] },
+      modify: { way: [createWay(42, { tags: { highway: 'residential', width: '6' } })], node: [] },
+      create: { way: [], node: [] },
     }
 
     const xml = changesStoreToOsmChangeXml(store, {
@@ -101,8 +130,8 @@ describe('changesStoreToOsmChangeXml', () => {
 describe('applyUploadResult', () => {
   test('remaps created way ids and clears the store', () => {
     const store: ChangesStore = {
-      modify: { way: [] },
-      create: { way: [createWay(-1)] },
+      modify: { way: [], node: [] },
+      create: { way: [createWay(-1)], node: [] },
     }
 
     const changedIdMap = applyUploadResult(store, {
@@ -118,12 +147,41 @@ describe('applyUploadResult', () => {
     expect(changedIdMap).toEqual({ '-1': '555001' })
     expect(store.create.way).toHaveLength(0)
     expect(store.modify.way).toHaveLength(0)
+    expect(store.create.node).toHaveLength(0)
+    expect(store.modify.node).toHaveLength(0)
+  })
+
+  test('remaps created node ids and updates pending way node refs', () => {
+    const store: ChangesStore = {
+      modify: { way: [], node: [] },
+      create: {
+        node: [createNode(-5)],
+        way: [createWay(-1, { nodes: [-5, 20, 30] })],
+      },
+    }
+
+    const changedIdMap = applyUploadResult(store, {
+      999: {
+        diffResult: {
+          node: {
+            '-5': { newId: 777005, newVersion: 1 },
+          },
+          way: {
+            '-1': { newId: 555001, newVersion: 1 },
+          },
+        },
+      },
+    })
+
+    expect(changedIdMap).toEqual({ '-5': '777005', '-1': '555001' })
+    expect(store.create.way).toHaveLength(0)
+    expect(store.create.node).toHaveLength(0)
   })
 
   test('updates modify way version without id remap entry', () => {
     const store: ChangesStore = {
-      modify: { way: [createWay(42)] },
-      create: { way: [] },
+      modify: { way: [createWay(42)], node: [] },
+      create: { way: [], node: [] },
     }
 
     const changedIdMap = applyUploadResult(store, {

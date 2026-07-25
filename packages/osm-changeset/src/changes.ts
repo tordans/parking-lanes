@@ -1,4 +1,4 @@
-import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangesStore } from './changes-store'
 
 export function upsertChangedWay(store: ChangesStore, osm: OsmWay): void {
@@ -13,6 +13,18 @@ export function upsertChangedWay(store: ChangesStore, osm: OsmWay): void {
   }
 }
 
+export function upsertChangedNode(store: ChangesStore, osm: OsmNode): void {
+  if (osm.id > 0) {
+    const index = store.modify.node.findIndex((x) => x.id === osm.id)
+    if (index > -1) store.modify.node[index] = osm
+    else store.modify.node.push(osm)
+  } else {
+    const index = store.create.node.findIndex((x) => x.id === osm.id)
+    if (index > -1) store.create.node[index] = osm
+    else store.create.node.push(osm)
+  }
+}
+
 export function removeChangedWay(store: ChangesStore, wayId: number): OsmWay | null {
   const bucket = wayId > 0 ? store.modify.way : store.create.way
   const index = bucket.findIndex((x) => x.id === wayId)
@@ -22,5 +34,10 @@ export function removeChangedWay(store: ChangesStore, wayId: number): OsmWay | n
 }
 
 export function countChanges(store: ChangesStore): number {
-  return store.modify.way.length + store.create.way.length
+  return (
+    store.modify.way.length +
+    store.create.way.length +
+    store.modify.node.length +
+    store.create.node.length
+  )
 }

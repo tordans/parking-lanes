@@ -54,15 +54,20 @@ import { useMapViewport } from './map-viewport'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
 import {
+  remapOsmNodeIdInSession,
   remapOsmWayIdInSession,
   removeOsmWayFromSession,
   restoreOsmWayInSession,
 } from './osm-session-way-edits'
 import { serializeMapSearch } from './search-schema'
 import { useSelectionBacklights } from './use-selection-backlights'
-import { WAY_CUT_MARKERS_HITAREA_LAYER_ID, useWayCutHandler } from './use-way-cut'
+import {
+  WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+  WAY_CUT_PREVIEW_HITAREA_LAYER_ID,
+  useWayCutHandler,
+} from './use-way-cut'
 import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
-import { useWayCutActions } from './way-cut-store'
+import { useIsCutActive, useWayCutActions } from './way-cut-store'
 import { WayCutLayers } from './WayCutLayers'
 
 export function MapPage({
@@ -104,8 +109,9 @@ function MapPageContent({
   const selectedOsmRef = useSelectedOsmRef()
   const { updateFeatureRef, clearSelection, selectionEpoch } = useFeatureSelection()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
-  const { clearCutMarkers } = useWayCutActions()
-  const { handleCutMarkerClick } = useWayCutHandler()
+  const { cancelCut } = useWayCutActions()
+  const isCutActive = useIsCutActive()
+  const { handleCutClick, handleCutMouseMove, clearCutHoverState } = useWayCutHandler()
   const prevModeRef = useRef(resolvedModeId)
 
   const [cursorStyle, setCursorStyle] = useState('grab')
@@ -139,17 +145,17 @@ function MapPageContent({
       if (prevModeRef.current === resolvedModeId) return
       clearSelection()
       clearWidthDraft()
-      clearCutMarkers()
+      cancelCut()
       prevModeRef.current = resolvedModeId
     },
-    [clearCutMarkers, clearSelection, clearWidthDraft, resolvedModeId],
+    [cancelCut, clearSelection, clearWidthDraft, resolvedModeId],
   )
 
   useEffect(
-    function clearCutMarkersOnSelectionChange() {
-      clearCutMarkers()
+    function clearCutOnSelectionChange() {
+      cancelCut()
     },
-    [clearCutMarkers, selectedOsmRef?.id, selectedOsmRef?.type],
+    [cancelCut, selectedOsmRef?.id, selectedOsmRef?.type],
   )
 
   useEffect(
@@ -168,24 +174,28 @@ function MapPageContent({
   const widthHandlers = useWidthModeHandlers()
 
   const handleLayerClick = (event: MapLayerMouseEvent) => {
-    const layerId = event.features?.[0]?.layer?.id
-    if (layerId === WAY_CUT_MARKERS_HITAREA_LAYER_ID) {
-      handleCutMarkerClick(event)
-      return
-    }
+    if (isCutActive && handleCutClick(event)) return
     if (isWidthMode) {
       widthHandlers.handleLayerClick(event)
       return
     }
     parkingLayerClick(event)
   }
-  const handleMapClick = isWidthMode ? widthHandlers.handleMapClick : parkingMapClick
+  const handleMapClick = (event: MapLayerMouseEvent) => {
+    if (isCutActive && handleCutClick(event)) return
+    if (isWidthMode) {
+      widthHandlers.handleMapClick()
+      return
+    }
+    parkingMapClick()
+  }
   const ModeMapLayers = mode.MapLayers
   const minZoom = isWidthMode ? widthViewMinZoom : viewMinZoom
 
   const interactiveLayerIds = [
     ...mode.interactiveLayerIds,
     WAY_CUT_MARKERS_HITAREA_LAYER_ID,
+    WAY_CUT_PREVIEW_HITAREA_LAYER_ID,
     ...(debug ? [coverageDebugFetchFillLayerId] : []),
   ]
 
@@ -272,7 +282,12 @@ function MapPageContent({
       widthHandlers.handleMouseMove(event)
     }
 
-    setCursorStyle(event.features?.length ? 'pointer' : 'grab')
+    if (isCutActive) {
+      const cutMove = handleCutMouseMove(event)
+      setCursorStyle(cutMove?.nearCutTarget ? 'pointer' : 'crosshair')
+    } else {
+      setCursorStyle(event.features?.length ? 'pointer' : 'grab')
+    }
 
     if (!debug) {
       setHoveredGroupId(null)
@@ -313,7 +328,10 @@ function MapPageContent({
     if (isWidthMode) {
       widthHandlers.handleMouseUp()
     }
-    setCursorStyle('grab')
+    if (isCutActive) {
+      clearCutHoverState()
+    }
+    setCursorStyle(isCutActive ? 'crosshair' : 'grab')
     setHoveredGroupId(null)
     setCoverageHoverInfo(null)
   }
@@ -329,11 +347,12 @@ function MapPageContent({
   }
 
   function handleClick(event: MapLayerMouseEvent) {
+    if (isCutActive && handleCutClick(event)) return
     if (event.features?.length) {
       handleLayerClick(event)
       return
     }
-    handleMapClick()
+    handleMapClick(event)
   }
 
   async function handleSave(comment: string) {
@@ -342,6 +361,7 @@ function MapPageContent({
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
         const remappedWay = remapOsmWayIdInSession(queryClient, Number(oldId), Number(newId))
+        remapOsmNodeIdInSession(queryClient, Number(oldId), Number(newId))
 
         if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === Number(oldId) && remappedWay) {
           updateFeatureRef({ type: 'way', id: remappedWay.id })

@@ -1,4 +1,4 @@
-import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmNode, OsmWay } from '@osm-editor-kit/osm-data'
 import type { QueryClient } from '@tanstack/react-query'
 import { addChangedEntity, getPendingWay } from '../../utils/changes-store'
 import type { ChangeSource } from '../../utils/changeset-message'
@@ -75,6 +75,47 @@ export function remapOsmWayIdInSession(
   })
 
   return remappedWay
+}
+
+export function remapOsmNodeIdInSession(
+  queryClient: QueryClient,
+  oldId: number,
+  newId: number,
+): OsmNode | null {
+  const current =
+    queryClient.getQueryData<OsmCoverageQueryData>(sessionKey) ?? emptyOsmCoverageData()
+  const oldNode = current.graph.nodes[oldId]
+  if (!oldNode) return null
+
+  const remappedNode: OsmNode = { ...oldNode, id: newId }
+  const { [oldId]: _removedNode, ...remainingNodes } = current.graph.nodes
+  const oldCoord = current.graph.nodeCoords[oldId]
+  const { [oldId]: _removedCoord, ...remainingCoords } = current.graph.nodeCoords
+
+  const ways = Object.fromEntries(
+    Object.entries(current.graph.ways).map(([wayId, way]) => [
+      wayId,
+      {
+        ...way,
+        nodes: way.nodes.map((nodeId) => (nodeId === oldId ? newId : nodeId)),
+      },
+    ]),
+  )
+
+  queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
+    ...current,
+    graph: {
+      ...current.graph,
+      nodes: {
+        ...remainingNodes,
+        [newId]: remappedNode,
+      },
+      nodeCoords: oldCoord ? { ...remainingCoords, [newId]: oldCoord } : remainingCoords,
+      ways,
+    },
+  })
+
+  return remappedNode
 }
 
 /**

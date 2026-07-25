@@ -1,7 +1,8 @@
-import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
 import {
   createOsmChangeXml,
   type OsmChange,
+  type OsmNode as OsmApiNode,
   type OsmWay as OsmApiWay,
   type UploadResult,
 } from 'osm-api'
@@ -21,10 +22,31 @@ function wayToOsmApiFeature(way: OsmWay): OsmApiWay {
   }
 }
 
+function nodeToOsmApiFeature(node: OsmNode): OsmApiNode {
+  return {
+    type: 'node',
+    id: node.id,
+    version: node.version ?? 0,
+    lat: node.lat,
+    lon: node.lon,
+    tags: node.tags,
+    changeset: node.changeset ?? 0,
+    timestamp: node.timestamp ?? '',
+    user: node.user ?? '',
+    uid: node.uid ?? 0,
+  }
+}
+
 export function changesStoreToOsmChange(changesStore: ChangesStore): OsmChange {
   return {
-    create: changesStore.create.way.map(wayToOsmApiFeature),
-    modify: changesStore.modify.way.map(wayToOsmApiFeature),
+    create: [
+      ...changesStore.create.node.map(nodeToOsmApiFeature),
+      ...changesStore.create.way.map(wayToOsmApiFeature),
+    ],
+    modify: [
+      ...changesStore.modify.node.map(nodeToOsmApiFeature),
+      ...changesStore.modify.way.map(wayToOsmApiFeature),
+    ],
     delete: [],
   }
 }
@@ -45,7 +67,26 @@ export function applyUploadResult(changesStore: ChangesStore, result: UploadResu
   const changedIdMap: ChangedIdMap = {}
 
   for (const changesetId of Object.keys(result)) {
-    const wayDiff = result[Number(changesetId)].diffResult.way
+    const diffResult = result[Number(changesetId)].diffResult
+    const nodeDiff = diffResult.node
+    const wayDiff = diffResult.way
+
+    if (nodeDiff) {
+      for (const [oldIdStr, mapping] of Object.entries(nodeDiff)) {
+        const oldId = Number(oldIdStr)
+        const node =
+          changesStore.modify.node.find((x) => x.id === oldId) ??
+          changesStore.create.node.find((x) => x.id === oldId)
+
+        if (!node) continue
+
+        node.id = mapping.newId
+        node.version = mapping.newVersion
+
+        if (oldId !== mapping.newId) changedIdMap[String(oldId)] = String(mapping.newId)
+      }
+    }
+
     if (!wayDiff) continue
 
     for (const [oldIdStr, mapping] of Object.entries(wayDiff)) {
@@ -63,8 +104,18 @@ export function applyUploadResult(changesStore: ChangesStore, result: UploadResu
     }
   }
 
+  for (const [oldIdStr, newIdStr] of Object.entries(changedIdMap)) {
+    const oldId = Number(oldIdStr)
+    const newId = Number(newIdStr)
+    for (const way of [...changesStore.modify.way, ...changesStore.create.way]) {
+      way.nodes = way.nodes.map((nodeId) => (nodeId === oldId ? newId : nodeId))
+    }
+  }
+
   changesStore.modify.way = []
   changesStore.create.way = []
+  changesStore.modify.node = []
+  changesStore.create.node = []
 
   return changedIdMap
 }

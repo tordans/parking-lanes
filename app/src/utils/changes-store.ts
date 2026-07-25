@@ -2,9 +2,10 @@ import {
   countChanges,
   createEmptyChangesStore,
   removeChangedWay,
+  upsertChangedNode,
   upsertChangedWay,
 } from '@osm-editor-kit/osm-changeset'
-import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
 import { type ChangeSource, diffWayTags, type TagChange, wayDisplayName } from './changeset-message'
 
 export type PendingChange = {
@@ -57,6 +58,11 @@ export function addChangedEntity(
   return countChanges(changesStore)
 }
 
+export function addChangedNode(osm: OsmNode): number {
+  upsertChangedNode(changesStore, osm)
+  return countChanges(changesStore)
+}
+
 /** Removes a pending change. Returns the original way to restore, or `null` for creates. */
 export function removeChangedEntity(wayId: number): {
   original: OsmWay | null
@@ -99,6 +105,8 @@ export function allPendingSources(): ChangeSource[] {
 export function clearChanges(): number {
   changesStore.modify.way.length = 0
   changesStore.create.way.length = 0
+  changesStore.modify.node.length = 0
+  changesStore.create.node.length = 0
   pendingMeta.clear()
   return 0
 }

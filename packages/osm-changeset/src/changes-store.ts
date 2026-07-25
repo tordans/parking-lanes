@@ -1,7 +1,8 @@
-import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmNode, type OsmWay } from '@osm-editor-kit/osm-data'
 
 interface EditTypeStore {
   way: OsmWay[]
+  node: OsmNode[]
 }
 
 export interface ChangesStore {
@@ -16,7 +17,7 @@ export interface ChangedIdMap {
 
 export function createEmptyChangesStore(): ChangesStore {
   return {
-    modify: { way: [] },
-    create: { way: [] },
+    modify: { way: [], node: [] },
+    create: { way: [], node: [] },
   }
 }

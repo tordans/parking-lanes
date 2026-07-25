@@ -1,8 +1,13 @@
-import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmNode, OsmWay } from '@osm-editor-kit/osm-data'
 
 export type SplitOsmWayResult = {
   oldWay: OsmWay
   newWay: OsmWay
+}
+
+export type InsertNodeOnWaySegmentResult = {
+  wayWithNode: OsmWay
+  newNode: OsmNode
 }
 
 /**
@@ -37,7 +42,43 @@ export function splitOsmWayAtNode(
   return { oldWay, newWay }
 }
 
-/** Interior nodes are required to place a cut (endpoints alone are not enough). */
+/** Ways need at least two nodes to split (including mid-line insert on a segment). */
+export function wayCanSplit(way: OsmWay): boolean {
+  return way.nodes.length >= 2
+}
+
+/** Interior nodes are required to place a cut marker (endpoints alone are not enough). */
 export function wayHasSplittableInterior(way: OsmWay): boolean {
   return way.nodes.length >= 3
+}
+
+/**
+ * Insert a new node on the segment starting at `segmentIndex` (between
+ * `way.nodes[segmentIndex]` and `way.nodes[segmentIndex + 1]`).
+ */
+export function insertNodeOnWaySegment(
+  way: OsmWay,
+  segmentIndex: number,
+  coords: { lat: number; lon: number },
+  newNodeId: number,
+): InsertNodeOnWaySegmentResult | null {
+  if (segmentIndex < 0 || segmentIndex >= way.nodes.length - 1) return null
+
+  const newNode: OsmNode = {
+    type: 'node',
+    id: newNodeId,
+    lat: coords.lat,
+    lon: coords.lon,
+    version: 1,
+    changeset: 0,
+    tags: {},
+  }
+
+  const nodes = [...way.nodes]
+  nodes.splice(segmentIndex + 1, 0, newNodeId)
+
+  return {
+    wayWithNode: { ...way, nodes },
+    newNode,
+  }
 }
