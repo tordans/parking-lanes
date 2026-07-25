@@ -1,3 +1,4 @@
+import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
 import clsx from 'clsx'
 import { Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
@@ -101,7 +102,7 @@ export function MapMobileToolbar(
       >
         <div className="pb-4">
           <Panel
-            key={selectedOsmRef ? `${selectedOsmRef.type}/${selectedOsmRef.id}` : 'none'}
+            key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}
             onOsmChange={props.onOsmChange}
             onClose={handleInspectorClose}
           />

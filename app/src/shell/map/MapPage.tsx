@@ -1,4 +1,8 @@
-import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
+import {
+  serializeFeatureParam,
+  serializeMapParam,
+  setLocationToCookie,
+} from '@osm-editor-kit/osm-map-url'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
@@ -364,7 +368,13 @@ function MapPageContent({
         remapOsmNodeIdInSession(queryClient, Number(oldId), Number(newId))
 
         if (selectedOsmRef?.type === 'way' && selectedOsmRef.id === Number(oldId) && remappedWay) {
-          updateFeatureRef({ type: 'way', id: remappedWay.id })
+          updateFeatureRef({
+            type: 'way',
+            id: remappedWay.id,
+            ...(selectedOsmRef.prefix != null && selectedOsmRef.side != null
+              ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side }
+              : {}),
+          })
         }
       }
       clearChanges()
@@ -472,9 +482,7 @@ function MapPageContent({
       panel={
         <ControlPanel
           key={
-            selectedOsmRef
-              ? `${selectedOsmRef.type}/${selectedOsmRef.id}:${selectionEpoch}`
-              : 'none'
+            selectedOsmRef ? `${serializeFeatureParam(selectedOsmRef)}:${selectionEpoch}` : 'none'
           }
           mode={mode}
           onOsmChange={handleOsmChange}

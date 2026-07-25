@@ -23,6 +23,7 @@
     "@osm-editor-kit/osm-editor-links": "workspace:*",
     "@osm-editor-kit/osm-map-url": "workspace:*",
     "@osm-editor-kit/osm-oauth": "workspace:*",
+    "@osm-editor-kit/osm-sidepath-tags": "workspace:*",
     "@osm-editor-kit/osm-tag-syntax": "workspace:*",
     "@osm-editor-kit/osm-ui": "workspace:*",
     "@osm-editor-kit/osm-way-edit": "workspace:*",

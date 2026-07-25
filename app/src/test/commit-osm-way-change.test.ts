@@ -72,6 +72,47 @@ describe('mergeWayEdit', () => {
       'source:width': 'street-space-editor',
     })
   })
+
+  test('width edit patches nested sidepath width keys', () => {
+    const base = way(1, {
+      highway: 'residential',
+      'parking:both': 'lane',
+      'cycleway:left': 'track',
+    })
+    const incoming = way(1, {
+      highway: 'primary',
+      'cycleway:left:width': '2.0',
+      'source:cycleway:left:width': 'street-space-editor',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'width').tags).toEqual({
+      highway: 'residential',
+      'parking:both': 'lane',
+      'cycleway:left': 'track',
+      'cycleway:left:width': '2.0',
+      'source:cycleway:left:width': 'street-space-editor',
+    })
+  })
+
+  test('width edit keeps other sidepath width tags from base', () => {
+    const base = way(1, {
+      highway: 'residential',
+      'sidewalk:right:width': '1.5',
+      'source:sidewalk:right:width': 'survey',
+    })
+    const incoming = way(1, {
+      'cycleway:left:width': '2.0',
+      'source:cycleway:left:width': 'street-space-editor',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'width').tags).toEqual({
+      highway: 'residential',
+      'sidewalk:right:width': '1.5',
+      'source:sidewalk:right:width': 'survey',
+      'cycleway:left:width': '2.0',
+      'source:cycleway:left:width': 'street-space-editor',
+    })
+  })
 })
 
 describe('commitOsmWayChange', () => {
@@ -153,6 +194,50 @@ describe('commitOsmWayChange', () => {
     expect(pending[0]!.way.tags['parking:both']).toBe('lane')
     expect(pending[0]!.way.tags.width).toBe('4')
     expect(getOsmWayFromSession(queryClient, 7)?.tags['parking:both']).toBe('lane')
+
+    clearChanges()
+  })
+
+  test('accumulates parking and nested sidepath width edits on one way', () => {
+    clearChanges()
+    const queryClient = new QueryClient()
+    const key = osmCoverageSessionKey({})
+    const initial = emptyOsmCoverageData()
+    initial.graph.ways[42] = way(42, { highway: 'residential', 'cycleway:left': 'track' })
+    queryClient.setQueryData(key, initial)
+
+    commitOsmWayChange(
+      queryClient,
+      way(42, { highway: 'residential', 'cycleway:left': 'track', 'parking:both': 'lane' }),
+      'parking',
+    )
+    commitOsmWayChange(
+      queryClient,
+      way(42, {
+        highway: 'residential',
+        'cycleway:left:width': '2.0',
+        'source:cycleway:left:width': 'street-space-editor',
+      }),
+      'width',
+    )
+
+    const sessionWay = getOsmWayFromSession(queryClient, 42)
+    expect(sessionWay?.tags['parking:both']).toBe('lane')
+    expect(sessionWay?.tags['cycleway:left:width']).toBe('2.0')
+    expect(sessionWay?.tags['source:cycleway:left:width']).toBe('street-space-editor')
+
+    const pending = listPendingChanges()
+    expect(pending).toHaveLength(1)
+    expect(pending[0]!.tagChanges).toContainEqual({
+      key: 'cycleway:left:width',
+      from: null,
+      to: '2.0',
+    })
+    expect(pending[0]!.tagChanges).toContainEqual({
+      key: 'source:cycleway:left:width',
+      from: null,
+      to: 'street-space-editor',
+    })
 
     clearChanges()
   })

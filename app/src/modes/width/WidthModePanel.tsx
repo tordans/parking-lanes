@@ -1,14 +1,19 @@
+import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
 import type { ModePanelProps } from '../types'
-import { buildHandleGeometry, MIN_WIDTH_M } from './domain/handle-geometry'
+import {
+  buildHandleGeometry,
+  MIN_WIDTH_M,
+  offsetPolylineCoordinates,
+} from './domain/handle-geometry'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { viewMinZoom } from './map/constants'
 import { useDraftWidthM, useWidthMapActions } from './map/width-map-store'
-import { stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
+import { stageWidthOnSidepath, stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 
 function formatSourceLabel(source: string): string {
@@ -24,6 +29,19 @@ function formatSourceLabel(source: string): string {
     default:
       return source
   }
+}
+
+function wayCoordinates(
+  way: { nodes: number[] },
+  nodeCoords: Record<number, number[]> | undefined,
+): [number, number][] {
+  return way.nodes
+    .map((nodeId) => {
+      const coord = nodeCoords?.[nodeId]
+      if (!coord) return null
+      return [coord[1]!, coord[0]!] as [number, number]
+    })
+    .filter((coord): coord is [number, number] => coord != null)
 }
 
 export function WidthModePanel(props: ModePanelProps) {
@@ -56,32 +74,67 @@ export function WidthModePanel(props: ModePanelProps) {
           <p className="m-0">Loading feature…</p>
         ) : (
           <p className="m-0">
-            Feature {selectedOsmRef.type}/{selectedOsmRef.id} is not in the loaded area. Pan the map
-            to load it.
+            Feature {selectedOsmRef.type}/{selectedOsmRef.id}
+            {selectedOsmRef.prefix && selectedOsmRef.side
+              ? `/${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+              : ''}{' '}
+            is not in the loaded area. Pan the map to load it.
           </p>
         )}
       </div>
     )
   }
 
-  const derived = roadWidthFromTags(selectedWay.tags)
+  const isSidepath =
+    selectedOsmRef.type === 'way' &&
+    (selectedOsmRef.prefix === 'cycleway' || selectedOsmRef.prefix === 'sidewalk') &&
+    (selectedOsmRef.side === 'left' || selectedOsmRef.side === 'right')
+
+  const sidepathTags = isSidepath
+    ? expandSidepaths(selectedWay.id, selectedWay.tags).find(
+        (entry) =>
+          entry.ref.prefix === selectedOsmRef.prefix && entry.ref.side === selectedOsmRef.side,
+      )?.tags
+    : undefined
+
+  const derived = sidepathTags
+    ? roadWidthFromTags(sidepathTags)
+    : roadWidthFromTags(selectedWay.tags)
   const readOnly = authState !== AuthState.success
   const displayWidth = draftWidthM ?? derived.value
+  const coordinates = wayCoordinates(selectedWay, graph?.nodeCoords)
 
   function applyWidth(widthM: number) {
+    if (!selectedOsmRef || !selectedWay) return
+
     const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
-    const coordinates = selectedWay!.nodes
-      .map((nodeId) => {
-        const coord = graph?.nodeCoords[nodeId]
-        if (!coord) return null
-        return [coord[1]!, coord[0]!] as [number, number]
-      })
-      .filter((coord): coord is [number, number] => coord != null)
+    let handleCoordinates = coordinates
+
+    if (isSidepath && selectedOsmRef.side) {
+      const parentWidth = roadWidthFromTags(selectedWay.tags).value
+      handleCoordinates = offsetPolylineCoordinates(
+        coordinates,
+        parentWidth / 2,
+        selectedOsmRef.side,
+      )
+    }
 
     setDraftWidthM(clamped)
-    setHandles(buildHandleGeometry(coordinates, clamped))
-    props.onOsmChange(stageWidthOnWay(selectedWay!, clamped))
+    setHandles(buildHandleGeometry(handleCoordinates, clamped))
+
+    if (isSidepath && selectedOsmRef.prefix && selectedOsmRef.side) {
+      props.onOsmChange(
+        stageWidthOnSidepath(selectedWay, selectedOsmRef.prefix, selectedOsmRef.side, clamped),
+      )
+      return
+    }
+
+    props.onOsmChange(stageWidthOnWay(selectedWay, clamped))
   }
+
+  const panelTitle = isSidepath
+    ? `Way ${selectedWay.id} · ${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+    : `Way ${selectedWay.id}`
 
   return (
     <div className="flex min-w-[250px] flex-col gap-4 text-zinc-900">
@@ -92,9 +145,9 @@ export function WidthModePanel(props: ModePanelProps) {
           rel="noreferrer"
           className="text-blue-600 hover:underline"
         >
-          Way {selectedWay.id}
+          {panelTitle}
         </a>
-        {selectedWay.tags.highway ? (
+        {!isSidepath && selectedWay.tags.highway ? (
           <span className="text-zinc-500"> · {selectedWay.tags.highway}</span>
         ) : null}
       </div>

@@ -64,6 +64,31 @@ function positionAtFraction(line: Feature<LineString>, fraction: number, totalM:
   return along(line, fraction * totalM, { units: 'meters' }).geometry.coordinates
 }
 
+/** Offset a centerline perpendicular to its local bearing (used for sidepath handles). */
+export function offsetPolylineCoordinates(
+  coordinates: [number, number][],
+  offsetM: number,
+  side: 'left' | 'right',
+): [number, number][] {
+  if (coordinates.length < 2 || offsetM === 0) return coordinates
+
+  const line = lineString(coordinates)
+  const totalM = length(line, { units: 'meters' })
+  if (totalM <= 0) return coordinates
+
+  return coordinates.map((coord, index) => {
+    const distanceM =
+      index === coordinates.length - 1
+        ? totalM
+        : (index / Math.max(1, coordinates.length - 1)) * totalM
+    const alongBearing = tangentBearingAt(line, distanceM, totalM)
+    const offsetBearing = side === 'left' ? alongBearing - 90 : alongBearing + 90
+    const offset = destination(point(coord), offsetM, offsetBearing, { units: 'meters' }).geometry
+      .coordinates
+    return [offset[0]!, offset[1]!] as [number, number]
+  })
+}
+
 function buildHandleRectangle(
   center: Position,
   alongBearing: number,

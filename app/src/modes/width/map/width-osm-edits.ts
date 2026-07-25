@@ -1,4 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
+import type { SidepathPrefix, SidepathSide } from '@osm-editor-kit/osm-sidepath-tags'
+import { nestSideTags } from '@osm-editor-kit/osm-sidepath-tags'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   remapOsmWayIdInSession,
@@ -35,5 +37,20 @@ export function stageWidthOnWay(way: OsmWay, widthM: number): OsmWay {
       width: formatWidthTag(widthM),
       'source:width': 'street-space-editor',
     },
+  }
+}
+
+export function stageWidthOnSidepath(
+  way: OsmWay,
+  prefix: SidepathPrefix,
+  side: SidepathSide,
+  widthM: number,
+): OsmWay {
+  return {
+    ...way,
+    tags: nestSideTags(way.tags, prefix, side, {
+      width: formatWidthTag(widthM),
+      'source:width': 'street-space-editor',
+    }),
   }
 }

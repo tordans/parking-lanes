@@ -35,10 +35,15 @@ function isMapParam(value: unknown): value is MapParam {
 function isFeatureRef(value: unknown): value is OsmFeatureRef {
   if (typeof value !== 'object' || value == null) return false
   const feature = value as Record<string, unknown>
-  return (
-    (feature.type === 'way' || feature.type === 'node' || feature.type === 'relation') &&
-    typeof feature.id === 'number'
-  )
+  const validType = feature.type === 'way' || feature.type === 'node' || feature.type === 'relation'
+  const validId = typeof feature.id === 'number'
+  const prefix = feature.prefix
+  const side = feature.side
+  const validPrefix = prefix === undefined || prefix === 'cycleway' || prefix === 'sidewalk'
+  const validSide = side === undefined || side === 'left' || side === 'right'
+  const sidepathPair = (prefix === undefined) === (side === undefined)
+
+  return validType && validId && validPrefix && validSide && sidepathPair
 }
 
 /** Keep ?map=zoom/lat/lng (tilda-geo), not JSON objects in the URL bar. */

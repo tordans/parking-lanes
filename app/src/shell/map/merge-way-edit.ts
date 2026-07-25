@@ -1,7 +1,13 @@
 import type { OsmTags, OsmWay } from '@osm-editor-kit/osm-data'
 import type { ChangeSource } from '../../utils/changeset-message'
 
-const WIDTH_TAG_KEYS = new Set(['width', 'est_width', 'source:width'])
+const TOP_LEVEL_WIDTH_TAG_KEYS = new Set(['width', 'est_width', 'source:width'])
+
+const SIDEPATH_WIDTH_TAG_PATTERN = /^(?:source:)?(?:cycleway|sidewalk):(?:left|right):width$/
+
+function isWidthTagKey(key: string): boolean {
+  return TOP_LEVEL_WIDTH_TAG_KEYS.has(key) || SIDEPATH_WIDTH_TAG_PATTERN.test(key)
+}
 
 function isParkingTagKey(key: string): boolean {
   return key === 'parking' || key.startsWith('parking:') || key.startsWith('parking_')
@@ -9,9 +15,8 @@ function isParkingTagKey(key: string): boolean {
 
 function pickWidthTags(tags: OsmTags): OsmTags {
   const picked: OsmTags = {}
-  for (const key of WIDTH_TAG_KEYS) {
-    const value = tags[key]
-    if (value !== undefined) picked[key] = value
+  for (const [key, value] of Object.entries(tags)) {
+    if (value !== undefined && isWidthTagKey(key)) picked[key] = value
   }
   return picked
 }

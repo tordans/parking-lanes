@@ -4,6 +4,7 @@
   "exclude": ["node_modules", "dist", "src/test/**", "node_modules/osm-parking-tag-updater/**"],
   "compilerOptions": {
     "tsBuildInfoFile": ".tsbuildinfo-app",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"],
       "osm-parking-tag-updater/src/components/Tool/transpose/transpose": [

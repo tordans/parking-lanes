@@ -9,16 +9,25 @@ import { selectedWidthCenterline } from './use-width-mode-handlers'
 export function WidthModeLayers(_props: ModeMapProps) {
   const mapBounds = useMapBounds()
   const selectedOsmRef = useSelectedOsmRef()
-  const highways = useWidthMapFeatures({ bounds: mapBounds })
+  const features = useWidthMapFeatures({ bounds: mapBounds })
   const handles = useWidthHandles()
 
-  const selectedOsmId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : null
-  const selectedCenterline = selectedWidthCenterline(highways, selectedOsmRef)
+  const selectedRef =
+    selectedOsmRef?.type === 'way'
+      ? {
+          type: 'way' as const,
+          id: selectedOsmRef.id,
+          prefix: selectedOsmRef.prefix,
+          side: selectedOsmRef.side,
+        }
+      : (selectedOsmRef ?? null)
+
+  const selectedCenterline = selectedWidthCenterline(features, selectedOsmRef)
 
   return (
     <WidthLayers
-      highways={highways}
-      selectedOsmId={selectedOsmId}
+      features={features}
+      selectedRef={selectedRef}
       selectedCenterline={selectedCenterline}
       handles={handles}
     />

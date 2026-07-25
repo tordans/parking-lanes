@@ -1,5 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
+import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { useCallback, useEffect, useRef } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
 import { useMap } from 'react-map-gl/maplibre'
@@ -9,13 +10,14 @@ import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import {
   buildHandleGeometry,
   MIN_WIDTH_M,
+  offsetPolylineCoordinates,
   widthDeltaFromScreenDrag,
 } from './domain/handle-geometry'
 import { metersPerPixel } from './domain/meters-to-pixels'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { highwaysToCollection } from './map/parse-highways'
 import { useWidthMapActions, useWidthDragSide, useDraftWidthM } from './map/width-map-store'
-import { stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
+import { stageWidthOnSidepath, stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 import { widthInteractiveLayerIds } from './map/WidthLayers'
 
@@ -23,6 +25,41 @@ export { widthInteractiveLayerIds as interactiveLayerIds }
 
 export function useWidthOsmChangeHandler() {
   return useOsmChangeHandler('width')
+}
+
+function isSidepathRef(ref: OsmFeatureRef | undefined): ref is OsmFeatureRef & {
+  type: 'way'
+  prefix: 'cycleway' | 'sidewalk'
+  side: 'left' | 'right'
+} {
+  return (
+    ref?.type === 'way' &&
+    (ref.prefix === 'cycleway' || ref.prefix === 'sidewalk') &&
+    (ref.side === 'left' || ref.side === 'right')
+  )
+}
+
+function wayCoordinates(
+  way: OsmWay,
+  nodeCoords: Record<number, number[]> | undefined,
+): [number, number][] {
+  return way.nodes
+    .map((nodeId) => {
+      const coord = nodeCoords?.[nodeId]
+      if (!coord) return null
+      return [coord[1]!, coord[0]!] as [number, number]
+    })
+    .filter((coord): coord is [number, number] => coord != null)
+}
+
+function sidepathWidthFromWay(way: OsmWay, ref: OsmFeatureRef) {
+  if (!isSidepathRef(ref)) return null
+  const expanded = expandSidepaths(way.id, way.tags)
+  const match = expanded.find(
+    (entry) => entry.ref.prefix === ref.prefix && entry.ref.side === ref.side,
+  )
+  if (!match) return null
+  return roadWidthFromTags(match.tags)
 }
 
 export function useWidthModeHandlers() {
@@ -47,20 +84,30 @@ export function useWidthModeHandlers() {
     (way: OsmWay, widthM: number) => {
       const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
       setDraftWidthM(clamped)
-      const geometry = buildHandleGeometry(
-        way.nodes
-          .map((nodeId) => {
-            const coord = graph?.nodeCoords[nodeId]
-            if (!coord) return null
-            return [coord[1]!, coord[0]!] as [number, number]
-          })
-          .filter((coord): coord is [number, number] => coord != null),
-        clamped,
-      )
-      setHandles(geometry)
+
+      const coordinates = wayCoordinates(way, graph?.nodeCoords)
+      let handleCoordinates = coordinates
+      if (isSidepathRef(selectedOsmRef)) {
+        const parentWidth = roadWidthFromTags(way.tags).value
+        handleCoordinates = offsetPolylineCoordinates(
+          coordinates,
+          parentWidth / 2,
+          selectedOsmRef.side,
+        )
+      }
+
+      setHandles(buildHandleGeometry(handleCoordinates, clamped))
+
+      if (isSidepathRef(selectedOsmRef)) {
+        handleOsmChange(
+          stageWidthOnSidepath(way, selectedOsmRef.prefix, selectedOsmRef.side, clamped),
+        )
+        return
+      }
+
       handleOsmChange(stageWidthOnWay(way, clamped))
     },
-    [graph?.nodeCoords, handleOsmChange, setDraftWidthM, setHandles],
+    [graph?.nodeCoords, handleOsmChange, selectedOsmRef, setDraftWidthM, setHandles],
   )
 
   useEffect(
@@ -73,15 +120,24 @@ export function useWidthModeHandlers() {
       const way = graph?.ways[selectedOsmRef.id]
       if (!way?.tags?.highway) return
 
-      const width = roadWidthFromTags(way.tags)
-      const coordinates = way.nodes
-        .map((nodeId) => {
-          const coord = graph?.nodeCoords[nodeId]
-          if (!coord) return null
-          return [coord[1]!, coord[0]!] as [number, number]
-        })
-        .filter((coord): coord is [number, number] => coord != null)
+      const coordinates = wayCoordinates(way, graph?.nodeCoords)
+      if (isSidepathRef(selectedOsmRef)) {
+        const sidepathWidth = sidepathWidthFromWay(way, selectedOsmRef)
+        if (!sidepathWidth) return
 
+        const parentWidth = roadWidthFromTags(way.tags).value
+        const handleCoordinates = offsetPolylineCoordinates(
+          coordinates,
+          parentWidth / 2,
+          selectedOsmRef.side,
+        )
+
+        setDraftWidthM(sidepathWidth.value)
+        setHandles(buildHandleGeometry(handleCoordinates, sidepathWidth.value))
+        return
+      }
+
+      const width = roadWidthFromTags(way.tags)
       setDraftWidthM(width.value)
       setHandles(buildHandleGeometry(coordinates, width.value))
     },
@@ -100,6 +156,16 @@ export function useWidthModeHandlers() {
       const osmId = feature?.properties?.osmId as number | undefined
       const osmType = feature?.properties?.osmType as OsmFeatureRef['type'] | undefined
       if (!osmId || !osmType) return
+
+      const kind = feature?.properties?.kind as string | undefined
+      if (kind === 'sidepath') {
+        const prefix = feature?.properties?.prefix as 'cycleway' | 'sidewalk' | undefined
+        const side = feature?.properties?.side as 'left' | 'right' | undefined
+        if (!prefix || !side) return
+        selectFeature({ type: osmType, id: osmId, prefix, side })
+        event.originalEvent.stopPropagation()
+        return
+      }
 
       selectFeature({ type: osmType, id: osmId })
       event.originalEvent.stopPropagation()
@@ -127,7 +193,11 @@ export function useWidthModeHandlers() {
       const way = wayId ? graph?.ways[wayId] : undefined
       if (!side || alongBearing == null || !Number.isFinite(alongBearing) || !way) return
 
-      const currentWidth = draftWidthM ?? roadWidthFromTags(way.tags).value
+      const currentWidth =
+        draftWidthM ??
+        (isSidepathRef(selectedOsmRef)
+          ? (sidepathWidthFromWay(way, selectedOsmRef)?.value ?? roadWidthFromTags(way.tags).value)
+          : roadWidthFromTags(way.tags).value)
 
       dragRef.current = {
         side,
@@ -185,13 +255,28 @@ export function useWidthModeHandlers() {
 }
 
 export function selectedWidthCenterline(
-  highways: ReturnType<typeof highwaysToCollection>,
+  features: ReturnType<typeof highwaysToCollection>,
   selectedOsmRef: OsmFeatureRef | undefined,
 ) {
   if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
     return highwaysToCollection([])
   }
 
-  const feature = highways.features.find((f) => f.properties.osmId === selectedOsmRef.id)
+  const feature = features.features.find((entry) => {
+    if (entry.properties.kind === 'sidepath') {
+      return (
+        entry.properties.osmId === selectedOsmRef.id &&
+        entry.properties.prefix === selectedOsmRef.prefix &&
+        entry.properties.side === selectedOsmRef.side
+      )
+    }
+
+    return (
+      entry.properties.osmId === selectedOsmRef.id &&
+      selectedOsmRef.prefix == null &&
+      selectedOsmRef.side == null
+    )
+  })
+
   return feature ? highwaysToCollection([feature]) : highwaysToCollection([])
 }
