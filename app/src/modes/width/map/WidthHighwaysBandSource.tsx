@@ -3,7 +3,7 @@ import { Layer, Source } from 'react-map-gl/maplibre'
 import type { WidthFeatureCollection } from './parse-highways'
 import {
   buildBandPaint,
-  sidepathBandPaint,
+  buildSidepathBandPaint,
   sidepathHitAreaPaint,
   sidepathLineLayout,
   widthHitAreaPaint,
@@ -25,25 +25,38 @@ function matchesSelection(
   return selectedRef.prefix == null && selectedRef.side == null
 }
 
+/** True when the selection is a car carriageway (not a sidepath / ped / bike way). */
+function isCarHighwaySelection(
+  features: WidthFeatureCollection,
+  selectedRef: OsmFeatureRef | null,
+): boolean {
+  if (!selectedRef || selectedRef.type !== 'way') return false
+  if (selectedRef.prefix != null || selectedRef.side != null) return false
+
+  const selected = features.features.find(
+    (feature) =>
+      feature.properties.kind === 'highway' && feature.properties.osmId === selectedRef.id,
+  )
+  return selected?.properties.kind === 'highway' && selected.properties.infra === 'car'
+}
+
 function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeatureRef | null) {
   const highways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedSidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
-    const selected = matchesSelection(feature.properties, selectedRef)
+    // Omit the selection so legend width-kind colors do not paint over the black/orange chrome.
+    if (matchesSelection(feature.properties, selectedRef)) continue
+
     if (feature.properties.kind === 'sidepath') {
-      if (selected) selectedSidepaths.features.push(feature)
-      else sidepaths.features.push(feature)
+      sidepaths.features.push(feature)
       continue
     }
 
-    if (selected) selectedHighways.features.push(feature)
-    else highways.features.push(feature)
+    highways.features.push(feature)
   }
 
-  return { highways, sidepaths, selectedHighways, selectedSidepaths }
+  return { highways, sidepaths }
 }
 
 export function WidthHighwaysBandSource({
@@ -55,11 +68,10 @@ export function WidthHighwaysBandSource({
   selectedRef: OsmFeatureRef | null
   focus: string
 }) {
-  const bandPaint = buildBandPaint(focus)
-  const { highways, sidepaths, selectedHighways, selectedSidepaths } = splitFeatures(
-    features,
-    selectedRef,
-  )
+  const dimNonCar = isCarHighwaySelection(features, selectedRef)
+  const bandPaint = buildBandPaint(focus, dimNonCar)
+  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
+  const { highways, sidepaths } = splitFeatures(features, selectedRef)
 
   return (
     <>
@@ -92,28 +104,6 @@ export function WidthHighwaysBandSource({
             id="width-sidepaths-hitarea-layer"
             type="line"
             paint={sidepathHitAreaPaint}
-            layout={sidepathLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {selectedHighways.features.length > 0 ? (
-        <Source id="width-selected-highways-source" type="geojson" data={selectedHighways}>
-          <Layer
-            id="width-selected-highways-band-layer"
-            type="line"
-            paint={bandPaint}
-            layout={widthLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {selectedSidepaths.features.length > 0 ? (
-        <Source id="width-selected-sidepaths-source" type="geojson" data={selectedSidepaths}>
-          <Layer
-            id="width-selected-sidepaths-band-layer"
-            type="line"
-            paint={sidepathBandPaint}
             layout={sidepathLineLayout}
           />
         </Source>

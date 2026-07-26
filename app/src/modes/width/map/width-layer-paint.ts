@@ -3,10 +3,11 @@ import {
   focusCaseOpacity,
   lineOffsetFromMeters,
   lineWidthFromMeters,
-  selectedCenterlineWidth,
+  MAP_FOCUS_MUTED_COLOR,
+  MAP_FOCUS_MUTED_OPACITY,
 } from '@osm-editor-kit/osm-maplibre'
 import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
-import { WIDTH_KIND_COLORS } from './width-colors'
+import { WIDTH_KIND_COLORS, WIDTH_SELECTION_COLORS } from './width-colors'
 
 const bandActiveOpacity = 0.55
 
@@ -22,16 +23,26 @@ const widthKindColor = [
   WIDTH_KIND_COLORS.default,
 ] as const
 
-export function buildBandPaint(focus: string) {
-  if (focus === 'all') {
+/** Active when the feature matches the focus filter and (optionally) car-only selection dimming. */
+function activeInfraMatch(focus: string, dimNonCar: boolean): unknown | null {
+  const clauses: unknown[] = []
+  if (focus !== 'all') clauses.push(['==', ['get', 'infra'], focus])
+  if (dimNonCar) clauses.push(['==', ['get', 'infra'], 'car'])
+  if (clauses.length === 0) return null
+  if (clauses.length === 1) return clauses[0]
+  return ['all', ...clauses]
+}
+
+export function buildBandPaint(focus: string, dimNonCar = false) {
+  const matchExpr = activeInfraMatch(focus, dimNonCar)
+
+  if (!matchExpr) {
     return {
       'line-color': widthKindColor,
       'line-opacity': bandActiveOpacity,
       'line-width': lineWidthFromMeters('roadWidthM'),
     } as Record<string, unknown>
   }
-
-  const matchExpr = ['==', ['get', 'infra'], focus]
 
   return {
     'line-color': focusCaseColor(matchExpr, widthKindColor),
@@ -40,11 +51,21 @@ export function buildBandPaint(focus: string) {
   } as Record<string, unknown>
 }
 
-export const sidepathBandPaint = {
-  'line-color': widthKindColor,
-  'line-opacity': bandActiveOpacity,
-  'line-width': lineWidthFromMeters('roadWidthM'),
-} as Record<string, unknown>
+export function buildSidepathBandPaint(muted = false) {
+  if (!muted) {
+    return {
+      'line-color': widthKindColor,
+      'line-opacity': bandActiveOpacity,
+      'line-width': lineWidthFromMeters('roadWidthM'),
+    } as Record<string, unknown>
+  }
+
+  return {
+    'line-color': MAP_FOCUS_MUTED_COLOR,
+    'line-opacity': MAP_FOCUS_MUTED_OPACITY,
+    'line-width': lineWidthFromMeters('roadWidthM'),
+  } as Record<string, unknown>
+}
 
 export const sidepathLineLayout = {
   ...ROUND_LINE_LAYOUT,
@@ -63,24 +84,26 @@ export const sidepathHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
 
+/** Hairline centerline — same weight as parking mode. */
 export const selectedCenterlinePaint = {
-  'line-color': '#1d4ed8',
-  'line-width': selectedCenterlineWidth,
+  'line-color': WIDTH_SELECTION_COLORS.centerline,
+  'line-width': 1,
+  'line-opacity': 1,
 } as Record<string, unknown>
 
 export const handleFillPaint = {
-  'fill-color': '#3b82f6',
+  'fill-color': WIDTH_SELECTION_COLORS.accent,
   'fill-opacity': 0.08,
 } as Record<string, unknown>
 
 export const handleStrokePaint = {
-  'line-color': '#1d4ed8',
+  'line-color': WIDTH_SELECTION_COLORS.accent,
   'line-width': 1,
   'line-opacity': 0.9,
 } as Record<string, unknown>
 
 export const handleCuePaint = {
-  'circle-color': '#1d4ed8',
+  'circle-color': WIDTH_SELECTION_COLORS.accent,
   'circle-radius': 3,
   'circle-stroke-width': 1,
   'circle-stroke-color': '#ffffff',
