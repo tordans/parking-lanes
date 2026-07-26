@@ -6,6 +6,7 @@ import { AttributionControl } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
+import { useLanesMapActions } from '../../modes/lanes/map/lanes-map-store'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthMapActions } from '../../modes/width/map/width-map-store'
@@ -57,6 +58,7 @@ function MapPageContent({
   const selectedOsmRef = useSelectedOsmRef()
   const { clearSelection, selectionEpoch } = useFeatureSelection()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
+  const { clearLanesState } = useLanesMapActions()
   const { cancelCut } = useWayCutActions()
   const { resetMapChrome } = useMapActions()
   const prevModeRef = useRef(resolvedModeId)
@@ -75,16 +77,18 @@ function MapPageContent({
   } = useMapPageInteractions()
 
   const ModeMapLayers = mode.MapLayers
+  const BottomPanel = mode.BottomPanel
 
   useEffect(
     function clearSelectionOnModeSwitch() {
       if (prevModeRef.current === resolvedModeId) return
       clearSelection()
       clearWidthDraft()
+      clearLanesState()
       cancelCut()
       prevModeRef.current = resolvedModeId
     },
-    [cancelCut, clearSelection, clearWidthDraft, resolvedModeId],
+    [cancelCut, clearLanesState, clearSelection, clearWidthDraft, resolvedModeId],
   )
 
   useEffect(
@@ -164,6 +168,7 @@ function MapPageContent({
           </div>
         </div>
       }
+      bottom={BottomPanel ? <BottomPanel /> : undefined}
       panel={
         <ControlPanel
           key={

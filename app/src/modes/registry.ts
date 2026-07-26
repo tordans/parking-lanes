@@ -1,4 +1,5 @@
 import { bicycleMode } from './bicycle'
+import { lanesMode } from './lanes'
 import { parkingMode } from './parking'
 import { createStubMode } from './stubs'
 import { surfaceMode } from './surface'
@@ -9,7 +10,7 @@ export const streetSpaceModes: StreetSpaceMode[] = [
   parkingMode,
   widthMode,
   bicycleMode,
-  createStubMode('lanes', 'Lanes'),
+  lanesMode,
   surfaceMode,
   createStubMode('sidewalks', 'Sidewalks'),
 ]

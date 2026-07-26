@@ -12,8 +12,13 @@ export type ParkingEditorSide = Side | 'both'
 
 const sideLabels: Record<ParkingEditorSide, string> = {
   both: 'Both sides',
-  right: 'Right',
-  left: 'Left',
+  right: 'Right side',
+  left: 'Left side',
+}
+
+export function screenOrderedSidesSwitcherLabel(sideOrder: [Side, Side]): string {
+  const label = (side: Side) => (side === 'left' ? 'Left' : 'Right')
+  return `${label(sideOrder[0])}/${label(sideOrder[1])}`
 }
 
 export function parkingSideLabel(side: ParkingEditorSide) {

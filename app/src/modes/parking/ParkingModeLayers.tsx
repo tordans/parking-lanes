@@ -1,4 +1,5 @@
 import { useDatetime, useMapBounds } from '../../shell/app-store'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import type { ModeMapProps } from '../types'
 import { useBacklightFeatures } from './map/parking-map-store'
@@ -10,6 +11,8 @@ export function ParkingModeLayers(_props: ModeMapProps) {
   const { zoom } = useMapViewport()
   const datetime = useDatetime()
   const backlights = useBacklightFeatures()
+  const selectedOsmRef = useSelectedOsmRef()
+  const selectedWayId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : null
 
   const { lanes, areas, points } = useParkingMapFeatures({
     bounds: mapBounds,
@@ -17,5 +20,13 @@ export function ParkingModeLayers(_props: ModeMapProps) {
     datetime,
   })
 
-  return <ParkingLayers lanes={lanes} areas={areas} points={points} backlights={backlights} />
+  return (
+    <ParkingLayers
+      lanes={lanes}
+      areas={areas}
+      points={points}
+      backlights={backlights}
+      selectedWayId={selectedWayId}
+    />
+  )
 }

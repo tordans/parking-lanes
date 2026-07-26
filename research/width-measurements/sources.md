@@ -9,7 +9,7 @@ Related: [lane-editor-tags](../lane-editor-tags/) for `:lanes` / tool parser res
 1. Prefer **EN Key:width** “Width of streets” as normative carriageway definition; use **DE** pages for `:lanes` / Radwege practice.
 2. Treat **Berlin/Verkehrswende** pages as strong regional practice for cycle width + buffer (including paint-in-buffer), not yet global proposal status for all keys.
 3. Cross-check **tool behaviour** (StreetComplete, muv-osm, Straßenraumkarte) for what editors/parsers actually do.
-4. Mark **clear vs situational** in the deep dive; do not invent wiki consensus where Talk/ML left ambiguity (paint millimetres on motor `width:lanes`).
+4. Mark **clear vs situational** in the deep dive; do not invent wiki consensus where Talk/ML left ambiguity. For motor `width:lanes` vs paint, document an explicit **logical assumption** (clear between markings) when it follows from Berlin cycle practice + kerb→kerb `width=*`, and label it as assumption rather than wiki text.
 
 ---
 
@@ -93,7 +93,7 @@ These ERA/infraD materials are **not** OSM tagging proposals; they justify how B
 |-------------------|-----------------|--------|
 | `width` vs parking / sidewalks | Key:width, tagging ML 2020, Talk | **Documented** |
 | `width` vs `width:lanes` | Key:width, Lanes, SC #5593, DE:Fahrspuren | **Documented** |
-| Paint in motor lane widths | — | **Undocumented** (convention proposed in deep dive) |
+| Paint in motor lane widths | — (wiki silent) | **Logical assumption:** clear between markings; paint added in reconciliation formula (§2.2) |
 | Paint in cycle width | Berlin Radwege (“zwischen Begrenzungslinien”) | **Documented (DE practice)** |
 | Paint in buffer | ERA drawing + meetup note | **Documented (DE practice)** |
 | `maxwidth` / `maxwidth:physical` | Key pages, DE:Key:width | **Documented** |

@@ -2,11 +2,14 @@ import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import { Label } from '../../../../components/catalyst/fieldset'
 import { Switch } from '../../../../components/catalyst/switch'
+import type { Side } from '../../../../utils/types/parking'
+import { screenOrderedSidesSwitcherLabel } from '../../side-colors'
 
 const sideSwitcherLabelClassName = 'text-xs select-none'
 
 export function SideModeSwitcher(props: {
   bothBlockShown: boolean
+  sideOrder?: [Side, Side]
   readOnly: boolean
   onBothBlockShownChange: (checked: boolean) => void
 }) {
@@ -18,7 +21,7 @@ export function SideModeSwitcher(props: {
           props.bothBlockShown ? 'text-zinc-500' : 'font-semibold text-zinc-950',
         )}
       >
-        Left/Right
+        {props.sideOrder ? screenOrderedSidesSwitcherLabel(props.sideOrder) : 'Left/Right'}
       </Label>
       <Switch
         checked={props.bothBlockShown}

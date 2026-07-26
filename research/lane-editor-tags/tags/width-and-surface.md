@@ -14,7 +14,7 @@ Default unit: **metres** (no suffix required).
 
 **Classification:** Physical / geometry.
 
-**Not always** `sum(width:lanes) = width` — parking, shoulders, buffers, and untagged gutters sit outside the flowing-traffic pipe list (see deep dive + [StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593)).
+**Not always** `sum(width:lanes) = width` — parking, shoulders, buffers, **longitudinal paint** (logical assumption: slots are clear between markings), and untagged gutters sit outside the flowing-traffic pipe list (see [width-measurements §2.2](../../width-measurements/README.md#logical-assumption-widthlanes-excludes-road-markings) + [StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593)).
 
 ### Variants
 
@@ -97,7 +97,7 @@ Effective usable width: `width=*` minus parking, or sum of `width:lanes` — `wi
 4. **`surface:colour`** — documented in DE micromapping practice more than EN wiki.
 5. **Estimated vs surveyed** — always tag `source:width` when guessing.
 6. **Paint millimetres** — motor `width:lanes` undocumented; Berlin **buffer** includes markings; cycle usable width is between boundary lines — see [width-measurements](../../width-measurements/).
-7. **`sum(width:lanes)` ≠ `width`** when parking / shoulder / gutter present ([StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593)).
+7. **`sum(width:lanes)` ≠ `width`** when parking / shoulder / gutter **or longitudinal paint** present — paint term is a logical assumption in [width-measurements](../../width-measurements/) ([StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593)).
 
 ## Links
 

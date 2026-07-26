@@ -1,4 +1,5 @@
 import type { OsmTags, OsmWay } from '@osm-editor-kit/osm-data'
+import { PRIMARY_LANE_KEYS } from '@osm-editor-kit/osm-lanes'
 import type { ChangeSource } from '../../utils/changeset-message'
 
 const TOP_LEVEL_WIDTH_TAG_KEYS = new Set(['width', 'est_width', 'source:width'])
@@ -76,6 +77,14 @@ function pickBicycleTags(tags: OsmTags): OsmTags {
   return picked
 }
 
+function pickLaneTags(tags: OsmTags): OsmTags {
+  const picked: OsmTags = {}
+  for (const [key, value] of Object.entries(tags)) {
+    if (value !== undefined && PRIMARY_LANE_KEYS.has(key)) picked[key] = value
+  }
+  return picked
+}
+
 /** Non-parking tags from `base` so a full parking form snapshot cannot drop other modes' keys. */
 function preserveNonParkingTags(tags: OsmTags): OsmTags {
   const preserved: OsmTags = {}
@@ -122,6 +131,18 @@ export function mergeWayEdit(base: OsmWay, incoming: OsmWay, source: ChangeSourc
       tags: {
         ...base.tags,
         ...pickBicycleTags(incoming.tags),
+      },
+    }
+  }
+
+  if (source === 'lanes') {
+    return {
+      ...base,
+      ...incoming,
+      nodes: incoming.nodes ?? base.nodes,
+      tags: {
+        ...base.tags,
+        ...pickLaneTags(incoming.tags),
       },
     }
   }

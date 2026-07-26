@@ -4,8 +4,11 @@ import {
   invisibleHitAreaCirclePaint,
   transparentLineHitPaint,
 } from '../../../shell/map/map-hit-paint'
+import { parkingSideColors } from '../side-colors'
 
 const laneActiveOpacity = 1
+const laneMutedOpacity = 0.35
+const selectedLaneScale = 1.25
 const areaActiveOpacity = 0.35
 const pointActiveOpacity = 0.6
 const backlightActiveOpacity = 0.4
@@ -15,32 +18,73 @@ const missingSurfaceMatch = ['==', ['get', 'missingSurface'], 1]
 /** Extra px beyond painted lane span for forgiving hover/click. */
 const HIT_AREA_PADDING = 3
 
+const parkingSideLaneColor = [
+  'match',
+  ['get', 'side'],
+  'right',
+  parkingSideColors.right,
+  'left',
+  parkingSideColors.left,
+  '#888888',
+] as const
+
+const laneWeight = ['coalesce', ['get', 'weight'], 2]
+const laneOffset = ['coalesce', ['get', 'offset'], 0]
+const selectedLaneWeight = ['*', selectedLaneScale, laneWeight]
+const selectedLaneOffset = ['*', selectedLaneScale, laneOffset]
+
 export { ROUND_LINE_LAYOUT as parkingLineLayout }
 
 export const parkingHitAreaCirclePaint = invisibleHitAreaCirclePaint
 
 export const parkingHitAreaLinePaint = transparentLineHitPaint([
   '+',
-  ['*', 2, ['abs', ['coalesce', ['get', 'offset'], 0]]],
-  ['coalesce', ['get', 'weight'], 2],
+  ['*', 2, ['abs', laneOffset]],
+  laneWeight,
   HIT_AREA_PADDING,
 ])
 
-export function buildLanePaint(focus: string) {
+export const parkingCenterlinePaint = {
+  'line-color': '#000000',
+  'line-width': 1,
+  'line-opacity': 1,
+} as Record<string, unknown>
+
+export function buildLanePaint(focus: string, hasSelection = false) {
   const color = ['get', 'color']
+  const opacity = hasSelection ? laneMutedOpacity : laneActiveOpacity
   if (focus !== 'noSurface') {
     return {
       'line-color': color,
-      'line-width': ['coalesce', ['get', 'weight'], 2],
-      'line-offset': ['coalesce', ['get', 'offset'], 0],
+      'line-opacity': opacity,
+      'line-width': laneWeight,
+      'line-offset': laneOffset,
     } as Record<string, unknown>
   }
 
   return {
     'line-color': focusCaseColor(missingSurfaceMatch, color),
+    'line-opacity': focusCaseOpacity(missingSurfaceMatch, opacity, laneMutedOpacity),
+    'line-width': laneWeight,
+    'line-offset': laneOffset,
+  } as Record<string, unknown>
+}
+
+export function buildSelectedLanePaint(focus: string) {
+  if (focus !== 'noSurface') {
+    return {
+      'line-color': parkingSideLaneColor,
+      'line-opacity': laneActiveOpacity,
+      'line-width': selectedLaneWeight,
+      'line-offset': selectedLaneOffset,
+    } as Record<string, unknown>
+  }
+
+  return {
+    'line-color': focusCaseColor(missingSurfaceMatch, parkingSideLaneColor),
     'line-opacity': focusCaseOpacity(missingSurfaceMatch, laneActiveOpacity),
-    'line-width': ['coalesce', ['get', 'weight'], 2],
-    'line-offset': ['coalesce', ['get', 'offset'], 0],
+    'line-width': selectedLaneWeight,
+    'line-offset': selectedLaneOffset,
   } as Record<string, unknown>
 }
 
@@ -81,20 +125,20 @@ export function buildPointPaint(focus: string) {
 }
 
 export function buildBacklightPaint(focus: string) {
-  const color = ['get', 'color']
+  const color = parkingSideLaneColor
   if (focus !== 'noSurface') {
     return {
       'line-color': color,
-      'line-width': ['coalesce', ['get', 'weight'], 2],
-      'line-offset': ['coalesce', ['get', 'offset'], 0],
+      'line-width': selectedLaneWeight,
+      'line-offset': selectedLaneOffset,
       'line-opacity': backlightActiveOpacity,
     } as Record<string, unknown>
   }
 
   return {
     'line-color': focusCaseColor(missingSurfaceMatch, color),
-    'line-width': ['coalesce', ['get', 'weight'], 2],
-    'line-offset': ['coalesce', ['get', 'offset'], 0],
+    'line-width': selectedLaneWeight,
+    'line-offset': selectedLaneOffset,
     'line-opacity': focusCaseOpacity(missingSurfaceMatch, backlightActiveOpacity),
   } as Record<string, unknown>
 }

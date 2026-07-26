@@ -9,8 +9,8 @@ Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` edit
 | Question | Answer | Confidence |
 |----------|--------|------------|
 | What does `width=*` mean on a street? | **Carriageway kerb→kerb** (or edge→edge): includes on-street parking + on-carriageway cycle lanes; **excludes** sidewalks and off-kerb cycle tracks / street-side parking | **Clear** (wiki since ~2020; expect older fuzzy data) |
-| Is `sum(width:lanes) == width`? | **Only when** there is no parking, no shoulder, and no untagged gutter/edge strip. Otherwise `width` is larger | **Clear** (StreetComplete #5593 + wiki) |
-| Do motor `width:lanes` values include painted lines? | **Not documented** on the wiki. Practically: lane widths tile the usable strip; paint sits on the boundary between slots (shared, not double-counted). Gutters often sit **outside** `width:lanes` | **Situational / undocumented** |
+| Is `sum(width:lanes) == width`? | **Only when** there is no parking, no shoulder, no untagged gutter, **and** no longitudinal paint outside the lane slots. Otherwise `width` is larger | **Clear** that equality often fails (SC #5593); **paint term is a logical assumption** (see §2.2) |
+| Do motor `width:lanes` values include painted lines? | **Not documented** on the wiki. **Logical assumption (editor):** slots are **clear width between markings** (paint excluded), analogous to Berlin cycleway practice. Paint strokes are part of kerb→kerb `width=*` and must be added separately when reconciling | **Assumption** — not wiki text |
 | Do cycleway **usable** widths include paint? | Berlin practice: **distance between boundary lines** (`cycleway:*:width`) | **Clear for Berlin schema** |
 | Do **buffer** widths include paint / hatching? | Berlin / ERA-style practice documented for OSM: **yes — markings are counted in `buffer`** | **Clear for Berlin numeric buffer**; global `cycleway:buffer` mostly `yes`/`no` |
 | Is there a tag for total ROW (carriageway + sidewalks + green median)? | **No.** Compose from component widths / separate geometries | **Clear gap** |
@@ -37,13 +37,12 @@ OSM does **not** store one “streetscape width”. Widths attach to **component
 ```text
  width=*  =  kerb ◄──────────────────────────────────────────────────────► kerb
              │                                                              │
-             │  parking:L:width │ lanes… │ buffer │ cycle │ parking:R:width │
-             │  (if on-street)  │        │        │ lane  │ (if on-street)  │
+             │  parking │ ┊ █ lane ┊ █ lane ┊ │ buffer │ cycle │ parking   │
+             │          │   ↑ paint strokes are IN width=* but             │
+             │          │     OUT of sum(width:lanes) under the            │
+             │          │     clear-between-markings assumption            │
              │                                                              │
-             │         sum(width:lanes)  ≈  through-traffic strip           │
-             │         (bike slots IN :lanes schema; parking OUT)           │
-             │                                                              │
-             └─ gutters / edge strips often untagged (≈0.2–0.5 m total) ───┘
+             └─ + gutters / edge strips often untagged ────────────────────┘
 ```
 
 ### Legend for the diagrams below
@@ -95,19 +94,53 @@ OSM does **not** store one “streetscape width”. Widths attach to **component
 
 > `width` includes parking, bike lanes, shoulders; `width:lanes` covers flowing-traffic lanes in the `:lanes` schema. Adding `width` beside existing `width:lanes` is **not** always redundant — especially with parking / bike lanes / gutters. ([westnordost](https://github.com/streetcomplete/StreetComplete/issues/5593))
 
-Practical identity:
+westnordost’s residual of ≈ **0.2–0.5 m** when parking/shoulder are absent is the right *order of magnitude* for small edge leftovers — but that note does **not** spell out longitudinal lane paint as a separate term. Under the measurement assumption below, paint alone often explains a similar gap (and can be larger than 0.5 m once several Breitstriche are counted).
+
+#### Logical assumption: `width:lanes` excludes road markings
+
+**Not stated on the OSM wiki** for motor `width:lanes`. Treated here as the consistent reading given:
+
+- Berlin cycleway rule: usable width = distance **between** Begrenzungslinien ([Berlin/Verkehrswende/Radwege](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege))
+- ERA / DE design drawings measure riding strips to paint edges, while buffer packages **explicitly include** paint (see §2.8)
+- Kerb→kerb `width=*` is the full paved carriageway and therefore **includes** the paint that sits on that asphalt
+
+So each `width:lanes` slot is the **clear** strip for that lane; each longitudinal marking is **extra** width that belongs in `width=*` once, not inside every adjacent slot (do not double-count a shared centre line into both lanes).
+
+#### Reconciliation formula
 
 ```text
-width  ≈  sum(width:lanes)  +  parking widths  +  shoulders  +  untagged edge/gutter
+width  ≈  sum(width:lanes)
+       +  Σ longitudinal marking widths   ← often missing from naive sums
+       +  parking widths
+       +  shoulders
+       +  buffers (if modelled outside width:lanes; Berlin buffer already includes its own paint)
+       +  untagged gutter / edge strip
 ```
 
-When parking and shoulder are absent / tagged `no`, westnordost still expects a small residual (≈ **0.2–0.5 m**) for gutter / edge paint that mappers rarely model as `shoulder`.
+**DE marking widths (design / survey order of magnitude, not an OSM tag):**
 
-**Paint / Markierungen for motor lanes:** Wiki is silent. Working assumption for editors:
+| Marking class (typical DE) | Stroke width |
+|----------------------------|--------------|
+| Standard Leitlinie / Schmalstrich | ≈ **0.12 m** |
+| Breitstrich (e.g. wider edge / buffer boundary) | ≈ **0.25 m** |
 
-1. Adjacent `width:lanes` slots meet at the **shared** painted line (do not add full paint width to both lanes).
-2. German solid edge lines are often **0.12 m** (standard) or **0.25 m** (wide); centre dashed lines similar order — enough that double-counting both sides of every lane would invent ~0.5 m of “phantom” width on a two-lane road.
-3. Soft validation: `|width − sum(slots) − parking − known buffers|` small; do not hard-require equality.
+**How many strokes to add?** Count distinct longitudinal paint lines on the carriageway that are **not** already folded into a tagged `buffer` / parking package, e.g.:
+
+- Separators between adjacent `:lanes` slots → typically `pipe_count − 1`
+- Optional left/right **edge** lines (often present; sometimes absent when the kerb is the edge)
+- Not simply `lanes × 0.25` in every geometry — that over-counts shared centre lines and under/over-counts edge lines — but as a **rough DE sanity check** on a fully edged multi-lane street, paint can easily reach **~0.5 m** (e.g. two Breitstriche) or **~0.12 × (n_slots + 1)** for Schmalstriche with both edges.
+
+Example — two motor lanes, both edges + centre, Schmalstrich, no parking:
+
+```text
+width:lanes=3.00|3.00
+paint ≈ 0.12 + 0.12 + 0.12 = 0.36
+→ expected width ≈ 6.36 (+ gutter if any)
+```
+
+Same layout with Breitstrich edges (0.25) + Schmalstrich centre (0.12) → paint ≈ **0.62 m** — already past SC’s “half a metre” residual without any gutter story.
+
+**Soft validation:** `|width − sum(slots) − parking − buffers − Σ_paint − gutter|` small; do **not** hard-require equality. If a mapper measured `width:lanes` mid-paint-to-mid-paint or included paint inside slots, drop or shrink `Σ_paint`.
 
 ---
 
@@ -216,19 +249,24 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 | Aggregate | Typical formula | Notes |
 |-----------|-----------------|-------|
 | Carriageway `width` | kerb→kerb survey | Prefer direct measure |
-| Effective driving width | `width − Σ parking:width` **or** `Σ width:lanes` (motor slots) | Ambiguous with unmarked parking |
-| Full `:lanes` strip | `Σ width:lanes` (all pipes incl. bike) | Excludes parking |
-| On-road cycle package | `cycleway:*:width + cycleway:*:buffer(:*)` | Buffer includes paint (Berlin) |
+| Effective driving width | `width − Σ parking:width` **or** `Σ width:lanes` (motor slots) | Ambiguous with unmarked parking; paint still in `width` |
+| Full `:lanes` strip (clear) | `Σ width:lanes` | **Excludes** longitudinal paint under §2.2 assumption |
+| Clear lanes + paint → carriageway | `Σ width:lanes + Σ marking strokes (+ parking/shoulder/gutter/buffer)` | Paint term is **logical assumption**, not wiki |
+| On-road cycle package | `cycleway:*:width + cycleway:*:buffer(:*)` | Buffer includes paint (Berlin); cycle width does not |
 | Full ROW | sidewalks + verges + carriageway + medians | **No tag** — sum components or use areas |
 
 ### 3.2 Scenario A — simple two-lane street, no parking
 
 ```text
 │·┊████ 3.0 ┊████ 3.0 ┊·│
- width=6.2
+     ↑0.12  ↑0.12  ↑0.12   ← longitudinal paint (Schmalstrich), OUT of width:lanes
  width:lanes=3|3
- → residual 0.2 m gutters (untagged) — OK
+ paint ≈ 0.36
+ gutter · · optional
+ → width ≈ 6.36 (+ gutter), not 6.0
 ```
+
+Naive `sum(width:lanes) == width` fails even with no parking — the missing metres are mostly **markings**, not only “gutter”.
 
 ### 3.3 Scenario B — parking + bike lane + buffer (Berlin-style)
 
@@ -300,9 +338,9 @@ flowchart TD
 ### Soft consistency checks (editor)
 
 1. Warn if `width` present and `sum(width:lanes) > width` (impossible if units correct).
-2. Warn if `sum(width:lanes) + Σ parking:width + Σ buffers ≪ width` by >0.5 m without shoulder/gutter explanation.
+2. Warn if `sum(width:lanes) + Σ parking + Σ buffers ≪ width` without explaining **paint**, shoulder, or gutter — suggest DE stroke heuristics (0.12 / 0.25 m × counted lines) before blaming survey error.
 3. Warn if `width:lanes` pipe count ≠ other `:lanes` attributes’ pipe counts.
-4. Do **not** suppress asking for `width` merely because `width:lanes` exists (SC wontfix rationale) — but **do** show derived sum as a hint to the surveyor.
+4. Do **not** suppress asking for `width` merely because `width:lanes` exists (SC wontfix rationale) — but **do** show derived sum **including an optional paint estimate** as a hint to the surveyor.
 
 ---
 
@@ -363,12 +401,13 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 ## 7. Gaps & open questions
 
-1. **No wiki rule** for whether motor `width:lanes` includes half a painted line — needs a short Key:width clarification or editor convention note.
+1. **No wiki rule** for whether motor `width:lanes` includes painted line millimetres — this package documents a **clear-between-markings** logical assumption (§2.2) so editors can reconcile `width` vs `sum(width:lanes)`; confirm or reject against more surveys / a Key:width note.
 2. **No `width` for full ROW** including both sidewalks + planted median / boulevard — intentional; micromappers use areas.
 3. **Global `cycleway:buffer`** usage is mostly boolean; numeric+paint-included rule is **Berlin/DE strong practice**, not universal wiki text on Key:cycleway:buffer.
 4. **Dual tagging** (`cycleway:*:width` **and** bike slot in `width:lanes`) — pick one primary for sum checks.
 5. **Unpaved / rural** roads: tagging ML showed no single “width” definition (obstacle-free vs driven ruts) — urban kerb rule does not travel well.
 6. **DE Key:width** should ideally link/translate the EN “Width of streets” section to reduce DE/EN drift.
+7. **SC #5593 residual** framed as gutter only — should also cite longitudinal paint when documenting why `width` ≠ `sum(width:lanes)`.
 
 ---
 
@@ -384,10 +423,11 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 **Should**
 
-- Warn on inconsistent sums; explain gutter residual.
+- Warn on inconsistent sums; explain **paint** (DE 0.12 / 0.25 m strokes) as well as gutter residual.
 - `est_width` / `source:width` for uncertain surveys.
 - Split-way helper for narrowings (local `width`).
 - Document Berlin paint-in-buffer rule in help text when region=DE.
+- Optional paint estimate in the Streetmix sum bar when `lane_markings=yes`.
 
 **Nice**
 

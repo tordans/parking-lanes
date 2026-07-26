@@ -2,7 +2,9 @@ import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { z } from 'zod'
+import type { Side } from '../../../../utils/types/parking'
 import { applyTagMigration } from '../../domain/editor/tag-migration'
+import { highwayCategoryLabel } from '../../domain/highway-category-label'
 import { AllTagsBlock } from '../LaneInfo'
 import { SideGroup } from './SideGroup'
 import { SideModeSwitcher } from './SideModeSwitcher'
@@ -13,6 +15,7 @@ const tagsSchema = z.record(z.string(), z.string())
 
 export function LaneEditForm(props: {
   osm: OsmWay
+  sideOrder: [Side, Side]
   readOnly?: boolean
   onChange: (way: OsmWay) => void
 }) {
@@ -37,6 +40,7 @@ export function LaneEditForm(props: {
 
   const bothBlockShown = useStore(form.store, (state) => state.values.bothBlockShown)
   const [tagUpdaterModalShown, setTagUpdaterModalShown] = useState(false)
+  const streetCategoryLabel = highwayCategoryLabel(props.osm.tags.highway)
 
   return (
     <form
@@ -49,16 +53,22 @@ export function LaneEditForm(props: {
           {(field) => (
             <SideModeSwitcher
               bothBlockShown={bothBlockShown}
+              sideOrder={props.sideOrder}
               readOnly={readOnly}
               onBothBlockShownChange={field.handleChange}
             />
           )}
         </form.Field>
-        <TagMigrationToolbar
-          osm={props.osm}
-          readOnly={readOnly}
-          onOpenTagUpdater={() => setTagUpdaterModalShown(true)}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          {streetCategoryLabel ? (
+            <span className="text-xs text-zinc-500">{streetCategoryLabel}</span>
+          ) : null}
+          <TagMigrationToolbar
+            osm={props.osm}
+            readOnly={readOnly}
+            onOpenTagUpdater={() => setTagUpdaterModalShown(true)}
+          />
+        </div>
       </div>
       <div id="tags-block" className="font-mono">
         <SideGroup
@@ -68,21 +78,17 @@ export function LaneEditForm(props: {
           readOnly={readOnly}
           onChange={handleInputChange}
         />
-        <SideGroup
-          osm={props.osm}
-          side="right"
-          shown={!bothBlockShown}
-          readOnly={readOnly}
-          onChange={handleInputChange}
-        />
-        <SideGroup
-          osm={props.osm}
-          side="left"
-          shown={!bothBlockShown}
-          readOnly={readOnly}
-          onChange={handleInputChange}
-        />
-        <AllTagsBlock tags={props.osm.tags} />
+        {props.sideOrder.map((side) => (
+          <SideGroup
+            key={side}
+            osm={props.osm}
+            side={side}
+            shown={!bothBlockShown}
+            readOnly={readOnly}
+            onChange={handleInputChange}
+          />
+        ))}
+        <AllTagsBlock osmType={props.osm.type} osmId={props.osm.id} tags={props.osm.tags} />
       </div>
 
       {!readOnly ? (

@@ -1,6 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { ParkingConditions } from '../../../utils/types/conditions'
-import type { Side } from '../../../utils/types/parking'
+import type { Side, StyleMapInterface } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
 import { isMissingSurfaceForSide } from '../domain/missing-surface'
 import { getSideConditions } from '../domain/side-conditions'
@@ -24,17 +24,26 @@ function toCoords(nodeCoords: Record<number, number[]>, way: OsmWay): [number, n
   })
 }
 
+function laneSpan(isMajor: boolean, style: StyleMapInterface) {
+  return isMajor ? (style.offsetMajor ?? 2) : (style.offsetMinor ?? 1)
+}
+
+function laneOffsetFromSpan(span: number, side: Side) {
+  const halfSpan = span / 2
+  return side === 'right' ? halfSpan : -halfSpan
+}
+
 function createLaneFeature(
   coords: [number, number][],
   conditions: ParkingConditions | undefined,
   side: Side,
   way: OsmWay,
-  offset: number,
   isMajor: boolean,
   zoom: number,
   laneId: string,
 ): ParkingFeature {
   const style = laneStyleByZoom[zoom] ?? laneStyleByZoom[18]!
+  const span = laneSpan(isMajor, style)
   return {
     type: 'Feature',
     id: laneId,
@@ -43,8 +52,9 @@ function createLaneFeature(
       featureId: laneId,
       kind: 'lane',
       color: getColor(conditions?.default) ?? '#888888',
-      weight: isMajor ? (style.weightMajor ?? 2) : (style.weightMinor ?? 1),
-      offset: side === 'right' ? offset : -offset,
+      weight: span,
+      offset: laneOffsetFromSpan(span, side),
+      side,
       osmType: way.type,
       osmId: way.id,
       isMajor,
@@ -72,16 +82,16 @@ export function parseParkingLaneFeatures(
       (conditions.conditionalValues && conditions.conditionalValues.length > 0)
     ) {
       const laneId = side + way.id
-      const style = laneStyleByZoom[zoom] ?? laneStyleByZoom[18]!
-      const offset = isMajor ? (style.offsetMajor ?? 1) : (style.offsetMinor ?? 0.5)
-      features.push(createLaneFeature(coords, conditions, side, way, offset, isMajor, zoom, laneId))
+      features.push(createLaneFeature(coords, conditions, side, way, isMajor, zoom, laneId))
       emptyway = false
     }
   }
 
   if (emptyway && way.tags.highway && highwayRegex.test(way.tags.highway)) {
-    const laneId = 'empty' + way.id
-    features.push(createLaneFeature(coords, undefined, 'right', way, 0, isMajor, zoom, laneId))
+    for (const side of ['right', 'left'] as Side[]) {
+      const laneId = side + way.id
+      features.push(createLaneFeature(coords, undefined, side, way, isMajor, zoom, laneId))
+    }
   }
 
   return features
@@ -121,25 +131,23 @@ export function updateLaneFeatureStyles(
   const style = laneStyleByZoom[zoom] ?? laneStyleByZoom[18]!
   return features.map((feature) => {
     if (feature.properties.kind !== 'lane') return feature
-    if (
-      feature.properties.featureId === 'right' ||
-      feature.properties.featureId === 'left' ||
-      feature.properties.featureId.startsWith('empty')
-    ) {
+    if (feature.properties.featureId.startsWith('empty')) {
       return feature
     }
 
     const isMajor = feature.properties.isMajor ?? false
-    const offsetBase = isMajor ? style.offsetMajor : style.offsetMinor
-    const weight = isMajor ? style.weightMajor : style.weightMinor
-    const sideOffset = feature.properties.offset > 0 ? 1 : -1
+    const span = laneSpan(isMajor, style)
+    const side =
+      feature.properties.side ??
+      (feature.properties.offset > 0 ? 'right' : feature.properties.offset < 0 ? 'left' : 'right')
 
     return {
       ...feature,
       properties: {
         ...feature.properties,
-        offset: sideOffset * (offsetBase ?? 1),
-        weight: weight ?? 2,
+        side,
+        offset: laneOffsetFromSpan(span, side),
+        weight: span,
       },
     }
   })
@@ -150,8 +158,9 @@ export function createBacklightFeatures(
   zoom: number,
 ): ParkingFeature[] {
   const style = laneStyleByZoom[zoom] ?? laneStyleByZoom[18]!
-  const n = 3
-  const offsetMajor = style.offsetMajor ?? 1
+  const spanScale = 1.25
+  const rightSpan = (style.offsetMajor ?? 1) * spanScale
+  const leftSpan = (style.offsetMajor ?? 0.5) * spanScale
 
   return [
     {
@@ -162,8 +171,9 @@ export function createBacklightFeatures(
         featureId: 'backlight-right',
         kind: 'backlight-right',
         color: parkingSideColors.right,
-        weight: offsetMajor * n - 4,
-        offset: offsetMajor * n,
+        weight: rightSpan,
+        offset: laneOffsetFromSpan(rightSpan, 'right'),
+        side: 'right',
         osmType: 'way',
         osmId: 0,
       },
@@ -176,8 +186,9 @@ export function createBacklightFeatures(
         featureId: 'backlight-left',
         kind: 'backlight-left',
         color: parkingSideColors.left,
-        weight: (style.offsetMajor ?? 0.5) * n - 4,
-        offset: -((style.offsetMajor ?? 0.5) * n),
+        weight: leftSpan,
+        offset: laneOffsetFromSpan(leftSpan, 'left'),
+        side: 'left',
         osmType: 'way',
         osmId: 0,
       },

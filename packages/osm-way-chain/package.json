@@ -1,0 +1,21 @@
+{
+  "name": "@osm-editor-kit/osm-way-chain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src/test"
+  },
+  "dependencies": {
+    "@osm-editor-kit/osm-data": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "bun-types": "^1.2.20",
+    "typescript": "^7.0.0"
+  }
+}

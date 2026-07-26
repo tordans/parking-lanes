@@ -1,4 +1,6 @@
+import { useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { useLanesMapFeatures } from '../../modes/lanes/map/use-lanes-map-features'
 import {
   getLaneFeatureByOsmId,
   useParkingMapActions,
@@ -11,6 +13,7 @@ import { useMapViewport } from './map-viewport'
 
 /** Restore lane backlights when selection is hydrated from URL after data loads. */
 export function useSelectionBacklights() {
+  const { mode } = useParams({ from: '/$mode' })
   const mapBounds = useMapBounds()
   const { zoom } = useMapViewport()
   const datetime = useDatetime()
@@ -21,6 +24,7 @@ export function useSelectionBacklights() {
     zoom,
     datetime,
   })
+  const lanesHighways = useLanesMapFeatures({ bounds: mapBounds })
 
   useEffect(
     function syncSelectionBacklights() {
@@ -29,18 +33,22 @@ export function useSelectionBacklights() {
         return
       }
 
-      const laneFeature = getLaneFeatureByOsmId(selectedOsmRef.id, lanes)
-      if (laneFeature?.geometry.type !== 'LineString') {
+      const lineFeature =
+        mode === 'lanes'
+          ? lanesHighways.features.find((f) => f.properties.osmId === selectedOsmRef.id)
+          : getLaneFeatureByOsmId(selectedOsmRef.id, lanes)
+
+      if (lineFeature?.geometry.type !== 'LineString') {
         clearBacklights()
         return
       }
 
-      const coords = laneFeature.geometry.coordinates as [number, number][]
+      const coords = lineFeature.geometry.coordinates as [number, number][]
       setBacklights({
         type: 'FeatureCollection',
         features: createBacklightFeatures(coords, zoom),
       })
     },
-    [clearBacklights, lanes, zoom, selectedOsmRef, setBacklights],
+    [clearBacklights, lanes, lanesHighways, mode, zoom, selectedOsmRef, setBacklights],
   )
 }

@@ -7,6 +7,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef } from 'react'
 import type { MapEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
+import { useLanesCoveragePace, viewMinZoom as lanesViewMinZoom } from '../../modes/lanes'
 import { getMapSizePx, toBounds, useParkingCoveragePace, viewMinZoom } from '../../modes/parking'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
@@ -20,14 +21,19 @@ export function useMapCoverageLifecycle() {
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const isWidthMode = resolvedModeId === 'width'
+  const isLanesMode = resolvedModeId === 'lanes'
+  const usesHighwayCoverage = isWidthMode || isLanesMode
   const styleTransformApplied = useRef(false)
 
   const { setMapBounds } = useAppActions()
   const { markMapLoaded, setMapTilesLoading } = useMapActions()
-  const parkingCoverage = useParkingCoveragePace(!isWidthMode)
+  const parkingCoverage = useParkingCoveragePace(!usesHighwayCoverage)
   const widthCoverage = useWidthCoveragePace(isWidthMode)
-  const { scheduleCoverageCheck, loadCoverageNow } = isWidthMode ? widthCoverage : parkingCoverage
-  const minZoom = isWidthMode ? widthViewMinZoom : viewMinZoom
+  const lanesCoverage = useLanesCoveragePace(isLanesMode)
+  const activeCoverage = isLanesMode ? lanesCoverage : isWidthMode ? widthCoverage : parkingCoverage
+  const minZoom = isLanesMode ? lanesViewMinZoom : isWidthMode ? widthViewMinZoom : viewMinZoom
+
+  const { scheduleCoverageCheck, loadCoverageNow } = activeCoverage
 
   function writeMapViewport(
     viewState: ViewStateChangeEvent['viewState'],

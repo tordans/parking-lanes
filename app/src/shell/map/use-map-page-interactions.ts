@@ -2,6 +2,7 @@ import { useParams, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
 import { useBicycleModeHandlers } from '../../modes/bicycle/use-bicycle-mode-handlers'
+import { useLanesModeHandlers } from '../../modes/lanes/use-lanes-mode-handlers'
 import {
   useParkingLayerClickHandler,
   useParkingMapClickHandler,
@@ -27,6 +28,7 @@ export function useMapPageInteractions() {
   const isWidthMode = resolvedModeId === 'width'
   const isBicycleMode = resolvedModeId === 'bicycle'
   const isSurfaceMode = resolvedModeId === 'surface'
+  const isLanesMode = resolvedModeId === 'lanes'
 
   const [cursorStyle, setCursorStyle] = useState('grab')
   const coverageDebug = useCoverageDebugHover()
@@ -37,6 +39,7 @@ export function useMapPageInteractions() {
   const widthHandlers = useWidthModeHandlers()
   const bicycleHandlers = useBicycleModeHandlers()
   const surfaceHandlers = useSurfaceModeHandlers()
+  const lanesHandlers = useLanesModeHandlers()
 
   const interactiveLayerIds = [
     ...mode.interactiveLayerIds,
@@ -59,6 +62,10 @@ export function useMapPageInteractions() {
       surfaceHandlers.handleLayerClick(event)
       return
     }
+    if (isLanesMode) {
+      lanesHandlers.handleLayerClick(event)
+      return
+    }
     parkingLayerClick(event)
   }
 
@@ -74,6 +81,10 @@ export function useMapPageInteractions() {
     }
     if (isSurfaceMode) {
       surfaceHandlers.handleMapClick()
+      return
+    }
+    if (isLanesMode) {
+      lanesHandlers.handleMapClick()
       return
     }
     parkingMapClick()

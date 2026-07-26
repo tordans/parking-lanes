@@ -20,6 +20,7 @@
         "@osm-editor-kit/osm-coverage": "workspace:*",
         "@osm-editor-kit/osm-data": "workspace:*",
         "@osm-editor-kit/osm-editor-links": "workspace:*",
+        "@osm-editor-kit/osm-lanes": "workspace:*",
         "@osm-editor-kit/osm-map-url": "workspace:*",
         "@osm-editor-kit/osm-maplibre": "workspace:*",
         "@osm-editor-kit/osm-oauth": "workspace:*",
@@ -27,6 +28,7 @@
         "@osm-editor-kit/osm-surface-quality": "workspace:*",
         "@osm-editor-kit/osm-tag-syntax": "workspace:*",
         "@osm-editor-kit/osm-ui": "workspace:*",
+        "@osm-editor-kit/osm-way-chain": "workspace:*",
         "@osm-editor-kit/osm-way-edit": "workspace:*",
         "@osm-surface-smoothness/data": "file:../../osm-surface-smoothness-workspace/osm-surface-smoothness-tagging/packages/data",
         "@tanstack/react-form": "^1.19.2",
@@ -137,6 +139,14 @@
         "typescript": "^7.0.0",
       },
     },
+    "packages/osm-lanes": {
+      "name": "@osm-editor-kit/osm-lanes",
+      "version": "0.0.0",
+      "devDependencies": {
+        "bun-types": "^1.2.20",
+        "typescript": "^7.0.0",
+      },
+    },
     "packages/osm-map-url": {
       "name": "@osm-editor-kit/osm-map-url",
       "version": "0.0.0",
@@ -210,6 +220,18 @@
       "name": "@osm-editor-kit/osm-ui",
       "version": "0.0.0",
       "devDependencies": {
+        "typescript": "^7.0.0",
+      },
+    },
+    "packages/osm-way-chain": {
+      "name": "@osm-editor-kit/osm-way-chain",
+      "version": "0.0.0",
+      "dependencies": {
+        "@osm-editor-kit/osm-data": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/geojson": "^7946.0.16",
+        "bun-types": "^1.2.20",
         "typescript": "^7.0.0",
       },
     },
@@ -358,6 +380,8 @@
 
     "@osm-editor-kit/osm-editor-links": ["@osm-editor-kit/osm-editor-links@workspace:packages/osm-editor-links"],
 
+    "@osm-editor-kit/osm-lanes": ["@osm-editor-kit/osm-lanes@workspace:packages/osm-lanes"],
+
     "@osm-editor-kit/osm-map-url": ["@osm-editor-kit/osm-map-url@workspace:packages/osm-map-url"],
 
     "@osm-editor-kit/osm-maplibre": ["@osm-editor-kit/osm-maplibre@workspace:packages/osm-maplibre"],
@@ -371,6 +395,8 @@
     "@osm-editor-kit/osm-tag-syntax": ["@osm-editor-kit/osm-tag-syntax@workspace:packages/osm-tag-syntax"],
 
     "@osm-editor-kit/osm-ui": ["@osm-editor-kit/osm-ui@workspace:packages/osm-ui"],
+
+    "@osm-editor-kit/osm-way-chain": ["@osm-editor-kit/osm-way-chain@workspace:packages/osm-way-chain"],
 
     "@osm-editor-kit/osm-way-edit": ["@osm-editor-kit/osm-way-edit@workspace:packages/osm-way-edit"],
 

@@ -1,0 +1,17 @@
+{
+  "name": "@osm-editor-kit/osm-lanes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src/test"
+  },
+  "devDependencies": {
+    "bun-types": "^1.2.20",
+    "typescript": "^7.0.0"
+  }
+}

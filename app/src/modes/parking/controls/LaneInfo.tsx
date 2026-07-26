@@ -6,6 +6,8 @@ import {
 } from '../../../shell/controls/MapFeatureEmptyState'
 import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
 import { useMapViewport } from '../../../shell/map/map-viewport'
+import type { Side } from '../../../utils/types/parking'
+import { screenOrderedParkingSides, wayLineCoordinates } from '../domain/way-side-order'
 import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
@@ -48,6 +50,13 @@ export function OsmObjectPanel() {
   const isStreetParking =
     selectedOsmObject.tags.highway && selectedOsmObject.tags.amenity !== 'parking'
   const readOnly = authState !== AuthState.success
+  const sideOrder: [Side, Side] =
+    selectedOsmObject.type === 'way' && graph
+      ? screenOrderedParkingSides(
+          wayLineCoordinates(selectedOsmObject as OsmWay, graph.nodeCoords),
+          mapViewport.bearing ?? 0,
+        )
+      : ['left', 'right']
 
   return (
     <div className="flex min-w-[250px] flex-col text-zinc-900">
@@ -64,7 +73,12 @@ export function OsmObjectPanel() {
               <LoginCallout onLogin={() => void login()} />
             </div>
           ) : null}
-          <LaneEditForm osm={selectedOsmObject as OsmWay} readOnly={readOnly} onChange={onChange} />
+          <LaneEditForm
+            osm={selectedOsmObject as OsmWay}
+            sideOrder={sideOrder}
+            readOnly={readOnly}
+            onChange={onChange}
+          />
         </>
       ) : (
         <>
@@ -95,10 +109,15 @@ function OsmObjectInfo(props: { osm: OsmObject }) {
   )
 }
 
-export function AllTagsBlock(props: { tags: OsmTags }) {
+export function AllTagsBlock(props: { osmType: string; osmId: number; tags: OsmTags }) {
   return (
     <details className="pt-1.5 text-sm text-zinc-600">
-      <summary className="cursor-pointer font-sans">All tags</summary>
+      <summary className="cursor-pointer font-sans">
+        All tags
+        <span className="ml-1.5 font-mono text-xs text-zinc-500">
+          {props.osmType}/{props.osmId}
+        </span>
+      </summary>
       <table className="w-full table-fixed">
         <colgroup>
           <col className="w-1/2" />

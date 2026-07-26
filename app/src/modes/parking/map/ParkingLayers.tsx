@@ -11,11 +11,13 @@ export function ParkingLayers({
   areas,
   points,
   backlights,
+  selectedWayId,
 }: {
   lanes: ParkingFeatureCollection
   areas: ParkingFeatureCollection
   points: ParkingFeatureCollection
   backlights: ParkingFeatureCollection
+  selectedWayId: number | null
 }) {
   const { focus } = useMapFocus()
   const parkingFocus = focus === 'noSurface' ? 'noSurface' : 'all'
@@ -23,9 +25,11 @@ export function ParkingLayers({
   return (
     <>
       <ParkingAreasSource collection={areas} focus={parkingFocus} />
-      <ParkingLanesSource collection={lanes} focus={parkingFocus} />
+      <ParkingLanesSource collection={lanes} focus={parkingFocus} selectedWayId={selectedWayId} />
       <ParkingPointsSource collection={points} focus={parkingFocus} />
-      <ParkingBacklightsSource collection={backlights} focus={parkingFocus} />
+      {selectedWayId == null ? (
+        <ParkingBacklightsSource collection={backlights} focus={parkingFocus} />
+      ) : null}
     </>
   )
 }

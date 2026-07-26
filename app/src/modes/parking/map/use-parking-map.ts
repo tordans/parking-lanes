@@ -38,6 +38,7 @@ export function useLaneClickHandler() {
 
 export const interactiveLayerIds = [
   'parking-lanes-hitarea-layer',
+  'parking-selected-lanes-hitarea-layer',
   'parking-areas-layer',
   'parking-points-hitarea-layer',
 ]
