@@ -8,6 +8,7 @@ import {
 import {
   Dropdown,
   DropdownButton,
+  DropdownDescription,
   DropdownDivider,
   DropdownHeading,
   DropdownItem,
@@ -15,11 +16,17 @@ import {
   DropdownMenu,
   DropdownSection,
 } from '../../components/catalyst/dropdown'
+import { HotkeyKbd } from '../../components/HotkeyKbd'
+import { usePreviousBackgroundLayerId } from './background-history-store'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
 import { useMapViewport } from './map-viewport'
 import { mapControlButtonClassName } from './mobileMapChrome.const'
-import { useBackgroundLayerId, useSetBackgroundLayerId } from './use-background-layer'
+import {
+  useBackgroundHotkeys,
+  useBackgroundLayerId,
+  useSetBackgroundLayerId,
+} from './use-background-layer'
 
 const CATEGORY_GROUPS: { key: EliCategory; label: string }[] = [
   { key: 'photo', label: 'Aerial / Satellite' },
@@ -40,6 +47,8 @@ export function MapBackgroundLayerControl() {
   const { lat, lng } = useMapViewport()
   const backgroundLayerId = useBackgroundLayerId()
   const setBackgroundLayerId = useSetBackgroundLayerId()
+  const previousBackgroundLayerId = usePreviousBackgroundLayerId()
+  useBackgroundHotkeys()
 
   const centerCountry = countryCoder.iso1A2Code([lng, lat])
   const { layers, status } = useEditorLayerIndex({
@@ -54,6 +63,8 @@ export function MapBackgroundLayerControl() {
     ...group,
     items: sortLayers(layers.filter((layer) => (layer.category ?? 'other') === group.key)),
   })).filter((group) => group.items.length > 0)
+
+  const showToggleHint = previousBackgroundLayerId !== undefined
 
   return (
     <Dropdown>
@@ -76,6 +87,7 @@ export function MapBackgroundLayerControl() {
             selected={backgroundLayerId == null}
             onSelect={() => setBackgroundLayerId(null)}
             label={DEFAULT_LABEL}
+            showToggleHint={showToggleHint && backgroundLayerId == null}
           />
         </DropdownSection>
 
@@ -102,6 +114,7 @@ export function MapBackgroundLayerControl() {
                 onSelect={() => setBackgroundLayerId(layer.id)}
                 label={layer.name}
                 best={layer.best}
+                showToggleHint={showToggleHint && backgroundLayerId === layer.id}
               />
             ))}
           </DropdownSection>,
@@ -128,11 +141,13 @@ function BackgroundOption({
   onSelect,
   label,
   best = false,
+  showToggleHint = false,
 }: {
   selected: boolean
   onSelect: () => void
   label: string
   best?: boolean
+  showToggleHint?: boolean
 }) {
   return (
     <DropdownItem className="items-start" onClick={onSelect}>
@@ -145,6 +160,12 @@ function BackgroundOption({
         {label}
         {best ? ' ⭐' : null}
       </DropdownLabel>
+      {showToggleHint ? (
+        <DropdownDescription className="inline-flex items-center gap-1.5">
+          <HotkeyKbd hotkey="Mod+B" />
+          <span>toggles between the last two backgrounds</span>
+        </DropdownDescription>
+      ) : null}
     </DropdownItem>
   )
 }

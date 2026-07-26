@@ -1,6 +1,9 @@
+import { formatForDisplay, useHotkeys } from '@tanstack/react-hotkeys'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
+import { HotkeyKbd } from '../../components/HotkeyKbd'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
+import { MODE_HOTKEYS } from '../../modes/mode-hotkeys'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
 import {
@@ -16,22 +19,52 @@ export function ModeSwitcher() {
   const navigate = useNavigate({ from: '/$mode' })
   const { mode: currentMode } = useParams({ from: '/$mode' })
 
+  useHotkeys(
+    streetSpaceModes.map((mode) => ({
+      hotkey: MODE_HOTKEYS[mode.id],
+      callback: () => {
+        if (!mode.enabled || mode.id === currentMode) return
+        void navigate({
+          to: '/$mode',
+          params: { mode: mode.id },
+          search: (prev) => serializeMapSearch(prev),
+          replace: true,
+        })
+      },
+      options: { enabled: mode.enabled && mode.id !== currentMode },
+    })),
+  )
+
   return (
     <div className="flex items-center gap-2">
       <div className={mapToolbarButtonGroupClassName} role="tablist" aria-label="Street space mode">
         {streetSpaceModes.map((mode, index) => {
           const isActive = mode.id === currentMode
           const Icon = modeIcons[mode.id]
-          const tooltip = mode.enabled ? mode.label : `${mode.label} (coming soon)`
+          const hotkey = MODE_HOTKEYS[mode.id]
+          const label = mode.enabled ? mode.label : `${mode.label} (coming soon)`
 
           return (
-            <Tooltip key={mode.id} content={isActive ? null : tooltip} placement="bottom">
+            <Tooltip
+              key={mode.id}
+              content={
+                isActive ? null : (
+                  <>
+                    <span>{label}</span>
+                    {mode.enabled ? <HotkeyKbd hotkey={hotkey} /> : null}
+                  </>
+                )
+              }
+              placement="bottom"
+            >
               <span className="inline-flex">
                 <button
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  aria-label={mode.label}
+                  aria-label={
+                    mode.enabled ? `${mode.label} (${formatForDisplay(hotkey)})` : mode.label
+                  }
                   disabled={!mode.enabled}
                   className={clsxModeButton({ isActive, enabled: mode.enabled, index })}
                   onClick={() => {

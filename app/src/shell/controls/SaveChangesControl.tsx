@@ -1,7 +1,9 @@
 import { osmDevUrl } from '@osm-editor-kit/osm-editor-links'
+import { useHotkey } from '@tanstack/react-hotkeys'
 import clsx from 'clsx'
 import { Upload } from 'lucide-react'
 import { useState } from 'react'
+import { HotkeyKbd } from '../../components/HotkeyKbd'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
 import {
   allPendingSources,
@@ -42,10 +44,12 @@ export function SaveChangesControl() {
   }
 
   function handleOpen() {
-    if (!hasChanges) return
+    if (!hasChanges || open) return
     refreshPending()
     setOpen(true)
   }
+
+  useHotkey('Mod+S', () => handleOpen(), { enabled: hasChanges && !open })
 
   function handleDiscard(wayId: number) {
     const result = removeChangedEntity(wayId)
@@ -79,9 +83,14 @@ export function SaveChangesControl() {
     <>
       <Tooltip
         content={
-          hasChanges
-            ? `Upload ${changesCount} change${changesCount === 1 ? '' : 's'}`
-            : 'No pending changes'
+          hasChanges ? (
+            <>
+              <span>{`Upload ${changesCount} change${changesCount === 1 ? '' : 's'}`}</span>
+              <HotkeyKbd hotkey="Mod+S" />
+            </>
+          ) : (
+            'No pending changes'
+          )
         }
         placement="bottom"
       >
