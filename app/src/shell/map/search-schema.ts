@@ -37,6 +37,8 @@ export const mapSearchSchema = z.object({
     .string()
     .optional()
     .transform((s) => (s ? (parseFeatureParam(s) ?? undefined) : undefined)),
+  /** ELI background imagery slug; omitted = default OpenFreeMap Positron. */
+  bg: z.string().min(1).optional(),
   debug: z
     .union([
       z.boolean(),
@@ -77,6 +79,7 @@ export function serializeMapSearch(
   return {
     map: search.map ? serializeMapParam(search.map) : undefined,
     f: search.f ? serializeFeatureParam(search.f) : undefined,
+    bg: search.bg,
     debug: search.debug,
     focus: serializeMapFocus(search.focus),
   }

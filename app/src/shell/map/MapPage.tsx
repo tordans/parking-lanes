@@ -23,6 +23,7 @@ import {
 import { MapGL, MapProvider } from './map-gl'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapActions } from './map-store'
+import { MapBackgroundLayerSource } from './MapBackgroundLayerSource'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
 import { useMapCoverageLifecycle } from './use-map-coverage-lifecycle'
@@ -144,6 +145,8 @@ function MapPageContent({
               >
                 <MapResizeHandler containerRef={mapContainerRef} />
                 <AttributionControl compact position="bottom-left" />
+                {/* Above default style, below mode/debug layers (react-map-gl child order). */}
+                <MapBackgroundLayerSource />
                 <CoverageDebugMapLayers hoveredGroupId={coverageDebug.hoveredGroupId} />
                 <ModeMapLayers />
                 <WayCutLayers />

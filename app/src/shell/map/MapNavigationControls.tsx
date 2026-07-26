@@ -6,6 +6,7 @@ import { toast } from '../../lib/toast'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
 import { useMapViewport } from './map-viewport'
+import { MapBackgroundLayerControl } from './MapBackgroundLayerControl'
 import { MapExternalLinksControl } from './MapExternalLinksControl'
 import {
   mapControlButtonClassName,
@@ -74,6 +75,7 @@ export function MapNavigationControls() {
   return (
     <div className={`${mapControlsClassName} flex flex-col items-end gap-2`}>
       <MapExternalLinksControl />
+      <MapBackgroundLayerControl />
       {isRotated ? (
         <div className={mapControlButtonGroupClassName}>
           <button

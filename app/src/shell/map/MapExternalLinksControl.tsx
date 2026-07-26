@@ -47,7 +47,7 @@ export function MapExternalLinksControl() {
       >
         <Link2 className="size-5" aria-hidden />
       </DropdownButton>
-      <DropdownMenu anchor="top end" className="min-w-56">
+      <DropdownMenu anchor={{ to: 'top end', gap: 8, padding: 12 }} className="z-50 min-w-56">
         <DropdownSection>
           <DropdownHeading>
             View
