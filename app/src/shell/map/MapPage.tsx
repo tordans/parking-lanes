@@ -57,7 +57,7 @@ function MapPageContent({
   const mode = useActiveStreetSpaceMode(resolvedModeId)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const selectedOsmRef = useSelectedOsmRef()
-  const { clearSelection, selectionEpoch } = useFeatureSelection()
+  const { selectionEpoch } = useFeatureSelection()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
   const { clearLanesState } = useLanesMapActions()
   const { cancelCut } = useWayCutActions()
@@ -81,15 +81,14 @@ function MapPageContent({
   const BottomPanel = mode.BottomPanel
 
   useEffect(
-    function clearSelectionOnModeSwitch() {
+    function resetModeLocalStateOnModeSwitch() {
       if (prevModeRef.current === resolvedModeId) return
-      clearSelection()
       clearWidthDraft()
       clearLanesState()
       cancelCut()
       prevModeRef.current = resolvedModeId
     },
-    [cancelCut, clearLanesState, clearSelection, clearWidthDraft, resolvedModeId],
+    [cancelCut, clearLanesState, clearWidthDraft, resolvedModeId],
   )
 
   useEffect(

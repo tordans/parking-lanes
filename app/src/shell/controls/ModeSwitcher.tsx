@@ -39,10 +39,7 @@ export function ModeSwitcher() {
                     void navigate({
                       to: '/$mode',
                       params: { mode: mode.id },
-                      search: (prev) => ({
-                        ...serializeMapSearch(prev),
-                        f: undefined,
-                      }),
+                      search: (prev) => serializeMapSearch(prev),
                       replace: true,
                     })
                   }}
