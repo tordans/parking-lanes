@@ -5,8 +5,8 @@ function defaultMapParam(): MapParam {
   const cookie = getLocationFromCookie()
   return {
     zoom: cookie?.zoom ?? 13,
-    lat: cookie?.location.lat ?? 52.472,
-    lng: cookie?.location.lng ?? 13.453,
+    lat: cookie?.location.lat ?? 52.4707,
+    lng: cookie?.location.lng ?? 13.4321,
   }
 }
 
