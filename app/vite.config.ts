@@ -16,6 +16,8 @@ const smoothnessDataRoot = path.resolve(
 )
 
 export default defineConfig({
+  envDir: monorepoRoot,
+  envPrefix: ['VITE_', 'OSM_'],
   base: '/street-space-editor/',
   plugins: [
     tailwindcss(),

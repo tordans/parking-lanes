@@ -1,5 +1,4 @@
 import { OSM_APP_EDITOR } from './app-identity'
-import { OSM_OAUTH_CLIENT_ID, OSM_OAUTH_CLIENT_ID_DEV } from './osmOAuth.const'
 
 export { OSM_APP_EDITOR }
 export const OSM_API_USER_AGENT = OSM_APP_EDITOR
@@ -9,8 +8,18 @@ export const OSM_OAUTH_LAND_FILENAME = 'osm-oauth-land.html'
 
 export const OSM_OAUTH_SCOPES = ['read_prefs', 'write_api'] as const
 
+function readOsmOAuthClientId(key: 'OSM_OAUTH_CLIENT_ID' | 'OSM_OAUTH_CLIENT_ID_DEV'): string {
+  const value = import.meta.env[key]?.trim()
+  if (!value) {
+    throw new Error(
+      `Missing ${key}. Copy .env.example to .env at the repo root and set your OAuth client ID.`,
+    )
+  }
+  return value
+}
+
 export function getOsmOAuthClientId(useDevServer = false): string {
-  return useDevServer ? OSM_OAUTH_CLIENT_ID_DEV : OSM_OAUTH_CLIENT_ID
+  return readOsmOAuthClientId(useDevServer ? 'OSM_OAUTH_CLIENT_ID_DEV' : 'OSM_OAUTH_CLIENT_ID')
 }
 
 function getAppBasePath(): string {
@@ -23,12 +32,12 @@ function getAppBasePath(): string {
 
 /**
  * Redirect URI for OAuth popup: origin + app base path + {@link OSM_OAUTH_LAND_FILENAME}.
- * Register the resulting URLs on your OSM OAuth application (see osmOAuth.const.ts).
+ * Register the resulting URLs on your OSM OAuth application (see `.env.example`).
  */
 export function getOsmOAuthRedirectUrl(): string {
   return new URL(OSM_OAUTH_LAND_FILENAME, `${window.location.origin}${getAppBasePath()}`).href
 }
 
 export function isOsmOAuthConfigured(): boolean {
-  return true
+  return Boolean(import.meta.env.OSM_OAUTH_CLIENT_ID?.trim())
 }
