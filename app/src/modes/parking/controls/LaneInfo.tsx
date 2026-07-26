@@ -11,6 +11,7 @@ import { screenOrderedParkingSides, wayLineCoordinates } from '../domain/way-sid
 import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
+import { useAllTagsOpen, useParkingEditorActions } from '../parking-editor-store'
 import { useParkingOsmChangeHandler } from '../use-parking-mode-handlers'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
@@ -110,8 +111,15 @@ function OsmObjectInfo(props: { osm: OsmObject }) {
 }
 
 export function AllTagsBlock(props: { osmType: string; osmId: number; tags: OsmTags }) {
+  const allTagsOpen = useAllTagsOpen()
+  const { setAllTagsOpen } = useParkingEditorActions()
+
   return (
-    <details className="pt-1.5 text-sm text-zinc-600">
+    <details
+      className="pt-1.5 text-sm text-zinc-600"
+      open={allTagsOpen}
+      onToggle={(event) => setAllTagsOpen(event.currentTarget.open)}
+    >
       <summary className="cursor-pointer font-sans">
         All tags
         <span className="ml-1.5 font-mono text-xs text-zinc-500">
