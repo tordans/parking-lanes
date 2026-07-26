@@ -1,15 +1,13 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
-import { type TagValue } from '../../../../utils/types/parking'
 import {
-  tagEditorLabelCellClassName,
-  tagEditorLabelClassName,
+  TagEditorFieldRow,
+  TagEditorTextInput,
   tagEditorValueCellClassName,
-  tagEditorValueRowClassName,
-  usesParkingPositionButtonGroup,
-} from './tag-editor-controls'
+} from '../../../../components/tag-editor'
+import { type TagValue } from '../../../../utils/types/parking'
+import { usesParkingPositionButtonGroup } from './tag-editor-controls'
 import { TagValueButtonGroup } from './TagValueButtonGroup'
 import { TagValueInput } from './TagValueInput'
-import { TextInput } from './TextInput'
 
 export function SimpleTagInput(props: {
   osm: OsmWay
@@ -24,13 +22,13 @@ export function SimpleTagInput(props: {
   const readOnly = props.readOnly ?? false
   const useParkingPositionLayout = props.values != null && usesParkingPositionButtonGroup(props.tag)
 
-  return (
-    <tr
-      id={props.tag}
-      className="tag-editor"
-      style={{ display: props.hide && !value ? 'none' : undefined }}
-    >
-      {useParkingPositionLayout ? (
+  if (useParkingPositionLayout) {
+    return (
+      <tr
+        id={props.tag}
+        className="tag-editor"
+        style={{ display: props.hide && !value ? 'none' : undefined }}
+      >
         <td colSpan={2} className={`${tagEditorValueCellClassName} py-0`}>
           <TagValueButtonGroup
             value={value ?? ''}
@@ -40,33 +38,28 @@ export function SimpleTagInput(props: {
             onChange={props.onChange}
           />
         </td>
+      </tr>
+    )
+  }
+
+  return (
+    <TagEditorFieldRow tag={props.tag} label={props.label} hide={props.hide} hasValue={!!value}>
+      {props.values ? (
+        <TagValueInput
+          tag={props.tag}
+          value={value}
+          values={props.values}
+          disabled={readOnly}
+          onChange={props.onChange}
+        />
       ) : (
-        <>
-          <td className={tagEditorLabelCellClassName}>
-            <label title={props.tag} className={tagEditorLabelClassName}>
-              {props.label}
-            </label>
-          </td>
-          <td className={tagEditorValueRowClassName}>
-            {props.values ? (
-              <TagValueInput
-                tag={props.tag}
-                value={value}
-                values={props.values}
-                disabled={readOnly}
-                onChange={props.onChange}
-              />
-            ) : (
-              <TextInput
-                tag={props.tag}
-                value={value}
-                disabled={readOnly}
-                onChange={props.onChange}
-              />
-            )}
-          </td>
-        </>
+        <TagEditorTextInput
+          tag={props.tag}
+          value={value ?? ''}
+          disabled={readOnly}
+          onChange={props.onChange}
+        />
       )}
-    </tr>
+    </TagEditorFieldRow>
   )
 }

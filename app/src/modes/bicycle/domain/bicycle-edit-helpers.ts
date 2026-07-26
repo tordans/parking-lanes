@@ -19,6 +19,7 @@ export function formatCategoryLabel(categoryId: string): string {
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 export function isSidepathRef(ref: OsmFeatureRef): ref is OsmFeatureRef & {

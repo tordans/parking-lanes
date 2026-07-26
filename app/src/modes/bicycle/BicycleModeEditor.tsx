@@ -2,8 +2,17 @@ import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { listTargetCategories } from '@tilda-geo/bicycle-infrastructure'
 import clsx from 'clsx'
+import { X } from 'lucide-react'
 import { useState } from 'react'
+import { Select } from '../../components/catalyst/select'
 import { ColoredEditorSection } from '../../components/ColoredEditorSection'
+import {
+  TagEditorFieldRow,
+  TagEditorSelectInput,
+  TagEditorTextInput,
+  tagEditorFieldClassName,
+  tagEditorTableClassName,
+} from '../../components/tag-editor'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { SideModeSwitcher } from '../parking/controls/editor/SideModeSwitcher'
 import { LoginCallout } from '../parking/controls/LoginCallout'
@@ -122,51 +131,55 @@ function BicycleModeEditor(props: {
       {readOnly ? <LoginCallout onLogin={onLogin} /> : null}
 
       <ColoredEditorSection
-        aria-label="Category"
-        title="Category"
+        aria-label="Bicycle infrastructure"
+        title="Bicycle infrastructure"
         color={incomplete ? BICYCLE_PAINT_COLORS.incomplete : BICYCLE_PAINT_COLORS.complete}
         className="mb-0"
         contentClassName="flex flex-col gap-3 py-2"
       >
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-600">Current</span>
-          <span className="text-sm font-medium text-zinc-900">
-            {formatCategoryLabel(currentCategory)}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bicycle-target-category" className="text-sm font-medium text-zinc-900">
-            Target infrastructure
-          </label>
-          <select
-            id="bicycle-target-category"
-            value={resolvedTarget ?? ''}
-            disabled={readOnly}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-50"
-            onChange={(event) => {
-              const value = event.target.value
-              setTargetCategoryId(value || undefined)
-            }}
-          >
-            <option value="">Choose category…</option>
-            {targetOptions.map((id) => (
-              <option key={id} value={id}>
-                {formatCategoryLabel(id)}
-              </option>
-            ))}
-          </select>
-          {resolvedTarget ? (
-            <button
-              type="button"
-              disabled={readOnly}
-              className="self-start text-xs text-zinc-500 hover:text-zinc-700"
-              onClick={() => setTargetCategoryId(undefined)}
-            >
-              Clear target
-            </button>
-          ) : null}
-        </div>
+        <table className={tagEditorTableClassName}>
+          <tbody>
+            <TagEditorFieldRow tag="current-category" label="Current">
+              <span className="flex h-5 items-center text-xs leading-tight text-zinc-900">
+                {formatCategoryLabel(currentCategory)}
+              </span>
+            </TagEditorFieldRow>
+            <TagEditorFieldRow tag="target-category" label="Target">
+              <div className="flex min-w-0 flex-1 items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  <Select
+                    id="bicycle-target-category"
+                    value={resolvedTarget ?? ''}
+                    disabled={readOnly}
+                    className={tagEditorFieldClassName}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setTargetCategoryId(value || undefined)
+                    }}
+                  >
+                    <option value="">Choose category…</option>
+                    {targetOptions.map((id) => (
+                      <option key={id} value={id}>
+                        {formatCategoryLabel(id)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                {resolvedTarget ? (
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    aria-label="Clear target"
+                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-zinc-500 hover:bg-zinc-950/5 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setTargetCategoryId(undefined)}
+                  >
+                    <X className="size-3.5" aria-hidden />
+                  </button>
+                ) : null}
+              </div>
+            </TagEditorFieldRow>
+          </tbody>
+        </table>
 
         {plan && (plan.add.length > 0 || plan.change.length > 0 || plan.conflicts.length > 0) ? (
           <div className="flex flex-col gap-2 border-t border-zinc-950/10 pt-3">
@@ -223,76 +236,48 @@ function BicycleModeEditor(props: {
               onBothBlockShownChange={setBothSides}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="flex flex-col gap-1 text-xs text-zinc-600">
-              cycleway
-              <select
-                value={readCenterlineValue(selectedWay.tags, 'cycleway', editSide)}
-                disabled={readOnly}
-                className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                onChange={(event) =>
-                  writeCenterlineValue(
-                    selectedWay,
-                    'cycleway',
-                    editSide,
-                    event.target.value,
-                    onOsmChange,
-                  )
-                }
-              >
-                <option value="">—</option>
-                {CENTERLINE_CYCLEWAY_VALUES.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-600">
-              bicycle
-              <select
-                value={readCenterlineValue(selectedWay.tags, 'bicycle', editSide)}
-                disabled={readOnly}
-                className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                onChange={(event) =>
-                  writeCenterlineValue(
-                    selectedWay,
-                    'bicycle',
-                    editSide,
-                    event.target.value,
-                    onOsmChange,
-                  )
-                }
-              >
-                <option value="">—</option>
-                {CENTERLINE_BICYCLE_VALUES.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <table className={tagEditorTableClassName}>
+            <tbody>
+              <TagEditorFieldRow id="centerline-cycleway" tag="cycleway" label="cycleway">
+                <TagEditorSelectInput
+                  tag="cycleway"
+                  value={readCenterlineValue(selectedWay.tags, 'cycleway', editSide)}
+                  values={CENTERLINE_CYCLEWAY_VALUES}
+                  disabled={readOnly}
+                  onChange={(value) =>
+                    writeCenterlineValue(selectedWay, 'cycleway', editSide, value, onOsmChange)
+                  }
+                />
+              </TagEditorFieldRow>
+              <TagEditorFieldRow id="centerline-bicycle" tag="bicycle" label="bicycle">
+                <TagEditorSelectInput
+                  tag="bicycle"
+                  value={readCenterlineValue(selectedWay.tags, 'bicycle', editSide)}
+                  values={CENTERLINE_BICYCLE_VALUES}
+                  disabled={readOnly}
+                  onChange={(value) =>
+                    writeCenterlineValue(selectedWay, 'bicycle', editSide, value, onOsmChange)
+                  }
+                />
+              </TagEditorFieldRow>
+            </tbody>
+          </table>
         </div>
       ) : null}
 
       <div className="flex flex-col gap-2 border-t border-zinc-200 pt-3">
         <span className="text-sm font-medium text-zinc-900">Tags</span>
-        <table className="w-full border-collapse text-sm">
+        <table className={tagEditorTableClassName}>
           <tbody>
             {BICYCLE_FLAT_EDIT_KEYS.map((key) => (
-              <tr key={key} className="border-b border-zinc-100 last:border-0">
-                <td className="py-1.5 pr-2 align-top text-xs text-zinc-500">{key}</td>
-                <td className="py-1.5">
-                  <input
-                    type="text"
-                    value={editTags[key] ?? ''}
-                    disabled={readOnly}
-                    className="w-full rounded-md border border-zinc-300 px-2 py-1 text-sm disabled:bg-zinc-50"
-                    onChange={(event) => handleFlatTagChange(key, event.target.value)}
-                  />
-                </td>
-              </tr>
+              <TagEditorFieldRow key={key} tag={key} label={key}>
+                <TagEditorTextInput
+                  tag={key}
+                  value={editTags[key] ?? ''}
+                  disabled={readOnly}
+                  onChange={(value) => handleFlatTagChange(key, value)}
+                />
+              </TagEditorFieldRow>
             ))}
           </tbody>
         </table>
