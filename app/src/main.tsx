@@ -30,13 +30,20 @@ declare module '@tanstack/react-router' {
 }
 
 const queryClient = createAppQueryClient()
-if (import.meta.env.DEV === true) seedDevOsmFixture(queryClient)
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster position="top-center" richColors closeButton />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+async function start() {
+  if (import.meta.env.DEV === true) {
+    await seedDevOsmFixture(queryClient)
+  }
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster position="top-center" richColors closeButton />
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}
+
+void start()

@@ -32,7 +32,7 @@ export function DevOsmDataToggle() {
                 void loadOsmData(mapBounds, mapZoom, { force: true })
               }
             } else {
-              seedDevOsmFixture(queryClient)
+              void seedDevOsmFixture(queryClient)
             }
           }}
         />

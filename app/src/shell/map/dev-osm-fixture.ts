@@ -11,15 +11,29 @@ import {
   type OsmCoverageQueryData,
 } from './osm-coverage-query'
 
-const devFixtureModules = import.meta.env.DEV
-  ? import.meta.glob<RawOsmData>('../../modes/parking/fixtures/dev-map-bbox.json', {
+/**
+ * URL-only glob — do not import the JSON as a Vite module (`?import`).
+ * Transforming ~50MB JSON into a JS module balloons to hundreds of MB over the wire.
+ */
+const fixtureUrlByPath = import.meta.env.DEV
+  ? import.meta.glob<string>('../../modes/parking/fixtures/dev-map-bbox.json', {
+      query: '?url',
       import: 'default',
       eager: true,
     })
   : {}
 
-function buildDevFixtureQueryData(): OsmCoverageQueryData | null {
-  const raw = Object.values(devFixtureModules)[0]
+async function loadDevFixtureRaw(): Promise<RawOsmData | null> {
+  const url = Object.values(fixtureUrlByPath)[0]
+  if (!url) return null
+
+  const response = await fetch(url)
+  if (!response.ok) return null
+  return (await response.json()) as RawOsmData
+}
+
+async function buildDevFixtureQueryData(): Promise<OsmCoverageQueryData | null> {
+  const raw = await loadDevFixtureRaw()
   if (!raw) return null
 
   return {
@@ -30,10 +44,10 @@ function buildDevFixtureQueryData(): OsmCoverageQueryData | null {
 }
 
 /** Seeds the Berlin fixture into the shared OSM Query when fixture mode is active. */
-export function seedDevOsmFixture(queryClient: QueryClient): boolean {
+export async function seedDevOsmFixture(queryClient: QueryClient): Promise<boolean> {
   if (!isDevOsmFixtureActive()) return false
 
-  const data = buildDevFixtureQueryData()
+  const data = await buildDevFixtureQueryData()
   if (!data) {
     console.warn(
       'Dev OSM fixture missing. Run `bun run dev` (predev) to download app/src/modes/parking/fixtures/dev-map-bbox.json.',
