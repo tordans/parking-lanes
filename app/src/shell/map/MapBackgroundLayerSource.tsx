@@ -22,6 +22,12 @@ export const CUSTOM_CONTENT_ANCHOR_LAYER_ID = 'map-custom-content-anchor'
 
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
 
+/** Drop style-layer maxzoom so MapLibre overzooms past ELI native tile zooms instead of hiding. */
+function omitLayerMaxzoom<T extends { maxzoom?: number }>(spec: T): Omit<T, 'maxzoom'> {
+  const { maxzoom: _maxzoom, ...rest } = spec
+  return rest
+}
+
 /**
  * Optional ELI raster imagery above the default map style and below mode layers.
  * Does not change react-map-gl `mapStyle` — only adds a pixel overlay when selected.
@@ -63,11 +69,13 @@ export function MapBackgroundLayerSource() {
         <>
           <Source id={BACKGROUND_SOURCE_ID} {...getRasterSourceSpec(layer)} />
           <Layer
-            {...getRasterLayerSpec(layer, {
-              id: BACKGROUND_LAYER_ID,
-              source: BACKGROUND_SOURCE_ID,
-              paint: { 'raster-opacity': 1 },
-            })}
+            {...omitLayerMaxzoom(
+              getRasterLayerSpec(layer, {
+                id: BACKGROUND_LAYER_ID,
+                source: BACKGROUND_SOURCE_ID,
+                paint: { 'raster-opacity': 1 },
+              }),
+            )}
             beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
           />
         </>

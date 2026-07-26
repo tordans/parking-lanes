@@ -37,6 +37,10 @@ export default defineConfig({
       '@': path.resolve(projectRoot, 'src'),
     },
   },
+  // Local file: package — skip prebundle so ELI dist updates are picked up without stale .vite cache.
+  optimizeDeps: {
+    exclude: ['maplibre-editor-layer-index'],
+  },
   server: {
     port: 33444,
     // Localhost only — one dev URL (OAuth callback used 127.0.0.1). Set a LAN IP here for other devices.
