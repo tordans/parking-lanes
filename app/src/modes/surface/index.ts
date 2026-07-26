@@ -8,6 +8,7 @@ export const surfaceMode: StreetSpaceMode = {
   id: 'surface',
   label: 'Surface',
   enabled: true,
+  maturity: 'alpha',
   about: {
     description:
       'Inspect and edit highway surface and smoothness in OpenStreetMap. Select a way to view tagged coverage and apply surface/smoothness tags.',

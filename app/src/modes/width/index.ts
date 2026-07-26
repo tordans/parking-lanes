@@ -8,6 +8,7 @@ export const widthMode: StreetSpaceMode = {
   id: 'width',
   label: 'Width',
   enabled: true,
+  maturity: 'alpha',
   about: {
     description:
       'Inspect and edit highway width in OpenStreetMap. Select a road to view its width and adjust it with draggable side handles.',

@@ -32,13 +32,15 @@ export function SettingsPanelContent(props: { showDebug?: boolean }) {
 
 export function InfoPanelContent(props: {
   about: StreetSpaceMode['about']
+  modeLabel: string
+  maturity: StreetSpaceMode['maturity']
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
 }) {
   const Legend = props.Legend
 
   return (
     <div className="flex flex-col p-1">
-      <AppAboutContent about={props.about} />
+      <AppAboutContent about={props.about} modeLabel={props.modeLabel} maturity={props.maturity} />
       {Legend ? (
         <>
           <PanelSectionDivider />
@@ -69,7 +71,12 @@ export function ControlPanel() {
       <PanelModeSwitcher className="shrink-0" mode={activePanelMode} onChange={setPanelMode} />
       <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
         {activePanelMode === 'info' ? (
-          <InfoPanelContent about={mode.about} Legend={Legend} />
+          <InfoPanelContent
+            about={mode.about}
+            modeLabel={mode.label}
+            maturity={mode.maturity}
+            Legend={Legend}
+          />
         ) : null}
         {activePanelMode === 'inspector' ? <Panel /> : null}
         {activePanelMode === 'settings' ? <SettingsPanelContent showDebug={showDebug} /> : null}

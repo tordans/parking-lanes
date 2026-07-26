@@ -1,6 +1,6 @@
 import { useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
-import { Check, ListFilter } from 'lucide-react'
+import { Check, Funnel } from 'lucide-react'
 import {
   Dropdown,
   DropdownButton,
@@ -71,7 +71,7 @@ export function FocusFilterButton() {
                 isActive ? mapToolbarIconSegmentActiveClassName : mapToolbarIconSegmentClassName,
               )}
             >
-              <ListFilter className="size-5 shrink-0" aria-hidden />
+              <Funnel className="size-5 shrink-0" aria-hidden />
             </DropdownButton>
           </span>
         </Tooltip>

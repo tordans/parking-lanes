@@ -8,6 +8,7 @@ export const bicycleMode: StreetSpaceMode = {
   id: 'bicycle',
   label: 'Bicycle',
   enabled: true,
+  maturity: 'experimental',
   about: {
     description:
       'Inspect and edit bicycle infrastructure on OpenStreetMap ways. Classify cycleways, apply TILDA-style category suggestions, and edit bike-related tags.',

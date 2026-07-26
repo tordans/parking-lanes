@@ -18,6 +18,7 @@ export function createStubMode(id: StreetSpaceModeId, label: string): StreetSpac
     id,
     label,
     enabled: false,
+    maturity: 'experimental',
     about: {
       description: `${label} editing is coming soon.`,
       taggingGuide: {

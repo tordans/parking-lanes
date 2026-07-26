@@ -2,6 +2,8 @@ import type { ComponentType } from 'react'
 
 export type StreetSpaceModeId = 'parking' | 'width' | 'bicycle' | 'lanes' | 'surface' | 'sidewalks'
 
+export type ModeMaturity = 'alpha' | 'beta' | 'experimental'
+
 export type ModeMapProps = Record<string, never>
 
 export type ModePanelProps = Record<string, never>
@@ -19,9 +21,12 @@ export type StreetSpaceMode = {
   id: StreetSpaceModeId
   label: string
   enabled: boolean
+  maturity: ModeMaturity
   about: ModeAboutContent
   MapLayers: ComponentType<ModeMapProps>
   Panel: ComponentType<ModePanelProps>
+  /** Optional bottom cross-section / timeline panel (desktop map column). */
+  BottomPanel?: ComponentType<ModePanelProps>
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
   interactiveLayerIds: string[]
 }

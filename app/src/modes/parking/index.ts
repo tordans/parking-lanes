@@ -8,6 +8,7 @@ export const parkingMode: StreetSpaceMode = {
   id: 'parking',
   label: 'Parking',
   enabled: true,
+  maturity: 'beta',
   about: {
     description:
       'Street Space Editor maps and edits on-street parking and related street-space data in OpenStreetMap.',

@@ -11,8 +11,15 @@ export const APP_USER_AGENT_TOKEN = 'StreetSpaceEditor'
 /** GitHub repo URL — update when the remote is renamed to street-space-editor. */
 export const APP_REPO_URL = 'https://github.com/osmberlin/street-parking-editor'
 
-/** Open a new feedback issue with the mode-feedback template. */
-export const APP_FEEDBACK_URL = `${APP_REPO_URL}/issues/new?template=mode-feedback.yml`
+/** Open a new feedback issue with the mode-feedback template and pre-filled context. */
+export function buildModeFeedbackUrl(options: { mode: string; pageUrl: string }): string {
+  const params = new URLSearchParams({
+    template: 'mode-feedback.yml',
+    mode: options.mode,
+    'example-url': options.pageUrl,
+  })
+  return `${APP_REPO_URL}/issues/new?${params.toString()}`
+}
 
 /**
  * OSM changeset `created_by` / HTTP User-Agent (required by API policy).

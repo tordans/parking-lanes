@@ -91,7 +91,12 @@ export function MapMobileToolbar() {
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
-          <InfoPanelContent about={mode.about} Legend={Legend} />
+          <InfoPanelContent
+            about={mode.about}
+            modeLabel={mode.label}
+            maturity={mode.maturity}
+            Legend={Legend}
+          />
         </div>
       </MobileBottomSheet>
 
