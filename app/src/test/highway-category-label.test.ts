@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { highwayCategoryLabel } from '../modes/parking/domain/highway-category-label'
+import { highwayCategoryLabel } from '../utils/highway-category-label'
 
 describe('highwayCategoryLabel', () => {
   test('returns English labels for common street categories', () => {

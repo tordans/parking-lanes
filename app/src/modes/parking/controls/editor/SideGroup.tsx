@@ -1,13 +1,7 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
+import { ColoredEditorSection } from '../../../../components/ColoredEditorSection'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
-import {
-  parkingSideCssVariables,
-  parkingSideHeaderClassName,
-  parkingSideLabel,
-  parkingSideSectionClassName,
-  parkingSideSectionStyle,
-  type ParkingEditorSide,
-} from '../../side-colors'
+import { parkingSideColor, parkingSideLabel, type ParkingEditorSide } from '../../side-colors'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
 import { PresetSigns } from './PresetSigns'
@@ -24,30 +18,28 @@ export function SideGroup(props: {
   if (!props.shown) return null
 
   return (
-    <section
+    <ColoredEditorSection
       id={props.side}
       aria-label={parkingSideLabel(props.side)}
-      className={`tags-block tags-block_${props.side} ${parkingSideSectionClassName(props.side)}`}
-      style={{ ...parkingSideCssVariables, ...parkingSideSectionStyle(props.side) }}
+      title={parkingSideLabel(props.side)}
+      color={parkingSideColor(props.side)}
+      className={`tags-block tags-block_${props.side}`}
     >
-      <div className={parkingSideHeaderClassName(props.side)}>{parkingSideLabel(props.side)}</div>
-      <div className="px-2 py-1.5">
-        <PresetSigns
+      <PresetSigns
+        osm={props.osm}
+        side={props.side}
+        readOnly={props.readOnly}
+        onChange={props.onChange}
+      />
+      <table className={tagEditorTableClassName}>
+        <TagInputs
           osm={props.osm}
           side={props.side}
           readOnly={props.readOnly}
           onChange={props.onChange}
         />
-        <table className={tagEditorTableClassName}>
-          <TagInputs
-            osm={props.osm}
-            side={props.side}
-            readOnly={props.readOnly}
-            onChange={props.onChange}
-          />
-        </table>
-      </div>
-    </section>
+      </table>
+    </ColoredEditorSection>
   )
 }
 

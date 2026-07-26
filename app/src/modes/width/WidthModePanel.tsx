@@ -1,14 +1,17 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
+import { ColoredEditorSection } from '../../components/ColoredEditorSection'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
+import { parkingSideColors } from '../parking/side-colors'
 import {
   buildHandleGeometry,
   MIN_WIDTH_M,
@@ -131,29 +134,29 @@ export function WidthModePanel() {
     onOsmChange(stageWidthOnWay(selectedWay, clamped))
   }
 
-  const panelTitle = isSidepath
-    ? `Way ${selectedWay.id} · ${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-    : `Way ${selectedWay.id}`
+  const featureSuffix =
+    isSidepath && selectedOsmRef.prefix && selectedOsmRef.side
+      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+      : undefined
 
   return (
     <div className="flex min-w-[250px] flex-col gap-4 text-zinc-900">
-      <div className="text-sm text-zinc-700">
-        <a
-          href={`https://openstreetmap.org/way/${selectedWay.id}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          {panelTitle}
-        </a>
-        {!isSidepath && selectedWay.tags.highway ? (
-          <span className="text-zinc-500"> · {selectedWay.tags.highway}</span>
-        ) : null}
-      </div>
+      <ModePanelIntro
+        wayId={selectedWay.id}
+        highway={selectedWay.tags.highway}
+        featureSuffix={featureSuffix}
+        className="flex items-center gap-2"
+      />
 
       {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
 
-      <div className="flex flex-col gap-1.5">
+      <ColoredEditorSection
+        aria-label="Width"
+        title="Width"
+        color={parkingSideColors.right}
+        className="mb-0"
+        contentClassName="flex flex-col gap-1.5 py-2"
+      >
         <label htmlFor="width-input" className="text-sm font-medium text-zinc-900">
           Width (m)
         </label>
@@ -164,7 +167,7 @@ export function WidthModePanel() {
           step={0.1}
           value={displayWidth}
           disabled={readOnly}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-50"
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-50"
           onChange={(event) => {
             const next = Number.parseFloat(event.target.value)
             if (!Number.isFinite(next)) return
@@ -174,7 +177,7 @@ export function WidthModePanel() {
         <p className="m-0 text-xs text-zinc-500">
           Derived hint: {derived.value} m ({formatSourceLabel(derived.source)})
         </p>
-      </div>
+      </ColoredEditorSection>
     </div>
   )
 }

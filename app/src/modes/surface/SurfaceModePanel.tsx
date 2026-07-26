@@ -7,6 +7,7 @@ import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
@@ -145,9 +146,10 @@ function SurfaceModeEditor(props: {
     )
   }
 
-  const panelTitle = selectedOsmRef.prefix
-    ? `Way ${selectedWay.id} · ${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-    : `Way ${selectedWay.id}`
+  const featureSuffix =
+    selectedOsmRef.prefix && selectedOsmRef.side
+      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+      : undefined
 
   const switcher =
     layout.kind === 'segregated' || layout.kind === 'cycleway-sides' ? (
@@ -162,23 +164,15 @@ function SurfaceModeEditor(props: {
 
   return (
     <div className="flex min-w-[250px] flex-col gap-4 text-zinc-900">
-      <div className="text-sm text-zinc-700">
-        <a
-          href={`https://openstreetmap.org/way/${selectedWay.id}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          {panelTitle}
-        </a>
-        {!selectedOsmRef.prefix && selectedWay.tags.highway ? (
-          <span className="text-zinc-500"> · {selectedWay.tags.highway}</span>
-        ) : null}
-      </div>
+      <ModePanelIntro
+        wayId={selectedWay.id}
+        highway={selectedWay.tags.highway}
+        featureSuffix={featureSuffix}
+        leading={switcher}
+        className="flex items-center gap-2"
+      />
 
       {readOnly ? <LoginCallout onLogin={onLogin} /> : null}
-
-      {switcher ? <div className="flex items-center justify-between gap-2">{switcher}</div> : null}
 
       {layout.kind === 'single' ? (
         <SurfaceChannelSection channel="single" shown>

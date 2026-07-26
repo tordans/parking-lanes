@@ -2,9 +2,9 @@ import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { z } from 'zod'
+import { ModePanelIntro } from '../../../../shell/controls/ModePanelIntro'
 import type { Side } from '../../../../utils/types/parking'
 import { applyTagMigration } from '../../domain/editor/tag-migration'
-import { highwayCategoryLabel } from '../../domain/highway-category-label'
 import { AllTagsBlock } from '../LaneInfo'
 import { SideGroup } from './SideGroup'
 import { SideModeSwitcher } from './SideModeSwitcher'
@@ -40,7 +40,6 @@ export function LaneEditForm(props: {
 
   const bothBlockShown = useStore(form.store, (state) => state.values.bothBlockShown)
   const [tagUpdaterModalShown, setTagUpdaterModalShown] = useState(false)
-  const streetCategoryLabel = highwayCategoryLabel(props.osm.tags.highway)
 
   return (
     <form
@@ -48,28 +47,29 @@ export function LaneEditForm(props: {
       key={props.osm.type + props.osm.id}
       className="editor-form text-zinc-900"
     >
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <form.Field name="bothBlockShown">
-          {(field) => (
-            <SideModeSwitcher
-              bothBlockShown={bothBlockShown}
-              sideOrder={props.sideOrder}
-              readOnly={readOnly}
-              onBothBlockShownChange={field.handleChange}
-            />
-          )}
-        </form.Field>
-        <div className="flex shrink-0 items-center gap-2">
-          {streetCategoryLabel ? (
-            <span className="text-xs text-zinc-500">{streetCategoryLabel}</span>
-          ) : null}
+      <ModePanelIntro
+        wayId={props.osm.id}
+        highway={props.osm.tags.highway}
+        leading={
+          <form.Field name="bothBlockShown">
+            {(field) => (
+              <SideModeSwitcher
+                bothBlockShown={bothBlockShown}
+                sideOrder={props.sideOrder}
+                readOnly={readOnly}
+                onBothBlockShownChange={field.handleChange}
+              />
+            )}
+          </form.Field>
+        }
+        trailing={
           <TagMigrationToolbar
             osm={props.osm}
             readOnly={readOnly}
             onOpenTagUpdater={() => setTagUpdaterModalShown(true)}
           />
-        </div>
-      </div>
+        }
+      />
       <div id="tags-block" className="font-mono">
         <SideGroup
           osm={props.osm}

@@ -3,6 +3,8 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { listTargetCategories } from '@tilda-geo/bicycle-infrastructure'
 import clsx from 'clsx'
 import { useState } from 'react'
+import { ColoredEditorSection } from '../../components/ColoredEditorSection'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { SideModeSwitcher } from '../parking/controls/editor/SideModeSwitcher'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import {
@@ -21,6 +23,7 @@ import {
   type BicycleEditSide,
 } from './domain/bicycle-edit-helpers'
 import { BICYCLE_FLAT_EDIT_KEYS } from './domain/bicycle-tag-keys'
+import { BICYCLE_PAINT_COLORS } from './map/bicycle-colors'
 import { useBicycleOsmChangeHandler } from './use-bicycle-mode-handlers'
 
 const CENTERLINE_CYCLEWAY_VALUES = ['separate'] as const
@@ -102,118 +105,113 @@ function BicycleModeEditor(props: {
     onOsmChange(commitFlatTagEdit(selectedWay, selectedOsmRef, key, value || undefined))
   }
 
-  const panelTitle = isSidepathRef(selectedOsmRef)
-    ? `Way ${selectedWay.id} · ${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-    : `Way ${selectedWay.id}`
+  const featureSuffix =
+    isSidepathRef(selectedOsmRef) && selectedOsmRef.prefix && selectedOsmRef.side
+      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+      : undefined
 
   return (
     <div className="flex min-w-[280px] flex-col gap-4 text-zinc-900">
-      <div className="text-sm text-zinc-700">
-        <a
-          href={`https://openstreetmap.org/way/${selectedWay.id}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          {panelTitle}
-        </a>
-        {!isSidepathRef(selectedOsmRef) && selectedWay.tags.highway ? (
-          <span className="text-zinc-500"> · {selectedWay.tags.highway}</span>
-        ) : null}
-      </div>
+      <ModePanelIntro
+        wayId={selectedWay.id}
+        highway={selectedWay.tags.highway}
+        featureSuffix={featureSuffix}
+        className="flex items-center gap-2"
+      />
 
       {readOnly ? <LoginCallout onLogin={onLogin} /> : null}
 
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Current category
-        </span>
-        <span
-          className={clsx(
-            'inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium',
-            incomplete ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900',
-          )}
-        >
-          {formatCategoryLabel(currentCategory)}
-        </span>
-      </div>
+      <ColoredEditorSection
+        aria-label="Category"
+        title="Category"
+        color={incomplete ? BICYCLE_PAINT_COLORS.incomplete : BICYCLE_PAINT_COLORS.complete}
+        className="mb-0"
+        contentClassName="flex flex-col gap-3 py-2"
+      >
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-zinc-600">Current</span>
+          <span className="text-sm font-medium text-zinc-900">
+            {formatCategoryLabel(currentCategory)}
+          </span>
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="bicycle-target-category" className="text-sm font-medium text-zinc-900">
-          Target infrastructure
-        </label>
-        <select
-          id="bicycle-target-category"
-          value={resolvedTarget ?? ''}
-          disabled={readOnly}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-50"
-          onChange={(event) => {
-            const value = event.target.value
-            setTargetCategoryId(value || undefined)
-          }}
-        >
-          <option value="">Choose category…</option>
-          {targetOptions.map((id) => (
-            <option key={id} value={id}>
-              {formatCategoryLabel(id)}
-            </option>
-          ))}
-        </select>
-        {resolvedTarget ? (
-          <button
-            type="button"
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="bicycle-target-category" className="text-sm font-medium text-zinc-900">
+            Target infrastructure
+          </label>
+          <select
+            id="bicycle-target-category"
+            value={resolvedTarget ?? ''}
             disabled={readOnly}
-            className="self-start text-xs text-zinc-500 hover:text-zinc-700"
-            onClick={() => setTargetCategoryId(undefined)}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-50"
+            onChange={(event) => {
+              const value = event.target.value
+              setTargetCategoryId(value || undefined)
+            }}
           >
-            Clear target
-          </button>
-        ) : null}
-      </div>
-
-      {plan && (plan.add.length > 0 || plan.change.length > 0 || plan.conflicts.length > 0) ? (
-        <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
-          <span className="text-sm font-medium text-zinc-900">Suggestions</span>
-          <ul className="m-0 flex list-none flex-col gap-1 p-0 text-xs text-zinc-700">
-            {plan.add.map((entry) => (
-              <li key={`add-${entry.key}`}>
-                Add{' '}
-                <code className="text-zinc-900">
-                  {entry.key}={entry.value}
-                </code>
-              </li>
+            <option value="">Choose category…</option>
+            {targetOptions.map((id) => (
+              <option key={id} value={id}>
+                {formatCategoryLabel(id)}
+              </option>
             ))}
-            {plan.change.map((entry) => (
-              <li key={`change-${entry.key}`}>
-                Change <code className="text-zinc-900">{entry.key}</code> from {entry.from} to{' '}
-                {entry.to}
-              </li>
-            ))}
-            {plan.conflicts.map((entry) => (
-              <li key={`conflict-${entry.key}`} className="text-red-700">
-                Conflict:{' '}
-                <code>
-                  {entry.key}={entry.value}
-                </code>{' '}
-                — {entry.reason}
-              </li>
-            ))}
-          </ul>
-          {plan.add.length > 0 || plan.change.length > 0 ? (
+          </select>
+          {resolvedTarget ? (
             <button
               type="button"
               disabled={readOnly}
-              className={clsx(
-                'rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-900',
-                readOnly ? 'cursor-not-allowed opacity-60' : 'hover:bg-blue-100',
-              )}
-              onClick={applySuggestions}
+              className="self-start text-xs text-zinc-500 hover:text-zinc-700"
+              onClick={() => setTargetCategoryId(undefined)}
             >
-              Apply suggestions
+              Clear target
             </button>
           ) : null}
         </div>
-      ) : null}
+
+        {plan && (plan.add.length > 0 || plan.change.length > 0 || plan.conflicts.length > 0) ? (
+          <div className="flex flex-col gap-2 border-t border-zinc-950/10 pt-3">
+            <span className="text-sm font-medium text-zinc-900">Suggestions</span>
+            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-xs text-zinc-700">
+              {plan.add.map((entry) => (
+                <li key={`add-${entry.key}`}>
+                  Add{' '}
+                  <code className="text-zinc-900">
+                    {entry.key}={entry.value}
+                  </code>
+                </li>
+              ))}
+              {plan.change.map((entry) => (
+                <li key={`change-${entry.key}`}>
+                  Change <code className="text-zinc-900">{entry.key}</code> from {entry.from} to{' '}
+                  {entry.to}
+                </li>
+              ))}
+              {plan.conflicts.map((entry) => (
+                <li key={`conflict-${entry.key}`} className="text-red-700">
+                  Conflict:{' '}
+                  <code>
+                    {entry.key}={entry.value}
+                  </code>{' '}
+                  — {entry.reason}
+                </li>
+              ))}
+            </ul>
+            {plan.add.length > 0 || plan.change.length > 0 ? (
+              <button
+                type="button"
+                disabled={readOnly}
+                className={clsx(
+                  'rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-900',
+                  readOnly ? 'cursor-not-allowed opacity-60' : 'hover:bg-blue-100',
+                )}
+                onClick={applySuggestions}
+              >
+                Apply suggestions
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </ColoredEditorSection>
 
       {showCenterlineSection ? (
         <div className="flex flex-col gap-3 border-t border-zinc-200 pt-3">

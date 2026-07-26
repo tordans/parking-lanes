@@ -6,6 +6,7 @@ import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
@@ -79,19 +80,15 @@ export function LanesModePanel() {
 
   return (
     <div className="flex min-w-[250px] flex-col gap-4 text-zinc-900">
-      <div className="text-sm text-zinc-700">
-        <a
-          href={`https://openstreetmap.org/way/${way.id}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          Way {way.id}
-        </a>
-        {way.tags.highway ? <span className="text-zinc-500"> · {way.tags.highway}</span> : null}
+      <ModePanelIntro
+        wayId={way.id}
+        highway={way.tags.highway}
+        className="flex items-center gap-2"
+      />
+      <div className="-mt-2 text-sm text-zinc-700">
         {way.tags.name ? <div className="font-medium text-zinc-900">{way.tags.name}</div> : null}
         {way.tags.ref ? <div className="text-zinc-500">{way.tags.ref}</div> : null}
-        <div className="mt-1 text-xs text-zinc-500">{segmentSummary(way.tags)}</div>
+        <div className="text-xs text-zinc-500">{segmentSummary(way.tags)}</div>
       </div>
 
       {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
