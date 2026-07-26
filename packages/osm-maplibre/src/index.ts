@@ -7,7 +7,6 @@ export {
   pixelScaleFactorAtLat,
   pixelsFromMeters,
   PIXEL_SCALE_GERMANY,
-  selectedCenterlineWidth,
   TILE_SIZE,
 } from './meters-to-pixels'
 export {

@@ -59,4 +59,3 @@ export const lanesNeighborPaint = {
 
 export const lanesPrevNeighborColor = '#ea580c'
 export const lanesNextNeighborColor = '#7c3aed'
-export const lanesSelectedColor = '#2563eb'

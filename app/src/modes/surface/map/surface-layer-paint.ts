@@ -3,7 +3,6 @@ import {
   focusCaseOpacity,
   lineOffsetFromMeters,
   lineWidthFromMeters,
-  selectedCenterlineWidth,
 } from '@osm-editor-kit/osm-maplibre'
 import type { FilterSpecification } from 'maplibre-gl'
 import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
@@ -15,6 +14,9 @@ import {
 } from './surface-colors'
 
 const bandActiveOpacity = 0.85
+const bandMutedOpacity = 0.35
+const dottedActiveOpacity = 0.9
+const dottedMutedOpacity = 0.35
 
 export { ROUND_LINE_LAYOUT as surfaceLineLayout }
 
@@ -41,10 +43,11 @@ const surfaceColor = [
   ],
 ] as const
 
-export function buildSurfaceBandPaint(focus: string) {
+export function buildSurfaceBandPaint(focus: string, hasSelection = false) {
+  const opacity = hasSelection ? bandMutedOpacity : bandActiveOpacity
   const basePaint = {
     'line-color': surfaceColor,
-    'line-opacity': bandActiveOpacity,
+    'line-opacity': opacity,
     'line-width': lineWidthFromMeters('roadWidthM'),
   } as Record<string, unknown>
 
@@ -54,17 +57,19 @@ export function buildSurfaceBandPaint(focus: string) {
 
   return {
     'line-color': focusCaseColor(matchExpr, surfaceColor),
-    'line-opacity': focusCaseOpacity(matchExpr, bandActiveOpacity),
+    'line-opacity': focusCaseOpacity(matchExpr, opacity, bandMutedOpacity),
     'line-width': lineWidthFromMeters('roadWidthM'),
   } as Record<string, unknown>
 }
 
-export const surfaceDottedOverlayPaint = {
-  'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
-  'line-opacity': 0.9,
-  'line-width': lineWidthFromMeters('roadWidthM'),
-  'line-dasharray': [0.5, 1.5],
-} as Record<string, unknown>
+export function buildSurfaceDottedOverlayPaint(hasSelection = false) {
+  return {
+    'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
+    'line-opacity': hasSelection ? dottedMutedOpacity : dottedActiveOpacity,
+    'line-width': lineWidthFromMeters('roadWidthM'),
+    'line-dasharray': [0.5, 1.5],
+  } as Record<string, unknown>
+}
 
 export const surfaceDottedOverlayFilter: FilterSpecification = [
   'all',
@@ -88,8 +93,3 @@ export const surfaceHitAreaPaint = transparentLineHitPaint(
 export const sidepathHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
-
-export const selectedCenterlinePaint = {
-  'line-color': '#1d4ed8',
-  'line-width': selectedCenterlineWidth,
-} as Record<string, unknown>

@@ -66,16 +66,3 @@ export function lineOffsetFromMeters(property = 'roadWidthM', fraction = 0.5): r
     ['*', ['get', property], scaleAtZoom(WIDTH_ZOOM_MAX, fraction)],
   ]
 }
-
-/** Fixed pixel ramp for selected centerline chrome (from tilda-geo-cqi radinfra_cqi). */
-export const selectedCenterlineWidth: readonly unknown[] = [
-  'interpolate',
-  ['linear'],
-  ['zoom'],
-  13,
-  2,
-  16,
-  4,
-  18,
-  6,
-]

@@ -84,13 +84,6 @@ export const sidepathHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
 
-/** Hairline centerline — same weight as parking mode. */
-export const selectedCenterlinePaint = {
-  'line-color': WIDTH_SELECTION_COLORS.centerline,
-  'line-width': 1,
-  'line-opacity': 1,
-} as Record<string, unknown>
-
 export const handleFillPaint = {
   'fill-color': WIDTH_SELECTION_COLORS.accent,
   'fill-opacity': 0.08,

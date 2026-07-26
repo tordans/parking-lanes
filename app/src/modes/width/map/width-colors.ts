@@ -8,9 +8,8 @@ export const WIDTH_KIND_COLORS = {
   default: '#b45309',
 } as const
 
-/** Selection chrome — matches parking right-side orange + black centerline. */
+/** Selection chrome — grab handles use parking right-side orange. */
 export const WIDTH_SELECTION_COLORS = {
-  centerline: '#000000',
   /** Grab handles and selected band (parking right). */
   accent: parkingSideColors.right,
 } as const

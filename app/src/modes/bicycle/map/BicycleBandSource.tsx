@@ -30,14 +30,13 @@ function splitFeatures(features: BicycleFeatureCollection, selectedRef: OsmFeatu
   const highways: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
   const centerlinePresence: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedHighways: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedSidepaths: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
-    const selected = matchesSelection(feature.properties, selectedRef)
+    // Omit the selection so paint-state colors do not cover the black centerline.
+    if (matchesSelection(feature.properties, selectedRef)) continue
+
     if (feature.properties.kind === 'sidepath') {
-      if (selected) selectedSidepaths.features.push(feature)
-      else sidepaths.features.push(feature)
+      sidepaths.features.push(feature)
       continue
     }
 
@@ -45,11 +44,10 @@ function splitFeatures(features: BicycleFeatureCollection, selectedRef: OsmFeatu
       centerlinePresence.features.push(feature)
     }
 
-    if (selected) selectedHighways.features.push(feature)
-    else highways.features.push(feature)
+    highways.features.push(feature)
   }
 
-  return { highways, sidepaths, centerlinePresence, selectedHighways, selectedSidepaths }
+  return { highways, sidepaths, centerlinePresence }
 }
 
 export function BicycleBandSource({
@@ -62,8 +60,7 @@ export function BicycleBandSource({
   focus: string
 }) {
   const bandPaint = buildBicycleBandPaint(focus)
-  const { highways, sidepaths, centerlinePresence, selectedHighways, selectedSidepaths } =
-    splitFeatures(features, selectedRef)
+  const { highways, sidepaths, centerlinePresence } = splitFeatures(features, selectedRef)
 
   return (
     <>
@@ -107,28 +104,6 @@ export function BicycleBandSource({
             id="bicycle-sidepaths-hitarea-layer"
             type="line"
             paint={sidepathHitAreaPaint}
-            layout={sidepathLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {selectedHighways.features.length > 0 ? (
-        <Source id="bicycle-selected-highways-source" type="geojson" data={selectedHighways}>
-          <Layer
-            id="bicycle-selected-highways-band-layer"
-            type="line"
-            paint={bandPaint}
-            layout={bicycleLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {selectedSidepaths.features.length > 0 ? (
-        <Source id="bicycle-selected-sidepaths-source" type="geojson" data={selectedSidepaths}>
-          <Layer
-            id="bicycle-selected-sidepaths-band-layer"
-            type="line"
-            paint={sidepathBandPaint}
             layout={sidepathLineLayout}
           />
         </Source>

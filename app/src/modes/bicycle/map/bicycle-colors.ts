@@ -4,7 +4,6 @@ export const BICYCLE_PAINT_COLORS = {
   noInfra: '#94a3b8',
   separateGeometry: '#6366f1',
   centerlinePresence: '#7c3aed',
-  selectedCenterline: '#1d4ed8',
 } as const
 
 export const bicycleLegendItems = [

@@ -1,13 +1,13 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import type { SurfaceFeatureCollection } from './parse-highways'
 import {
   buildSurfaceBandPaint,
-  selectedCenterlinePaint,
+  buildSurfaceDottedOverlayPaint,
   sidepathHitAreaPaint,
   sidepathLineLayout,
   surfaceDottedOverlayFilter,
-  surfaceDottedOverlayPaint,
   surfaceHitAreaPaint,
   surfaceLineLayout,
 } from './surface-layer-paint'
@@ -30,22 +30,24 @@ function matchesSelection(
 function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatureRef | null) {
   const highways: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedHighways: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selectedSidepaths: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const selected: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
-    const selected = matchesSelection(feature.properties, selectedRef)
-    if (feature.properties.kind === 'sidepath') {
-      if (selected) selectedSidepaths.features.push(feature)
-      else sidepaths.features.push(feature)
+    // Omit the selection so smoothness colors do not paint over the black centerline.
+    if (matchesSelection(feature.properties, selectedRef)) {
+      selected.features.push(feature)
       continue
     }
 
-    if (selected) selectedHighways.features.push(feature)
-    else highways.features.push(feature)
+    if (feature.properties.kind === 'sidepath') {
+      sidepaths.features.push(feature)
+      continue
+    }
+
+    highways.features.push(feature)
   }
 
-  return { highways, sidepaths, selectedHighways, selectedSidepaths }
+  return { highways, sidepaths, selected }
 }
 
 export function SurfaceHighwaysBandSource({
@@ -57,11 +59,12 @@ export function SurfaceHighwaysBandSource({
   selectedRef: OsmFeatureRef | null
   focus: string
 }) {
-  const bandPaint = buildSurfaceBandPaint(focus)
-  const { highways, sidepaths, selectedHighways, selectedSidepaths } = splitFeatures(
-    features,
-    selectedRef,
-  )
+  const hasSelection = selectedRef != null
+  const bandPaint = buildSurfaceBandPaint(focus, hasSelection)
+  const dottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection)
+  const { highways, sidepaths, selected } = splitFeatures(features, selectedRef)
+  const selectedLayout =
+    selected.features[0]?.properties.kind === 'sidepath' ? sidepathLineLayout : surfaceLineLayout
 
   return (
     <>
@@ -76,7 +79,7 @@ export function SurfaceHighwaysBandSource({
           <Layer
             id="surface-highways-dotted-layer"
             type="line"
-            paint={surfaceDottedOverlayPaint}
+            paint={dottedOverlayPaint}
             layout={surfaceLineLayout}
             filter={surfaceDottedOverlayFilter}
           />
@@ -100,7 +103,7 @@ export function SurfaceHighwaysBandSource({
           <Layer
             id="surface-sidepaths-dotted-layer"
             type="line"
-            paint={surfaceDottedOverlayPaint}
+            paint={dottedOverlayPaint}
             layout={sidepathLineLayout}
             filter={surfaceDottedOverlayFilter}
           />
@@ -113,53 +116,12 @@ export function SurfaceHighwaysBandSource({
         </Source>
       ) : null}
 
-      {selectedHighways.features.length > 0 ? (
-        <Source id="surface-selected-highways-source" type="geojson" data={selectedHighways}>
-          <Layer
-            id="surface-selected-highways-band-layer"
-            type="line"
-            paint={bandPaint}
-            layout={surfaceLineLayout}
-          />
-          <Layer
-            id="surface-selected-highways-dotted-layer"
-            type="line"
-            paint={surfaceDottedOverlayPaint}
-            layout={surfaceLineLayout}
-            filter={surfaceDottedOverlayFilter}
-          />
-          <Layer
-            id="surface-selected-highways-centerline-layer"
-            type="line"
-            paint={selectedCenterlinePaint}
-            layout={surfaceLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {selectedSidepaths.features.length > 0 ? (
-        <Source id="surface-selected-sidepaths-source" type="geojson" data={selectedSidepaths}>
-          <Layer
-            id="surface-selected-sidepaths-band-layer"
-            type="line"
-            paint={bandPaint}
-            layout={sidepathLineLayout}
-          />
-          <Layer
-            id="surface-selected-sidepaths-dotted-layer"
-            type="line"
-            paint={surfaceDottedOverlayPaint}
-            layout={sidepathLineLayout}
-            filter={surfaceDottedOverlayFilter}
-          />
-          <Layer
-            id="surface-selected-sidepaths-centerline-layer"
-            type="line"
-            paint={selectedCenterlinePaint}
-            layout={sidepathLineLayout}
-          />
-        </Source>
-      ) : null}
+      <SelectedWayCenterlineSource
+        sourceId="surface-selected-centerline-source"
+        layerId="surface-selected-centerline-layer"
+        collection={selected}
+        layout={selectedLayout}
+      />
     </>
   )
 }

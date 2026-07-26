@@ -44,12 +44,6 @@ export const parkingHitAreaLinePaint = transparentLineHitPaint([
   HIT_AREA_PADDING,
 ])
 
-export const parkingCenterlinePaint = {
-  'line-color': '#000000',
-  'line-width': 1,
-  'line-opacity': 1,
-} as Record<string, unknown>
-
 export function buildLanePaint(focus: string, hasSelection = false) {
   const color = ['get', 'color']
   const opacity = hasSelection ? laneMutedOpacity : laneActiveOpacity
@@ -67,24 +61,6 @@ export function buildLanePaint(focus: string, hasSelection = false) {
     'line-opacity': focusCaseOpacity(missingSurfaceMatch, opacity, laneMutedOpacity),
     'line-width': laneWeight,
     'line-offset': laneOffset,
-  } as Record<string, unknown>
-}
-
-export function buildSelectedLanePaint(focus: string) {
-  if (focus !== 'noSurface') {
-    return {
-      'line-color': parkingSideLaneColor,
-      'line-opacity': laneActiveOpacity,
-      'line-width': selectedLaneWeight,
-      'line-offset': selectedLaneOffset,
-    } as Record<string, unknown>
-  }
-
-  return {
-    'line-color': focusCaseColor(missingSurfaceMatch, parkingSideLaneColor),
-    'line-opacity': focusCaseOpacity(missingSurfaceMatch, laneActiveOpacity),
-    'line-width': selectedLaneWeight,
-    'line-offset': selectedLaneOffset,
   } as Record<string, unknown>
 }
 

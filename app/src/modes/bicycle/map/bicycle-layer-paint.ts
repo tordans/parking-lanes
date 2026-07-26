@@ -3,7 +3,6 @@ import {
   focusCaseOpacity,
   lineOffsetFromMeters,
   lineWidthFromMeters,
-  selectedCenterlineWidth,
 } from '@osm-editor-kit/osm-maplibre'
 import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
 import { BICYCLE_PAINT_COLORS } from './bicycle-colors'
@@ -64,11 +63,6 @@ export const bicycleHitAreaPaint = transparentLineHitPaint(
 export const sidepathHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
-
-export const selectedCenterlinePaint = {
-  'line-color': BICYCLE_PAINT_COLORS.selectedCenterline,
-  'line-width': selectedCenterlineWidth,
-} as Record<string, unknown>
 
 export const centerlinePresencePaint = {
   'line-color': BICYCLE_PAINT_COLORS.centerlinePresence,

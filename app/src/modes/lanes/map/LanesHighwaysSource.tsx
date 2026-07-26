@@ -1,4 +1,5 @@
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import {
   lanesBandPaint,
   lanesHitAreaPaint,
@@ -6,7 +7,6 @@ import {
   lanesNeighborPaint,
   lanesNextNeighborColor,
   lanesPrevNeighborColor,
-  lanesSelectedColor,
 } from './lanes-layer-paint'
 import type { LanesFeatureCollection } from './parse-highways'
 
@@ -108,16 +108,12 @@ export function LanesHighwaysSource({
         </Source>
       ) : null}
 
-      {selected.features.length > 0 ? (
-        <Source id="lanes-selected-highways-source" type="geojson" data={selected}>
-          <Layer
-            id="lanes-selected-highways-band-layer"
-            type="line"
-            paint={{ ...lanesNeighborPaint, 'line-color': lanesSelectedColor }}
-            layout={lanesLineLayout}
-          />
-        </Source>
-      ) : null}
+      <SelectedWayCenterlineSource
+        sourceId="lanes-selected-centerline-source"
+        layerId="lanes-selected-centerline-layer"
+        collection={selected}
+        layout={lanesLineLayout}
+      />
     </>
   )
 }

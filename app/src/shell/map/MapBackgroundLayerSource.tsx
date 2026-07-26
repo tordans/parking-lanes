@@ -23,8 +23,12 @@ export const CUSTOM_CONTENT_ANCHOR_LAYER_ID = 'map-custom-content-anchor'
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
 
 /** Drop style-layer maxzoom so MapLibre overzooms past ELI native tile zooms instead of hiding. */
-function omitLayerMaxzoom<T extends { maxzoom?: number }>(spec: T): Omit<T, 'maxzoom'> {
-  const { maxzoom: _maxzoom, ...rest } = spec
+function rasterLayerPropsWithoutMaxzoom(layer: EliLayer) {
+  const { maxzoom: _maxzoom, ...rest } = getRasterLayerSpec(layer, {
+    id: BACKGROUND_LAYER_ID,
+    source: BACKGROUND_SOURCE_ID,
+    paint: { 'raster-opacity': 1 },
+  })
   return rest
 }
 
@@ -69,13 +73,7 @@ export function MapBackgroundLayerSource() {
         <>
           <Source id={BACKGROUND_SOURCE_ID} {...getRasterSourceSpec(layer)} />
           <Layer
-            {...omitLayerMaxzoom(
-              getRasterLayerSpec(layer, {
-                id: BACKGROUND_LAYER_ID,
-                source: BACKGROUND_SOURCE_ID,
-                paint: { 'raster-opacity': 1 },
-              }),
-            )}
+            {...rasterLayerPropsWithoutMaxzoom(layer)}
             beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
           />
         </>

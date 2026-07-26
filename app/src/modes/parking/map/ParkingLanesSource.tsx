@@ -1,36 +1,33 @@
 import { Layer, Source } from 'react-map-gl/maplibre'
-import {
-  buildLanePaint,
-  buildSelectedLanePaint,
-  parkingCenterlinePaint,
-  parkingHitAreaLinePaint,
-  parkingLineLayout,
-} from './parking-layer-paint'
+import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
+import { buildLanePaint, parkingHitAreaLinePaint, parkingLineLayout } from './parking-layer-paint'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 function splitLaneFeatures(collection: ParkingFeatureCollection, selectedWayId: number | null) {
   const base: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
-  const selected: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of collection.features) {
     if (feature.properties.kind !== 'lane') continue
-    if (selectedWayId != null && feature.properties.osmId === selectedWayId) {
-      selected.features.push(feature)
-    } else {
-      base.features.push(feature)
-    }
+    // Omit the selection so lane colors do not paint over the black centerline.
+    if (selectedWayId != null && feature.properties.osmId === selectedWayId) continue
+    base.features.push(feature)
   }
 
-  return { base, selected }
+  return base
 }
 
-function centerlinesFromLanes(collection: ParkingFeatureCollection): ParkingFeatureCollection {
+function centerlinesFromLanes(
+  collection: ParkingFeatureCollection,
+  selectedWayId: number | null,
+): ParkingFeatureCollection {
   const seen = new Set<number>()
   const features: ParkingFeature[] = []
 
   for (const feature of collection.features) {
     if (feature.properties.kind !== 'lane') continue
     const osmId = feature.properties.osmId
+    // When a way is selected, only its centerline is drawn (selection chrome).
+    if (selectedWayId != null && osmId !== selectedWayId) continue
     if (seen.has(osmId)) continue
     seen.add(osmId)
     features.push({
@@ -59,8 +56,8 @@ export function ParkingLanesSource({
 }) {
   if (!collection.features.length) return null
 
-  const { base, selected } = splitLaneFeatures(collection, selectedWayId)
-  const centerlines = centerlinesFromLanes(collection)
+  const base = splitLaneFeatures(collection, selectedWayId)
+  const centerlines = centerlinesFromLanes(collection, selectedWayId)
   const hasSelection = selectedWayId != null
 
   return (
@@ -82,33 +79,12 @@ export function ParkingLanesSource({
         </Source>
       ) : null}
 
-      {selected.features.length > 0 ? (
-        <Source id="parking-selected-lanes-source" type="geojson" data={selected}>
-          <Layer
-            id="parking-selected-lanes-layer"
-            type="line"
-            paint={buildSelectedLanePaint(focus)}
-            layout={parkingLineLayout}
-          />
-          <Layer
-            id="parking-selected-lanes-hitarea-layer"
-            type="line"
-            paint={parkingHitAreaLinePaint}
-            layout={parkingLineLayout}
-          />
-        </Source>
-      ) : null}
-
-      {centerlines.features.length > 0 ? (
-        <Source id="parking-centerlines-source" type="geojson" data={centerlines}>
-          <Layer
-            id="parking-centerlines-layer"
-            type="line"
-            paint={parkingCenterlinePaint}
-            layout={parkingLineLayout}
-          />
-        </Source>
-      ) : null}
+      <SelectedWayCenterlineSource
+        sourceId="parking-centerlines-source"
+        layerId="parking-centerlines-layer"
+        collection={centerlines}
+        layout={parkingLineLayout}
+      />
     </>
   )
 }
