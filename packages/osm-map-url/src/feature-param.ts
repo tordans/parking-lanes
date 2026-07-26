@@ -3,6 +3,11 @@ import { z } from 'zod'
 const OsmObjectTypeSchema = z.enum(['way', 'node', 'relation'])
 const SidepathPrefixSchema = z.enum(['cycleway', 'sidewalk'])
 const SidepathSideSchema = z.enum(['left', 'right'])
+/** OSM ids are nonzero; negatives are temporary create ids (e.g. after a way cut). */
+const OsmIdSchema = z.coerce
+  .number()
+  .int()
+  .refine((n) => n !== 0)
 
 export type OsmFeatureRef = {
   type: z.infer<typeof OsmObjectTypeSchema>
@@ -18,7 +23,7 @@ export const parseFeatureParam = (query: string): OsmFeatureRef | null => {
     const parsed = z
       .object({
         type: OsmObjectTypeSchema,
-        id: z.coerce.number().int().positive(),
+        id: OsmIdSchema,
       })
       .safeParse({ type: parts[0], id: parts[1] })
 
@@ -29,7 +34,7 @@ export const parseFeatureParam = (query: string): OsmFeatureRef | null => {
     const parsed = z
       .object({
         type: z.literal('way'),
-        id: z.coerce.number().int().positive(),
+        id: OsmIdSchema,
         prefix: SidepathPrefixSchema,
         side: SidepathSideSchema,
       })

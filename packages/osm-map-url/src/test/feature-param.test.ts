@@ -7,6 +7,17 @@ describe('feature param', () => {
     expect(parseFeatureParam('relation/789')).toEqual({ type: 'relation', id: 789 })
   })
 
+  test('parseFeatureParam accepts temporary create ids', () => {
+    expect(parseFeatureParam('way/-1')).toEqual({ type: 'way', id: -1 })
+    expect(parseFeatureParam('node/-2')).toEqual({ type: 'node', id: -2 })
+    expect(parseFeatureParam('way/-1/cycleway/left')).toEqual({
+      type: 'way',
+      id: -1,
+      prefix: 'cycleway',
+      side: 'left',
+    })
+  })
+
   test('parseFeatureParam accepts sidepath refs', () => {
     expect(parseFeatureParam('way/123/cycleway/left')).toEqual({
       type: 'way',
@@ -25,7 +36,6 @@ describe('feature param', () => {
   test('parseFeatureParam rejects invalid values', () => {
     expect(parseFeatureParam('invalid')).toBeNull()
     expect(parseFeatureParam('way/0')).toBeNull()
-    expect(parseFeatureParam('way/-1')).toBeNull()
     expect(parseFeatureParam('foo/123')).toBeNull()
     expect(parseFeatureParam('way')).toBeNull()
     expect(parseFeatureParam('way/1/2')).toBeNull()
@@ -38,6 +48,10 @@ describe('feature param', () => {
     const plain = { type: 'way' as const, id: 42 }
     expect(serializeFeatureParam(plain)).toBe('way/42')
     expect(parseFeatureParam(serializeFeatureParam(plain))).toEqual(plain)
+
+    const createId = { type: 'way' as const, id: -1 }
+    expect(serializeFeatureParam(createId)).toBe('way/-1')
+    expect(parseFeatureParam(serializeFeatureParam(createId))).toEqual(createId)
 
     const sidepath = {
       type: 'way' as const,
