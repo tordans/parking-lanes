@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import { type TagValue } from '../../../../utils/types/parking'
+import { formatParkingTagValueLabel } from '../../domain/editor/format-tag-value-label'
 import {
   tagEditorValueButtonCompactClassName,
   tagEditorValueButtonDividerClassName,
@@ -49,7 +50,7 @@ export function TagValueIconShortcuts(props: {
         return (
           <Tooltip
             key={option.value}
-            content={option.value}
+            content={formatParkingTagValueLabel(option.value)}
             placement="top"
             wrapperClassName="shrink-0"
           >

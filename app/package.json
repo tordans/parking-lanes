@@ -8,15 +8,19 @@
   "author": "Zlant",
   "type": "module",
   "scripts": {
-    "predev": "bun run scripts/ensure-tilda-bicycle-infra.ts && bun run scripts/ensure-dev-osm-fixture.ts",
+    "predev": "bun run scripts/ensure-tilda-bicycle-infra.ts && bun run scripts/ensure-dev-osm-fixture.ts && bun run build:paraglide",
     "dev": "vite",
-    "build": "vite build",
+    "build": "bun run build:paraglide && vite build",
+    "build:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./paraglide --strategy localStorage baseLocale",
     "preview": "vite preview",
+    "pretype-check": "bun run build:paraglide",
     "type-check": "tsc --noEmit",
+    "pretest-run": "bun run build:paraglide",
     "test-run": "bun test src/test"
   },
   "dependencies": {
     "@headlessui/react": "^2.2",
+    "@inlang/paraglide-js": "^2.20.2",
     "@osm-editor-kit/osm-changeset": "workspace:*",
     "@osm-editor-kit/osm-coverage": "workspace:*",
     "@osm-editor-kit/osm-data": "workspace:*",
@@ -62,6 +66,8 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@inlang/plugin-m-function-matcher": "^2.2.9",
+    "@inlang/plugin-message-format": "^4.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.131.28",
     "@types/geojson": "^7946.0.16",

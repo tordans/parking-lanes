@@ -1,12 +1,20 @@
 {
   "extends": "../tsconfig.base.json",
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "paraglide/**/*.ts",
+    "paraglide/**/*.js"
+  ],
   "exclude": ["node_modules", "dist", "src/test/**", "node_modules/osm-parking-tag-updater/**"],
   "compilerOptions": {
     "tsBuildInfoFile": ".tsbuildinfo-app",
+    "allowJs": true,
     "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"],
+      "@app/*": ["./*"],
       "osm-parking-tag-updater/src/components/Tool/transpose/transpose": [
         "./src/shims/osm-tag-updater-transpose.ts"
       ]

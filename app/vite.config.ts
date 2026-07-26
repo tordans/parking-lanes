@@ -1,6 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
@@ -24,6 +25,11 @@ export default defineConfig({
   envPrefix: ['VITE_', 'OSM_'],
   base: '/street-space-editor/',
   plugins: [
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './paraglide',
+      strategy: ['localStorage', 'baseLocale'],
+    }),
     tailwindcss(),
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react({
@@ -35,6 +41,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(projectRoot, 'src'),
+      '@app': projectRoot,
     },
   },
   // Local file: package — skip prebundle so ELI dist updates are picked up without stale .vite cache.

@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import { type TagValue } from '../../../../utils/types/parking'
+import { formatParkingTagValueLabel } from '../../domain/editor/format-tag-value-label'
 import {
   tagEditorParkingPositionButtonClassName,
   tagEditorValueButtonDividerClassName,
@@ -31,7 +32,7 @@ export function TagValueButtonGroup(props: {
     { key: '__clear__', label: 'Clear value', value: '' },
     ...options.map((option) => ({
       key: option.value,
-      label: option.value,
+      label: formatParkingTagValueLabel(option.value),
       imgSrc: option.imgSrc,
       value: option.value,
     })),

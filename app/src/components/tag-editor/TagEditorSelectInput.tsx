@@ -6,6 +6,7 @@ export function TagEditorSelectInput(props: {
   value: string
   values: readonly string[]
   disabled?: boolean
+  formatOptionLabel?: (value: string) => string
   onChange: (tagValue: string) => void
 }) {
   const options =
@@ -23,7 +24,7 @@ export function TagEditorSelectInput(props: {
     >
       {options.map((o) => (
         <option key={o} value={o}>
-          {o}
+          {props.formatOptionLabel ? props.formatOptionLabel(o) : o}
         </option>
       ))}
     </Select>
