@@ -15,7 +15,6 @@ import { useAllTagsOpen, useParkingEditorActions } from '../parking-editor-store
 import { useParkingOsmChangeHandler } from '../use-parking-mode-handlers'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
-import { OsmExternalLinksBar } from './OsmExternalLinksBar'
 
 export function OsmObjectPanel() {
   const onChange = useParkingOsmChangeHandler()
@@ -61,12 +60,6 @@ export function OsmObjectPanel() {
 
   return (
     <div className="flex min-w-[250px] flex-col text-zinc-900">
-      <OsmExternalLinksBar
-        wayId={selectedOsmObject.id}
-        lat={mapViewport.lat}
-        lng={mapViewport.lng}
-      />
-      <hr className="my-2 border-zinc-950/10" />
       {isStreetParking ? (
         <>
           {readOnly ? (

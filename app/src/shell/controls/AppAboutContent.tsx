@@ -1,10 +1,6 @@
-import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
-import { handleJosmLinkClick, idEditorUrl, josmUrl } from '@osm-editor-kit/osm-editor-links'
 import { Badge } from '../../components/catalyst/badge'
 import { APP_REPO_URL, buildModeFeedbackUrl } from '../../lib/app-identity'
 import type { ModeAboutContent, ModeMaturity } from '../../modes/types'
-import { useMapBounds } from '../app-store'
-import { useMapViewport } from '../map/map-viewport'
 import { PanelSectionDivider } from './PanelSectionDivider'
 
 const MATURITY_LABELS: Record<ModeMaturity, string> = {
@@ -32,9 +28,6 @@ type Props = {
 }
 
 export function AppAboutContent({ about, modeLabel, maturity }: Props) {
-  const mapBounds = useMapBounds()
-  const mapViewport = useMapViewport()
-
   const linkClass = 'text-blue-600 hover:underline'
   const feedbackUrl =
     typeof window !== 'undefined'
@@ -70,30 +63,6 @@ export function AppAboutContent({ about, modeLabel, maturity }: Props) {
           <a href={about.taggingGuide.href} target="_blank" rel="noreferrer" className={linkClass}>
             {about.taggingGuide.label}
           </a>
-          {mapBounds != null ? (
-            <>
-              <a
-                href={idEditorUrl({
-                  zoom: mapViewport.zoom,
-                  center: { lat: mapViewport.lat, lng: mapViewport.lng },
-                })}
-                target="_blank"
-                rel="noreferrer"
-                className={linkClass}
-              >
-                Open viewport in iD
-              </a>
-              <a
-                href={josmUrl + overpassDeUrl + getHighwaysOverpassQuery(mapBounds)}
-                target="_blank"
-                rel="noreferrer"
-                className={linkClass}
-                onClick={(e) => void handleJosmLinkClick(e.nativeEvent)}
-              >
-                Open viewport in JOSM
-              </a>
-            </>
-          ) : null}
           <a href={feedbackUrl} target="_blank" rel="noreferrer" className={linkClass}>
             Report feedback ({modeLabel} mode)
           </a>
@@ -104,24 +73,4 @@ export function AppAboutContent({ about, modeLabel, maturity }: Props) {
       </section>
     </div>
   )
-}
-
-function getHighwaysOverpassQuery(bounds: {
-  south: number
-  west: number
-  north: number
-  east: number
-}) {
-  const bbox = [bounds.south, bounds.west, bounds.north, bounds.east].join(',')
-  const tag =
-    'highway~"^motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street"'
-  return `
-    [out:xml];
-    (
-    way[${tag}](${bbox});
-    >;
-    way[${tag}](${bbox});
-    <;
-    );
-    out meta;`
 }
