@@ -22,7 +22,7 @@ Research for lane-editor tag documentation. Fetched or read **2026-07-25**. Wiki
 | [Key:road_marking](https://wiki.openstreetmap.org/wiki/Key:road_marking) | **Approved** (2025-07-10) separate geometries for markings not derivable from centreline; junction arrows, stop lines, gores. Full notes: [tags/road-marking.md](./tags/road-marking.md). |
 | [Proposal:Road_marking_revision](https://wiki.openstreetmap.org/wiki/Proposal:Road_marking_revision) | Approved proposal restructuring `road_marking=*` values and styling subtags (`stroke`, `pattern`, `arrow`, …). |
 | [Key:access](https://wiki.openstreetmap.org/wiki/Key:access) (redirect from Key:access:lanes) | Access hierarchy; `access:lanes` uses same values per lane; `variable` and `escape` lane-specific values. |
-| [Key:width](https://wiki.openstreetmap.org/wiki/Key:width) (includes width:lanes) | Carriageway width; `width:lanes` per-lane widths; fuzziness of street width semantics. **Deep dive:** [tags/width-measurements.md](./tags/width-measurements.md), sources [sources/width-measurements.md](./sources/width-measurements.md). |
+| [Key:width](https://wiki.openstreetmap.org/wiki/Key:width) (includes width:lanes) | Carriageway width; `width:lanes` per-lane widths; fuzziness of street width semantics. **Deep dive:** [../width-measurements/](../width-measurements/), sources [../width-measurements/sources.md](../width-measurements/sources.md). |
 | [Bus lanes](https://wiki.openstreetmap.org/wiki/Bus_lanes) | Two schemes: `lanes:psv`/`lanes:bus` vs `psv:lanes`/`bus:lanes`; counting; conditional bus lanes; contraflow. |
 | [Key:overtaking](https://wiki.openstreetmap.org/wiki/Key:overtaking) | Centre-line overtaking restrictions; regional defaults; overlap with `change:lanes`. |
 | [Proposal:Separation](https://wiki.openstreetmap.org/wiki/Proposal:Separation) | Draft `separation` / `marking` / `traffic_mode` schema for protected bike lanes, lane edges, and road dividers. Berlin practice since 2019; full notes: [tags/separation-proposal.md](./tags/separation-proposal.md). Old URL `Proposed_features/cycleway:separation` serves same page. |
@@ -37,7 +37,7 @@ Research for lane-editor tag documentation. Fetched or read **2026-07-25**. Wiki
 | [DE:Key:width](https://wiki.openstreetmap.org/wiki/DE:Key:width) | Units / `est_width` / `maxwidth` vs `maxwidth:physical`; no full EN “Width of streets” section. |
 | [DE:Key:placement](https://wiki.openstreetmap.org/wiki/DE:Key:placement) | Stub; refers to placement proposal. |
 | [DE:Key:turn:lanes](https://wiki.openstreetmap.org/wiki/DE:Key:turn:lanes) | German turn:lanes values and bidirectional tagging examples. |
-| [Berlin/Verkehrswende/Radwege](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege) | Cycle `width` between boundary lines; numeric `buffer` practice; tagging examples. Width deep dive: [tags/width-measurements.md](./tags/width-measurements.md). |
+| [Berlin/Verkehrswende/Radwege](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege) | Cycle `width` between boundary lines; numeric `buffer` practice; tagging examples. Width deep dive: [../width-measurements/](../width-measurements/). |
 
 ## Projects and tools
 
@@ -72,5 +72,5 @@ Research for lane-editor tag documentation. Fetched or read **2026-07-25**. Wiki
 - Junction lane connectivity: `connectivity` relation documented but underused; no settled junction-area lane drawing standard. Approved `road_marking=*` (2025) offers separate-geometry junction markings — see [tags/road-marking.md](./tags/road-marking.md).
 - [Key:lane_markings](https://wiki.openstreetmap.org/wiki/Key:lane_markings) See also may still describe `road_marking` as experimental; canonical status is **approved** on [Key:road_marking](https://wiki.openstreetmap.org/wiki/Key:road_marking).
 - Whether bike lanes count in `lanes=*`: wiki says exclude, with explicit NOTE that this is not fully settled (2023 discourse).
-- Whether motor `width:lanes` includes painted line millimetres: **not documented**; Berlin numeric `cycleway:*:buffer` **does** include markings — see [tags/width-measurements.md](./tags/width-measurements.md).
+- Whether motor `width:lanes` includes painted line millimetres: **not documented**; Berlin numeric `cycleway:*:buffer` **does** include markings — see [../width-measurements/](../width-measurements/).
 - No single tag for full street ROW (carriageway + both sidewalks + planted median).

@@ -1,6 +1,8 @@
 # Width measurements in OSM street space
 
-Deep dive on how OSM tags describe **physical widths** of roads, lanes, cycle infrastructure, buffers, and related limits — and how those tags interact. Companion to the shorter [width-and-surface.md](./width-and-surface.md). Source list and page summaries: [sources/width-measurements.md](../sources/width-measurements.md). Researched **2026-07-26**.
+Deep dive on how OSM tags describe **physical widths** of roads, lanes, cycle infrastructure, buffers, and related limits — and how those tags interact.
+
+Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` editor research). Short lane-editor tag card: [width-and-surface.md](../lane-editor-tags/tags/width-and-surface.md). Source list: [sources.md](./sources.md). Researched **2026-07-26**.
 
 ## Verdict (read this first)
 
@@ -157,7 +159,7 @@ So for Radfahrstreifen / Schutzstreifen the tagged width is the **usable strip b
 
 On a **separate** `highway=cycleway` / `path`, use plain `width=*` (and `cycleway:width` + `footway:width` when `segregated=yes`).
 
-**Inventory survey practice (infraD example):** geometry reference from the **left edge of the cycling facility (RVA)** in travel direction; width measured from that edge ([uploaded survey slide](../sources/width-assets/infrad-geometry-left-edge.png)).
+**Inventory survey practice (infraD example):** geometry reference from the **left edge of the cycling facility (RVA)** in travel direction; width measured from that edge ([uploaded survey slide](./assets/infrad-geometry-left-edge.png)).
 
 ---
 
@@ -175,7 +177,7 @@ On a **separate** `highway=cycleway` / `path`, use plain `width=*` (and `cyclewa
 
 Documented against German design drawings and Berlin meetup notes (“Hier werden die Markierungen mitgezählt!”):
 
-![ERA buffer including paint](../sources/width-assets/era-buffer-includes-paint.png)
+![ERA buffer including paint](./assets/era-buffer-includes-paint.png)
 
 Example from the drawing:
 
@@ -308,7 +310,7 @@ flowchart TD
 
 ### 5.1 muv-osm (primary parser gold standard)
 
-From [muv-osm.md](../projects/muv-osm.md) + upstream `highway.rs` / `side_lanes.rs` / `direction.rs` / `base.rs` (fetched 2026-07-26):
+From [muv-osm.md](../lane-editor-tags/projects/muv-osm.md) + upstream `highway.rs` / `side_lanes.rs` / `direction.rs` / `base.rs` (fetched 2026-07-26):
 
 | Input | Behaviour |
 |-------|-----------|
@@ -331,7 +333,7 @@ Test `lane_widths`: `width=8` + parking 3 m + bike/vehicle lanes → remaining w
 
 ### 5.3 Straßenraumkarte Neukölln
 
-Heavy consumer of `width:lanes`, defaults (3.0 / 1.5 / 2.2 m), `cycleway:*:buffer` offsets, `width:effective` fallback — see [strassenraumkarte.md](../projects/strassenraumkarte.md).
+Heavy consumer of `width:lanes`, defaults (3.0 / 1.5 / 2.2 m), `cycleway:*:buffer` offsets, `width:effective` fallback — see [strassenraumkarte.md](../lane-editor-tags/projects/strassenraumkarte.md).
 
 ### 5.4 Others (width-relevant only)
 
@@ -350,9 +352,9 @@ German design drawings used as **measurement convention** references (not OSM ta
 
 | Asset | What it shows | OSM mapping |
 |-------|---------------|-------------|
-| [era-buffer-includes-paint.png](../sources/width-assets/era-buffer-includes-paint.png) | Buffer ≥1.00 = 0.12 + hatch + 0.25; cycle ≥2.00 after wide line | `cycleway:*:buffer` includes paint; `cycleway:*:width` is clear width |
-| [era-markings-stack.png](../sources/width-assets/era-markings-stack.png) | Stacked minima (≥2.00 / 0.63 / 2.25) relative to solid/dashed lines | Documents how standards dimension to paint edges |
-| [infrad-geometry-left-edge.png](../sources/width-assets/infrad-geometry-left-edge.png) | Survey geometry from left edge of RVA | Separate-cycleway centreline / width origin practice |
+| [era-buffer-includes-paint.png](./assets/era-buffer-includes-paint.png) | Buffer ≥1.00 = 0.12 + hatch + 0.25; cycle ≥2.00 after wide line | `cycleway:*:buffer` includes paint; `cycleway:*:width` is clear width |
+| [era-markings-stack.png](./assets/era-markings-stack.png) | Stacked minima (≥2.00 / 0.63 / 2.25) relative to solid/dashed lines | Documents how standards dimension to paint edges |
+| [infrad-geometry-left-edge.png](./assets/infrad-geometry-left-edge.png) | Survey geometry from left edge of RVA | Separate-cycleway centreline / width origin practice |
 | [File:Radweg Edinburger Straße…](https://wiki.openstreetmap.org/wiki/File:Radweg_Edinburger_Stra%C3%9Fe_beschriftet.jpg) | Berlin labelled photo with widths on cycleway + buffers | Example of meetup tagging practice |
 
 Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger image — buffer annotation was corrected, underscoring how easy buffer extents are to mis-draw.
@@ -399,10 +401,11 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 | Resource | URL |
 |----------|-----|
-| Source index (this research) | [sources/width-measurements.md](../sources/width-measurements.md) |
+| Source index (this research) | [sources.md](./sources.md) |
 | Key:width | https://wiki.openstreetmap.org/wiki/Key:width |
 | Lanes / width:lanes | https://wiki.openstreetmap.org/wiki/Lanes |
 | Berlin Radwege schema | https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege |
 | StreetComplete #5593 | https://github.com/streetcomplete/StreetComplete/issues/5593 |
 | Tagging ML 2020 width thread | https://lists.openstreetmap.org/pipermail/tagging/2020-September/055362.html |
-| Shorter tag note | [width-and-surface.md](./width-and-surface.md) |
+| Lane editor research | [../lane-editor-tags/](../lane-editor-tags/) |
+| Shorter tag card (lanes package) | [width-and-surface.md](../lane-editor-tags/tags/width-and-surface.md) |

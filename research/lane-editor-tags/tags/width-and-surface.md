@@ -1,6 +1,6 @@
 # Width and surface
 
-> **Deep dive:** measurement semantics, tag interactions, paint/buffer rules, Streetmix-style cross-sections, and source index → **[width-measurements.md](./width-measurements.md)** ([sources](../sources/width-measurements.md)).
+> **Deep dive (separate package):** measurement semantics, tag interactions, paint/buffer rules, Streetmix-style cross-sections → **[width-measurements](../../width-measurements/)** ([sources](../../width-measurements/sources.md)).
 
 ## Width (`width=*`, `width:lanes`)
 
@@ -96,15 +96,15 @@ Effective usable width: `width=*` minus parking, or sum of `width:lanes` — `wi
 3. **`width:lanes` pipe count** may exceed `lanes=*` (bike slots).
 4. **`surface:colour`** — documented in DE micromapping practice more than EN wiki.
 5. **Estimated vs surveyed** — always tag `source:width` when guessing.
-6. **Paint millimetres** — motor `width:lanes` undocumented; Berlin **buffer** includes markings; cycle usable width is between boundary lines — see [width-measurements.md](./width-measurements.md).
+6. **Paint millimetres** — motor `width:lanes` undocumented; Berlin **buffer** includes markings; cycle usable width is between boundary lines — see [width-measurements](../../width-measurements/).
 7. **`sum(width:lanes)` ≠ `width`** when parking / shoulder / gutter present ([StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593)).
 
 ## Links
 
 | Resource | URL |
 |----------|-----|
-| **Width deep dive** | [width-measurements.md](./width-measurements.md) |
-| Width source index | [sources/width-measurements.md](../sources/width-measurements.md) |
+| **Width deep dive** | [../../width-measurements/](../../width-measurements/) |
+| Width source index | [../../width-measurements/sources.md](../../width-measurements/sources.md) |
 | Key:width (EN) | https://wiki.openstreetmap.org/wiki/Key:width |
 | Lanes | https://wiki.openstreetmap.org/wiki/Lanes |
 | DE:Fahrspuren | https://wiki.openstreetmap.org/wiki/DE:Fahrspuren |

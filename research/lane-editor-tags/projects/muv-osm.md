@@ -171,7 +171,7 @@ Modes recognized for `:lanes` keys include (non-exhaustive): `vehicle`, `motorca
 
 ### Width / buffer (detail)
 
-Width-only behaviour (see also research deep dive [tags/width-measurements.md](../tags/width-measurements.md)):
+Width-only behaviour (see also [width-measurements](../../width-measurements/)):
 
 | Mechanism | Code | Notes |
 |-----------|------|-------|

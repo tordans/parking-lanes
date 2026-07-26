@@ -2,6 +2,8 @@
 
 Research package for a future OSM lane editor: which tags to read and write, how access tags differ from physical lane geometry, how existing tools interpret the same data, and which external test fixtures to adopt. Surveys projects from [AB Street discussion #789](sources/abstreet-discussion-789.md), consolidates tag coverage in one reference table, and tracks open confirmations below.
 
+Sibling: [width-measurements](../width-measurements/) (how OSM width tags are measured and interact). Index: [../README.md](../README.md).
+
 ## Quick start
 
 - Start with [tags/consolidated-tag-reference.md](tags/consolidated-tag-reference.md)
@@ -34,8 +36,7 @@ Research package for a future OSM lane editor: which tags to read and write, how
 | [lanes-count.md](tags/lanes-count.md) | `lanes=*` and directional counts — what is included and excluded |
 | [turn-lanes.md](tags/turn-lanes.md) | `turn:lanes` syntax, values, and connectivity relations |
 | [placement.md](tags/placement.md) | Way offset vs road cross-section (`placement=*`, transitions) |
-| [width-and-surface.md](tags/width-and-surface.md) | Short card: `width`, `width:lanes`, per-lane surface and colour |
-| [width-measurements.md](tags/width-measurements.md) | **Deep dive:** kerb vs lanes vs buffer vs cycle widths, paint rules, ROW gaps, tool behaviour (muv/SC), Streetmix-style diagrams |
+| [width-and-surface.md](tags/width-and-surface.md) | Short card: `width`, `width:lanes`, per-lane surface — deep dive in [../width-measurements/](../width-measurements/) |
 | [bicycle-lanes.md](tags/bicycle-lanes.md) | `cycleway:*` roadside vs on-carriageway `bicycle:lanes` / `cycleway:lanes` |
 | [bus-lanes.md](tags/bus-lanes.md) | Bus/PSV count scheme vs `bus:lanes` / `psv:lanes` designation |
 | [markings-and-change.md](tags/markings-and-change.md) | `lane_markings`, `change:lanes`, overtaking, separators |
@@ -54,8 +55,8 @@ Research package for a future OSM lane editor: which tags to read and write, how
 
 - [00-sources-and-method.md](00-sources-and-method.md) — wiki pages, method, and source index
 - [sources/abstreet-discussion-789.md](sources/abstreet-discussion-789.md) — full notes on discussion #789
-- [sources/width-measurements.md](sources/width-measurements.md) — wiki / ML / SC / Berlin / ERA sources for width semantics (+ [diagram assets](sources/width-assets/))
-
+- **Width package:** [../width-measurements/](../width-measurements/) — kerb vs lanes vs buffer measurement deep dive (+ [sources](../width-measurements/sources.md), [assets](../width-measurements/assets/))
+- Research index: [../README.md](../README.md)
 ## Open confirmations
 
 Collected from **Open questions** sections in project notes:
@@ -72,7 +73,7 @@ Collected from **Open questions** sections in project notes:
 
 Shallow catalog entries not yet turned into fixtures or dedicated notes — see [other-tools-and-visualizations.md](projects/other-tools-and-visualizations.md) for context:
 
-- **Berlin Verkehrswende Radwege wiki** — exemplar way IDs → fixtures ([wiki](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege#Tagging-Beispiele)); separation already covered in [tags/separation-proposal.md](tags/separation-proposal.md); **width/buffer measurement** covered in [tags/width-measurements.md](tags/width-measurements.md)
+- **Berlin Verkehrswende Radwege wiki** — exemplar way IDs → fixtures ([wiki](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege#Tagging-Beispiele)); separation already covered in [tags/separation-proposal.md](tags/separation-proposal.md); **width/buffer measurement** in [../width-measurements/](../width-measurements/)
 - **CycleStreets SOTM2019 / area:highway junction context** — see [other-tools-and-visualizations.md § CycleStreets](projects/other-tools-and-visualizations.md#cyclestreets--sotm-2019-areahighway)
 - **3DStreet OSM import path** — see [other-tools-and-visualizations.md § 3DStreet](projects/other-tools-and-visualizations.md#3dstreet)
 - **Streetmix data model vs `:lanes`** (no OSM export) — design ref only; see [other-tools-and-visualizations.md § Streetmix](projects/other-tools-and-visualizations.md#streetmix)
@@ -83,20 +84,21 @@ Shallow catalog entries not yet turned into fixtures or dedicated notes — see 
 ## Folder layout
 
 ```
-lane-editor-tags/
-├── README.md                 ← this file
+lane-editor-tags/          ← lanes / :lanes research (this package)
+├── README.md
 ├── 00-sources-and-method.md
 ├── sources/
-│   ├── abstreet-discussion-789.md
-│   ├── width-measurements.md ← width wiki/ML/SC/Berlin source index
-│   └── width-assets/         ← ERA / infraD measurement diagrams
+│   └── abstreet-discussion-789.md
 ├── projects/
-│   └── *.md                  ← per-project research notes
+│   └── *.md
 ├── tags/
-│   ├── width-measurements.md ← width deep dive
-│   └── *.md                  ← topic notes + consolidated reference
+│   ├── width-and-surface.md  ← short card → ../width-measurements/
+│   └── *.md
 └── test-cases/
-    ├── README.md
-    ├── muv-osm.md
-    └── osm2lanes-osm2streets.md
+    └── …
+
+../width-measurements/     ← separate width measurement research
+├── README.md              ← deep dive
+├── sources.md
+└── assets/
 ```

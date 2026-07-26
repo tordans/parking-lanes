@@ -1,6 +1,8 @@
 # Sources — OSM width measurements
 
-Source index for [tags/width-measurements.md](../tags/width-measurements.md). Fetched or read **2026-07-26**.
+Source index for [README.md](./README.md) (width deep dive). Fetched or read **2026-07-26**.
+
+Related: [lane-editor-tags](../lane-editor-tags/) for `:lanes` / tool parser research.
 
 ## Method
 
@@ -53,35 +55,35 @@ Source index for [tags/width-measurements.md](../tags/width-measurements.md). Fe
 
 | Source | Summary |
 |--------|---------|
-| [muv-osm research](../projects/muv-osm.md) | Parser: `width`/`est_width`/`width:carriageway` distribute; `width:lanes` per slot; numeric `cycleway:*:buffer` → width-only separator lane; **no paint model**. |
+| [muv-osm research](../lane-editor-tags/projects/muv-osm.md) | Parser: `width`/`est_width`/`width:carriageway` distribute; `width:lanes` per slot; numeric `cycleway:*:buffer` → width-only separator lane; **no paint model**. |
 | muv `highway.rs` `carriageway_width` / `lane_widths` test | `width=8` + parking width + bike/vehicle lanes → remaining metres split across travel lanes. |
 | muv `side_lanes.rs` `cycleway_buffer` test | `cycleway:left:buffer=0.2`, `cycleway:right:buffer=0.75` become buffer lane widths. |
 | [Straßenraumkarte micromap post](https://strassenraumkarte.osm-berlin.org/posts/2021-12-31-micromap-update) | Production consumer of `width:lanes`, cycle buffers, defaults 3.0/1.5/2.2 m. |
-| [Straßenraumkarte project note](../projects/strassenraumkarte.md) | Offset pipeline; soft consistency expectations for an editor. |
-| [JOSM lane_features](../projects/josm-lane-features.md) | Default 3.5 m × `lanes` when `width` absent. |
+| [Straßenraumkarte project note](../lane-editor-tags/projects/strassenraumkarte.md) | Offset pipeline; soft consistency expectations for an editor. |
+| [JOSM lane_features](../lane-editor-tags/projects/josm-lane-features.md) | Default 3.5 m × `lanes` when `width` absent. |
 | StreetMeasure / SC measuring | Documented on Key:width; ARCore provenance via `source:width`. |
 
 ## E. External / survey references (measurement convention)
 
 | Source | Summary |
 |--------|---------|
-| [era-buffer-includes-paint.png](./width-assets/era-buffer-includes-paint.png) | German design cross-section: buffer ≥1.00 m **includes** 0.12 + hatch + 0.25 paint; cycle ≥2.00 after wide line. Anchors “Markierungen mitgezählt” for **buffer**. |
-| [era-markings-stack.png](./width-assets/era-markings-stack.png) | Stacked marking dimensions (≥2.00 / 0.63 / 2.25) relative to solid/dashed lines — how standards seat measurements on paint edges. |
-| [infrad-geometry-left-edge.png](./width-assets/infrad-geometry-left-edge.png) | infraD inventory guidance: geometry from **left edge of RVA**; width measured from that edge. |
+| [era-buffer-includes-paint.png](./assets/era-buffer-includes-paint.png) | German design cross-section: buffer ≥1.00 m **includes** 0.12 + hatch + 0.25 paint; cycle ≥2.00 after wide line. Anchors “Markierungen mitgezählt” for **buffer**. |
+| [era-markings-stack.png](./assets/era-markings-stack.png) | Stacked marking dimensions (≥2.00 / 0.63 / 2.25) relative to solid/dashed lines — how standards seat measurements on paint edges. |
+| [infrad-geometry-left-edge.png](./assets/infrad-geometry-left-edge.png) | infraD inventory guidance: geometry from **left edge of RVA**; width measured from that edge. |
 | User note (meetup / Berlin practice) | `(cycleway:SIDE:)buffer:SIDE=<m>\|no` — see Breite; **ABER: Hier werden die Markierungen mitgezählt!** |
 
 These ERA/infraD materials are **not** OSM tagging proposals; they justify how Berlin numeric buffers and cycle widths should be surveyed so OSM values match on-street design language.
 
-## F. Related research already in this package
+## F. Related notes in lane-editor-tags
 
 | Note | Width-relevant takeaway |
 |------|-------------------------|
-| [width-and-surface.md](../tags/width-and-surface.md) | Short tag card; points here for deep dive |
-| [bicycle-lanes.md](../tags/bicycle-lanes.md) | `cycleway:*:width` / buffer / separation |
-| [lanes-count.md](../tags/lanes-count.md) | What enters `lanes=*` vs `:lanes` pipes |
-| [separation-proposal.md](../tags/separation-proposal.md) | Buffer as companion to separation/marking |
-| [placement.md](../tags/placement.md) | Centreline vs cross-section; tapers with width:lanes:start/end |
-| [markings-and-change.md](../tags/markings-and-change.md) | Paint meaning (`change`, `lane_markings`), not millimetres |
+| [width-and-surface.md](../lane-editor-tags/tags/width-and-surface.md) | Short tag card; points here for deep dive |
+| [bicycle-lanes.md](../lane-editor-tags/tags/bicycle-lanes.md) | `cycleway:*:width` / buffer / separation |
+| [lanes-count.md](../lane-editor-tags/tags/lanes-count.md) | What enters `lanes=*` vs `:lanes` pipes |
+| [separation-proposal.md](../lane-editor-tags/tags/separation-proposal.md) | Buffer as companion to separation/marking |
+| [placement.md](../lane-editor-tags/tags/placement.md) | Centreline vs cross-section; tapers with width:lanes:start/end |
+| [markings-and-change.md](../lane-editor-tags/tags/markings-and-change.md) | Paint meaning (`change`, `lane_markings`), not millimetres |
 
 ---
 
