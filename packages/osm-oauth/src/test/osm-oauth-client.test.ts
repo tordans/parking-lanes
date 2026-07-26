@@ -66,6 +66,7 @@ describe('uploadChanges', () => {
       getApiUrl: (useDev) =>
         useDev ? 'https://master.apis.dev.openstreetmap.org' : 'https://api.openstreetmap.org',
       getUseDevServer: () => useDevServer,
+      getLoginMode: () => 'redirect',
     },
     { changesetTags: { comment: 'Street Space Editor' } },
   )
@@ -83,9 +84,12 @@ describe('uploadChanges', () => {
     mockIsLoggedIn.mockReturnValue(false)
     memoryStorage.clear()
     ;(globalThis as { localStorage: typeof localStorageMock }).localStorage = localStorageMock
-    const location: Pick<Location, 'origin' | 'pathname'> = {
+    const location: Pick<Location, 'origin' | 'pathname' | 'href' | 'search' | 'hash'> = {
       origin: 'https://example.com',
       pathname: '/lanes/',
+      href: 'https://example.com/lanes/',
+      search: '',
+      hash: '',
     }
     global.window = { location } as Window & typeof globalThis
   })
@@ -171,10 +175,20 @@ describe('uploadChanges', () => {
     expect(mockOsmLogout).toHaveBeenCalled()
   })
 
+  test('restoreSession stamps dev server after a fresh redirect login', async () => {
+    mockIsLoggedIn.mockReturnValue(true)
+    mockGetAuthToken.mockReturnValue('dev-token')
+
+    await expect(restoreSession(true)).resolves.toBe(true)
+    expect(localStorage.getItem('__osmAuthServer')).toBe('dev')
+    expect(mockOsmLogout).not.toHaveBeenCalled()
+  })
+
   test('authenticate stamps the selected server', async () => {
     mockIsLoggedIn.mockReturnValue(false)
     await authenticate(true)
     expect(localStorage.getItem('__osmAuthServer')).toBe('dev')
+    expect(localStorage.getItem('__osmAuthReturnUrl')).toBe('/lanes/')
     logout()
     expect(localStorage.getItem('__osmAuthServer')).toBeNull()
   })

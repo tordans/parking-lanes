@@ -1,22 +1,19 @@
+import { clearOauthCallbackSearchParams } from '@osm-editor-kit/osm-oauth'
 import { useCallback, useEffect } from 'react'
 import { authenticate, logout, restoreSession, userInfo } from '../../../lib/osm-client'
 import { toast } from '../../../lib/toast'
 import { AuthState, useAppActions, useAuthState, useMapBounds } from '../../../shell/app-store'
-import { useUseOsmDevServer } from '../../../shell/debug-settings-store'
+import {
+  readUseOsmDevServerFromStorage,
+  useUseOsmDevServer,
+} from '../../../shell/debug-settings-store'
 import { useMapViewport } from '../../../shell/map/map-viewport'
 import { clearChanges } from '../../../utils/changes-store'
 import { viewMinZoom } from './constants'
 import { useParkingOsmFetch } from './use-parking-osm-fetch'
 
-function clearOauthCallbackSearchParams(): void {
-  if (!window.location.search.includes('code=')) return
-
-  const url = new URL(window.location.href)
-  url.search = ''
-  window.history.replaceState({}, '', `${url.pathname}${url.hash}`)
-}
-
-let devSessionRestoreStarted = false
+/** One restore attempt per full page load (survives StrictMode remount). */
+let sessionRestoreStarted = false
 
 export function useOsmAuth() {
   const authState = useAuthState()
@@ -52,19 +49,13 @@ export function useOsmAuth() {
   }, [loadParkingData, mapBounds, setAuthState, setOsmDisplayName, zoom])
 
   useEffect(() => {
-    if (
-      import.meta.env.DEV !== true ||
-      authState === AuthState.success ||
-      devSessionRestoreStarted
-    ) {
-      return
-    }
+    if (authState === AuthState.success || sessionRestoreStarted) return
 
-    devSessionRestoreStarted = true
+    sessionRestoreStarted = true
 
     void (async () => {
       try {
-        const loggedIn = await restoreSession(useDevServer)
+        const loggedIn = await restoreSession(readUseOsmDevServerFromStorage())
         if (!loggedIn) return
 
         const applied = await applyLoggedInState()
@@ -73,7 +64,7 @@ export function useOsmAuth() {
         toast.fromError(err, 'OSM login failed')
       }
     })()
-  }, [applyLoggedInState, authState, useDevServer])
+  }, [applyLoggedInState, authState])
 
   const login = useCallback(async () => {
     try {

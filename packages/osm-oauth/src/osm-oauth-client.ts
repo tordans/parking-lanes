@@ -16,6 +16,7 @@ import {
   logout as osmLogout,
   uploadChangeset,
 } from 'osm-api'
+import { completeOAuthRedirectIfNeeded, saveOAuthReturnUrl } from './oauth-redirect'
 
 type OsmLoginOptions = Parameters<typeof osmLogin>[0]
 type OsmLoginMode = OsmLoginOptions['mode']
@@ -114,22 +115,23 @@ export function createOsmOAuthClient(
     return override ?? oauthConfig.getUseDevServer?.() ?? false
   }
 
-  async function restoreSession(useDevServer: boolean): Promise<boolean> {
+  async function finishOAuthRedirect(useDevServer: boolean): Promise<void> {
     ensureOsmApiConfigured(useDevServer)
     await authReady
+    if (!isLoggedIn()) {
+      await completeOAuthRedirectIfNeeded(oauthConfig.getApiUrl(useDevServer))
+    }
+    // authReady / retry may have stored a token after the initial configure().
     syncAuthHeader()
+  }
+
+  async function restoreSession(useDevServer: boolean): Promise<boolean> {
+    await finishOAuthRedirect(useDevServer)
     if (!isLoggedIn()) return false
 
     const tokenServer = readAuthServer()
     if (tokenServer === null) {
-      // Legacy sessions predate the server stamp — treat as production-only.
-      if (useDevServer) {
-        osmLogout()
-        clearAuthServer()
-        syncAuthHeader()
-        return false
-      }
-      writeAuthServer(false)
+      writeAuthServer(useDevServer)
       return true
     }
 
@@ -144,9 +146,7 @@ export function createOsmOAuthClient(
   }
 
   async function authenticate(useDevServer: boolean): Promise<void> {
-    ensureOsmApiConfigured(useDevServer)
-    await authReady
-    syncAuthHeader()
+    await finishOAuthRedirect(useDevServer)
 
     const tokenServer = readAuthServer()
     if (isLoggedIn() && tokenServer !== null && tokenServer !== useDevServer) {
@@ -156,8 +156,10 @@ export function createOsmOAuthClient(
     }
 
     if (!isLoggedIn()) {
+      const mode = oauthConfig.getLoginMode?.() ?? 'popup'
+      if (mode === 'redirect') saveOAuthReturnUrl()
       await osmLogin({
-        mode: oauthConfig.getLoginMode?.() ?? 'popup',
+        mode,
         clientId: oauthConfig.getClientId(useDevServer),
         redirectUrl: oauthConfig.getRedirectUrl(),
         scopes: [...oauthConfig.scopes],

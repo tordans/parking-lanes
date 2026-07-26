@@ -32,3 +32,18 @@ export const useDebugSettingsActions = () => useDebugSettingsStore((state) => st
 export function getUseOsmDevServer(): boolean {
   return useDebugSettingsStore.getState().useOsmDevServer
 }
+
+const DEBUG_SETTINGS_STORAGE_KEY = 'street-space-debug-settings'
+
+/** Read persisted dev-server toggle synchronously (before Zustand rehydration). */
+export function readUseOsmDevServerFromStorage(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  try {
+    const raw = localStorage.getItem(DEBUG_SETTINGS_STORAGE_KEY)
+    if (!raw) return false
+    const parsed = JSON.parse(raw) as { state?: { useOsmDevServer?: boolean } }
+    return parsed.state?.useOsmDevServer === true
+  } catch {
+    return false
+  }
+}

@@ -6,16 +6,37 @@
   </head>
   <body>
     <script>
-      if (new URLSearchParams(location.search).has('code')) {
+      ;(function () {
+        var params = new URLSearchParams(location.search)
+        if (!params.has('code') && !params.has('error')) return
+
         if (window.opener) {
           new BroadcastChannel('osm-api-auth-complete').postMessage(location.href)
           window.close()
-        } else {
-          const appUrl = new URL('..', location.href)
-          appUrl.search = location.search
-          location.replace(appUrl.href)
+          return
         }
-      }
+
+        // Restore the pre-login deep link (mode, map, f, …). Key must match OSM_AUTH_RETURN_URL_KEY.
+        var RETURN_KEY = '__osmAuthReturnUrl'
+        var raw = localStorage.getItem(RETURN_KEY)
+        localStorage.removeItem(RETURN_KEY)
+
+        var appUrl
+        try {
+          appUrl = raw ? new URL(raw, location.origin) : new URL('..', location.href)
+          if (appUrl.origin !== location.origin) appUrl = new URL('..', location.href)
+        } catch (e) {
+          appUrl = new URL('..', location.href)
+        }
+
+        ;['code', 'state', 'error', 'error_description'].forEach(function (key) {
+          var value = params.get(key)
+          if (value) appUrl.searchParams.set(key, value)
+          else appUrl.searchParams.delete(key)
+        })
+
+        location.replace(appUrl.pathname + appUrl.search + appUrl.hash)
+      })()
     </script>
   </body>
 </html>

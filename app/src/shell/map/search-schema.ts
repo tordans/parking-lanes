@@ -50,6 +50,11 @@ export const mapSearchSchema = z.object({
     .optional()
     .transform(parseDebugSearch),
   focus: mapFocusSchema,
+  // OAuth redirect callback — kept so validateSearch does not strip them before exchange.
+  code: z.string().optional(),
+  state: z.string().optional(),
+  error: z.string().optional(),
+  error_description: z.string().optional(),
 })
 
 export type MapSearch = z.infer<typeof mapSearchSchema>
