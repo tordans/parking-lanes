@@ -9,8 +9,10 @@ minimumReleaseAgeExcludes = [
   "oxfmt",
   "oxlint",
   "oxlint-config-react-hooks-js",
-  # Own package — just published; remove once 0.1.0 is past the 5-day age gate.
+  # Own / just-published packages — remove once past the 5-day age gate.
   "@osm-editor-kit/maplibre-editor-layer-index",
+  "@osm-editor-kit/surface-smoothness-data",
+  "@tilda-geo/bicycle-infrastructure",
 ]
 
 linker = "isolated"

@@ -11,7 +11,7 @@
     "test-run": "bun test src/test"
   },
   "dependencies": {
-    "@tilda-geo/bicycle-infrastructure": "file:../../../../FMC/tilda-geo-schema-spec-and-library-workspace/tilda-geo-bicycle-infrastructure-ts"
+    "@tilda-geo/bicycle-infrastructure": "^0.1.2"
   },
   "devDependencies": {
     "bun-types": "^1.2.20",
