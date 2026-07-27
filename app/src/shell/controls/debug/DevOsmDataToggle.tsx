@@ -4,7 +4,7 @@ import { Label } from '../../../components/catalyst/fieldset'
 import { viewMinZoom } from '../../../modes/parking/map/constants'
 import { useMapBounds } from '../../app-store'
 import { useDevOsmFixtureActions, useLiveViewportOsmFetch } from '../../dev-osm-fixture-store'
-import { clearDevOsmFixtureSession, seedDevOsmFixture } from '../../map/dev-osm-fixture'
+import { clearDevOsmFixtureSession } from '../../map/dev-osm-fixture-session'
 import { useMapViewport } from '../../map/map-viewport'
 import { useOsmCoverageFetch } from '../../map/osm-coverage-query'
 
@@ -32,7 +32,9 @@ export function DevOsmDataToggle() {
                 void loadOsmData(mapBounds, mapZoom, { force: true })
               }
             } else {
-              void seedDevOsmFixture(queryClient)
+              void import('../../map/dev-osm-fixture-seed').then(({ seedDevOsmFixture }) =>
+                seedDevOsmFixture(queryClient),
+              )
             }
           }}
         />

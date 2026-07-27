@@ -12,16 +12,18 @@ import {
 } from './osm-coverage-query'
 
 /**
+ * Dev-only module — import dynamically from Vite DEV code paths only.
  * URL-only glob — do not import the JSON as a Vite module (`?import`).
  * Transforming ~50MB JSON into a JS module balloons to hundreds of MB over the wire.
  */
-const fixtureUrlByPath = import.meta.env.DEV
-  ? import.meta.glob<string>('../../modes/parking/fixtures/dev-map-bbox.json', {
-      query: '?url',
-      import: 'default',
-      eager: true,
-    })
-  : {}
+const fixtureUrlByPath = import.meta.glob<string>(
+  '../../modes/parking/fixtures/dev-map-bbox.json',
+  {
+    query: '?url',
+    import: 'default',
+    eager: true,
+  },
+)
 
 async function loadDevFixtureRaw(): Promise<RawOsmData | null> {
   const url = Object.values(fixtureUrlByPath)[0]
@@ -59,11 +61,4 @@ export async function seedDevOsmFixture(queryClient: QueryClient): Promise<boole
   queryClient.setQueryData(osmCoverageSessionKey(params), data)
   queryClient.removeQueries({ queryKey: osmCoverageFetchKey(params) })
   return true
-}
-
-/** Drops seeded fixture data so live viewport fetches can repopulate the session. */
-export function clearDevOsmFixtureSession(queryClient: QueryClient): void {
-  const params = currentOsmSessionParams()
-  queryClient.setQueryData(osmCoverageSessionKey(params), emptyOsmCoverageData())
-  queryClient.removeQueries({ queryKey: osmCoverageFetchKey(params) })
 }

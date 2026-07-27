@@ -16,7 +16,7 @@ One app with a shared OSM shell (auth, fetch, changeset upload) and **modes** fo
 
 Modes plug into `app/src/modes/`; the shell lives in `app/src/shell/`. Shared kit packages remain under `packages/*`.
 
-**Deploy path:** Vite / GH Pages base is `/street-space-editor/`. The GitHub remote may still be `street-parking-editor` until renamed (add a redirect from the old path).
+**Deploy path:** Vite / GH Pages base is `/street-space-editor/`.
 
 ## Screenshots
 

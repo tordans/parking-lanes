@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 # Pages source must be set to "GitHub Actions" in repo Settings → Pages.
 on:
   push:
-    branches: [main, master, react-migratoin]
+    branches: [main, master]
 
 permissions:
   contents: read

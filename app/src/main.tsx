@@ -9,8 +9,6 @@ import { createAppQueryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
 import './styles/tailwind.css'
 import './styles/main.scss'
-import { seedDevOsmFixture } from './shell/map/dev-osm-fixture'
-
 redirectLegacyMapHash()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
@@ -33,6 +31,7 @@ const queryClient = createAppQueryClient()
 
 async function start() {
   if (import.meta.env.DEV === true) {
+    const { seedDevOsmFixture } = await import('./shell/map/dev-osm-fixture-seed')
     await seedDevOsmFixture(queryClient)
   }
 
