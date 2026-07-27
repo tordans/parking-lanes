@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { settLengthForSize } from '@osm-editor-kit/osm-surface-quality'
 import {
   isSmoothnessValidForSurface,
@@ -48,10 +48,6 @@ describe('surface tag patches', () => {
 })
 
 describe('surface edit layout', () => {
-  mock.module('@osm-editor-kit/osm-sidepath-tags', () => ({
-    expandSidepaths: () => [],
-  }))
-
   const layoutModulePromise = import('../modes/surface/domain/surface-edit-layout')
 
   test('resolveSurfaceEditLayout returns segregated layout for segregated paths', async () => {
