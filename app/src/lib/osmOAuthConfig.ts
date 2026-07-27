@@ -22,20 +22,18 @@ export function getOsmOAuthClientId(useDevServer = false): string {
   return readOsmOAuthClientId(useDevServer ? 'OSM_OAUTH_CLIENT_ID_DEV' : 'OSM_OAUTH_CLIENT_ID')
 }
 
-function getAppBasePath(): string {
-  const { pathname } = window.location
-  if (pathname === '/' || pathname.endsWith('/')) return pathname.endsWith('/') ? pathname : '/'
-
-  const lastSlash = pathname.lastIndexOf('/')
-  return pathname.slice(0, lastSlash + 1)
-}
-
 /**
- * Redirect URI for OAuth popup: origin + app base path + {@link OSM_OAUTH_LAND_FILENAME}.
+ * Redirect URI for OAuth popup/redirect: Vite base + {@link OSM_OAUTH_LAND_FILENAME}.
+ * Uses `import.meta.env.BASE_URL` (not `location.pathname`) so `trailingSlash: 'never'`
+ * routes like `/street-space-editor` do not collapse to the host root.
  * Register the resulting URLs on your OSM OAuth application (see `.env.example`).
  */
-export function getOsmOAuthRedirectUrl(): string {
-  return new URL(OSM_OAUTH_LAND_FILENAME, `${window.location.origin}${getAppBasePath()}`).href
+export function getOsmOAuthRedirectUrl(
+  origin = window.location.origin,
+  baseUrl = import.meta.env.BASE_URL,
+): string {
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+  return new URL(OSM_OAUTH_LAND_FILENAME, new URL(base, origin)).href
 }
 
 export function isOsmOAuthConfigured(): boolean {
