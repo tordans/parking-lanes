@@ -1,5 +1,5 @@
 const assetModules = import.meta.glob<string>(
-  '/node_modules/@osm-surface-smoothness/data/dist/generated/**/*.{jpg,svg}',
+  '/node_modules/@osm-editor-kit/surface-smoothness-data/dist/generated/**/*.{jpg,svg}',
   { eager: true, query: '?url', import: 'default' },
 )
 
@@ -10,7 +10,7 @@ const assetUrlByRelativePath = Object.fromEntries(
   }),
 )
 
-/** Resolve a package-relative asset path from `@osm-surface-smoothness/data` (e.g. `images/surface_asphalt.jpg`). */
+/** Resolve a package-relative asset path from `@osm-editor-kit/surface-smoothness-data` (e.g. `images/surface_asphalt.jpg`). */
 export function surfaceDataAssetUrl(relativePath: string): string {
   return assetUrlByRelativePath[relativePath] ?? ''
 }

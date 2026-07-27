@@ -1,4 +1,4 @@
-import { catalogue } from '@osm-surface-smoothness/data'
+import { catalogue } from '@osm-editor-kit/surface-smoothness-data'
 
 export function PhotoAttributionFooter(props: { assetPaths: string[] }) {
   const entries = props.assetPaths

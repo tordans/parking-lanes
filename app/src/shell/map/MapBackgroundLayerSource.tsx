@@ -1,10 +1,10 @@
-import type { FeatureCollection } from 'geojson'
 import {
   getLayerHydrated,
   getRasterLayerSpec,
   getRasterSourceSpec,
   type EliLayer,
-} from 'maplibre-editor-layer-index/react'
+} from '@osm-editor-kit/maplibre-editor-layer-index/react'
+import type { FeatureCollection } from 'geojson'
 import { useEffect, useState } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'
 import { useBackgroundLayerId } from './use-background-layer'

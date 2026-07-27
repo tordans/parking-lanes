@@ -1,8 +1,11 @@
 import * as m from '@app/paraglide/messages'
+import type { EliCategory } from '@osm-editor-kit/maplibre-editor-layer-index/react'
+import {
+  useEditorLayerIndex,
+  type EliLayer,
+} from '@osm-editor-kit/maplibre-editor-layer-index/react'
 import * as countryCoder from '@rapideditor/country-coder'
 import { Check, Layers } from 'lucide-react'
-import type { EliCategory } from 'maplibre-editor-layer-index/react'
-import { useEditorLayerIndex, type EliLayer } from 'maplibre-editor-layer-index/react'
 import {
   Dropdown,
   DropdownButton,

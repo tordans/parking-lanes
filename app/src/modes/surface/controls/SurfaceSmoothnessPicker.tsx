@@ -4,7 +4,7 @@ import {
   catalogue,
   getSmoothnessOptionsForSurface,
   getSurfaceInfo,
-} from '@osm-surface-smoothness/data'
+} from '@osm-editor-kit/surface-smoothness-data'
 import clsx from 'clsx'
 import { readChannelValues } from '../domain/surface-edit-layout'
 import {

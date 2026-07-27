@@ -1,4 +1,4 @@
-import { getSmoothnessOptionsForSurface } from '@osm-surface-smoothness/data'
+import { getSmoothnessOptionsForSurface } from '@osm-editor-kit/surface-smoothness-data'
 
 export interface FieldKeys {
   surfaceKey: string

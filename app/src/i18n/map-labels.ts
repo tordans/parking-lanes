@@ -1,5 +1,5 @@
 import * as m from '@app/paraglide/messages'
-import type { EliCategory } from 'maplibre-editor-layer-index/react'
+import type { EliCategory } from '@osm-editor-kit/maplibre-editor-layer-index/react'
 
 const backgroundCategoryLabelByKey = {
   photo: m.map_background_category_photo,

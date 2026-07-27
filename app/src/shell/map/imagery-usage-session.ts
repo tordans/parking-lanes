@@ -1,7 +1,7 @@
+import { getImageryUsedValue } from '@osm-editor-kit/maplibre-editor-layer-index'
+import { getLayerHydrated } from '@osm-editor-kit/maplibre-editor-layer-index/react'
 import { createImageryUsageSession } from '@osm-editor-kit/osm-changeset'
 import { OPENFREEMAP_POSITRON_IMAGERY_USED } from '@osm-editor-kit/osm-maplibre'
-import { getImageryUsedValue } from 'maplibre-editor-layer-index'
-import { getLayerHydrated } from 'maplibre-editor-layer-index/react'
 
 const session = createImageryUsageSession()
 

@@ -15,10 +15,6 @@ const smoothnessDataRoot = path.resolve(
   monorepoRoot,
   '../osm-surface-smoothness-workspace/osm-surface-smoothness-tagging/packages/data',
 )
-const eliPackageRoot = path.resolve(
-  monorepoRoot,
-  '../maplibre-editor-layer-index/packages/maplibre-editor-layer-index',
-)
 
 export default defineConfig({
   envDir: monorepoRoot,
@@ -44,16 +40,12 @@ export default defineConfig({
       '@app': projectRoot,
     },
   },
-  // Local file: package — skip prebundle so ELI dist updates are picked up without stale .vite cache.
-  optimizeDeps: {
-    exclude: ['maplibre-editor-layer-index'],
-  },
   server: {
     port: 33444,
     // Localhost only — one dev URL (OAuth callback used 127.0.0.1). Set a LAN IP here for other devices.
     host: '127.0.0.1',
     fs: {
-      allow: [projectRoot, monorepoRoot, bunLinksCache, smoothnessDataRoot, eliPackageRoot],
+      allow: [projectRoot, monorepoRoot, bunLinksCache, smoothnessDataRoot],
     },
   },
   build: {
