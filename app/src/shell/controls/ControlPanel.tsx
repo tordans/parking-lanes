@@ -1,6 +1,8 @@
+import * as m from '@app/paraglide/messages'
 import { useParams } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
 import { useState } from 'react'
+import { getModeLabel } from '../../i18n/mode-content'
 import { useSelectedOsmRef } from '../../modes/parking'
 import { ParkingDatetimeFilter } from '../../modes/parking/controls/ParkingDatetimeFilter'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
@@ -10,10 +12,12 @@ import { canShowDebugToggle } from '../debug'
 import { AccountCallout } from './AccountCallout'
 import { AppAboutContent } from './AppAboutContent'
 import { DebugUserSettingsSection } from './DebugPanelContent'
-import { PanelModeSwitcher, type MapPanelMode } from './PanelModeSwitcher'
+import { LanguageSwitcher } from './LanguageSwitcher'
+import { PanelModeSwitcher, panelModesForMode, type MapPanelMode } from './PanelModeSwitcher'
 import { PanelSectionDivider } from './PanelSectionDivider'
 
-function initialPanelMode(selected: boolean): MapPanelMode {
+function initialPanelMode(modeId: string, selected: boolean): MapPanelMode {
+  if (modeId === 'lanes') return 'info'
   return selected ? 'inspector' : 'info'
 }
 
@@ -21,7 +25,7 @@ export function SettingsPanelContent(props: { showDebug?: boolean }) {
   return (
     <div className="flex flex-col gap-4 p-1">
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900">Account</h3>
+        <h3 className="text-sm font-semibold text-zinc-900">{m.shell_account_title()}</h3>
         <AccountCallout />
       </section>
       <ParkingDatetimeFilter fullWidth />
@@ -31,8 +35,8 @@ export function SettingsPanelContent(props: { showDebug?: boolean }) {
 }
 
 export function InfoPanelContent(props: {
+  modeId: StreetSpaceModeId
   about: StreetSpaceMode['about']
-  modeLabel: string
   maturity: StreetSpaceMode['maturity']
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
 }) {
@@ -40,16 +44,26 @@ export function InfoPanelContent(props: {
 
   return (
     <div className="flex flex-col p-1">
-      <AppAboutContent about={props.about} modeLabel={props.modeLabel} maturity={props.maturity} />
+      <AppAboutContent
+        modeId={props.modeId}
+        about={props.about}
+        modeLabel={getModeLabel(props.modeId)}
+        maturity={props.maturity}
+      />
       {Legend ? (
         <>
           <PanelSectionDivider />
           <section className="pt-4">
-            <h3 className="mb-2 text-sm font-semibold text-zinc-900">Legend</h3>
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_legend_title()}</h3>
             <Legend variant="inline" />
           </section>
         </>
       ) : null}
+      <PanelSectionDivider />
+      <section className="pt-4">
+        <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_language_title()}</h3>
+        <LanguageSwitcher />
+      </section>
     </div>
   )
 }
@@ -61,19 +75,25 @@ export function ControlPanel() {
   const selectedOsmRef = useSelectedOsmRef()
   const osmDisplayName = useOsmDisplayName()
   const showDebug = canShowDebugToggle(osmDisplayName)
+  const availablePanelModes = panelModesForMode(mode.id)
   const [panelMode, setPanelMode] = useState<MapPanelMode>(() =>
-    initialPanelMode(selectedOsmRef != null),
+    initialPanelMode(mode.id, selectedOsmRef != null),
   )
-  const activePanelMode = panelMode
+  const activePanelMode = availablePanelModes.includes(panelMode) ? panelMode : 'info'
 
   return (
     <div className="flex h-full flex-col overflow-hidden text-sm">
-      <PanelModeSwitcher className="shrink-0" mode={activePanelMode} onChange={setPanelMode} />
+      <PanelModeSwitcher
+        className="shrink-0"
+        mode={activePanelMode}
+        modes={availablePanelModes}
+        onChange={setPanelMode}
+      />
       <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
         {activePanelMode === 'info' ? (
           <InfoPanelContent
+            modeId={mode.id}
             about={mode.about}
-            modeLabel={mode.label}
             maturity={mode.maturity}
             Legend={Legend}
           />

@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { ReactNode } from 'react'
 import { floatingChromeElevationClassName } from '../shell/map/mobileMapChrome.const'
 
@@ -7,7 +8,7 @@ export function AppShell({
   bottom,
 }: {
   map: ReactNode
-  panel: ReactNode
+  panel?: ReactNode
   bottom?: ReactNode
 }) {
   return (
@@ -20,19 +21,21 @@ export function AppShell({
               className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center"
               aria-hidden
             >
-              <div className="h-1.5 w-10 rounded-b bg-zinc-300" title="Drag to resize" />
+              <div className="h-1.5 w-10 rounded-b bg-zinc-300" title={m.shell_drag_resize()} />
             </div>
             {bottom}
           </div>
         ) : null}
       </div>
-      <aside className="hidden h-full w-96 shrink-0 flex-col p-2 sm:flex">
-        <div
-          className={`flex flex-1 flex-col overflow-hidden rounded-lg bg-zinc-100 ${floatingChromeElevationClassName}`}
-        >
-          {panel}
-        </div>
-      </aside>
+      {panel ? (
+        <aside className="hidden h-full w-96 shrink-0 flex-col p-2 sm:flex">
+          <div
+            className={`flex flex-1 flex-col overflow-hidden rounded-lg bg-zinc-100 ${floatingChromeElevationClassName}`}
+          >
+            {panel}
+          </div>
+        </aside>
+      ) : null}
     </div>
   )
 }

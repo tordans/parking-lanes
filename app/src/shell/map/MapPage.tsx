@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
 import { OPENFREEMAP_POSITRON_STYLE_URL } from '@osm-editor-kit/osm-maplibre'
 import { useParams } from '@tanstack/react-router'
@@ -6,6 +7,7 @@ import { AttributionControl } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
+import { useUiLocale } from '../../i18n/useUiLocale'
 import { useLanesMapActions } from '../../modes/lanes/map/lanes-map-store'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
@@ -64,6 +66,14 @@ function MapPageContent({
   const { resetMapChrome } = useMapActions()
   const prevModeRef = useRef(resolvedModeId)
   const isDesktop = useBreakpoint('sm')
+  const uiLocale = useUiLocale()
+
+  useEffect(() => {
+    document.documentElement.lang = uiLocale
+    document.title = m.app_title()
+    const description = document.querySelector('meta[name="description"]')
+    if (description) description.setAttribute('content', m.app_description())
+  }, [uiLocale])
 
   const coverageLifecycle = useMapCoverageLifecycle()
   const {
@@ -79,6 +89,10 @@ function MapPageContent({
 
   const ModeMapLayers = mode.MapLayers
   const BottomPanel = mode.BottomPanel
+  const isLanesMode = resolvedModeId === 'lanes'
+  const hasWaySelection = selectedOsmRef?.type === 'way'
+  const showLanesBottomEditor = isLanesMode && hasWaySelection && BottomPanel != null
+  const showSidebar = !showLanesBottomEditor
 
   useEffect(
     function resetModeLocalStateOnModeSwitch() {
@@ -110,6 +124,7 @@ function MapPageContent({
 
   return (
     <AppShell
+      key={uiLocale}
       map={
         <div ref={mapContainerRef} className="relative h-full w-full">
           <div className="fixed inset-0 z-0 sm:static sm:inset-auto sm:z-auto sm:h-full sm:w-full">
@@ -170,13 +185,15 @@ function MapPageContent({
           </div>
         </div>
       }
-      bottom={BottomPanel ? <BottomPanel /> : undefined}
+      bottom={showLanesBottomEditor && BottomPanel ? <BottomPanel /> : undefined}
       panel={
-        <ControlPanel
-          key={
-            selectedOsmRef ? `${serializeFeatureParam(selectedOsmRef)}:${selectionEpoch}` : 'none'
-          }
-        />
+        showSidebar ? (
+          <ControlPanel
+            key={
+              selectedOsmRef ? `${serializeFeatureParam(selectedOsmRef)}:${selectionEpoch}` : 'none'
+            }
+          />
+        ) : undefined
       }
     />
   )
