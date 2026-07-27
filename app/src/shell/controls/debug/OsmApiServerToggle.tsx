@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { useQueryClient } from '@tanstack/react-query'
 import { Checkbox, CheckboxField } from '../../../components/catalyst/checkbox'
 import { Label } from '../../../components/catalyst/fieldset'
@@ -37,7 +38,7 @@ export function OsmApiServerToggle() {
             }
           }}
         />
-        <Label>Use OSM dev server</Label>
+        <Label>{m.debug_use_osm_dev_server()}</Label>
       </CheckboxField>
       <p className="text-xs text-zinc-600">
         {useOsmDevServer

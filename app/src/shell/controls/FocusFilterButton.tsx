@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Check, Funnel } from 'lucide-react'
@@ -8,6 +9,7 @@ import {
   DropdownMenu,
 } from '../../components/catalyst/dropdown'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
+import { getFocusOptions } from '../../i18n/focus-labels'
 import type { StreetSpaceModeId } from '../../modes/types'
 import {
   mapToolbarButtonGroupClassName,
@@ -22,31 +24,12 @@ type FocusOption = {
   label: string
 }
 
-const focusOptionsByMode: Partial<Record<StreetSpaceModeId, FocusOption[]>> = {
-  parking: [
-    { value: 'all', label: 'All parking lanes' },
-    { value: 'noSurface', label: 'Only missing surface tags' },
-  ],
-  width: [
-    { value: 'all', label: 'All infrastructure' },
-    { value: 'car', label: 'Car roads' },
-    { value: 'bicycle', label: 'Bicycle infrastructure' },
-  ],
-  bicycle: [
-    { value: 'all', label: 'All infrastructure' },
-    { value: 'incomplete', label: 'Incomplete infrastructure' },
-  ],
-  surface: [
-    { value: 'all', label: 'All infrastructure' },
-    { value: 'roads', label: 'Car roads' },
-    { value: 'path', label: 'Paths' },
-    { value: 'sidewalks', label: 'Sidewalks' },
-    { value: 'bike', label: 'Bicycle infrastructure' },
-  ],
-}
+const focusModes = ['parking', 'width', 'bicycle', 'surface'] as const satisfies StreetSpaceModeId[]
 
-const focusTooltip =
-  'Visual focus only — dims other infrastructure on the map. Does not hide or unload data.'
+function getFocusOptionsForMode(mode: string): FocusOption[] {
+  if (!focusModes.includes(mode as (typeof focusModes)[number])) return []
+  return getFocusOptions(mode as (typeof focusModes)[number]) as FocusOption[]
+}
 
 export function FocusFilterButton() {
   const { mode } = useParams({ from: '/$mode' })
@@ -55,17 +38,17 @@ export function FocusFilterButton() {
 
   if (!supportsFocus) return null
 
-  const options = focusOptionsByMode[mode] ?? []
+  const options = getFocusOptionsForMode(mode)
 
   return (
     <div className={mapToolbarButtonGroupClassName}>
       <Dropdown>
-        <Tooltip content={focusTooltip} placement="bottom">
+        <Tooltip content={m.focus_tooltip()} placement="bottom">
           <span className="inline-flex">
             <DropdownButton
               as="button"
               type="button"
-              aria-label="Focus filter"
+              aria-label={m.focus_filter_aria()}
               aria-pressed={isActive}
               className={clsx(
                 isActive ? mapToolbarIconSegmentActiveClassName : mapToolbarIconSegmentClassName,

@@ -1,26 +1,22 @@
+import * as m from '@app/paraglide/messages'
 import clsx from 'clsx'
 import { Scissors } from 'lucide-react'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
+import { getSplitWayDisabledTooltip, getSplitWayTooltip } from '../../i18n/split-way-labels'
 import {
   mapToolbarButtonGroupClassName,
   mapToolbarIconSegmentActiveClassName,
   mapToolbarIconSegmentClassName,
 } from '../map/mobileMapChrome.const'
-import {
-  splitWayDisabledTooltip,
-  useSplitWayAvailability,
-  useWayCutHandler,
-} from '../map/use-way-cut'
+import { useSplitWayAvailability, useWayCutHandler } from '../map/use-way-cut'
 
 export function SplitWayButton() {
   const { disabledReason, isCutActive } = useSplitWayAvailability()
   const { toggleCutForSelectedWay } = useWayCutHandler()
   const disabled = disabledReason != null
   const tooltip = disabled
-    ? splitWayDisabledTooltip(disabledReason)
-    : isCutActive
-      ? 'Cancel split — click a node or along the line, or press again to cancel'
-      : 'Split way at a node or along the line'
+    ? getSplitWayDisabledTooltip(disabledReason)
+    : getSplitWayTooltip(isCutActive)
 
   return (
     <div className={mapToolbarButtonGroupClassName}>
@@ -28,7 +24,7 @@ export function SplitWayButton() {
         <span className="inline-flex">
           <button
             type="button"
-            aria-label={tooltip ?? 'Split way'}
+            aria-label={tooltip ?? m.split_way_aria()}
             aria-pressed={isCutActive}
             disabled={disabled}
             className={clsx(

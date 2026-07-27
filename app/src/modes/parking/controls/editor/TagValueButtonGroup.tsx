@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import clsx from 'clsx'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import { type TagValue } from '../../../../utils/types/parking'
@@ -29,7 +30,7 @@ export function TagValueButtonGroup(props: {
 }) {
   const options = tagValueOptions(props.value, props.values)
   const buttons: { key: string; label: string; imgSrc?: string; value: string }[] = [
-    { key: '__clear__', label: 'Clear value', value: '' },
+    { key: '__clear__', label: m.editor_clear_value(), value: '' },
     ...options.map((option) => ({
       key: option.value,
       label: formatParkingTagValueLabel(option.value),
@@ -49,7 +50,7 @@ export function TagValueButtonGroup(props: {
         const button = (
           <button
             type="button"
-            aria-label={option.value || 'Clear value'}
+            aria-label={option.value || m.editor_clear_value()}
             title={option.label}
             aria-pressed={isSelected}
             disabled={props.disabled}

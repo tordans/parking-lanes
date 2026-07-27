@@ -2,17 +2,17 @@ import { type ConditionColorDefinition } from '../../utils/types/conditions'
 
 export const legend: ConditionColorDefinition[] = [
   /* eslint-disable no-multi-spaces */
-  { condition: 'free', color: 'limegreen', text: 'Free parking' },
-  { condition: 'disc', color: 'yellowgreen', text: 'Disc or time limited' },
-  { condition: 'no_parking', color: 'orange', text: 'No parking' },
-  { condition: 'no_stopping', color: 'salmon', text: 'No stopping' },
-  { condition: 'no', color: '#FFC7B6', text: 'Not applicable' },
-  { condition: 'ticket', color: 'dodgerblue', text: 'Paid parking' },
-  { condition: 'customers', color: 'greenyellow', text: 'For customers' },
-  { condition: 'residents', color: 'hotpink', text: 'For residents' },
-  { condition: 'loading_only', color: '#ffe700', text: 'Loading only' },
-  { condition: 'disabled', color: 'turquoise', text: 'Disabled' },
-  { condition: 'unsupported', color: 'gray', text: 'Unsupported condition' },
-  { condition: 'separate', color: 'darkgray', text: 'Parking mapped separately' },
+  { condition: 'free', color: 'limegreen' },
+  { condition: 'disc', color: 'yellowgreen' },
+  { condition: 'no_parking', color: 'orange' },
+  { condition: 'no_stopping', color: 'salmon' },
+  { condition: 'no', color: '#FFC7B6' },
+  { condition: 'ticket', color: 'dodgerblue' },
+  { condition: 'customers', color: 'greenyellow' },
+  { condition: 'residents', color: 'hotpink' },
+  { condition: 'loading_only', color: '#ffe700' },
+  { condition: 'disabled', color: 'turquoise' },
+  { condition: 'unsupported', color: 'gray' },
+  { condition: 'separate', color: 'darkgray' },
   /* eslint-enable no-multi-spaces */
 ]

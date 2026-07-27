@@ -1,9 +1,7 @@
+import * as m from '@app/paraglide/messages'
+import { getWidthLegendAfter, getWidthLegendBefore } from '../../../i18n/legend-labels'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
-import {
-  DEFAULT_FALLBACK,
-  HIGHWAY_WIDTH_NO_ONEWAY,
-  HIGHWAY_WIDTH_ONEWAY,
-} from '../domain/highway-width-fallbacks'
+import { HIGHWAY_WIDTH_NO_ONEWAY, HIGHWAY_WIDTH_ONEWAY } from '../domain/highway-width-fallbacks'
 import { widthLegendItems } from '../map/width-colors'
 
 function formatMeters(value: number): string {
@@ -15,17 +13,7 @@ const highwayTypes = Object.keys(HIGHWAY_WIDTH_NO_ONEWAY)
 function DefaultWidthRulesContent() {
   return (
     <div className="flex flex-col gap-2">
-      <p className="m-0 text-xs text-zinc-600">
-        Used when a way has no parseable <code className="text-zinc-800">width</code> or{' '}
-        <code className="text-zinc-800">est_width</code>. The oneway column applies for one-way
-        motor traffic: <code className="text-zinc-800">oneway=yes</code> or{' '}
-        <code className="text-zinc-800">-1</code>, implicit on{' '}
-        <code className="text-zinc-800">motorway</code>/
-        <code className="text-zinc-800">motorway_link</code> and{' '}
-        <code className="text-zinc-800">junction=roundabout</code>, or{' '}
-        <code className="text-zinc-800">oneway:bicycle=no</code> on a one-way road. Unknown highway
-        types use {formatMeters(DEFAULT_FALLBACK)}&nbsp;m.
-      </p>
+      <p className="m-0 text-xs text-zinc-600">{m.legend_width_rules_intro()}</p>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-xs text-zinc-800">
           <thead>
@@ -87,14 +75,14 @@ export function LegendContent() {
           <div key={item.kind} className="flex items-center gap-1.5">
             <div className="h-0.5 w-4 shrink-0" style={{ backgroundColor: item.color }} />
             <WidthLegendLabel
-              before={item.before}
+              before={getWidthLegendBefore(item.kind)}
               tags={item.tags}
-              after={'after' in item ? item.after : undefined}
+              after={getWidthLegendAfter(item.kind)}
             />
           </div>
         ))}
       </div>
-      <MapCollapsiblePanel title="Default width rules" defaultOpen={false}>
+      <MapCollapsiblePanel title={m.legend_width_rules_title()} defaultOpen={false}>
         <DefaultWidthRulesContent />
       </MapCollapsiblePanel>
     </div>
@@ -107,7 +95,7 @@ export function WidthLegendPanel({ variant = 'floating' }: { variant?: 'floating
   }
 
   return (
-    <MapCollapsiblePanel title="Legend" defaultOpen>
+    <MapCollapsiblePanel title={m.shell_legend_title()} defaultOpen>
       <LegendContent />
     </MapCollapsiblePanel>
   )

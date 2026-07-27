@@ -1,8 +1,9 @@
+import * as m from '@app/paraglide/messages'
 import type { TagChange } from '@osm-editor-kit/osm-changeset'
 
 export function PendingTagDiff(props: { tagChanges: TagChange[] }) {
   if (props.tagChanges.length === 0) {
-    return <p className="mt-2 text-xs text-zinc-500">Geometry change (no tag edits)</p>
+    return <p className="mt-2 text-xs text-zinc-500">{m.save_geometry_only()}</p>
   }
 
   return (

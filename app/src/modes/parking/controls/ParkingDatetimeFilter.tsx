@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { useParams } from '@tanstack/react-router'
 import dayjs from 'dayjs'
 import { Field, Label } from '../../../components/catalyst/fieldset'
@@ -17,15 +18,15 @@ export function ParkingDatetimeFilter({ fullWidth = false }: { fullWidth?: boole
 
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-zinc-900">Data</h3>
+      <h3 className="text-sm font-semibold text-zinc-900">{m.parking_data_title()}</h3>
       <Field className="min-w-0 shrink">
-        <Label className={fullWidth ? undefined : 'sr-only'}>Date and time</Label>
+        <Label className={fullWidth ? undefined : 'sr-only'}>{m.parking_datetime_label()}</Label>
         <Input
           id="datetime-input"
           value={dayjs(datetime).format('YYYY-MM-DDTHH:mm')}
           className={fullWidth ? 'max-w-none' : 'max-w-40'}
           type="datetime-local"
-          title="If parking:condition present, show kind of parking at this time of day and day of week."
+          title={m.parking_datetime_title()}
           onChange={(e) => setDatetime(new Date(e.target.value))}
         />
       </Field>

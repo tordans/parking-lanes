@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
 import { idEditorUrl, josmUrl, mapillaryUrl, osmProdUrl } from '@osm-editor-kit/osm-editor-links'
@@ -61,28 +62,28 @@ export function buildOsmExternalLinks(options: {
   return [
     {
       id: 'view-osm',
-      label: 'View on OSM',
+      label: m.link_view_osm(),
       href: hasSelection ? buildOsmObjectUrl(selected) : null,
       group: 'view',
       requiresSelection: true,
     },
     {
       id: 'view-mapillary',
-      label: 'View in Mapillary',
+      label: m.link_view_mapillary(),
       href: viewport != null ? buildMapillaryViewportUrl(viewport) : null,
       group: 'view',
       requiresSelection: false,
     },
     {
       id: 'edit-id-selected',
-      label: 'Edit selection in iD',
+      label: m.link_edit_id_selection(),
       href: hasSelection ? buildSelectedIdEditorUrl(selected) : null,
       group: 'selection',
       requiresSelection: true,
     },
     {
       id: 'edit-josm-selected',
-      label: 'Edit selection in JOSM',
+      label: m.link_edit_josm_selection(),
       href: hasSelection ? buildSelectedJosmUrl(selected) : null,
       group: 'selection',
       requiresSelection: true,
@@ -90,14 +91,14 @@ export function buildOsmExternalLinks(options: {
     },
     {
       id: 'edit-id-viewport',
-      label: 'Open viewport in iD',
+      label: m.link_open_id_viewport(),
       href: viewport != null ? buildViewportIdEditorUrl(viewport) : null,
       group: 'viewport',
       requiresSelection: false,
     },
     {
       id: 'edit-josm-viewport',
-      label: 'Open viewport in JOSM',
+      label: m.link_open_josm_viewport(),
       href: viewport != null ? buildViewportJosmUrl(viewport) : null,
       group: 'viewport',
       requiresSelection: false,

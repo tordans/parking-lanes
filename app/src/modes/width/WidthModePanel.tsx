@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { ColoredEditorSection } from '../../components/ColoredEditorSection'
@@ -68,9 +69,7 @@ export function WidthModePanel() {
   const { data: graph, isFetching } = useWidthOsmQuery({ select: (data) => data.graph })
 
   if (!selectedOsmRef) {
-    return (
-      <MapFeaturePromptEmptyState message="Click a highway on the map to inspect and edit its width." />
-    )
+    return <MapFeaturePromptEmptyState message={m.empty_click_width()} />
   }
 
   const selectedWay =
@@ -151,14 +150,14 @@ export function WidthModePanel() {
       {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
 
       <ColoredEditorSection
-        aria-label="Width"
-        title="Width"
+        aria-label={m.panel_width_m()}
+        title={m.panel_width_m()}
         color={parkingSideColors.right}
         className="mb-0"
         contentClassName="flex flex-col gap-1.5 py-2"
       >
         <label htmlFor="width-input" className="text-sm font-medium text-zinc-900">
-          Width (m)
+          {m.panel_width_m()}
         </label>
         <input
           id="width-input"

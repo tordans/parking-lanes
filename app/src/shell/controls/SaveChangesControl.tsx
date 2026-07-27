@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { osmDevUrl } from '@osm-editor-kit/osm-editor-links'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import clsx from 'clsx'
@@ -30,7 +31,11 @@ export function SaveChangesControl() {
 
   const hasChanges = changesCount > 0
   const uploadHost = useOsmDevServer ? osmDevUrl.replace(/^https:\/\//, '') : 'openstreetmap.org'
-  const uploadLabel = saving ? 'Uploading…' : `Upload to ${uploadHost}`
+  const uploadLabel = saving ? m.save_uploading() : m.save_upload_to({ host: uploadHost })
+  const uploadTooltip = hasChanges
+    ? m.save_upload_n_changes({ count: changesCount })
+    : m.save_no_pending()
+  const uploadAriaLabel = uploadTooltip
 
   function refreshPending() {
     const next = listPendingChanges()
@@ -85,22 +90,18 @@ export function SaveChangesControl() {
         content={
           hasChanges ? (
             <>
-              <span>{`Upload ${changesCount} change${changesCount === 1 ? '' : 's'}`}</span>
+              <span>{uploadTooltip}</span>
               <HotkeyKbd hotkey="Mod+S" />
             </>
           ) : (
-            'No pending changes'
+            uploadTooltip
           )
         }
         placement="bottom"
       >
         <button
           type="button"
-          aria-label={
-            hasChanges
-              ? `Upload ${changesCount} change${changesCount === 1 ? '' : 's'}`
-              : 'No pending changes'
-          }
+          aria-label={uploadAriaLabel}
           disabled={!hasChanges}
           className={clsx(
             'relative flex size-10 shrink-0 items-center justify-center rounded-lg',

@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import clsx from 'clsx'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import { type TagValue } from '../../../../utils/types/parking'
@@ -25,7 +26,7 @@ export function TagValueIconShortcuts(props: {
     <div
       className={tagEditorValueButtonGroupCompactClassName}
       role="group"
-      aria-label="Icon shortcuts"
+      aria-label={m.editor_icon_shortcuts_aria()}
     >
       {iconValues.map((option, index) => {
         const isSelected = option.value === value

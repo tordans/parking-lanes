@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import {
@@ -26,9 +27,7 @@ export function BicycleModePanel() {
   const { data: graph, isFetching } = useBicycleOsmQuery({ select: (data) => data.graph })
 
   if (!selectedOsmRef) {
-    return (
-      <MapFeaturePromptEmptyState message="Click a highway on the map to inspect and edit bicycle infrastructure." />
-    )
+    return <MapFeaturePromptEmptyState message={m.empty_click_bicycle()} />
   }
 
   const selectedWay =

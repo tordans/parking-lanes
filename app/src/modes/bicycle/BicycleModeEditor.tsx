@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { listTargetCategories } from '@tilda-geo/bicycle-infrastructure'
@@ -131,20 +132,20 @@ function BicycleModeEditor(props: {
       {readOnly ? <LoginCallout onLogin={onLogin} /> : null}
 
       <ColoredEditorSection
-        aria-label="Bicycle infrastructure"
-        title="Bicycle infrastructure"
+        aria-label={m.bicycle_infrastructure_title()}
+        title={m.bicycle_infrastructure_title()}
         color={incomplete ? BICYCLE_PAINT_COLORS.incomplete : BICYCLE_PAINT_COLORS.complete}
         className="mb-0"
         contentClassName="flex flex-col gap-3 py-2"
       >
         <table className={tagEditorTableClassName}>
           <tbody>
-            <TagEditorFieldRow tag="current-category" label="Current">
+            <TagEditorFieldRow tag="current-category" label={m.bicycle_current()}>
               <span className="flex h-5 items-center text-xs leading-tight text-zinc-900">
                 {formatCategoryLabel(currentCategory)}
               </span>
             </TagEditorFieldRow>
-            <TagEditorFieldRow tag="target-category" label="Target">
+            <TagEditorFieldRow tag="target-category" label={m.bicycle_target()}>
               <div className="flex min-w-0 flex-1 items-center gap-1">
                 <div className="min-w-0 flex-1">
                   <Select
@@ -157,7 +158,7 @@ function BicycleModeEditor(props: {
                       setTargetCategoryId(value || undefined)
                     }}
                   >
-                    <option value="">Choose category…</option>
+                    <option value="">{m.bicycle_choose_category()}</option>
                     {targetOptions.map((id) => (
                       <option key={id} value={id}>
                         {formatCategoryLabel(id)}
@@ -169,7 +170,7 @@ function BicycleModeEditor(props: {
                   <button
                     type="button"
                     disabled={readOnly}
-                    aria-label="Clear target"
+                    aria-label={m.bicycle_clear_target()}
                     className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-zinc-500 hover:bg-zinc-950/5 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={() => setTargetCategoryId(undefined)}
                   >
@@ -183,7 +184,7 @@ function BicycleModeEditor(props: {
 
         {plan && (plan.add.length > 0 || plan.change.length > 0 || plan.conflicts.length > 0) ? (
           <div className="flex flex-col gap-2 border-t border-zinc-950/10 pt-3">
-            <span className="text-sm font-medium text-zinc-900">Suggestions</span>
+            <span className="text-sm font-medium text-zinc-900">{m.bicycle_suggestions()}</span>
             <ul className="m-0 flex list-none flex-col gap-1 p-0 text-xs text-zinc-700">
               {plan.add.map((entry) => (
                 <li key={`add-${entry.key}`}>
@@ -219,7 +220,7 @@ function BicycleModeEditor(props: {
                 )}
                 onClick={applySuggestions}
               >
-                Apply suggestions
+                {m.bicycle_apply_suggestions()}
               </button>
             ) : null}
           </div>
@@ -229,7 +230,9 @@ function BicycleModeEditor(props: {
       {showCenterlineSection ? (
         <div className="flex flex-col gap-3 border-t border-zinc-200 pt-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-zinc-900">Centerline presence</span>
+            <span className="text-sm font-medium text-zinc-900">
+              {m.bicycle_centerline_presence()}
+            </span>
             <SideModeSwitcher
               bothBlockShown={bothSides}
               readOnly={readOnly}
@@ -266,7 +269,7 @@ function BicycleModeEditor(props: {
       ) : null}
 
       <div className="flex flex-col gap-2 border-t border-zinc-200 pt-3">
-        <span className="text-sm font-medium text-zinc-900">Tags</span>
+        <span className="text-sm font-medium text-zinc-900">{m.bicycle_tags()}</span>
         <table className={tagEditorTableClassName}>
           <tbody>
             {BICYCLE_FLAT_EDIT_KEYS.map((key) => (

@@ -1,6 +1,8 @@
+import * as m from '@app/paraglide/messages'
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import clsx from 'clsx'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
+import { getPresetTitle } from '../../../../i18n/preset-labels'
 import { floatingChromeElevationClassName } from '../../../../shell/map/mobileMapChrome.const'
 import { type OsmKeyValue } from '../../../../utils/types/preset'
 import { presets } from './presets'
@@ -17,35 +19,33 @@ export function PresetSigns(props: {
   const readOnly = props.readOnly ?? false
 
   return (
-    <section aria-label="Sign presets" className="mb-2">
+    <section aria-label={m.editor_sign_presets_aria()} className="mb-2">
       <div
         className={clsx('flex overflow-hidden rounded-md', floatingChromeElevationClassName)}
         role="group"
-        aria-label="Sign presets"
+        aria-label={m.editor_sign_presets_aria()}
       >
-        {presets.map((preset, index) => (
-          <Tooltip
-            key={preset.key}
-            content={preset.img.title}
-            placement="top"
-            wrapperClassName="shrink-0"
-          >
-            <button
-              type="button"
-              aria-label={preset.img.alt}
-              title={preset.img.title}
-              disabled={readOnly}
-              className={clsx(presetButtonClassName, index > 0 && 'border-l border-zinc-950/10')}
-              onClick={() => applyPreset(preset.tags, props.side, props.onChange)}
-            >
-              <img
-                src={preset.img.src}
-                alt=""
-                className="block h-4 max-h-4 w-auto max-w-7 object-contain"
-              />
-            </button>
-          </Tooltip>
-        ))}
+        {presets.map((preset, index) => {
+          const title = getPresetTitle(preset.key)
+          return (
+            <Tooltip key={preset.key} content={title} placement="top" wrapperClassName="shrink-0">
+              <button
+                type="button"
+                aria-label={title}
+                title={title}
+                disabled={readOnly}
+                className={clsx(presetButtonClassName, index > 0 && 'border-l border-zinc-950/10')}
+                onClick={() => applyPreset(preset.tags, props.side, props.onChange)}
+              >
+                <img
+                  src={preset.img.src}
+                  alt=""
+                  className="block h-4 max-h-4 w-auto max-w-7 object-contain"
+                />
+              </button>
+            </Tooltip>
+          )
+        })}
       </div>
     </section>
   )

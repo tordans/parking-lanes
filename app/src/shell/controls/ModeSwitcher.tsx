@@ -1,8 +1,10 @@
+import * as m from '@app/paraglide/messages'
 import { formatForDisplay, useHotkeys } from '@tanstack/react-hotkeys'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { HotkeyKbd } from '../../components/HotkeyKbd'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
+import { getModeLabel } from '../../i18n/mode-content'
 import { MODE_HOTKEYS } from '../../modes/mode-hotkeys'
 import { modeIcons } from '../../modes/mode-icons'
 import { streetSpaceModes } from '../../modes/registry'
@@ -37,12 +39,17 @@ export function ModeSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
-      <div className={mapToolbarButtonGroupClassName} role="tablist" aria-label="Street space mode">
+      <div
+        className={mapToolbarButtonGroupClassName}
+        role="tablist"
+        aria-label={m.shell_mode_switcher_aria()}
+      >
         {streetSpaceModes.map((mode, index) => {
           const isActive = mode.id === currentMode
           const Icon = modeIcons[mode.id]
           const hotkey = MODE_HOTKEYS[mode.id]
-          const label = mode.enabled ? mode.label : `${mode.label} (coming soon)`
+          const modeLabel = getModeLabel(mode.id)
+          const label = mode.enabled ? modeLabel : `${modeLabel} ${m.shell_mode_coming_soon()}`
 
           return (
             <Tooltip
@@ -63,7 +70,7 @@ export function ModeSwitcher() {
                   role="tab"
                   aria-selected={isActive}
                   aria-label={
-                    mode.enabled ? `${mode.label} (${formatForDisplay(hotkey)})` : mode.label
+                    mode.enabled ? `${modeLabel} (${formatForDisplay(hotkey)})` : modeLabel
                   }
                   disabled={!mode.enabled}
                   className={clsxModeButton({ isActive, enabled: mode.enabled, index })}
@@ -80,8 +87,8 @@ export function ModeSwitcher() {
                   <Icon className="size-5 shrink-0" aria-hidden />
                   {isActive ? (
                     <span className="flex flex-col items-start text-left text-[11px] leading-[1.15] font-medium">
-                      <span>{mode.label}</span>
-                      <span>Editor</span>
+                      <span>{modeLabel}</span>
+                      <span>{m.shell_mode_editor_suffix()}</span>
                     </span>
                   ) : null}
                 </button>

@@ -1,7 +1,8 @@
+import * as m from '@app/paraglide/messages'
 import type { ReactNode } from 'react'
 import { Button } from '../../components/catalyst/button'
 import { Tooltip } from '../../components/Tooltip/Tooltip'
-import { highwayCategoryLabel } from '../../utils/highway-category-label'
+import { highwayCategoryLabel } from '../../i18n/highway-labels'
 
 export function ModePanelIntro(props: {
   wayId: number
@@ -12,10 +13,10 @@ export function ModePanelIntro(props: {
   trailing?: ReactNode
   className?: string
 }) {
-  const categoryLabel = highwayCategoryLabel(props.highway) ?? 'Way'
+  const categoryLabel = highwayCategoryLabel(props.highway) ?? m.panel_way_fallback()
   const wayRef = `way/${props.wayId}`
   const wayLabel = props.featureSuffix ? `${wayRef} · ${props.featureSuffix}` : wayRef
-  const tooltip = `Open ${wayLabel}`
+  const tooltip = m.panel_open_way({ wayLabel })
   const historyHref = `https://openstreetmap.org/way/${props.wayId}/history`
 
   return (
@@ -28,7 +29,7 @@ export function ModePanelIntro(props: {
             href={historyHref}
             target="_blank"
             rel="noreferrer"
-            aria-label={`${categoryLabel} — ${tooltip} history on OpenStreetMap`}
+            aria-label={m.panel_way_history_aria({ category: categoryLabel, wayLabel })}
             className="!px-2 !py-0.5 text-xs font-medium sm:!px-2 sm:!py-0.5 sm:!text-xs"
           >
             {categoryLabel}

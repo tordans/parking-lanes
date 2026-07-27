@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { RefreshCw } from 'lucide-react'
 import { Tooltip } from '../../../../components/Tooltip/Tooltip'
@@ -16,11 +17,11 @@ export function TagMigrationToolbar(props: {
 
   return (
     <div className={tagEditorToolbarButtonGroupClassName}>
-      <Tooltip content="Update tags to new scheme" wrapperClassName="shrink-0">
+      <Tooltip content={m.editor_update_tags()} wrapperClassName="shrink-0">
         <button
           type="button"
-          aria-label="Update tags to new scheme"
-          title="Update tags to new scheme"
+          aria-label={m.editor_update_tags()}
+          title={m.editor_update_tags()}
           className={tagEditorToolbarButtonClassName}
           onClick={props.onOpenTagUpdater}
         >

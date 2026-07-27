@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import {
   classifySettSize,
   settLengthForSize,
@@ -5,10 +6,10 @@ import {
 } from '@osm-editor-kit/osm-surface-quality'
 import clsx from 'clsx'
 
-const SETT_SIZE_OPTIONS: Array<{ size: SettSize; label: string }> = [
-  { size: 'mosaic_sett', label: 'Mosaik' },
-  { size: 'small_sett', label: 'Klein' },
-  { size: 'large_sett', label: 'Groß' },
+const SETT_SIZE_OPTIONS: Array<{ size: SettSize; label: () => string }> = [
+  { size: 'mosaic_sett', label: m.sett_mosaic },
+  { size: 'small_sett', label: m.sett_small },
+  { size: 'large_sett', label: m.sett_large },
 ]
 
 export function SettSizePicker(props: {
@@ -37,7 +38,7 @@ export function SettSizePicker(props: {
             )}
             onClick={() => props.onSelect(option.size)}
           >
-            {option.label}
+            {option.label()}
           </button>
         ))}
       </div>

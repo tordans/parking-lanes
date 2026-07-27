@@ -30,6 +30,4 @@ export type ConditionColor = string
 export interface ConditionColorDefinition {
   condition: ConditionName
   color: ConditionColor
-  /** Text describing the condition */
-  text: string
 }

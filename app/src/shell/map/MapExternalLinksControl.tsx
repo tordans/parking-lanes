@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { Link2 } from 'lucide-react'
 import { useMap } from 'react-map-gl/maplibre'
 import {
@@ -41,7 +42,7 @@ export function MapExternalLinksControl() {
       <DropdownButton
         as="button"
         type="button"
-        aria-label="External map links"
+        aria-label={m.map_external_links_aria()}
         className={mapControlButtonClassName}
         disabled={!mapLoaded || viewport == null}
       >

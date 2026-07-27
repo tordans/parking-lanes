@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { JunctionChoice } from '@osm-editor-kit/osm-way-chain'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -29,7 +30,7 @@ export function ChainNavigator({
       <div className="flex items-center gap-1">
         <button
           type="button"
-          aria-label="Previous segment"
+          aria-label={m.chain_prev_segment()}
           disabled={!canPrev}
           onClick={onPrev}
           className="rounded-md border border-zinc-300 p-1.5 text-zinc-700 enabled:hover:bg-zinc-50 disabled:opacity-40"
@@ -38,7 +39,7 @@ export function ChainNavigator({
         </button>
         <button
           type="button"
-          aria-label="Next segment"
+          aria-label={m.chain_next_segment()}
           disabled={!canNext}
           onClick={onNext}
           className="rounded-md border border-zinc-300 p-1.5 text-zinc-700 enabled:hover:bg-zinc-50 disabled:opacity-40"

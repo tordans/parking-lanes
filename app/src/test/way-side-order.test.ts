@@ -50,7 +50,7 @@ describe('screenOrderedParkingSides', () => {
 
 describe('screenOrderedSidesSwitcherLabel', () => {
   test('reflects screen order', () => {
-    expect(screenOrderedSidesSwitcherLabel(['left', 'right'])).toBe('Left/Right')
-    expect(screenOrderedSidesSwitcherLabel(['right', 'left'])).toBe('Right/Left')
+    expect(screenOrderedSidesSwitcherLabel(['left', 'right'])).toBe('Links/Rechts')
+    expect(screenOrderedSidesSwitcherLabel(['right', 'left'])).toBe('Rechts/Links')
   })
 })

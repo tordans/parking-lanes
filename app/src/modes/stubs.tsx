@@ -1,3 +1,5 @@
+import * as m from '@app/paraglide/messages'
+import { getModeLabel, getModeStubAbout } from '../i18n/mode-content'
 import type { ModeMapProps, ModePanelProps, StreetSpaceMode, StreetSpaceModeId } from './types'
 
 function StubMapLayers(_props: ModeMapProps) {
@@ -5,24 +7,20 @@ function StubMapLayers(_props: ModeMapProps) {
 }
 
 function StubPanel(_props: ModePanelProps) {
-  return (
-    <p className="mt-4 text-sm text-zinc-600">
-      This mode is not available yet. Parking mode remains fully editable; edits stay in the shared
-      changeset.
-    </p>
-  )
+  return <p className="mt-4 text-sm text-zinc-600">{m.mode_stub_panel()}</p>
 }
 
 export function createStubMode(id: StreetSpaceModeId, label: string): StreetSpaceMode {
+  const modeLabel = getModeLabel(id)
   return {
     id,
     label,
     enabled: false,
     maturity: 'experimental',
     about: {
-      description: `${label} editing is coming soon.`,
+      description: getModeStubAbout(modeLabel),
       taggingGuide: {
-        label: 'OpenStreetMap wiki',
+        label: m.shell_osm_wiki(),
         href: 'https://wiki.openstreetmap.org/wiki/Main_Page',
       },
     },

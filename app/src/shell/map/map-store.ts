@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { create } from 'zustand'
 
 interface MapStore {
@@ -41,8 +42,8 @@ export function useMapChromeBusyLabel(): string | null {
   const mapTilesLoading = useMapStore((state) => state.mapTilesLoading)
   const osmDataBusy = useMapStore((state) => state.osmDataBusy)
 
-  if (!mapLoaded || mapTilesLoading) return 'Loading map'
-  if (osmDataBusy) return 'Fetching data'
+  if (!mapLoaded || mapTilesLoading) return m.map_loading_map()
+  if (osmDataBusy) return m.map_loading_data()
   return null
 }
 

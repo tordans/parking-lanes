@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import clsx from 'clsx'
 import { Compass, LocateFixed } from 'lucide-react'
 import { useState } from 'react'
@@ -35,7 +36,7 @@ export function MapNavigationControls() {
     if (!mapLoaded) return
 
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by this browser.')
+      toast.error(m.map_geolocation_unsupported())
       return
     }
 
@@ -50,7 +51,7 @@ export function MapNavigationControls() {
       },
       (error) => {
         setLocating(false)
-        toast.error(error.message || 'Could not determine your location.')
+        toast.error(error.message || m.map_geolocation_failed())
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     )
@@ -59,7 +60,7 @@ export function MapNavigationControls() {
   const locateButton = (
     <button
       type="button"
-      aria-label="Locate me"
+      aria-label={m.map_locate_me()}
       className={clsx(
         isRotated ? mapControlSegmentClassName : mapControlButtonClassName,
         isRotated && mapControlButtonDividerClassName,
@@ -80,7 +81,7 @@ export function MapNavigationControls() {
         <div className={mapControlButtonGroupClassName}>
           <button
             type="button"
-            aria-label="Reset north"
+            aria-label={m.map_reset_north()}
             className={mapControlSegmentClassName}
             onClick={handleResetBearing}
             disabled={!mapLoaded}

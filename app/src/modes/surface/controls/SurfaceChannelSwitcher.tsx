@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import { Label } from '../../../components/catalyst/fieldset'
@@ -26,7 +27,7 @@ export function SurfaceChannelSwitcher(props: {
         checked={props.sameMode}
         disabled={props.readOnly}
         onChange={props.onSameModeChange}
-        aria-label="Toggle same values for both channels"
+        aria-label={m.surface_channel_both_aria()}
       />
       <Label
         className={clsx(

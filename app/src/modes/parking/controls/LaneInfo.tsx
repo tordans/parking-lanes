@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { type OsmObject, type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import { AuthState, useAuthState } from '../../../shell/app-store'
 import {
@@ -25,9 +26,7 @@ export function OsmObjectPanel() {
   const { data: graph, isFetching } = useParkingOsmQuery({ select: (osmData) => osmData.graph })
 
   if (!selectedOsmRef) {
-    return (
-      <MapFeaturePromptEmptyState message="Click a way on the map to inspect and edit parking tags." />
-    )
+    return <MapFeaturePromptEmptyState message={m.empty_click_parking()} />
   }
 
   const selectedOsmObject =

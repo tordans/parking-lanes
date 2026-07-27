@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
@@ -156,8 +157,8 @@ function SurfaceModeEditor(props: {
       <SurfaceChannelSwitcher
         sameMode={sameMode}
         readOnly={readOnly}
-        leftLabel="Split"
-        rightLabel="Same"
+        leftLabel={m.surface_split()}
+        rightLabel={m.surface_same()}
         onSameModeChange={setSameMode}
       />
     ) : null
@@ -227,9 +228,7 @@ export function SurfaceModePanel() {
       : null
 
   if (!selectedOsmRef) {
-    return (
-      <MapFeaturePromptEmptyState message="Click a highway on the map to inspect and edit its surface and smoothness." />
-    )
+    return <MapFeaturePromptEmptyState message={m.empty_click_surface()} />
   }
 
   if (!selectedWay || !layout) {

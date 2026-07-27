@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { Download, X } from 'lucide-react'
 import { Button } from '../../../components/catalyst/button'
 import {
@@ -28,10 +29,10 @@ export function SaveChangesDialog(props: {
   return (
     <Dialog open={props.open} onClose={props.onOpenChange} size="lg">
       <div className="flex items-start justify-between gap-3">
-        <DialogTitle>Save changes</DialogTitle>
+        <DialogTitle>{m.save_dialog_title()}</DialogTitle>
         <button
           type="button"
-          aria-label="Close"
+          aria-label={m.shell_close()}
           disabled={props.saving}
           className="shrink-0 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 disabled:opacity-50"
           onClick={() => props.onOpenChange(false)}
@@ -40,18 +41,18 @@ export function SaveChangesDialog(props: {
         </button>
       </div>
       <DialogDescription className="!text-base/5 sm:!text-sm/5">
-        Review pending OSM edits before uploading a changeset to {props.uploadHost}.
+        {m.save_dialog_description({ host: props.uploadHost })}
       </DialogDescription>
       <DialogBody>
         <PendingChangesList pending={props.pending} onDiscard={props.onDiscard} />
         <ChangesetCommentField comment={props.comment} onCommentChange={props.onCommentChange} />
       </DialogBody>
       <DialogActions className="sm:justify-between">
-        <Tooltip content="Download osmChange (.osc)" placement="top">
+        <Tooltip content={m.save_download_osc()} placement="top">
           <Button
             outline
             type="button"
-            aria-label="Download osmChange (.osc)"
+            aria-label={m.save_download_osc()}
             onClick={props.onDownload}
             disabled={props.saving || props.pending.length === 0}
           >

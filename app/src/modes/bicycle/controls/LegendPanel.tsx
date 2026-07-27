@@ -1,12 +1,21 @@
+import * as m from '@app/paraglide/messages'
+import { getBicycleLegendItems } from '../../../i18n/legend-labels'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { bicycleLegendItems } from '../map/bicycle-colors'
+
+const colorByPaintState = Object.fromEntries(
+  bicycleLegendItems.map((item) => [item.paintState, item.color]),
+) as Record<(typeof bicycleLegendItems)[number]['paintState'], string>
 
 export function LegendContent() {
   return (
     <div className="flex flex-col gap-2">
-      {bicycleLegendItems.map((item) => (
+      {getBicycleLegendItems().map((item) => (
         <div key={item.paintState} className="flex items-center gap-1.5">
-          <div className="h-0.5 w-4 shrink-0" style={{ backgroundColor: item.color }} />
+          <div
+            className="h-0.5 w-4 shrink-0"
+            style={{ backgroundColor: colorByPaintState[item.paintState] }}
+          />
           <span className="text-sm leading-tight text-zinc-800">{item.label}</span>
         </div>
       ))}
@@ -25,7 +34,7 @@ export function BicycleLegendPanel({ variant = 'floating' }: { variant?: 'floati
   }
 
   return (
-    <MapCollapsiblePanel title="Legend" defaultOpen>
+    <MapCollapsiblePanel title={m.shell_legend_title()} defaultOpen>
       <LegendContent />
     </MapCollapsiblePanel>
   )

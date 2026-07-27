@@ -1,10 +1,8 @@
+import * as m from '@app/paraglide/messages'
 import * as countryCoder from '@rapideditor/country-coder'
 import { Check, Layers } from 'lucide-react'
-import {
-  useEditorLayerIndex,
-  type EliCategory,
-  type EliLayer,
-} from 'maplibre-editor-layer-index/react'
+import type { EliCategory } from 'maplibre-editor-layer-index/react'
+import { useEditorLayerIndex, type EliLayer } from 'maplibre-editor-layer-index/react'
 import {
   Dropdown,
   DropdownButton,
@@ -17,6 +15,7 @@ import {
   DropdownSection,
 } from '../../components/catalyst/dropdown'
 import { HotkeyKbd } from '../../components/HotkeyKbd'
+import { getBackgroundCategoryLabel } from '../../i18n/map-labels'
 import { usePreviousBackgroundLayerId } from './background-history-store'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
@@ -28,18 +27,16 @@ import {
   useSetBackgroundLayerId,
 } from './use-background-layer'
 
-const CATEGORY_GROUPS: { key: EliCategory; label: string }[] = [
-  { key: 'photo', label: 'Aerial / Satellite' },
-  { key: 'map', label: 'Maps' },
-  { key: 'osmbasedmap', label: 'OSM-based maps' },
-  { key: 'historicmap', label: 'Historic maps' },
-  { key: 'historicphoto', label: 'Historic aerial' },
-  { key: 'elevation', label: 'Elevation' },
-  { key: 'qa', label: 'QA' },
-  { key: 'other', label: 'Other' },
+const CATEGORY_GROUPS: { key: EliCategory }[] = [
+  { key: 'photo' },
+  { key: 'map' },
+  { key: 'osmbasedmap' },
+  { key: 'historicmap' },
+  { key: 'historicphoto' },
+  { key: 'elevation' },
+  { key: 'qa' },
+  { key: 'other' },
 ]
-
-const DEFAULT_LABEL = 'OpenFreeMap Positron (default)'
 
 /** Layers-icon dropdown to pick ELI imagery for the current viewport, or the default style. */
 export function MapBackgroundLayerControl() {
@@ -61,6 +58,7 @@ export function MapBackgroundLayerControl() {
 
   const groups = CATEGORY_GROUPS.map((group) => ({
     ...group,
+    label: getBackgroundCategoryLabel(group.key),
     items: sortLayers(layers.filter((layer) => (layer.category ?? 'other') === group.key)),
   })).filter((group) => group.items.length > 0)
 
@@ -71,7 +69,7 @@ export function MapBackgroundLayerControl() {
       <DropdownButton
         as="button"
         type="button"
-        aria-label="Background map"
+        aria-label={m.map_background_aria()}
         className={mapControlButtonClassName}
         disabled={!mapLoaded}
       >
@@ -82,11 +80,11 @@ export function MapBackgroundLayerControl() {
         className="z-50 max-h-[min(24rem,calc(100dvh-5.5rem))] w-[min(22rem,calc(100vw-1.25rem))]"
       >
         <DropdownSection>
-          <DropdownHeading>Background map</DropdownHeading>
+          <DropdownHeading>{m.map_background_heading()}</DropdownHeading>
           <BackgroundOption
             selected={backgroundLayerId == null}
             onSelect={() => setBackgroundLayerId(null)}
-            label={DEFAULT_LABEL}
+            label={m.map_background_default()}
             showToggleHint={showToggleHint && backgroundLayerId == null}
           />
         </DropdownSection>
@@ -95,9 +93,9 @@ export function MapBackgroundLayerControl() {
           <>
             <DropdownDivider />
             <DropdownSection>
-              <DropdownHeading>This area</DropdownHeading>
+              <DropdownHeading>{m.map_background_this_area()}</DropdownHeading>
               <DropdownItem disabled>
-                <DropdownLabel>Loading layers…</DropdownLabel>
+                <DropdownLabel>{m.map_background_loading()}</DropdownLabel>
               </DropdownItem>
             </DropdownSection>
           </>
@@ -124,9 +122,9 @@ export function MapBackgroundLayerControl() {
           <>
             <DropdownDivider />
             <DropdownSection>
-              <DropdownHeading>This area</DropdownHeading>
+              <DropdownHeading>{m.map_background_this_area()}</DropdownHeading>
               <DropdownItem disabled>
-                <DropdownLabel>No imagery layers here</DropdownLabel>
+                <DropdownLabel>{m.map_background_none()}</DropdownLabel>
               </DropdownItem>
             </DropdownSection>
           </>
@@ -163,7 +161,7 @@ function BackgroundOption({
       {showToggleHint ? (
         <DropdownDescription className="inline-flex items-center gap-1.5">
           <HotkeyKbd hotkey="Mod+B" />
-          <span>toggles between the last two backgrounds</span>
+          <span>{m.map_background_toggle_hint()}</span>
         </DropdownDescription>
       ) : null}
     </DropdownItem>

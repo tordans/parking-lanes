@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import { Label } from '../../../../components/catalyst/fieldset'
@@ -21,13 +22,15 @@ export function SideModeSwitcher(props: {
           props.bothBlockShown ? 'text-zinc-500' : 'font-semibold text-zinc-950',
         )}
       >
-        {props.sideOrder ? screenOrderedSidesSwitcherLabel(props.sideOrder) : 'Left/Right'}
+        {props.sideOrder
+          ? screenOrderedSidesSwitcherLabel(props.sideOrder)
+          : `${m.editor_side_left()}/${m.editor_side_right()}`}
       </Label>
       <Switch
         checked={props.bothBlockShown}
         disabled={props.readOnly}
         onChange={props.onBothBlockShownChange}
-        aria-label="Toggle both sides editor"
+        aria-label={m.editor_side_both_aria()}
       />
       <Label
         className={clsx(
@@ -35,7 +38,7 @@ export function SideModeSwitcher(props: {
           props.bothBlockShown ? 'font-semibold text-zinc-950' : 'text-zinc-500',
         )}
       >
-        Both
+        {m.editor_side_both()}
       </Label>
     </Headless.Field>
   )
