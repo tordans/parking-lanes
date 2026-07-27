@@ -5,6 +5,10 @@ import {
   type SidepathPrefix,
   type SidepathSide,
 } from '@osm-editor-kit/osm-sidepath-tags'
+import {
+  matchesHighwayInclusionStyle,
+  type HighwayInclusionStyle,
+} from '@osm-editor-kit/osm-way-chain'
 import type { Feature, LineString } from 'geojson'
 import type { MapBounds } from '../../parking/map/types'
 import { roadWidthFromTags } from '../../width/domain/road-width-from-tags'
@@ -118,11 +122,13 @@ function surfacePropertiesFromTags(
 export function parseSurfaceFeaturesFromData(
   data: ParsedOsmData,
   bounds: MapBounds,
+  inclusionStyle: HighwayInclusionStyle,
 ): SurfaceFeature[] {
   const features: SurfaceFeature[] = []
 
   for (const way of Object.values(data.ways)) {
     if (!way.tags?.highway) continue
+    if (!matchesHighwayInclusionStyle(way.tags, inclusionStyle)) continue
     if (isWidthModeLinkWay(way.tags)) continue
     if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
 

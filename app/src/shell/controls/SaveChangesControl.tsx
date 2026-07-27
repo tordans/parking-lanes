@@ -68,7 +68,7 @@ export function SaveChangesControl() {
   }
 
   function handleDownload() {
-    downloadPendingChangesOsc(comment)
+    void downloadPendingChangesOsc(comment)
   }
 
   async function handleSave() {

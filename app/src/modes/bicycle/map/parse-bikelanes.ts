@@ -6,6 +6,10 @@ import {
   type SidepathSide,
 } from '@osm-editor-kit/osm-sidepath-tags'
 import {
+  matchesHighwayInclusionStyle,
+  type HighwayInclusionStyle,
+} from '@osm-editor-kit/osm-way-chain'
+import {
   analyzeCategoryGaps,
   processBikelanes,
   type BikelaneResult,
@@ -106,11 +110,13 @@ function hasCenterlinePresence(tags: Record<string, string>): boolean {
 export function parseBicycleFeaturesFromData(
   data: ParsedOsmData,
   bounds: MapBounds,
+  inclusionStyle: HighwayInclusionStyle,
 ): BicycleFeature[] {
   const features: BicycleFeature[] = []
 
   for (const way of Object.values(data.ways)) {
     if (!way.tags?.highway) continue
+    if (!matchesHighwayInclusionStyle(way.tags, inclusionStyle)) continue
     if (isWidthModeLinkWay(way.tags)) continue
     if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
 

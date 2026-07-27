@@ -59,6 +59,23 @@ describe('buildChangesetTags', () => {
       host: 'https://example.com/parking/',
     })
   })
+
+  test('adds imagery_used and wiki link suffix', () => {
+    expect(
+      buildChangesetTags('Street Space Editor', '0.9.0', {
+        host: 'https://example.com/parking/',
+        comment: 'Update parking',
+        imageryUsed: ['Geoportal Berlin / Luftbilder 2024', 'OpenFreeMap Positron'],
+        commentWikiUrl: 'https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Parkraum/Editor',
+      }),
+    ).toEqual({
+      created_by: 'Street Space Editor 0.9.0',
+      comment:
+        'Update parking; https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Parkraum/Editor',
+      host: 'https://example.com/parking/',
+      imagery_used: 'Geoportal Berlin / Luftbilder 2024; OpenFreeMap Positron',
+    })
+  })
 })
 
 describe('changesStoreToOsmChange', () => {

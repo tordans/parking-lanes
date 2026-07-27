@@ -1,8 +1,16 @@
 import * as m from '@app/paraglide/messages'
 import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
 import type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
-import { idEditorUrl, josmUrl, mapillaryUrl, osmProdUrl } from '@osm-editor-kit/osm-editor-links'
+import {
+  idEditorUrl,
+  josmUrl,
+  mapillaryRecentPanosUrl,
+  mapillaryUrl,
+  osmProdUrl,
+} from '@osm-editor-kit/osm-editor-links'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
+import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
+import { overpassRoadLikeSelector } from '@osm-editor-kit/osm-way-chain'
 import axios from 'axios'
 
 export type MapViewportSnapshot = {
@@ -42,21 +50,33 @@ export function buildViewportIdEditorUrl(viewport: MapViewportSnapshot) {
   })
 }
 
-export function buildViewportJosmUrl(viewport: MapViewportSnapshot) {
+export function buildViewportJosmUrl(
+  viewport: MapViewportSnapshot,
+  inclusionStyle: HighwayInclusionStyle,
+) {
   if (viewport.bounds == null) return null
-  return josmUrl + overpassDeUrl + compactOverpassQuery(getHighwaysOverpassQuery(viewport.bounds))
+  return (
+    josmUrl +
+    overpassDeUrl +
+    compactOverpassQuery(getHighwaysOverpassQuery(viewport.bounds, inclusionStyle))
+  )
 }
 
 export function buildMapillaryViewportUrl(viewport: MapViewportSnapshot) {
   return mapillaryUrl(viewport.center)
 }
 
+export function buildMapillaryRecentPanosViewportUrl(viewport: MapViewportSnapshot) {
+  return mapillaryRecentPanosUrl(viewport.center)
+}
+
 /** Link list for the map external-links dropdown. */
 export function buildOsmExternalLinks(options: {
   selected: OsmFeatureRef | undefined
   viewport: MapViewportSnapshot | null
+  inclusionStyle: HighwayInclusionStyle
 }): OsmExternalLink[] {
-  const { selected, viewport } = options
+  const { selected, viewport, inclusionStyle } = options
   const hasSelection = selected != null
 
   return [
@@ -71,6 +91,13 @@ export function buildOsmExternalLinks(options: {
       id: 'view-mapillary',
       label: m.link_view_mapillary(),
       href: viewport != null ? buildMapillaryViewportUrl(viewport) : null,
+      group: 'view',
+      requiresSelection: false,
+    },
+    {
+      id: 'view-mapillary-recent-panos',
+      label: m.link_view_mapillary_recent_panos(),
+      href: viewport != null ? buildMapillaryRecentPanosViewportUrl(viewport) : null,
       group: 'view',
       requiresSelection: false,
     },
@@ -99,7 +126,7 @@ export function buildOsmExternalLinks(options: {
     {
       id: 'edit-josm-viewport',
       label: m.link_open_josm_viewport(),
-      href: viewport != null ? buildViewportJosmUrl(viewport) : null,
+      href: viewport != null ? buildViewportJosmUrl(viewport, inclusionStyle) : null,
       group: 'viewport',
       requiresSelection: false,
       josm: true,
@@ -123,10 +150,9 @@ function getWayWithRelationsOverpassQuery(wayId: number) {
     out meta;`
 }
 
-function getHighwaysOverpassQuery(bounds: MapBounds) {
+function getHighwaysOverpassQuery(bounds: MapBounds, inclusionStyle: HighwayInclusionStyle) {
   const bbox = [bounds.south, bounds.west, bounds.north, bounds.east].join(',')
-  const tag =
-    'highway~"^motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street"'
+  const tag = overpassRoadLikeSelector(inclusionStyle)
   return `
     [out:xml];
     (

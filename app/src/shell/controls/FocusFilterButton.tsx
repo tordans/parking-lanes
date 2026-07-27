@@ -2,9 +2,11 @@ import * as m from '@app/paraglide/messages'
 import { useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Check, Funnel } from 'lucide-react'
+import { Checkbox } from '../../components/catalyst/checkbox'
 import {
   Dropdown,
   DropdownButton,
+  DropdownDivider,
   DropdownItem,
   DropdownMenu,
 } from '../../components/catalyst/dropdown'
@@ -17,7 +19,9 @@ import {
   mapToolbarIconSegmentClassName,
 } from '../map/mobileMapChrome.const'
 import type { ParkingFocus, BicycleFocus, SurfaceFocus, WidthFocus } from '../map/search-schema'
+import { useMapBoundaries } from '../map/use-map-boundaries'
 import { useMapFocus, useMapFocusSupportsCurrentMode } from '../map/use-map-focus'
+import { LegendBoundariesEntry } from './LegendBoundariesEntry'
 
 type FocusOption = {
   value: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus
@@ -35,10 +39,12 @@ export function FocusFilterButton() {
   const { mode } = useParams({ from: '/$mode' })
   const supportsFocus = useMapFocusSupportsCurrentMode()
   const { focus, setFocus, isActive } = useMapFocus()
+  const { boundariesEnabled, setBoundariesEnabled } = useMapBoundaries()
 
   if (!supportsFocus) return null
 
   const options = getFocusOptionsForMode(mode)
+  const filterActive = isActive || !boundariesEnabled
 
   return (
     <div className={mapToolbarButtonGroupClassName}>
@@ -49,9 +55,11 @@ export function FocusFilterButton() {
               as="button"
               type="button"
               aria-label={m.focus_filter_aria()}
-              aria-pressed={isActive}
+              aria-pressed={filterActive}
               className={clsx(
-                isActive ? mapToolbarIconSegmentActiveClassName : mapToolbarIconSegmentClassName,
+                filterActive
+                  ? mapToolbarIconSegmentActiveClassName
+                  : mapToolbarIconSegmentClassName,
               )}
             >
               <Funnel className="size-5 shrink-0" aria-hidden />
@@ -67,6 +75,15 @@ export function FocusFilterButton() {
               ) : null}
             </DropdownItem>
           ))}
+          <DropdownDivider />
+          <div className="col-span-full flex items-center gap-2 px-3.5 py-2 sm:px-3">
+            <Checkbox
+              checked={boundariesEnabled}
+              onChange={setBoundariesEnabled}
+              aria-label={m.legend_boundaries_toggle_aria()}
+            />
+            <LegendBoundariesEntry />
+          </div>
         </DropdownMenu>
       </Dropdown>
     </div>

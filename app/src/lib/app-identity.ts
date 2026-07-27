@@ -7,6 +7,10 @@ export const APP_USER_AGENT_TOKEN = 'StreetSpaceEditor'
 
 export const APP_REPO_URL = 'https://github.com/osmberlin/street-space-editor'
 
+/** Appended to uploaded changeset comments (Berlin Verkehrswende parking editor). */
+export const OSM_CHANGESET_WIKI_URL =
+  'https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Parkraum/Editor'
+
 /** Open a new feedback issue with the mode-feedback template and pre-filled context. */
 export function buildModeFeedbackUrl(options: { mode: string; pageUrl: string }): string {
   const params = new URLSearchParams({

@@ -16,6 +16,7 @@ export {
   MAP_FOCUS_MUTED_OPACITY,
 } from './map-focus-paint'
 export {
+  OPENFREEMAP_POSITRON_IMAGERY_USED,
   OPENFREEMAP_POSITRON_STYLE_URL,
   openFreeMapTransformStyle,
   patchOpenFreeMapStyle,

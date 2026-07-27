@@ -12,6 +12,7 @@ import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { addChangedEntity, addChangedNode, addChangedRelation } from '../../utils/changes-store'
 import { AuthState, useAuthState } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
+import { recordEditingImagery } from './imagery-usage-session'
 import { useOsmCoverageQuery } from './osm-coverage-query'
 import { getOsmWayFromSession } from './osm-session-way-edits'
 import {
@@ -222,6 +223,7 @@ export function useWayCutHandler() {
 
   const commitSplit = useCallback(
     (wayId: number, result: CutOsmWayResult, original: OsmWay | null) => {
+      recordEditingImagery()
       if (result.newNode) {
         addChangedNode(result.newNode)
       }

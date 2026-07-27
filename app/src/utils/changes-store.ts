@@ -11,6 +11,7 @@ import {
 } from '@osm-editor-kit/osm-changeset'
 import { type OsmNode, type OsmRelation, type OsmWay } from '@osm-editor-kit/osm-data'
 import { useSyncExternalStore } from 'react'
+import { clearImageryUsage } from '../shell/map/imagery-usage-session'
 import { type ChangeSource } from './changeset-message'
 
 export type PendingChange = {
@@ -196,6 +197,7 @@ export function clearChanges(): number {
   changesStore.create.relation.length = 0
   pendingMeta.clear()
   pendingRelationMeta.clear()
+  clearImageryUsage()
   notifyChangesListeners()
   return 0
 }

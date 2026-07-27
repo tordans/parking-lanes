@@ -1,3 +1,4 @@
+import { useHighwayInclusionStyle } from '../../../shell/map/use-highway-inclusion-style'
 import { useParkingOsmQuery } from './parking-osm-query'
 import {
   updateAreaFeatureColors,
@@ -17,6 +18,7 @@ export function deriveParkingMapFeatures(
   bounds: MapBounds | undefined,
   zoom: number,
   datetime: Date,
+  inclusionStyle: Parameters<typeof parseParkingFeaturesFromData>[3],
 ): {
   lanes: ParkingFeatureCollection
   areas: ParkingFeatureCollection
@@ -26,7 +28,7 @@ export function deriveParkingMapFeatures(
     return { lanes: emptyCollection(), areas: emptyCollection(), points: emptyCollection() }
   }
 
-  const { lanes, areas, points } = parseParkingFeaturesFromData(graph, bounds, zoom)
+  const { lanes, areas, points } = parseParkingFeaturesFromData(graph, bounds, zoom, inclusionStyle)
 
   const wayTags = Object.fromEntries(Object.values(graph.ways).map((way) => [way.id, way.tags]))
   const nodeTags = Object.fromEntries(
@@ -62,8 +64,10 @@ export function useParkingMapFeatures({
   zoom: number
   datetime: Date
 }) {
+  const inclusionStyle = useHighwayInclusionStyle()
   const { data } = useParkingOsmQuery({
-    select: (osmData) => deriveParkingMapFeatures(osmData.graph, bounds, zoom, datetime),
+    select: (osmData) =>
+      deriveParkingMapFeatures(osmData.graph, bounds, zoom, datetime, inclusionStyle),
   })
 
   return (

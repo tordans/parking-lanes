@@ -21,6 +21,7 @@ import {
   type MapViewportSnapshot,
   type OsmExternalLink,
 } from './osm-external-links'
+import { useHighwayInclusionStyle } from './use-highway-inclusion-style'
 
 /** Link-icon dropdown for OSM / Mapillary / iD / JOSM; reads viewport from react-map-gl. */
 export function MapExternalLinksControl() {
@@ -28,9 +29,10 @@ export function MapExternalLinksControl() {
   const map = maps[MAIN_MAP_ID]
   const mapLoaded = useMapLoaded()
   const selectedOsmRef = useSelectedOsmRef()
+  const inclusionStyle = useHighwayInclusionStyle()
 
   const viewport = readMapViewportSnapshot(map)
-  const links = buildOsmExternalLinks({ selected: selectedOsmRef, viewport })
+  const links = buildOsmExternalLinks({ selected: selectedOsmRef, viewport, inclusionStyle })
   const viewLinks = links.filter((link) => link.group === 'view')
   const selectionLinks = links.filter((link) => link.group === 'selection')
   const viewportLinks = links.filter((link) => link.group === 'viewport')

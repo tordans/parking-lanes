@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { getBicycleLegendItems } from '../../../i18n/legend-labels'
+import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { bicycleLegendItems } from '../map/bicycle-colors'
 
@@ -24,6 +25,7 @@ export function LegendContent() {
         <code className="text-zinc-800">bicycle(:side)=use_sidepath</code> or{' '}
         <code className="text-zinc-800">optional_sidepath</code>.
       </p>
+      <LegendBoundariesEntry />
     </div>
   )
 }

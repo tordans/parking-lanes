@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { useMap } from 'react-map-gl/maplibre'
-import { APP_NAME, APP_VERSION } from '../../lib/app-identity'
+import { APP_NAME, APP_VERSION, OSM_CHANGESET_WIKI_URL } from '../../lib/app-identity'
 import { OsmApiRequestError, uploadChanges } from '../../lib/osm-client'
 import { toast } from '../../lib/toast'
 import { getMapSizePx, useParkingCoveragePace, viewMinZoom } from '../../modes/parking'
@@ -10,6 +10,7 @@ import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../mod
 import { changesStore, clearChanges, removeChangedEntity } from '../../utils/changes-store'
 import { useMapBounds } from '../app-store'
 import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
+import { getImageryUsageValues, ensureImageryUsageRecorded } from './imagery-usage-session'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapViewport } from './map-viewport'
 import {
@@ -37,7 +38,12 @@ export function useSavePendingChanges() {
 
   async function handleSave(comment: string) {
     try {
-      const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore, { comment })
+      await ensureImageryUsageRecorded()
+      const changedIdMap = await uploadChanges(APP_NAME, APP_VERSION, changesStore, {
+        comment,
+        imageryUsed: getImageryUsageValues(),
+        commentWikiUrl: OSM_CHANGESET_WIKI_URL,
+      })
       for (const oldId in changedIdMap) {
         const newId = changedIdMap[oldId]!
         const remappedWay = remapOsmWayIdInSession(queryClient, Number(oldId), Number(newId))

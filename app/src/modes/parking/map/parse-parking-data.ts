@@ -1,4 +1,5 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
+import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
 import {
   parseParkingAreaFeatures,
   parseParkingPointFeatures,
@@ -28,6 +29,7 @@ export function parseParkingFeaturesFromData(
   data: ParsedOsmData,
   bounds: MapBounds,
   zoom: number,
+  inclusionStyle: HighwayInclusionStyle,
   existingFeatureIds?: ReadonlySet<string>,
 ): { lanes: ParkingFeature[]; areas: ParkingFeature[]; points: ParkingFeature[] } {
   const lanes: ParkingFeature[] = []
@@ -56,7 +58,7 @@ export function parseParkingFeaturesFromData(
   for (const way of Object.values(data.ways)) {
     if (way.tags?.highway) {
       if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
-      lanes.push(...keep(parseParkingLaneFeatures(way, data.nodeCoords, zoom)))
+      lanes.push(...keep(parseParkingLaneFeatures(way, data.nodeCoords, zoom, inclusionStyle)))
     } else if (way.tags?.amenity === 'parking') {
       if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
       areas.push(...keep(parseParkingAreaFeatures(way, data.nodeCoords, zoom)))

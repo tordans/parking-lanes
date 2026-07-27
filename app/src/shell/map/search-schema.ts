@@ -4,13 +4,18 @@ import {
   serializeFeatureParam,
   serializeMapParam,
 } from '@osm-editor-kit/osm-map-url'
+import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
+import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '@osm-editor-kit/osm-way-chain'
 import { z } from 'zod'
+import { parkingPresetSetSchema } from '../../modes/parking/parking-preset-set-state'
 import { parseDebugSearch } from '../debug'
+import { hasNonDefaultPrimaryFocus, implicitBoundariesEnabled } from './map-focus-state'
 
 export const parkingFocusSchema = z.enum(['all', 'noSurface'])
 export const widthFocusSchema = z.enum(['all', 'car', 'bicycle'])
 export const bicycleFocusSchema = z.enum(['all', 'incomplete'])
 export const surfaceFocusSchema = z.enum(['all', 'roads', 'path', 'sidewalks', 'bike'])
+export const highwayInclusionStyleSchema = z.enum(['public', 'inclusive'])
 
 export const mapFocusSchema = z
   .object({
@@ -18,6 +23,8 @@ export const mapFocusSchema = z
     width: widthFocusSchema.optional(),
     bicycle: bicycleFocusSchema.optional(),
     surface: surfaceFocusSchema.optional(),
+    /** Admin boundaries overlay; implicit default depends on whether other focus keys are set. */
+    boundaries: z.boolean().optional(),
   })
   .optional()
 
@@ -25,6 +32,7 @@ export type ParkingFocus = z.infer<typeof parkingFocusSchema>
 export type WidthFocus = z.infer<typeof widthFocusSchema>
 export type BicycleFocus = z.infer<typeof bicycleFocusSchema>
 export type SurfaceFocus = z.infer<typeof surfaceFocusSchema>
+export type HighwayInclusionStyleParam = z.infer<typeof highwayInclusionStyleSchema>
 export type MapFocus = z.infer<typeof mapFocusSchema>
 
 /** Shared map search params (mode is the `/$mode` path slug, e.g. `/parking`). */
@@ -52,6 +60,10 @@ export const mapSearchSchema = z.object({
     .optional()
     .transform(parseDebugSearch),
   focus: mapFocusSchema,
+  /** Parking sign preset set; omitted = default. */
+  presets: parkingPresetSetSchema.optional(),
+  /** Highway inclusion style; omitted = public (skip private/driveway clutter). */
+  ways: highwayInclusionStyleSchema.optional(),
   // OAuth redirect callback — kept so validateSearch does not strip them before exchange.
   code: z.string().optional(),
   state: z.string().optional(),
@@ -70,7 +82,12 @@ function serializeMapFocus(focus: MapFocus | undefined): MapFocus | undefined {
   if (focus.bicycle && focus.bicycle !== 'all') next.bicycle = focus.bicycle
   if (focus.surface && focus.surface !== 'all') next.surface = focus.surface
 
-  return next.parking || next.width || next.bicycle || next.surface ? next : undefined
+  if (focus.boundaries !== undefined && focus.boundaries !== implicitBoundariesEnabled(focus)) {
+    next.boundaries = focus.boundaries
+  }
+
+  if (!hasNonDefaultPrimaryFocus(next) && next.boundaries === undefined) return undefined
+  return next
 }
 
 export function serializeMapSearch(
@@ -82,5 +99,13 @@ export function serializeMapSearch(
     bg: search.bg,
     debug: search.debug,
     focus: serializeMapFocus(search.focus),
+    presets: search.presets && search.presets !== 'default' ? search.presets : undefined,
+    ways: search.ways && search.ways !== DEFAULT_HIGHWAY_INCLUSION_STYLE ? search.ways : undefined,
   }
+}
+
+export function readHighwayInclusionStyle(
+  ways: HighwayInclusionStyleParam | undefined,
+): HighwayInclusionStyle {
+  return ways ?? DEFAULT_HIGHWAY_INCLUSION_STYLE
 }

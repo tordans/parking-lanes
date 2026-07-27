@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { getModeLabel } from '../../i18n/mode-content'
 import { useSelectedOsmRef } from '../../modes/parking'
 import { ParkingDatetimeFilter } from '../../modes/parking/controls/ParkingDatetimeFilter'
+import { ParkingPresetSetSwitcher } from '../../modes/parking/controls/ParkingPresetSetSwitcher'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceMode, StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
@@ -64,6 +65,17 @@ export function InfoPanelContent(props: {
         <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_language_title()}</h3>
         <LanguageSwitcher />
       </section>
+      {props.modeId === 'parking' ? (
+        <>
+          <PanelSectionDivider />
+          <section className="pt-4">
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900">
+              {m.parking_preset_set_title()}
+            </h3>
+            <ParkingPresetSetSwitcher />
+          </section>
+        </>
+      ) : null}
     </div>
   )
 }

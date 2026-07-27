@@ -11,5 +11,10 @@ export {
   changesStoreToOsmChangeXml,
 } from './changeset-upload'
 export { buildChangesetTags, type BuildChangesetTagsOptions } from './changeset-tags'
+export {
+  createImageryUsageSession,
+  formatImageryUsedTag,
+  type ImageryUsageSession,
+} from './imagery-usage'
 export { type ChangedIdMap, type ChangesStore, createEmptyChangesStore } from './changes-store'
 export { diffWayTags, type TagChange, wayDisplayName } from './way-tags'

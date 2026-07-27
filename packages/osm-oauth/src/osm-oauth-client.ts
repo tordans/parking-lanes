@@ -82,7 +82,7 @@ export interface OsmOAuthClient {
     editorName: string,
     editorVersion: string,
     changesStore: ChangesStore,
-    options?: Pick<BuildChangesetTagsOptions, 'comment'>,
+    options?: Pick<BuildChangesetTagsOptions, 'comment' | 'imageryUsed' | 'commentWikiUrl'>,
   ) => Promise<ChangedIdMap>
 }
 
@@ -185,7 +185,7 @@ export function createOsmOAuthClient(
     editorName: string,
     editorVersion: string,
     changesStore: ChangesStore,
-    options?: Pick<BuildChangesetTagsOptions, 'comment'>,
+    options?: Pick<BuildChangesetTagsOptions, 'comment' | 'imageryUsed' | 'commentWikiUrl'>,
   ): Promise<ChangedIdMap> {
     try {
       ensureOsmApiConfigured(resolveUseDevServer())

@@ -6,9 +6,17 @@ export type {
   SegmentChain,
 } from './domain/types'
 export {
+  DEFAULT_HIGHWAY_INCLUSION_STYLE,
+  isClutterAccessWay,
+  isEditableRoadLikeHighway,
+  isEditableRoadLikeSegment,
   isRoadLikeHighway,
   isRoadLikeSegment,
+  matchesHighwayInclusionStyle,
+  overpassRoadLikeSelector,
   ROAD_LIKE_HIGHWAY_BASE_REGEX,
+  OVERPASS_PUBLIC_ROAD_FILTERS,
+  type HighwayInclusionStyle,
 } from './highway-filter'
 export type { OsmDataAdapter } from './ports/OsmDataAdapter'
 export { createSessionGraphAdapter, osmWayToSegment } from './session-graph-adapter'

@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { getLanesLegendItems } from '../../../i18n/legend-labels'
+import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { lanesLegendItems } from '../map/lanes-legend-colors'
 
@@ -16,6 +17,7 @@ export function LegendContent() {
           <span className="text-sm leading-tight text-zinc-800">{item.label}</span>
         </div>
       ))}
+      <LegendBoundariesEntry />
     </div>
   )
 }

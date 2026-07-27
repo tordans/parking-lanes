@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { getParkingLegendText } from '../../../i18n/legend-labels'
+import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { legend } from '../legend'
 
@@ -12,6 +13,7 @@ export function LegendContent() {
           <span className="text-sm leading-tight">{getParkingLegendText(x.condition)}</span>
         </div>
       ))}
+      <LegendBoundariesEntry />
     </div>
   )
 }

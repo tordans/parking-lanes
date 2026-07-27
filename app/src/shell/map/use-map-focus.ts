@@ -1,6 +1,7 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import type { StreetSpaceModeId } from '../../modes/types'
+import { focusSearchIsEmpty } from './map-focus-state'
 import {
   type BicycleFocus,
   type MapFocus,
@@ -81,6 +82,15 @@ function nextFocusState(
     else next.surface = surfaceValue
   }
 
-  if (!next.parking && !next.width && !next.bicycle && !next.surface) return undefined
+  if (
+    !next.parking &&
+    !next.width &&
+    !next.bicycle &&
+    !next.surface &&
+    next.boundaries === undefined
+  ) {
+    return undefined
+  }
+  if (focusSearchIsEmpty(next)) return undefined
   return next
 }

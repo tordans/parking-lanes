@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { getSurfaceLegendItems } from '../../../i18n/legend-labels'
+import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { surfaceLegendItems } from '../map/surface-colors'
 
@@ -40,6 +41,7 @@ export function LegendContent() {
           </div>
         )
       })}
+      <LegendBoundariesEntry />
     </div>
   )
 }

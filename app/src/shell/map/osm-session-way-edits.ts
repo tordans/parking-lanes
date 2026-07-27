@@ -2,6 +2,7 @@ import type { OsmNode, OsmWay } from '@osm-editor-kit/osm-data'
 import type { QueryClient } from '@tanstack/react-query'
 import { addChangedEntity, getPendingWay } from '../../utils/changes-store'
 import type { ChangeSource } from '../../utils/changeset-message'
+import { recordEditingImagery } from './imagery-usage-session'
 import { mergeWayEdit } from './merge-way-edit'
 import {
   currentOsmSessionParams,
@@ -137,6 +138,8 @@ export function commitOsmWayChange(
   const pendingWay = getPendingWay(incoming.id)
   const base = pendingWay ?? sessionWay ?? incoming
   const merged = mergeWayEdit(base, incoming, source)
+
+  recordEditingImagery()
 
   updateOsmWayInSession(queryClient, merged)
 

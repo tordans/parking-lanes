@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { getWidthLegendAfter, getWidthLegendBefore } from '../../../i18n/legend-labels'
+import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
 import { HIGHWAY_WIDTH_NO_ONEWAY, HIGHWAY_WIDTH_ONEWAY } from '../domain/highway-width-fallbacks'
 import { widthLegendItems } from '../map/width-colors'
@@ -85,6 +86,7 @@ export function LegendContent() {
       <MapCollapsiblePanel title={m.legend_width_rules_title()} defaultOpen={false}>
         <DefaultWidthRulesContent />
       </MapCollapsiblePanel>
+      <LegendBoundariesEntry />
     </div>
   )
 }

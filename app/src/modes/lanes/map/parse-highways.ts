@@ -1,5 +1,8 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
-import { isRoadLikeHighway } from '@osm-editor-kit/osm-way-chain'
+import {
+  isEditableRoadLikeHighway,
+  type HighwayInclusionStyle,
+} from '@osm-editor-kit/osm-way-chain'
 import type { Feature, LineString } from 'geojson'
 import type { MapBounds } from '../../parking/map/types'
 import {
@@ -51,12 +54,16 @@ function wayCoordinates(
     .filter((coord): coord is [number, number] => coord != null)
 }
 
-export function parseLanesFeaturesFromData(data: ParsedOsmData, bounds: MapBounds): LanesFeature[] {
+export function parseLanesFeaturesFromData(
+  data: ParsedOsmData,
+  bounds: MapBounds,
+  inclusionStyle: HighwayInclusionStyle,
+): LanesFeature[] {
   const features: LanesFeature[] = []
 
   for (const way of Object.values(data.ways)) {
     const highway = way.tags?.highway
-    if (!highway || !isRoadLikeHighway(way.tags)) continue
+    if (!highway || !isEditableRoadLikeHighway(way.tags, inclusionStyle)) continue
     if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
 
     const coordinates = wayCoordinates(way, data.nodeCoords)

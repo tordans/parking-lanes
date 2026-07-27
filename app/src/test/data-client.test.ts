@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
+import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '@osm-editor-kit/osm-way-chain'
 import type { MapBounds } from '../modes/parking/map/types'
 
 const viewport: MapBounds = {
@@ -70,6 +71,7 @@ describe('deriveParkingMapFeatures', () => {
       undefined,
       18,
       new Date('2024-01-01'),
+      DEFAULT_HIGHWAY_INCLUSION_STYLE,
     )
 
     expect(result.lanes.features).toHaveLength(0)

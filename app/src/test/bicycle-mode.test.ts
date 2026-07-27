@@ -102,12 +102,16 @@ describe('parseBikelanes incomplete flag', () => {
       },
     }
 
-    const features = parseBicycleFeaturesFromData(graph, {
-      south: 52.4,
-      north: 52.6,
-      west: 13.3,
-      east: 13.5,
-    })
+    const features = parseBicycleFeaturesFromData(
+      graph,
+      {
+        south: 52.4,
+        north: 52.6,
+        west: 13.3,
+        east: 13.5,
+      },
+      'public',
+    )
     const highway = features.find((feature) => feature.properties.kind === 'highway')
     expect(highway?.properties.incomplete).toBe(true)
     expect(highway?.properties.category).toBe('needsClarification')

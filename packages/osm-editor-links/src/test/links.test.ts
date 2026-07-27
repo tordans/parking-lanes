@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { idEditorUrl, osmDevUrl, osmProdApiUrl, osmProdUrl } from '../index'
+import {
+  idEditorUrl,
+  mapillaryRecentPanosUrl,
+  mapillaryUrl,
+  osmDevUrl,
+  osmProdApiUrl,
+  osmProdUrl,
+} from '../index'
 
 describe('editor links', () => {
   test('exports OSM website and API URLs', () => {
@@ -19,5 +26,24 @@ describe('editor links', () => {
     expect(url).toContain('#')
     expect(url).toContain('id=w42')
     expect(url).toContain('map=18%2F52.5%2F13.4')
+  })
+
+  test('mapillaryUrl builds unfiltered viewport link', () => {
+    const url = mapillaryUrl({ lat: 52.52, lng: 13.405 })
+
+    expect(url).toBe(
+      'https://www.mapillary.com/app/?lat=52.52&lng=13.405&z=17&focus=map&trafficSign=all',
+    )
+  })
+
+  test('mapillaryRecentPanosUrl adds 3-year date filter and panos=true', () => {
+    const url = mapillaryRecentPanosUrl(
+      { lat: 52.52, lng: 13.405 },
+      { referenceDate: new Date('2026-07-27T12:00:00.000Z') },
+    )
+
+    expect(url).toBe(
+      'https://www.mapillary.com/app/?lat=52.52&lng=13.405&z=17&focus=map&trafficSign=all&dateFrom=2023-07-27&dateTo=2026-07-27&panos=true',
+    )
   })
 })

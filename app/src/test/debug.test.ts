@@ -62,6 +62,11 @@ describe('mapSearchSchema', () => {
     })
   })
 
+  test('serializeMapSearch omits default highway inclusion style', () => {
+    expect(serializeMapSearch({ ways: 'public' })).toEqual({})
+    expect(serializeMapSearch({ ways: 'inclusive' })).toEqual({ ways: 'inclusive' })
+  })
+
   test('parses focus search param', () => {
     expect(
       mapSearchSchema.parse({

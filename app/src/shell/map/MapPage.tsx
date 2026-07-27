@@ -16,6 +16,7 @@ import { ControlPanel } from '../controls/ControlPanel'
 import { MapMobileToolbar } from '../controls/MapMobileToolbar'
 import { ModeSwitcher } from '../controls/ModeSwitcher'
 import { SaveChangesControl } from '../controls/SaveChangesControl'
+import { AtlasBoundariesSource } from './AtlasBoundariesSource'
 import { CoverageDebugMapLayers, CoverageDebugTooltip } from './CoverageDebugOverlay'
 import {
   FeatureSelectionProvider,
@@ -31,6 +32,7 @@ import { MapResizeHandler } from './MapResizeHandler'
 import { useMapCoverageLifecycle } from './use-map-coverage-lifecycle'
 import { useMapPageInteractions } from './use-map-page-interactions'
 import { useSelectionBacklights } from './use-selection-backlights'
+import { useSyncBackgroundImageryContext } from './use-sync-background-imagery'
 import { ViewMinZoomOverlay } from './ViewMinZoomOverlay'
 import { useWayCutActions } from './way-cut-store'
 import { WayCutLayers } from './WayCutLayers'
@@ -121,6 +123,7 @@ function MapPageContent({
 
   useVisibleViewportHeightVar(true)
   useSelectionBacklights()
+  useSyncBackgroundImageryContext()
 
   return (
     <AppShell
@@ -161,6 +164,7 @@ function MapPageContent({
                 <AttributionControl compact position="bottom-left" />
                 {/* Above default style, below mode/debug layers (react-map-gl child order). */}
                 <MapBackgroundLayerSource />
+                <AtlasBoundariesSource />
                 <CoverageDebugMapLayers hoveredGroupId={coverageDebug.hoveredGroupId} />
                 <ModeMapLayers />
                 <WayCutLayers />

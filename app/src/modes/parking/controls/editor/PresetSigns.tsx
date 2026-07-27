@@ -5,7 +5,8 @@ import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import { getPresetTitle } from '../../../../i18n/preset-labels'
 import { floatingChromeElevationClassName } from '../../../../shell/map/mobileMapChrome.const'
 import { type OsmKeyValue } from '../../../../utils/types/preset'
-import { presets } from './presets'
+import { useParkingPresetSet } from '../../use-parking-preset-set'
+import { getParkingPresets } from './presets'
 
 const presetButtonClassName =
   'flex h-8 min-w-8 shrink-0 cursor-pointer items-center justify-center bg-white px-1 text-zinc-700 hover:bg-zinc-100 active:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50'
@@ -17,6 +18,8 @@ export function PresetSigns(props: {
   onChange: (key: string, value: string) => void
 }) {
   const readOnly = props.readOnly ?? false
+  const { presetSet } = useParkingPresetSet()
+  const presets = getParkingPresets(presetSet)
 
   return (
     <section aria-label={m.editor_sign_presets_aria()} className="mb-2">

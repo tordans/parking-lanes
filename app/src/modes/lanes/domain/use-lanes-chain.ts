@@ -2,13 +2,14 @@ import {
   buildChain,
   createSessionGraphAdapter,
   extendChainAtJunction,
-  isRoadLikeSegment,
+  isEditableRoadLikeSegment,
   recenterChain,
   type JunctionChoice,
   type Segment,
   type SegmentChain,
 } from '@osm-editor-kit/osm-way-chain'
 import { useCallback, useEffect } from 'react'
+import { useHighwayInclusionStyle } from '../../../shell/map/use-highway-inclusion-style'
 import { useLanesChain, useLanesMapActions } from '../map/lanes-map-store'
 import { useLanesOsmQuery } from '../map/lanes-osm-query'
 
@@ -17,6 +18,7 @@ const CHAIN_MAX_PER_SIDE = 3
 export function useLanesChainBuilder(centerWayId: number | undefined) {
   const { data: graph } = useLanesOsmQuery({ select: (data) => data.graph })
   const { setChainResult } = useLanesMapActions()
+  const inclusionStyle = useHighwayInclusionStyle()
 
   useEffect(
     function rebuildChainOnCenterChange() {
@@ -27,11 +29,13 @@ export function useLanesChainBuilder(centerWayId: number | undefined) {
 
       let cancelled = false
       const adapter = createSessionGraphAdapter(graph)
+      const candidateFilter = (segment: Segment) =>
+        isEditableRoadLikeSegment(segment, inclusionStyle)
 
       void buildChain(adapter, {
         centerWayId,
         maxPerSide: CHAIN_MAX_PER_SIDE,
-        candidateFilter: isRoadLikeSegment,
+        candidateFilter,
       }).then((result) => {
         if (!cancelled) setChainResult(result.chain, result.pendingJunctions)
       })
@@ -40,24 +44,26 @@ export function useLanesChainBuilder(centerWayId: number | undefined) {
         cancelled = true
       }
     },
-    [centerWayId, graph, setChainResult],
+    [centerWayId, graph, inclusionStyle, setChainResult],
   )
 
   const extendAtJunction = useCallback(
     async (choice: JunctionChoice, selectedWayId: number, currentChain: SegmentChain) => {
       if (!graph) return
       const adapter = createSessionGraphAdapter(graph)
+      const candidateFilter = (segment: Segment) =>
+        isEditableRoadLikeSegment(segment, inclusionStyle)
       const result = await extendChainAtJunction(
         adapter,
         currentChain,
         choice,
         selectedWayId,
         CHAIN_MAX_PER_SIDE,
-        isRoadLikeSegment,
+        candidateFilter,
       )
       setChainResult(result.chain, result.pendingJunctions)
     },
-    [graph, setChainResult],
+    [graph, inclusionStyle, setChainResult],
   )
 
   const recenterOnWay = useCallback(

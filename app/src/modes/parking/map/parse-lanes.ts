@@ -1,4 +1,10 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
+import {
+  isRoadLikeHighway,
+  matchesHighwayInclusionStyle,
+  ROAD_LIKE_HIGHWAY_BASE_REGEX,
+  type HighwayInclusionStyle,
+} from '@osm-editor-kit/osm-way-chain'
 import type { ParkingConditions } from '../../../utils/types/conditions'
 import type { Side, StyleMapInterface } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
@@ -8,8 +14,7 @@ import { laneStyleByZoom } from '../lane-styles'
 import { parkingSideColors } from '../side-colors'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
-const highwayRegex =
-  /^motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street/
+const highwayRegex = ROAD_LIKE_HIGHWAY_BASE_REGEX
 const majorHighwayRegex = /^motorway|trunk|primary|secondary|tertiary|unclassified|residential/
 
 function wayIsMajor(tags: OsmWay['tags']): boolean | undefined {
@@ -67,7 +72,10 @@ export function parseParkingLaneFeatures(
   way: OsmWay,
   nodeCoords: Record<number, number[]>,
   zoom: number,
+  inclusionStyle: HighwayInclusionStyle,
 ): ParkingFeature[] {
+  if (!isRoadLikeHighway(way.tags)) return []
+  if (!matchesHighwayInclusionStyle(way.tags, inclusionStyle)) return []
   const isMajor = wayIsMajor(way.tags)
   if (typeof isMajor !== 'boolean') return []
 
@@ -225,8 +233,9 @@ export function applyChangedWayToFeatures(
   nodeCoords: Record<number, number[]>,
   datetime: Date,
   zoom: number,
+  inclusionStyle: HighwayInclusionStyle,
 ): { features: ParkingFeature[]; added: ParkingFeature[] } {
-  const parsed = parseParkingLaneFeatures(newOsm, nodeCoords, zoom)
+  const parsed = parseParkingLaneFeatures(newOsm, nodeCoords, zoom, inclusionStyle)
   const withoutOld = features.filter(
     (f) => f.properties.osmId !== newOsm.id || f.properties.kind !== 'lane',
   )
