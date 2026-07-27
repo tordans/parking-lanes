@@ -1,11 +1,10 @@
-import {
-  focusCaseColor,
-  focusCaseOpacity,
-  lineOffsetFromMeters,
-  lineWidthFromMeters,
-} from '@osm-editor-kit/osm-maplibre'
+import { focusCaseColor, focusCaseOpacity, lineWidthFromMeters } from '@osm-editor-kit/osm-maplibre'
 import type { FilterSpecification } from 'maplibre-gl'
-import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
+import {
+  ROUND_LINE_LAYOUT,
+  SIDEPATH_LINE_OFFSET,
+  transparentLineHitPaint,
+} from '../../../shell/map/map-hit-paint'
 import {
   MISSING_SMOOTHNESS_BASE_COLOR,
   MISSING_SMOOTHNESS_OVERLAY_COLOR,
@@ -19,6 +18,8 @@ const dottedActiveOpacity = 0.9
 const dottedMutedOpacity = 0.35
 
 export { ROUND_LINE_LAYOUT as surfaceLineLayout }
+/** Sidepaths use the same round layout; offset belongs in paint. */
+export { ROUND_LINE_LAYOUT as sidepathLineLayout }
 
 const surfaceColor = [
   'case',
@@ -43,7 +44,15 @@ const surfaceColor = [
   ],
 ] as const
 
-export function buildSurfaceBandPaint(focus: string, hasSelection = false) {
+function withOptionalSidepathOffset(
+  paint: Record<string, unknown>,
+  forSidepath: boolean,
+): Record<string, unknown> {
+  if (!forSidepath) return paint
+  return { ...paint, 'line-offset': SIDEPATH_LINE_OFFSET }
+}
+
+export function buildSurfaceBandPaint(focus: string, hasSelection = false, forSidepath = false) {
   const opacity = hasSelection ? bandMutedOpacity : bandActiveOpacity
   const basePaint = {
     'line-color': surfaceColor,
@@ -51,24 +60,30 @@ export function buildSurfaceBandPaint(focus: string, hasSelection = false) {
     'line-width': lineWidthFromMeters('roadWidthM'),
   } as Record<string, unknown>
 
-  if (focus === 'all') return basePaint
+  if (focus === 'all') return withOptionalSidepathOffset(basePaint, forSidepath)
 
   const matchExpr = ['==', ['get', 'infra'], focus]
 
-  return {
-    'line-color': focusCaseColor(matchExpr, surfaceColor),
-    'line-opacity': focusCaseOpacity(matchExpr, opacity, bandMutedOpacity),
-    'line-width': lineWidthFromMeters('roadWidthM'),
-  } as Record<string, unknown>
+  return withOptionalSidepathOffset(
+    {
+      'line-color': focusCaseColor(matchExpr, surfaceColor),
+      'line-opacity': focusCaseOpacity(matchExpr, opacity, bandMutedOpacity),
+      'line-width': lineWidthFromMeters('roadWidthM'),
+    } as Record<string, unknown>,
+    forSidepath,
+  )
 }
 
-export function buildSurfaceDottedOverlayPaint(hasSelection = false) {
-  return {
-    'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
-    'line-opacity': hasSelection ? dottedMutedOpacity : dottedActiveOpacity,
-    'line-width': lineWidthFromMeters('roadWidthM'),
-    'line-dasharray': [0.5, 1.5],
-  } as Record<string, unknown>
+export function buildSurfaceDottedOverlayPaint(hasSelection = false, forSidepath = false) {
+  return withOptionalSidepathOffset(
+    {
+      'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
+      'line-opacity': hasSelection ? dottedMutedOpacity : dottedActiveOpacity,
+      'line-width': lineWidthFromMeters('roadWidthM'),
+      'line-dasharray': [0.5, 1.5],
+    } as Record<string, unknown>,
+    forSidepath,
+  )
 }
 
 export const surfaceDottedOverlayFilter: FilterSpecification = [
@@ -77,19 +92,15 @@ export const surfaceDottedOverlayFilter: FilterSpecification = [
   ['!=', ['get', 'missingSurface'], true],
 ]
 
-export const sidepathLineLayout = {
-  ...ROUND_LINE_LAYOUT,
-  'line-offset': [
-    '*',
-    ['case', ['==', ['get', 'side'], 'left'], 1, -1],
-    lineOffsetFromMeters('parentRoadWidthM', 0.5),
-  ],
-} as const
-
 export const surfaceHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
 
-export const sidepathHitAreaPaint = transparentLineHitPaint(
-  lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
-)
+export const sidepathHitAreaPaint = {
+  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM', { extraMeters: 4 })),
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
+
+export const sidepathCenterlinePaint = {
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>

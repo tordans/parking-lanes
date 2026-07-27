@@ -8,6 +8,8 @@ type Props = {
   layerId: string
   collection: FeatureCollection
   layout?: Record<string, unknown>
+  /** Merged onto {@link selectedWayCenterlinePaint} (e.g. sidepath `line-offset`). */
+  paint?: Record<string, unknown>
 }
 
 /** Thin black centerline shown for the selected way across map modes. */
@@ -16,12 +18,18 @@ export function SelectedWayCenterlineSource({
   layerId,
   collection,
   layout = ROUND_LINE_LAYOUT,
+  paint,
 }: Props) {
   if (!collection.features.length) return null
 
   return (
     <Source id={sourceId} type="geojson" data={collection}>
-      <Layer id={layerId} type="line" paint={selectedWayCenterlinePaint} layout={layout} />
+      <Layer
+        id={layerId}
+        type="line"
+        paint={{ ...selectedWayCenterlinePaint, ...paint }}
+        layout={layout}
+      />
     </Source>
   )
 }

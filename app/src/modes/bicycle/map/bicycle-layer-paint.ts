@@ -1,15 +1,16 @@
+import { focusCaseColor, focusCaseOpacity, lineWidthFromMeters } from '@osm-editor-kit/osm-maplibre'
 import {
-  focusCaseColor,
-  focusCaseOpacity,
-  lineOffsetFromMeters,
-  lineWidthFromMeters,
-} from '@osm-editor-kit/osm-maplibre'
-import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
+  ROUND_LINE_LAYOUT,
+  SIDEPATH_LINE_OFFSET,
+  transparentLineHitPaint,
+} from '../../../shell/map/map-hit-paint'
 import { BICYCLE_PAINT_COLORS } from './bicycle-colors'
 
 const bandActiveOpacity = 0.65
 
 export { ROUND_LINE_LAYOUT as bicycleLineLayout }
+/** Sidepaths use the same round layout; offset belongs in paint. */
+export { ROUND_LINE_LAYOUT as sidepathLineLayout }
 
 const paintStateColor = [
   'match',
@@ -45,24 +46,21 @@ export const sidepathBandPaint = {
   'line-color': paintStateColor,
   'line-opacity': bandActiveOpacity,
   'line-width': lineWidthFromMeters('roadWidthM'),
+  'line-offset': SIDEPATH_LINE_OFFSET,
 } as Record<string, unknown>
-
-export const sidepathLineLayout = {
-  ...ROUND_LINE_LAYOUT,
-  'line-offset': [
-    '*',
-    ['case', ['==', ['get', 'side'], 'left'], 1, -1],
-    lineOffsetFromMeters('parentRoadWidthM', 0.5),
-  ],
-} as const
 
 export const bicycleHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
 
-export const sidepathHitAreaPaint = transparentLineHitPaint(
-  lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
-)
+export const sidepathHitAreaPaint = {
+  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM', { extraMeters: 4 })),
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
+
+export const sidepathCenterlinePaint = {
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
 
 export const centerlinePresencePaint = {
   'line-color': BICYCLE_PAINT_COLORS.centerlinePresence,

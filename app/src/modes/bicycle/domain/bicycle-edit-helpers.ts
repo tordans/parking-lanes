@@ -56,6 +56,9 @@ export function defaultTargetCategory(
   incomplete: boolean,
   gapUnlocks: string[],
 ): string | undefined {
+  // App sentinel when processBikelanes has no result for this side — not a plan target.
+  if (currentCategory === 'unknown') return undefined
+
   if (!incomplete && !isIncompleteCategoryId(currentCategory)) {
     return currentCategory
   }

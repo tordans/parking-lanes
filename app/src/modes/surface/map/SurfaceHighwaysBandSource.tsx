@@ -5,6 +5,7 @@ import type { SurfaceFeatureCollection } from './parse-highways'
 import {
   buildSurfaceBandPaint,
   buildSurfaceDottedOverlayPaint,
+  sidepathCenterlinePaint,
   sidepathHitAreaPaint,
   sidepathLineLayout,
   surfaceDottedOverlayFilter,
@@ -61,10 +62,11 @@ export function SurfaceHighwaysBandSource({
 }) {
   const hasSelection = selectedRef != null
   const bandPaint = buildSurfaceBandPaint(focus, hasSelection)
+  const sidepathBandPaint = buildSurfaceBandPaint(focus, hasSelection, true)
   const dottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection)
+  const sidepathDottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection, true)
   const { highways, sidepaths, selected } = splitFeatures(features, selectedRef)
-  const selectedLayout =
-    selected.features[0]?.properties.kind === 'sidepath' ? sidepathLineLayout : surfaceLineLayout
+  const selectedIsSidepath = selected.features[0]?.properties.kind === 'sidepath'
 
   return (
     <>
@@ -97,13 +99,13 @@ export function SurfaceHighwaysBandSource({
           <Layer
             id="surface-sidepaths-band-layer"
             type="line"
-            paint={bandPaint}
+            paint={sidepathBandPaint}
             layout={sidepathLineLayout}
           />
           <Layer
             id="surface-sidepaths-dotted-layer"
             type="line"
-            paint={dottedOverlayPaint}
+            paint={sidepathDottedOverlayPaint}
             layout={sidepathLineLayout}
             filter={surfaceDottedOverlayFilter}
           />
@@ -120,7 +122,8 @@ export function SurfaceHighwaysBandSource({
         sourceId="surface-selected-centerline-source"
         layerId="surface-selected-centerline-layer"
         collection={selected}
-        layout={selectedLayout}
+        layout={surfaceLineLayout}
+        paint={selectedIsSidepath ? sidepathCenterlinePaint : undefined}
       />
     </>
   )

@@ -3,7 +3,7 @@ import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCente
 import { useMapFocus } from '../../../shell/map/use-map-focus'
 import type { HandleGeometry } from '../domain/handle-geometry'
 import type { WidthFeatureCollection } from './parse-highways'
-import { widthLineLayout, sidepathLineLayout } from './width-layer-paint'
+import { sidepathCenterlinePaint, widthLineLayout } from './width-layer-paint'
 import { WidthHandlesLayer } from './WidthHandlesLayer'
 import { WidthHighwaysBandSource } from './WidthHighwaysBandSource'
 
@@ -16,10 +16,7 @@ type Props = {
 
 export function WidthLayers({ features, selectedRef, selectedCenterline, handles }: Props) {
   const { focus } = useMapFocus()
-  const selectedLayout =
-    selectedCenterline.features[0]?.properties.kind === 'sidepath'
-      ? sidepathLineLayout
-      : widthLineLayout
+  const selectedIsSidepath = selectedCenterline.features[0]?.properties.kind === 'sidepath'
 
   return (
     <>
@@ -28,7 +25,8 @@ export function WidthLayers({ features, selectedRef, selectedCenterline, handles
         sourceId="width-selected-centerline-source"
         layerId="width-selected-centerline-layer"
         collection={selectedCenterline}
-        layout={selectedLayout}
+        layout={widthLineLayout}
+        paint={selectedIsSidepath ? sidepathCenterlinePaint : undefined}
       />
       <WidthHandlesLayer handles={handles} />
     </>

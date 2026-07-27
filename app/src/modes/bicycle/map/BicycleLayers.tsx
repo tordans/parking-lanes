@@ -1,7 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import { useMapFocus } from '../../../shell/map/use-map-focus'
-import { bicycleLineLayout, sidepathLineLayout } from './bicycle-layer-paint'
+import { bicycleLineLayout, sidepathCenterlinePaint } from './bicycle-layer-paint'
 import { BicycleBandSource } from './BicycleBandSource'
 import type { BicycleFeatureCollection } from './parse-bikelanes'
 
@@ -13,10 +13,7 @@ type Props = {
 
 export function BicycleLayers({ features, selectedRef, selectedCenterline }: Props) {
   const { focus } = useMapFocus()
-  const selectedLayout =
-    selectedCenterline.features[0]?.properties.kind === 'sidepath'
-      ? sidepathLineLayout
-      : bicycleLineLayout
+  const selectedIsSidepath = selectedCenterline.features[0]?.properties.kind === 'sidepath'
 
   return (
     <>
@@ -25,7 +22,8 @@ export function BicycleLayers({ features, selectedRef, selectedCenterline }: Pro
         sourceId="bicycle-selected-centerline-source"
         layerId="bicycle-selected-centerline-layer"
         collection={selectedCenterline}
-        layout={selectedLayout}
+        layout={bicycleLineLayout}
+        paint={selectedIsSidepath ? sidepathCenterlinePaint : undefined}
       />
     </>
   )

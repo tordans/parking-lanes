@@ -1,17 +1,22 @@
 import {
   focusCaseColor,
   focusCaseOpacity,
-  lineOffsetFromMeters,
   lineWidthFromMeters,
   MAP_FOCUS_MUTED_COLOR,
   MAP_FOCUS_MUTED_OPACITY,
 } from '@osm-editor-kit/osm-maplibre'
-import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
+import {
+  ROUND_LINE_LAYOUT,
+  SIDEPATH_LINE_OFFSET,
+  transparentLineHitPaint,
+} from '../../../shell/map/map-hit-paint'
 import { WIDTH_KIND_COLORS, WIDTH_SELECTION_COLORS } from './width-colors'
 
 const bandActiveOpacity = 0.55
 
 export { ROUND_LINE_LAYOUT as widthLineLayout }
+/** Sidepaths use the same round layout; offset belongs in paint. */
+export { ROUND_LINE_LAYOUT as sidepathLineLayout }
 
 const widthKindColor = [
   'match',
@@ -57,6 +62,7 @@ export function buildSidepathBandPaint(muted = false) {
       'line-color': widthKindColor,
       'line-opacity': bandActiveOpacity,
       'line-width': lineWidthFromMeters('roadWidthM'),
+      'line-offset': SIDEPATH_LINE_OFFSET,
     } as Record<string, unknown>
   }
 
@@ -64,25 +70,22 @@ export function buildSidepathBandPaint(muted = false) {
     'line-color': MAP_FOCUS_MUTED_COLOR,
     'line-opacity': MAP_FOCUS_MUTED_OPACITY,
     'line-width': lineWidthFromMeters('roadWidthM'),
+    'line-offset': SIDEPATH_LINE_OFFSET,
   } as Record<string, unknown>
 }
-
-export const sidepathLineLayout = {
-  ...ROUND_LINE_LAYOUT,
-  'line-offset': [
-    '*',
-    ['case', ['==', ['get', 'side'], 'left'], 1, -1],
-    lineOffsetFromMeters('parentRoadWidthM', 0.5),
-  ],
-} as const
 
 export const widthHitAreaPaint = transparentLineHitPaint(
   lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
 )
 
-export const sidepathHitAreaPaint = transparentLineHitPaint(
-  lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
-)
+export const sidepathHitAreaPaint = {
+  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM', { extraMeters: 4 })),
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
+
+export const sidepathCenterlinePaint = {
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
 
 export const handleFillPaint = {
   'fill-color': WIDTH_SELECTION_COLORS.accent,

@@ -1,4 +1,16 @@
+import { lineOffsetFromMeters } from '@osm-editor-kit/osm-maplibre'
+
 export const ROUND_LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } as const
+
+/**
+ * MapLibre `line-offset` is a **paint** property (not layout). Use on sidepath layers so
+ * left/right bands sit beside the carriageway.
+ */
+export const SIDEPATH_LINE_OFFSET = [
+  '*',
+  ['case', ['==', ['get', 'side'], 'left'], 1, -1],
+  lineOffsetFromMeters('parentRoadWidthM', 0.5),
+] as const
 
 /** Zoom-interpolated transparent circle used for forgiving point hit targets. */
 export const invisibleHitAreaCirclePaint = {

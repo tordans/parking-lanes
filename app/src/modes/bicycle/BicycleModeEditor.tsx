@@ -88,11 +88,14 @@ function BicycleModeEditor(props: {
     undefined
 
   const targetOptions = listTargetCategories({
-    fromCategory: currentCategory,
+    fromCategory: currentCategory === 'unknown' ? undefined : currentCategory,
     fromIncomplete: incomplete || currentCategory === 'needsClarification',
   })
 
-  const plan = resolvedTarget ? planForSide(selectedWay.tags, resolvedTarget, bikelaneSide) : null
+  const plan =
+    resolvedTarget && resolvedTarget !== 'unknown'
+      ? planForSide(selectedWay.tags, resolvedTarget, bikelaneSide)
+      : null
 
   const sidepathTags = isSidepathRef(selectedOsmRef)
     ? sidepathTagsForRef(selectedWay, selectedOsmRef)

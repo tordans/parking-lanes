@@ -9,6 +9,7 @@ import {
 import {
   applyCategoryPlan,
   bikelaneSideFromRef,
+  defaultTargetCategory,
 } from '../modes/bicycle/domain/bicycle-edit-helpers'
 import { parseBicycleFeaturesFromData } from '../modes/bicycle/map/parse-bikelanes'
 import { mergeWayEdit } from '../shell/map/merge-way-edit'
@@ -135,5 +136,10 @@ describe('plan apply nests cycleway:right:lane', () => {
       'right',
     )
     expect(bikelaneSideFromRef({ type: 'way', id: 1 })).toBe('self')
+  })
+
+  test('defaultTargetCategory does not treat unknown as a plan target', () => {
+    expect(defaultTargetCategory('unknown', false, [])).toBeUndefined()
+    expect(defaultTargetCategory('unknown', true, [])).toBeUndefined()
   })
 })
