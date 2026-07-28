@@ -1,6 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl'
-import openFreeMapPositronStyle from './styles/openfreemap-positron.json'
 import { patchOpenFreeMapStyle } from './patch-openfreemap-style'
+import openFreeMapPositronStyle from './styles/openfreemap-positron.json'
 
 /** Upstream CDN URL — used to regenerate the checked-in patched style. */
 export const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron'
@@ -13,8 +13,9 @@ export const OPENFREEMAP_POSITRON_IMAGERY_USED = 'OpenFreeMap Positron'
  *
  * TEMPORARY — delete `styles/openfreemap-positron.json`, the fetch script, and
  * `patch-openfreemap-style.ts` once https://github.com/hyperknot/openfreemap/issues/107
- * is live on the CDN (upstream PR: https://github.com/hyperknot/openfreemap-styles/pull/18).
- * Then point the map at `OPENFREEMAP_POSITRON_STYLE_URL` again.
+ * is live on the CDN with null-safe filters (upstream PR only fixed `boundary_3`:
+ * https://github.com/hyperknot/openfreemap-styles/pull/18). Then point the map at
+ * `OPENFREEMAP_POSITRON_STYLE_URL` again.
  */
 export const OPENFREEMAP_POSITRON_STYLE = openFreeMapPositronStyle as StyleSpecification
 

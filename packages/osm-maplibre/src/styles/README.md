@@ -2,7 +2,9 @@
 
 TEMPORARY vendor of https://tiles.openfreemap.org/styles/positron with local patches applied by `../patch-openfreemap-style.ts`.
 
-**Remove this directory** (and the fetch script / predev hook / patch module) once the CDN serves the upstream fix:
+Patches null-safe `coalesce` into numeric filter compares (`admin_level`, `ref_length`, `rank`, …). Upstream PR only covered `boundary_3`; the live CDN still ships other unsafe compares that spam the console.
+
+**Remove this directory** (and the fetch script / predev hook / patch module) once the CDN serves safe filters:
 
 - https://github.com/hyperknot/openfreemap/issues/107
 - https://github.com/hyperknot/openfreemap-styles/pull/18

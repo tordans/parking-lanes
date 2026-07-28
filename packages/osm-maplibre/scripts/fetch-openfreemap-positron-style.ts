@@ -47,9 +47,7 @@ async function main() {
   console.log(`Downloading ${OPENFREEMAP_POSITRON_STYLE_URL}`)
   const response = await fetch(OPENFREEMAP_POSITRON_STYLE_URL)
   if (!response.ok) {
-    throw new Error(
-      `OpenFreeMap style download failed: ${response.status} ${response.statusText}`,
-    )
+    throw new Error(`OpenFreeMap style download failed: ${response.status} ${response.statusText}`)
   }
 
   const upstream = (await response.json()) as StyleSpecification
