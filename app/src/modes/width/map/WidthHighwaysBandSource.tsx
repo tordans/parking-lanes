@@ -12,21 +12,6 @@ import {
   widthLineLayout,
 } from './width-layer-paint'
 
-function matchesSelection(
-  properties: WidthFeatureCollection['features'][number]['properties'],
-  selectedRef: OsmFeatureRef | null,
-) {
-  if (!selectedRef || selectedRef.type !== 'way' || selectedRef.id !== properties.osmId) {
-    return false
-  }
-
-  if (properties.kind === 'sidepath') {
-    return selectedRef.prefix === properties.prefix && selectedRef.side === properties.side
-  }
-
-  return selectedRef.prefix == null && selectedRef.side == null
-}
-
 /** True when the selection is a car carriageway (not a sidepath / ped / bike way). */
 function isCarHighwaySelection(
   features: WidthFeatureCollection,
@@ -42,17 +27,16 @@ function isCarHighwaySelection(
   return selected?.properties.kind === 'highway' && selected.properties.infra === 'car'
 }
 
-function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeatureRef | null) {
+function splitFeatures(features: WidthFeatureCollection) {
   const highways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingSidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
-    // Omit the selection so legend width-kind colors do not paint over the black/orange chrome.
-    if (matchesSelection(feature.properties, selectedRef)) continue
-
     const isMissing = feature.properties.widthKind === 'default'
+    // Keep the selected way's width band (and missing dots) under the black centerline /
+    // orange handles — omitting it made high-zoom selection look like empty map data.
 
     if (feature.properties.kind === 'sidepath') {
       sidepaths.features.push(feature)
@@ -79,10 +63,7 @@ export function WidthHighwaysBandSource({
   const dimNonCar = isCarHighwaySelection(features, selectedRef)
   const bandPaint = buildBandPaint(focus, dimNonCar)
   const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
-  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(
-    features,
-    selectedRef,
-  )
+  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(features)
 
   return (
     <>
