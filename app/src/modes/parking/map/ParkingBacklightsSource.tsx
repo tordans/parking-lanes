@@ -5,9 +5,12 @@ import type { ParkingFeatureCollection } from './types'
 export function ParkingBacklightsSource({
   collection,
   focus,
+  beforeId,
 }: {
   collection: ParkingFeatureCollection
   focus: string
+  /** Keep side chrome under the black selection centerline when provided. */
+  beforeId?: string
 }) {
   if (!collection.features.length) return null
 
@@ -18,6 +21,7 @@ export function ParkingBacklightsSource({
         type="line"
         paint={buildBacklightPaint(focus)}
         layout={parkingLineLayout}
+        beforeId={beforeId}
       />
     </Source>
   )

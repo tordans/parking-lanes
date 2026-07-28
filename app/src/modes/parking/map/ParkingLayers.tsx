@@ -22,13 +22,26 @@ export function ParkingLayers({
   const { focus } = useMapFocus()
   const parkingFocus = focus === 'noSurface' ? 'noSurface' : 'all'
 
+  // Tagged ways use selected lane bands (sidebar colors). Missing/untagged ways have no
+  // lane bands — show selection backlights so left/right chrome still appears.
+  const selectedHasLaneBands =
+    selectedWayId != null &&
+    lanes.features.some(
+      (feature) => feature.properties.kind === 'lane' && feature.properties.osmId === selectedWayId,
+    )
+  const showSelectionBacklights = selectedWayId != null && !selectedHasLaneBands
+
   return (
     <>
       <ParkingAreasSource collection={areas} focus={parkingFocus} />
       <ParkingLanesSource collection={lanes} focus={parkingFocus} selectedWayId={selectedWayId} />
       <ParkingPointsSource collection={points} focus={parkingFocus} />
-      {selectedWayId == null ? (
-        <ParkingBacklightsSource collection={backlights} focus={parkingFocus} />
+      {showSelectionBacklights ? (
+        <ParkingBacklightsSource
+          collection={backlights}
+          focus={parkingFocus}
+          beforeId="parking-centerlines-layer"
+        />
       ) : null}
     </>
   )
