@@ -13,6 +13,11 @@ export function setCurrentBackgroundLayerId(layerId: string | null) {
   currentBackgroundLayerId = layerId
 }
 
+/** Active ELI background slug from `?bg=`, or `null` for the default OpenFreeMap basemap. */
+export function getCurrentBackgroundLayerId(): string | null {
+  return currentBackgroundLayerId
+}
+
 export function getImageryUsageValues() {
   return session.values()
 }
