@@ -14,6 +14,7 @@ import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
 import { parkingSideColors } from '../parking/side-colors'
+import { WidthMeasureGuide } from './controls/WidthMeasureGuide'
 import {
   buildHandleGeometry,
   MIN_WIDTH_M,
@@ -184,6 +185,8 @@ export function WidthModePanel() {
           Derived hint: {derived.value} m ({formatSourceLabel(derived.source)})
         </p>
       </ColoredEditorSection>
+
+      <WidthMeasureGuide prefix={sidepath?.prefix} tags={sidepathTags ?? selectedWay.tags} />
 
       <AllTagsBlock tags={selectedWay.tags} />
     </div>
