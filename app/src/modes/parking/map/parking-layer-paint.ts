@@ -64,6 +64,25 @@ export function buildLanePaint(focus: string, hasSelection = false) {
   } as Record<string, unknown>
 }
 
+/** Selected-way left/right bands (sidebar side colors), drawn under the black centerline. */
+export function buildSelectedLanePaint(focus: string) {
+  if (focus !== 'noSurface') {
+    return {
+      'line-color': parkingSideLaneColor,
+      'line-opacity': laneActiveOpacity,
+      'line-width': selectedLaneWeight,
+      'line-offset': selectedLaneOffset,
+    } as Record<string, unknown>
+  }
+
+  return {
+    'line-color': focusCaseColor(missingSurfaceMatch, parkingSideLaneColor),
+    'line-opacity': focusCaseOpacity(missingSurfaceMatch, laneActiveOpacity),
+    'line-width': selectedLaneWeight,
+    'line-offset': selectedLaneOffset,
+  } as Record<string, unknown>
+}
+
 export function buildAreaPaint(focus: string) {
   const color = ['get', 'color']
   if (focus !== 'noSurface') {

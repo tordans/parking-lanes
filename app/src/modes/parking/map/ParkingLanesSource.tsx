@@ -1,19 +1,27 @@
 import { Layer, Source } from 'react-map-gl/maplibre'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
-import { buildLanePaint, parkingHitAreaLinePaint, parkingLineLayout } from './parking-layer-paint'
+import {
+  buildLanePaint,
+  buildSelectedLanePaint,
+  parkingHitAreaLinePaint,
+  parkingLineLayout,
+} from './parking-layer-paint'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
 function splitLaneFeatures(collection: ParkingFeatureCollection, selectedWayId: number | null) {
   const base: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const selected: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of collection.features) {
     if (feature.properties.kind !== 'lane') continue
-    // Omit the selection so lane colors do not paint over the black centerline.
-    if (selectedWayId != null && feature.properties.osmId === selectedWayId) continue
-    base.features.push(feature)
+    if (selectedWayId != null && feature.properties.osmId === selectedWayId) {
+      selected.features.push(feature)
+    } else {
+      base.features.push(feature)
+    }
   }
 
-  return base
+  return { base, selected }
 }
 
 function centerlinesFromLanes(
@@ -56,7 +64,7 @@ export function ParkingLanesSource({
 }) {
   if (!collection.features.length) return null
 
-  const base = splitLaneFeatures(collection, selectedWayId)
+  const { base, selected } = splitLaneFeatures(collection, selectedWayId)
   const centerlines = centerlinesFromLanes(collection, selectedWayId)
   const hasSelection = selectedWayId != null
 
@@ -72,6 +80,23 @@ export function ParkingLanesSource({
           />
           <Layer
             id="parking-lanes-hitarea-layer"
+            type="line"
+            paint={parkingHitAreaLinePaint}
+            layout={parkingLineLayout}
+          />
+        </Source>
+      ) : null}
+
+      {selected.features.length > 0 ? (
+        <Source id="parking-selected-lanes-source" type="geojson" data={selected}>
+          <Layer
+            id="parking-selected-lanes-layer"
+            type="line"
+            paint={buildSelectedLanePaint(focus)}
+            layout={parkingLineLayout}
+          />
+          <Layer
+            id="parking-selected-lanes-hitarea-layer"
             type="line"
             paint={parkingHitAreaLinePaint}
             layout={parkingLineLayout}
