@@ -55,14 +55,28 @@ export function lineWidthFromMeters(
   ]
 }
 
-export function lineOffsetFromMeters(property = 'roadWidthM', fraction = 0.5): readonly unknown[] {
+/**
+ * Line offset in px from a numeric feature property in metres.
+ * Optional `sign` (e.g. left/right ±1) is multiplied inside stop outputs so `zoom`
+ * stays the top-level interpolate input — do not wrap this expression in `*`.
+ */
+export function lineOffsetFromMeters(
+  property = 'roadWidthM',
+  fraction = 0.5,
+  options?: { sign?: unknown },
+): readonly unknown[] {
+  const metersExpr =
+    options?.sign === undefined
+      ? (['get', property] as const)
+      : (['*', ['get', property], options.sign] as const)
+
   return [
     'interpolate',
     ['exponential', 2],
     ['zoom'],
     WIDTH_ZOOM_MIN,
-    ['*', ['get', property], scaleAtZoom(WIDTH_ZOOM_MIN, fraction)],
+    ['*', metersExpr, scaleAtZoom(WIDTH_ZOOM_MIN, fraction)],
     WIDTH_ZOOM_MAX,
-    ['*', ['get', property], scaleAtZoom(WIDTH_ZOOM_MAX, fraction)],
+    ['*', metersExpr, scaleAtZoom(WIDTH_ZOOM_MAX, fraction)],
   ]
 }

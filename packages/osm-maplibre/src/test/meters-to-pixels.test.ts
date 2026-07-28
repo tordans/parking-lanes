@@ -42,4 +42,11 @@ describe('lineOffsetFromMeters', () => {
   test('uses top-level exponential interpolate on zoom', () => {
     assertZoomIsTopLevelInterpolateInput(lineOffsetFromMeters('roadWidthM', 0.5))
   })
+
+  test('sign multiplier stays inside stop outputs so zoom remains top-level', () => {
+    const sideSign = ['case', ['==', ['get', 'side'], 'left'], 1, -1]
+    const expr = lineOffsetFromMeters('parentRoadWidthM', 0.5, { sign: sideSign })
+    assertZoomIsTopLevelInterpolateInput(expr)
+    expect(JSON.stringify(expr[4])).toContain(JSON.stringify(sideSign))
+  })
 })
