@@ -1,8 +1,9 @@
 export const lanesLegendItems = [
   {
     id: 'none',
-    color: '#a1a1aa',
+    color: '#ec4899',
     label: 'No lane count tags',
+    missing: true,
   },
   {
     id: 'count-only',

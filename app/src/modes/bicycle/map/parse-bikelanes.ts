@@ -1,6 +1,5 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
-  expandSidepaths,
   formatSidepathFeatureId,
   type SidepathPrefix,
   type SidepathSide,
@@ -157,6 +156,8 @@ export function parseBicycleFeaturesFromData(
       }
 
       if (result._side !== 'left' && result._side !== 'right') continue
+      // Missing / unknown sides are centerline-only — do not render offset bands.
+      if (paintState === 'noInfra' || result.category === 'unknown') continue
       const prefix = result._prefix === 'sidewalk' ? 'sidewalk' : 'cycleway'
       const side = result._side
 
@@ -192,29 +193,26 @@ export function parseBicycleFeaturesFromData(
       })
     }
 
-    // Ensure sidepaths from expandSidepaths are selectable even when processBikelanes skips them.
-    for (const sidepath of expandSidepaths(way.id, way.tags)) {
-      const featureId = formatSidepathFeatureId(sidepath.ref)
-      if (features.some((feature) => feature.properties.featureId === featureId)) continue
-
+    // Bare highways (no cycleway tags) yield no processBikelanes results — still show a
+    // selectable missing centerline so mappers can start tagging from the map.
+    if (results.length === 0) {
       features.push({
         type: 'Feature',
-        id: featureId,
+        id: way.id,
         geometry: { type: 'LineString', coordinates },
         properties: {
           osmId: way.id,
           osmType: 'way',
-          featureId,
-          kind: 'sidepath',
-          prefix: sidepath.ref.prefix,
-          side: sidepath.ref.side,
-          highway: sidepath.tags.highway ?? sidepath.ref.prefix,
+          featureId: `way/${way.id}`,
+          kind: 'highway',
+          highway: way.tags.highway,
           category: 'unknown',
           incomplete: true,
           paintState: 'noInfra',
-          bikelaneSide: sidepath.ref.side,
+          bikelaneSide: 'self',
+          prefix: null,
           roadWidthM: width.value,
-          parentRoadWidthM: width.value,
+          hasCenterlinePresence: hasCenterlinePresence(way.tags),
         },
       })
     }

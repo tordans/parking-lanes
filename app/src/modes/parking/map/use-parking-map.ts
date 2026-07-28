@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { useFeatureSelection } from '../../../shell/map/feature-selection'
 import { useOsmChangeHandler as useSharedOsmChangeHandler } from '../../../shell/map/use-osm-change-handler'
+import { parkingMissingHitAreaLayerId } from './ParkingLanesSource'
 import type { MapBounds, ParkingFeatureCollection } from './types'
 
 export { viewMinZoom } from './constants'
@@ -39,6 +40,7 @@ export function useLaneClickHandler() {
 export const interactiveLayerIds = [
   'parking-lanes-hitarea-layer',
   'parking-selected-lanes-hitarea-layer',
+  parkingMissingHitAreaLayerId,
   'parking-areas-layer',
   'parking-points-hitarea-layer',
 ]

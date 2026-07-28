@@ -1,7 +1,11 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useMapFocus } from '../../../shell/map/use-map-focus'
 import type { SurfaceFeatureCollection } from './parse-highways'
-import { SurfaceHighwaysBandSource } from './SurfaceHighwaysBandSource'
+import {
+  SurfaceHighwaysBandSource,
+  surfaceMissingHitAreaLayerId,
+  surfaceMissingSidepathsHitAreaLayerId,
+} from './SurfaceHighwaysBandSource'
 
 type Props = {
   features: SurfaceFeatureCollection
@@ -17,4 +21,6 @@ export function SurfaceLayers({ features, selectedRef }: Props) {
 export const surfaceInteractiveLayerIds = [
   'surface-highways-hitarea-layer',
   'surface-sidepaths-hitarea-layer',
+  surfaceMissingHitAreaLayerId,
+  surfaceMissingSidepathsHitAreaLayerId,
 ]

@@ -1,3 +1,5 @@
+import { MISSING_DATA_PINK } from '../../../shell/map/missing-data-paint'
+
 export const SMOOTHNESS_COLORS = {
   very_bad: '#d8035c',
   bad: '#f90606',
@@ -7,14 +9,15 @@ export const SMOOTHNESS_COLORS = {
 } as const
 
 export const MISSING_SMOOTHNESS_BASE_COLOR = '#9ca3af'
-export const MISSING_SURFACE_COLOR = '#000000'
+export const MISSING_SURFACE_COLOR = MISSING_DATA_PINK
 export const MISSING_SMOOTHNESS_OVERLAY_COLOR = '#000000'
 
 export const surfaceLegendItems = [
   {
     id: 'missing_surface',
-    color: MISSING_SURFACE_COLOR,
+    color: MISSING_DATA_PINK,
     label: 'Surface tag missing',
+    missing: true,
   },
   {
     id: 'missing_smoothness',

@@ -1,5 +1,10 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { SIDEPATH_LINE_OFFSET } from '../../../shell/map/map-hit-paint'
+import {
+  MissingDataCenterlineSource,
+  missingDataHitAreaLayerId,
+} from '../../../shell/map/MissingDataCenterlineSource'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import type { SurfaceFeatureCollection } from './parse-highways'
 import {
@@ -12,6 +17,13 @@ import {
   surfaceHitAreaPaint,
   surfaceLineLayout,
 } from './surface-layer-paint'
+
+export const surfaceMissingLayerIdPrefix = 'surface-missing'
+export const surfaceMissingHitAreaLayerId = missingDataHitAreaLayerId(surfaceMissingLayerIdPrefix)
+export const surfaceMissingSidepathsLayerIdPrefix = 'surface-missing-sidepaths'
+export const surfaceMissingSidepathsHitAreaLayerId = missingDataHitAreaLayerId(
+  surfaceMissingSidepathsLayerIdPrefix,
+)
 
 function matchesSelection(
   properties: SurfaceFeatureCollection['features'][number]['properties'],
@@ -31,12 +43,23 @@ function matchesSelection(
 function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatureRef | null) {
   const highways: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missingHighways: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missingSidepaths: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
   const selected: SurfaceFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
     // Omit the selection so smoothness colors do not paint over the black centerline.
     if (matchesSelection(feature.properties, selectedRef)) {
       selected.features.push(feature)
+      continue
+    }
+
+    if (feature.properties.missingSurface) {
+      if (feature.properties.kind === 'sidepath') {
+        missingSidepaths.features.push(feature)
+      } else {
+        missingHighways.features.push(feature)
+      }
       continue
     }
 
@@ -48,7 +71,7 @@ function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatu
     highways.features.push(feature)
   }
 
-  return { highways, sidepaths, selected }
+  return { highways, sidepaths, missingHighways, missingSidepaths, selected }
 }
 
 export function SurfaceHighwaysBandSource({
@@ -65,7 +88,10 @@ export function SurfaceHighwaysBandSource({
   const sidepathBandPaint = buildSurfaceBandPaint(focus, hasSelection, true)
   const dottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection)
   const sidepathDottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection, true)
-  const { highways, sidepaths, selected } = splitFeatures(features, selectedRef)
+  const { highways, sidepaths, missingHighways, missingSidepaths, selected } = splitFeatures(
+    features,
+    selectedRef,
+  )
   const selectedIsSidepath = selected.features[0]?.properties.kind === 'sidepath'
 
   return (
@@ -94,6 +120,13 @@ export function SurfaceHighwaysBandSource({
         </Source>
       ) : null}
 
+      <MissingDataCenterlineSource
+        sourceId="surface-missing-source"
+        layerIdPrefix={surfaceMissingLayerIdPrefix}
+        collection={missingHighways}
+        layout={surfaceLineLayout}
+      />
+
       {sidepaths.features.length > 0 ? (
         <Source id="surface-sidepaths-source" type="geojson" data={sidepaths}>
           <Layer
@@ -117,6 +150,14 @@ export function SurfaceHighwaysBandSource({
           />
         </Source>
       ) : null}
+
+      <MissingDataCenterlineSource
+        sourceId="surface-missing-sidepaths-source"
+        layerIdPrefix={surfaceMissingSidepathsLayerIdPrefix}
+        collection={missingSidepaths}
+        layout={sidepathLineLayout}
+        paint={{ 'line-offset': SIDEPATH_LINE_OFFSET }}
+      />
 
       <SelectedWayCenterlineSource
         sourceId="surface-selected-centerline-source"

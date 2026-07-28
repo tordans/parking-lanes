@@ -175,6 +175,7 @@
   "legend_parking_disabled": "Behindertenparkplatz",
   "legend_parking_unsupported": "Nicht unterstützte Bedingung",
   "legend_parking_separate": "Parken separat gemappt",
+  "legend_parking_missing": "Keine Park-Tags",
   "legend_bicycle_complete": "Vollständige Radverkehrsinfrastruktur",
   "legend_bicycle_incomplete": "Unvollständig / Klärung nötig",
   "legend_bicycle_none": "Keine Infrastruktur auf dieser Geometrie gemappt",

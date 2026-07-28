@@ -1,7 +1,7 @@
 export const BICYCLE_PAINT_COLORS = {
   complete: '#16a34a',
   incomplete: '#f59e0b',
-  noInfra: '#94a3b8',
+  noInfra: '#ec4899',
   separateGeometry: '#6366f1',
   centerlinePresence: '#7c3aed',
 } as const
@@ -21,6 +21,7 @@ export const bicycleLegendItems = [
     paintState: 'noInfra',
     label: 'No mapped infrastructure on this geometry',
     color: BICYCLE_PAINT_COLORS.noInfra,
+    missing: true,
   },
   {
     paintState: 'separateGeometry',

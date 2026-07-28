@@ -5,6 +5,7 @@ import {
   ROAD_LIKE_HIGHWAY_BASE_REGEX,
   type HighwayInclusionStyle,
 } from '@osm-editor-kit/osm-way-chain'
+import { MISSING_DATA_PINK } from '../../../shell/map/missing-data-paint'
 import type { ParkingConditions } from '../../../utils/types/conditions'
 import type { Side, StyleMapInterface } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
@@ -96,10 +97,23 @@ export function parseParkingLaneFeatures(
   }
 
   if (emptyway && way.tags.highway && highwayRegex.test(way.tags.highway)) {
-    for (const side of ['right', 'left'] as Side[]) {
-      const laneId = side + way.id
-      features.push(createLaneFeature(coords, undefined, side, way, isMajor, zoom, laneId))
-    }
+    const laneId = `empty${way.id}`
+    features.push({
+      type: 'Feature',
+      id: laneId,
+      geometry: { type: 'LineString', coordinates: coords },
+      properties: {
+        featureId: laneId,
+        kind: 'missing',
+        color: MISSING_DATA_PINK,
+        weight: 1,
+        offset: 0,
+        osmType: way.type,
+        osmId: way.id,
+        isMajor,
+        missingSurface: 0,
+      },
+    })
   }
 
   return features
@@ -139,9 +153,6 @@ export function updateLaneFeatureStyles(
   const style = laneStyleByZoom[zoom] ?? laneStyleByZoom[18]!
   return features.map((feature) => {
     if (feature.properties.kind !== 'lane') return feature
-    if (feature.properties.featureId.startsWith('empty')) {
-      return feature
-    }
 
     const isMajor = feature.properties.isMajor ?? false
     const span = laneSpan(isMajor, style)
@@ -237,7 +248,9 @@ export function applyChangedWayToFeatures(
 ): { features: ParkingFeature[]; added: ParkingFeature[] } {
   const parsed = parseParkingLaneFeatures(newOsm, nodeCoords, zoom, inclusionStyle)
   const withoutOld = features.filter(
-    (f) => f.properties.osmId !== newOsm.id || f.properties.kind !== 'lane',
+    (f) =>
+      f.properties.osmId !== newOsm.id ||
+      (f.properties.kind !== 'lane' && f.properties.kind !== 'missing'),
   )
   const colored = updateLaneFeatureColors(parsed, datetime, { [newOsm.id]: newOsm.tags })
   const merged = [...withoutOld, ...colored]

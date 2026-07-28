@@ -2,6 +2,7 @@ import * as m from '@app/paraglide/messages'
 import { getWidthLegendAfter, getWidthLegendBefore } from '../../../i18n/legend-labels'
 import { LegendBoundariesEntry } from '../../../shell/controls/LegendBoundariesEntry'
 import { MapCollapsiblePanel } from '../../../shell/controls/MapCollapsiblePanel'
+import { MissingDataLegendSwatch } from '../../../shell/controls/MissingDataLegendSwatch'
 import { HIGHWAY_WIDTH_NO_ONEWAY, HIGHWAY_WIDTH_ONEWAY } from '../domain/highway-width-fallbacks'
 import { widthLegendItems } from '../map/width-colors'
 
@@ -74,7 +75,11 @@ export function LegendContent() {
       <div className="flex flex-col gap-1">
         {widthLegendItems.map((item) => (
           <div key={item.kind} className="flex items-center gap-1.5">
-            <div className="h-0.5 w-4 shrink-0" style={{ backgroundColor: item.color }} />
+            {'missing' in item && item.missing ? (
+              <MissingDataLegendSwatch />
+            ) : (
+              <div className="h-0.5 w-4 shrink-0" style={{ backgroundColor: item.color }} />
+            )}
             <WidthLegendLabel
               before={getWidthLegendBefore(item.kind)}
               tags={item.tags}

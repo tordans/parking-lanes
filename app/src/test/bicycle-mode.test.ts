@@ -75,6 +75,33 @@ describe('mergeWayEdit bicycle isolation', () => {
   })
 })
 
+const parseBounds = {
+  south: 52.4,
+  north: 52.6,
+  west: 13.3,
+  east: 13.5,
+} as const
+
+function graphWithWay(id: number, tags: Record<string, string>) {
+  return {
+    ways: {
+      [id]: {
+        id,
+        type: 'way' as const,
+        version: 1,
+        changeset: 1,
+        nodes: [10, 11],
+        tags,
+      },
+    },
+    nodes: {},
+    nodeCoords: {
+      10: [52.5, 13.4],
+      11: [52.501, 13.401],
+    },
+  }
+}
+
 describe('parseBikelanes incomplete flag', () => {
   test('bare highway=cycleway is needsClarification and incomplete', () => {
     const tags = { highway: 'cycleway' }
@@ -85,37 +112,30 @@ describe('parseBikelanes incomplete flag', () => {
     expect(self?.category).toBe('needsClarification')
     expect(self?.incomplete).toBe(true)
 
-    const graph = {
-      ways: {
-        1: {
-          id: 1,
-          type: 'way' as const,
-          version: 1,
-          changeset: 1,
-          nodes: [10, 11],
-          tags,
-        },
-      },
-      nodes: {},
-      nodeCoords: {
-        10: [52.5, 13.4],
-        11: [52.501, 13.401],
-      },
-    }
-
-    const features = parseBicycleFeaturesFromData(
-      graph,
-      {
-        south: 52.4,
-        north: 52.6,
-        west: 13.3,
-        east: 13.5,
-      },
-      'public',
-    )
+    const features = parseBicycleFeaturesFromData(graphWithWay(1, tags), parseBounds, 'public')
     const highway = features.find((feature) => feature.properties.kind === 'highway')
     expect(highway?.properties.incomplete).toBe(true)
     expect(highway?.properties.category).toBe('needsClarification')
+  })
+
+  test('bare residential highway is selectable as unknown / noInfra', () => {
+    const tags = { highway: 'residential', name: 'Bartastraße' }
+    expect(processBikelanes(tags)).toEqual([])
+
+    const features = parseBicycleFeaturesFromData(
+      graphWithWay(48802137, tags),
+      parseBounds,
+      'public',
+    )
+    expect(features).toHaveLength(1)
+    expect(features[0]?.properties).toMatchObject({
+      osmId: 48802137,
+      kind: 'highway',
+      category: 'unknown',
+      incomplete: true,
+      paintState: 'noInfra',
+      bikelaneSide: 'self',
+    })
   })
 })
 

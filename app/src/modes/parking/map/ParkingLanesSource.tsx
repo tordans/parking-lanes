@@ -1,4 +1,8 @@
 import { Layer, Source } from 'react-map-gl/maplibre'
+import {
+  MissingDataCenterlineSource,
+  missingDataHitAreaLayerId,
+} from '../../../shell/map/MissingDataCenterlineSource'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import {
   buildLanePaint,
@@ -8,11 +12,20 @@ import {
 } from './parking-layer-paint'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
+export const parkingMissingLayerIdPrefix = 'parking-missing'
+export const parkingMissingHitAreaLayerId = missingDataHitAreaLayerId(parkingMissingLayerIdPrefix)
+
 function splitLaneFeatures(collection: ParkingFeatureCollection, selectedWayId: number | null) {
   const base: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
   const selected: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missing: ParkingFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of collection.features) {
+    if (feature.properties.kind === 'missing') {
+      if (selectedWayId != null && feature.properties.osmId === selectedWayId) continue
+      missing.features.push(feature)
+      continue
+    }
     if (feature.properties.kind !== 'lane') continue
     if (selectedWayId != null && feature.properties.osmId === selectedWayId) {
       selected.features.push(feature)
@@ -21,7 +34,7 @@ function splitLaneFeatures(collection: ParkingFeatureCollection, selectedWayId: 
     }
   }
 
-  return { base, selected }
+  return { base, selected, missing }
 }
 
 function centerlinesFromLanes(
@@ -50,6 +63,27 @@ function centerlinesFromLanes(
     })
   }
 
+  // Selected missing way still needs black selection chrome.
+  if (selectedWayId != null) {
+    for (const feature of collection.features) {
+      if (feature.properties.kind !== 'missing') continue
+      if (feature.properties.osmId !== selectedWayId) continue
+      if (seen.has(selectedWayId)) break
+      seen.add(selectedWayId)
+      features.push({
+        ...feature,
+        id: `centerline-${selectedWayId}`,
+        properties: {
+          ...feature.properties,
+          featureId: `centerline-${selectedWayId}`,
+          offset: 0,
+          weight: 1,
+        },
+      })
+      break
+    }
+  }
+
   return { type: 'FeatureCollection', features }
 }
 
@@ -64,7 +98,7 @@ export function ParkingLanesSource({
 }) {
   if (!collection.features.length) return null
 
-  const { base, selected } = splitLaneFeatures(collection, selectedWayId)
+  const { base, selected, missing } = splitLaneFeatures(collection, selectedWayId)
   const centerlines = centerlinesFromLanes(collection, selectedWayId)
   const hasSelection = selectedWayId != null
 
@@ -103,6 +137,13 @@ export function ParkingLanesSource({
           />
         </Source>
       ) : null}
+
+      <MissingDataCenterlineSource
+        sourceId="parking-missing-source"
+        layerIdPrefix={parkingMissingLayerIdPrefix}
+        collection={missing}
+        layout={parkingLineLayout}
+      />
 
       <SelectedWayCenterlineSource
         sourceId="parking-centerlines-source"

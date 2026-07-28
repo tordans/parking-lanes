@@ -1,3 +1,4 @@
+import { MISSING_DATA_PINK } from '../../../shell/map/missing-data-paint'
 import { parkingSideColors } from '../../parking/side-colors'
 
 /** Map band colors for tagged vs fallback highway widths. */
@@ -5,7 +6,7 @@ export const WIDTH_KIND_COLORS = {
   /** `width` or `est_width` present and parseable. */
   explicit: '#0f766e',
   /** No width tag — value from highway default tables. */
-  default: '#b45309',
+  default: MISSING_DATA_PINK,
 } as const
 
 /** Selection chrome — grab handles use parking right-side orange. */
@@ -27,5 +28,6 @@ export const widthLegendItems = [
     before: 'Default from',
     tags: ['highway'],
     after: 'type',
+    missing: true,
   },
 ] as const

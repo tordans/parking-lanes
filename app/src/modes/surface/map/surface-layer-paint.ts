@@ -8,7 +8,6 @@ import {
 import {
   MISSING_SMOOTHNESS_BASE_COLOR,
   MISSING_SMOOTHNESS_OVERLAY_COLOR,
-  MISSING_SURFACE_COLOR,
   SMOOTHNESS_COLORS,
 } from './surface-colors'
 
@@ -23,8 +22,6 @@ export { ROUND_LINE_LAYOUT as sidepathLineLayout }
 
 const surfaceColor = [
   'case',
-  ['get', 'missingSurface'],
-  MISSING_SURFACE_COLOR,
   ['get', 'missingSmoothness'],
   MISSING_SMOOTHNESS_BASE_COLOR,
   [

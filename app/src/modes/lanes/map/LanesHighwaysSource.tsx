@@ -1,4 +1,8 @@
 import { Layer, Source } from 'react-map-gl/maplibre'
+import {
+  MissingDataCenterlineSource,
+  missingDataHitAreaLayerId,
+} from '../../../shell/map/MissingDataCenterlineSource'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import {
   lanesBandPaint,
@@ -10,6 +14,9 @@ import {
 } from './lanes-layer-paint'
 import type { LanesFeatureCollection } from './parse-highways'
 
+export const lanesMissingLayerIdPrefix = 'lanes-missing'
+export const lanesMissingHitAreaLayerId = missingDataHitAreaLayerId(lanesMissingLayerIdPrefix)
+
 function splitFeatures(
   features: LanesFeatureCollection,
   selectedWayId: number | null,
@@ -17,6 +24,7 @@ function splitFeatures(
   nextWayId: number | null,
 ) {
   const base: LanesFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missing: LanesFeatureCollection = { type: 'FeatureCollection', features: [] }
   const selected: LanesFeatureCollection = { type: 'FeatureCollection', features: [] }
   const prev: LanesFeatureCollection = { type: 'FeatureCollection', features: [] }
   const next: LanesFeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -29,12 +37,14 @@ function splitFeatures(
       prev.features.push(feature)
     } else if (id === nextWayId) {
       next.features.push(feature)
+    } else if (feature.properties.completeness === 'none') {
+      missing.features.push(feature)
     } else {
       base.features.push(feature)
     }
   }
 
-  return { base, selected, prev, next }
+  return { base, missing, selected, prev, next }
 }
 
 export function LanesHighwaysSource({
@@ -48,7 +58,7 @@ export function LanesHighwaysSource({
   prevWayId: number | null
   nextWayId: number | null
 }) {
-  const { base, selected, prev, next } = splitFeatures(
+  const { base, missing, selected, prev, next } = splitFeatures(
     features,
     selectedWayId,
     prevWayId,
@@ -73,6 +83,13 @@ export function LanesHighwaysSource({
           />
         </Source>
       ) : null}
+
+      <MissingDataCenterlineSource
+        sourceId="lanes-missing-source"
+        layerIdPrefix={lanesMissingLayerIdPrefix}
+        collection={missing}
+        layout={lanesLineLayout}
+      />
 
       {prev.features.length > 0 ? (
         <Source id="lanes-prev-neighbor-source" type="geojson" data={prev}>
@@ -122,4 +139,5 @@ export const lanesInteractiveLayerIds = [
   'lanes-highways-hitarea-layer',
   'lanes-prev-neighbor-hitarea-layer',
   'lanes-next-neighbor-hitarea-layer',
+  lanesMissingHitAreaLayerId,
 ]

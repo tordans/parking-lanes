@@ -17,7 +17,7 @@ const completenessColor: DataDrivenPropertyValueSpecification<string> = [
   '#16a34a',
   'count-only',
   '#ca8a04',
-  '#a1a1aa',
+  '#ca8a04',
 ]
 
 export const lanesBandPaint = {

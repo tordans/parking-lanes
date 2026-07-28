@@ -175,6 +175,7 @@
   "legend_parking_disabled": "Disabled",
   "legend_parking_unsupported": "Unsupported condition",
   "legend_parking_separate": "Parking mapped separately",
+  "legend_parking_missing": "No parking tags",
   "legend_bicycle_complete": "Complete bicycle infrastructure",
   "legend_bicycle_incomplete": "Incomplete / needs clarification",
   "legend_bicycle_none": "No mapped infrastructure on this geometry",

@@ -1,5 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { SIDEPATH_LINE_OFFSET } from '../../../shell/map/map-hit-paint'
+import { missingDataDottedOverlayPaint } from '../../../shell/map/missing-data-paint'
 import type { WidthFeatureCollection } from './parse-highways'
 import {
   buildBandPaint,
@@ -43,20 +45,26 @@ function isCarHighwaySelection(
 function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeatureRef | null) {
   const highways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missingHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const missingSidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
     // Omit the selection so legend width-kind colors do not paint over the black/orange chrome.
     if (matchesSelection(feature.properties, selectedRef)) continue
 
+    const isMissing = feature.properties.widthKind === 'default'
+
     if (feature.properties.kind === 'sidepath') {
       sidepaths.features.push(feature)
+      if (isMissing) missingSidepaths.features.push(feature)
       continue
     }
 
     highways.features.push(feature)
+    if (isMissing) missingHighways.features.push(feature)
   }
 
-  return { highways, sidepaths }
+  return { highways, sidepaths, missingHighways, missingSidepaths }
 }
 
 export function WidthHighwaysBandSource({
@@ -71,7 +79,10 @@ export function WidthHighwaysBandSource({
   const dimNonCar = isCarHighwaySelection(features, selectedRef)
   const bandPaint = buildBandPaint(focus, dimNonCar)
   const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
-  const { highways, sidepaths } = splitFeatures(features, selectedRef)
+  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(
+    features,
+    selectedRef,
+  )
 
   return (
     <>
@@ -92,6 +103,17 @@ export function WidthHighwaysBandSource({
         </Source>
       ) : null}
 
+      {missingHighways.features.length > 0 ? (
+        <Source id="width-missing-highways-source" type="geojson" data={missingHighways}>
+          <Layer
+            id="width-missing-highways-dotted-layer"
+            type="line"
+            paint={missingDataDottedOverlayPaint}
+            layout={widthLineLayout}
+          />
+        </Source>
+      ) : null}
+
       {sidepaths.features.length > 0 ? (
         <Source id="width-sidepaths-source" type="geojson" data={sidepaths}>
           <Layer
@@ -104,6 +126,22 @@ export function WidthHighwaysBandSource({
             id="width-sidepaths-hitarea-layer"
             type="line"
             paint={sidepathHitAreaPaint}
+            layout={sidepathLineLayout}
+          />
+        </Source>
+      ) : null}
+
+      {missingSidepaths.features.length > 0 ? (
+        <Source id="width-missing-sidepaths-source" type="geojson" data={missingSidepaths}>
+          <Layer
+            id="width-missing-sidepaths-dotted-layer"
+            type="line"
+            paint={
+              {
+                ...missingDataDottedOverlayPaint,
+                'line-offset': SIDEPATH_LINE_OFFSET,
+              } as Record<string, unknown>
+            }
             layout={sidepathLineLayout}
           />
         </Source>
