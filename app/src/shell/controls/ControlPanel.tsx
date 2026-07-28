@@ -11,7 +11,7 @@ import type { StreetSpaceMode, StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
 import { AccountCallout } from './AccountCallout'
-import { AppAboutContent } from './AppAboutContent'
+import { AppAboutContent, AppVersionFooter } from './AppAboutContent'
 import { DebugUserSettingsSection } from './DebugPanelContent'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { PanelModeSwitcher, panelModesForMode, type MapPanelMode } from './PanelModeSwitcher'
@@ -54,21 +54,23 @@ export function InfoPanelContent(props: {
       {Legend ? (
         <>
           <PanelSectionDivider />
-          <section className="pt-4">
+          <section className="py-4">
             <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_legend_title()}</h3>
             <Legend variant="inline" />
           </section>
         </>
       ) : null}
       <PanelSectionDivider />
-      <section className="pt-4">
+      <AppVersionFooter />
+      <PanelSectionDivider />
+      <section className="py-4">
         <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_language_title()}</h3>
         <LanguageSwitcher />
       </section>
       {props.modeId === 'parking' ? (
         <>
           <PanelSectionDivider />
-          <section className="pt-4">
+          <section className="py-4">
             <h3 className="mb-2 text-sm font-semibold text-zinc-900">
               {m.parking_preset_set_title()}
             </h3>

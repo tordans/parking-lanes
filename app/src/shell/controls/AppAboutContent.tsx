@@ -95,17 +95,21 @@ export function AppAboutContent({ modeId, about, modeLabel, maturity }: Props) {
           </a>
         </div>
       </section>
-
-      <PanelSectionDivider />
-
-      <section className="flex flex-col gap-1.5 py-4 text-zinc-500">
-        <p>
-          {APP_NAME} {APP_VERSION} · {APP_BUILD_DATE}
-        </p>
-        <a href={APP_CHANGELOG_URL} target="_blank" rel="noreferrer" className={linkClass}>
-          {m.shell_changelog()}
-        </a>
-      </section>
     </div>
+  )
+}
+
+export function AppVersionFooter() {
+  const linkClass = 'text-blue-600 hover:underline'
+
+  return (
+    <section className="flex flex-col gap-1.5 py-4 text-zinc-500">
+      <p>
+        {APP_NAME} {APP_VERSION} · {APP_BUILD_DATE}
+      </p>
+      <a href={APP_CHANGELOG_URL} target="_blank" rel="noreferrer" className={linkClass}>
+        {m.shell_changelog()}
+      </a>
+    </section>
   )
 }
