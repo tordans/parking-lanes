@@ -157,8 +157,13 @@ export function updateLaneFeatureStyles(
     const isMajor = feature.properties.isMajor ?? false
     const span = laneSpan(isMajor, style)
     const side =
-      feature.properties.side ??
-      (feature.properties.offset > 0 ? 'right' : feature.properties.offset < 0 ? 'left' : 'right')
+      feature.properties.side === 'left' || feature.properties.side === 'right'
+        ? feature.properties.side
+        : feature.properties.offset > 0
+          ? 'right'
+          : feature.properties.offset < 0
+            ? 'left'
+            : 'right'
 
     return {
       ...feature,

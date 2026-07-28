@@ -7,6 +7,8 @@ type ColoredEditorSectionProps = {
   title: ReactNode
   /** Solid hex color, or `[from, to]` for a horizontal gradient header and body tint. */
   color: ColoredEditorSectionColor
+  /** Optional solid body tint; defaults to a translucent version of `color`. */
+  bodyColor?: string
   children?: ReactNode
   /** Optional control aligned to the right of the header (e.g. Split/Same switch). */
   headerTrailing?: ReactNode
@@ -34,6 +36,7 @@ function headerBackground(color: ColoredEditorSectionColor): CSSProperties {
 export function ColoredEditorSection({
   title,
   color,
+  bodyColor,
   children,
   headerTrailing,
   className,
@@ -49,7 +52,7 @@ export function ColoredEditorSection({
         'mb-4 overflow-hidden rounded-sm ring-1 ring-zinc-950/5 last:mb-0',
         className,
       )}
-      style={{ ...tintBackground(color), ...style }}
+      style={{ ...tintBackground(bodyColor ?? color), ...style }}
       {...props}
     >
       <div

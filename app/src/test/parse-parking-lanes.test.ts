@@ -42,4 +42,21 @@ describe('parseParkingLaneFeatures', () => {
       'missing',
     )
   })
+
+  test('keeps geometric left/right sides for both-tagged ways', () => {
+    const way = {
+      type: 'way' as const,
+      id: 42,
+      tags: { highway: 'residential', 'parking:both': 'lane' },
+      nodes: [1, 2],
+    }
+    const nodeCoords = {
+      1: [52.475, 13.451],
+      2: [52.476, 13.452],
+    }
+
+    const features = parseParkingLaneFeatures(way, nodeCoords, 16, 'public')
+    expect(features).toHaveLength(2)
+    expect(features.map((f) => f.properties.side).sort()).toEqual(['left', 'right'])
+  })
 })

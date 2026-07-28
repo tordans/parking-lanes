@@ -5,7 +5,12 @@ import { useDatetime } from '../../../../shell/app-store'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
 import { getConditionByDate } from '../../domain/condition-color'
 import { getSideConditions } from '../../domain/side-conditions'
-import { parkingSideColor, parkingSideLabel, type ParkingEditorSide } from '../../side-colors'
+import {
+  parkingBothBodyColor,
+  parkingSideColor,
+  parkingSideLabel,
+  type ParkingEditorSide,
+} from '../../side-colors'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
 import { PresetSigns } from './PresetSigns'
@@ -30,15 +35,10 @@ export function SideGroup(props: {
     <ColoredEditorSection
       id={props.side}
       aria-label={`${sideLabel}: ${styleLabel}`}
-      title={
-        <>
-          <span>{sideLabel}</span>
-          <span className="min-w-0 truncate font-medium normal-case tracking-normal">
-            {styleLabel}
-          </span>
-        </>
-      }
+      title={sideLabel}
+      headerTrailing={<span className="font-medium normal-case tracking-normal">{styleLabel}</span>}
       color={parkingSideColor(props.side)}
+      bodyColor={props.side === 'both' ? parkingBothBodyColor : undefined}
       className={`tags-block tags-block_${props.side}`}
     >
       <PresetSigns

@@ -1,11 +1,13 @@
-import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { AllTagsBlock } from '../../../../shell/controls/AllTagsBlock'
 import { ModePanelIntro } from '../../../../shell/controls/ModePanelIntro'
 import type { Side } from '../../../../utils/types/parking'
 import { applyTagMigration } from '../../domain/editor/tag-migration'
+import { useParkingMapActions } from '../../map/parking-map-store'
+import { isParkingBothMode } from '../../side-colors'
 import { SideGroup } from './SideGroup'
 import { SideModeSwitcher } from './SideModeSwitcher'
 import { TagMigrationToolbar } from './TagMigrationToolbar'
@@ -20,13 +22,11 @@ export function LaneEditForm(props: {
   onChange: (way: OsmWay) => void
 }) {
   const readOnly = props.readOnly ?? false
-  const existsRightTags = existsSideTags(props.osm.tags, 'right')
-  const existsLeftTags = existsSideTags(props.osm.tags, 'left')
-  const existsBothTags = existsSideTags(props.osm.tags, 'both')
+  const { setSelectedSideMode } = useParkingMapActions()
 
   const form = useForm({
     defaultValues: {
-      bothBlockShown: !existsRightTags && !existsLeftTags && existsBothTags,
+      bothBlockShown: isParkingBothMode(props.osm.tags),
       tags: { ...props.osm.tags },
     },
     validators: {
@@ -40,6 +40,14 @@ export function LaneEditForm(props: {
 
   const bothBlockShown = useStore(form.store, (state) => state.values.bothBlockShown)
   const [tagUpdaterModalShown, setTagUpdaterModalShown] = useState(false)
+
+  useEffect(
+    function syncSelectedSideModeToMap() {
+      setSelectedSideMode(bothBlockShown ? 'both' : 'split')
+      return () => setSelectedSideMode(null)
+    },
+    [bothBlockShown, setSelectedSideMode],
+  )
 
   return (
     <form
@@ -121,9 +129,4 @@ export function LaneEditForm(props: {
     form.setFieldValue('tags', { ...migratedTags })
     props.onChange({ ...props.osm, tags: migratedTags })
   }
-}
-
-function existsSideTags(tags: OsmTags, side: string) {
-  const regex = new RegExp(`^parking:.*${side}`)
-  return Object.keys(tags).some((x) => regex.test(x))
 }

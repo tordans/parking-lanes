@@ -11,6 +11,7 @@ import {
   parkingHitAreaLinePaint,
   parkingLineLayout,
 } from './parking-layer-paint'
+import { useSelectedSideMode, withBothSideChrome } from './parking-map-store'
 import { ParkingBacklightsSource } from './ParkingBacklightsSource'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
@@ -105,13 +106,17 @@ export function ParkingLanesSource({
   // Wait until the centerline is actually on the map — React sibling order is not enough;
   // react-map-gl may create sibling Source layers across separate style updates.
   const centerlineReady = useMapLayerExists(parkingCenterlinesLayerId)
+  const selectedSideMode = useSelectedSideMode()
 
   if (!collection.features.length) return null
 
   const { base, selected, missing } = splitLaneFeatures(collection, selectedWayId)
+  const selectedForPaint = selectedSideMode === 'both' ? withBothSideChrome(selected) : selected
+  const backlightsForPaint =
+    selectedSideMode === 'both' ? withBothSideChrome(backlights) : backlights
   const centerlines = centerlinesFromLanes(collection, selectedWayId)
   const hasSelection = selectedWayId != null
-  // Untagged selection has no lane bands — orange/purple backlights fill in.
+  // Untagged selection has no lane bands — side-colored backlights fill in.
   const showSelectionBacklights =
     selectedWayId != null && selected.features.length === 0 && centerlines.features.length > 0
 
@@ -149,8 +154,8 @@ export function ParkingLanesSource({
         layout={parkingLineLayout}
       />
 
-      {selected.features.length > 0 && centerlineReady ? (
-        <Source id="parking-selected-lanes-source" type="geojson" data={selected}>
+      {selectedForPaint.features.length > 0 && centerlineReady ? (
+        <Source id="parking-selected-lanes-source" type="geojson" data={selectedForPaint}>
           {/* beforeId keeps side bands under the black hairline when they mount later
               (MapLibre otherwise appends new layers on top). */}
           <Layer
@@ -172,7 +177,7 @@ export function ParkingLanesSource({
 
       {showSelectionBacklights && centerlineReady ? (
         <ParkingBacklightsSource
-          collection={backlights}
+          collection={backlightsForPaint}
           focus={focus}
           beforeId={parkingCenterlinesLayerId}
         />

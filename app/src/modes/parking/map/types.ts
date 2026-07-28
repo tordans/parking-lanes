@@ -6,7 +6,7 @@ export interface ParkingFeatureProperties {
   color: string
   weight: number
   offset: number
-  side?: 'left' | 'right'
+  side?: 'left' | 'right' | 'both'
   osmType: string
   osmId: number
   isMajor?: boolean

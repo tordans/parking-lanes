@@ -1,4 +1,5 @@
 import * as m from '@app/paraglide/messages'
+import type { OsmTags } from '@osm-editor-kit/osm-data'
 import type { ColoredEditorSectionColor } from '../../components/ColoredEditorSection'
 import type { Side } from '../../utils/types/parking'
 
@@ -6,7 +7,12 @@ import type { Side } from '../../utils/types/parking'
 export const parkingSideColors = {
   right: '#e66101',
   left: '#5e3c99',
-} as const satisfies Record<Side, string>
+  /** Shared both-sides chrome (editor header + map selection bands). */
+  both: '#18181b',
+} as const satisfies Record<Side | 'both', string>
+
+/** Gray body tint for the both-sides editor section. */
+export const parkingBothBodyColor = '#71717a'
 
 export type ParkingEditorSide = Side | 'both'
 
@@ -26,6 +32,19 @@ export function parkingSideLabel(side: ParkingEditorSide) {
 }
 
 export function parkingSideColor(side: ParkingEditorSide): ColoredEditorSectionColor {
-  if (side === 'both') return [parkingSideColors.left, parkingSideColors.right]
   return parkingSideColors[side]
+}
+
+export function existsParkingSideTags(tags: OsmTags, side: ParkingEditorSide): boolean {
+  const regex = new RegExp(`^parking:.*${side}`)
+  return Object.keys(tags).some((key) => regex.test(key))
+}
+
+/** True when the way uses `parking:both*` only (no left/right side tags). */
+export function isParkingBothMode(tags: OsmTags): boolean {
+  return (
+    existsParkingSideTags(tags, 'both') &&
+    !existsParkingSideTags(tags, 'left') &&
+    !existsParkingSideTags(tags, 'right')
+  )
 }

@@ -25,6 +25,8 @@ const parkingSideLaneColor = [
   parkingSideColors.right,
   'left',
   parkingSideColors.left,
+  'both',
+  parkingSideColors.both,
   '#888888',
 ] as const
 
@@ -64,7 +66,7 @@ export function buildLanePaint(focus: string, hasSelection = false) {
   } as Record<string, unknown>
 }
 
-/** Selected-way left/right bands (sidebar side colors), drawn under the black centerline. */
+/** Selected-way side bands (sidebar side colors), drawn under the black centerline. */
 export function buildSelectedLanePaint(focus: string) {
   if (focus !== 'noSurface') {
     return {
