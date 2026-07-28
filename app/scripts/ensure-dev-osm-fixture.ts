@@ -2,7 +2,7 @@ import { access, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  DEV_OSM_FIXTURE_BBOX,
+  DEV_OSM_FIXTURE_BBOXES,
   DEV_OSM_FIXTURE_RELATIVE_PATH,
   sanitizeDevOsmFixtureTestStreet,
 } from '../src/modes/parking/fixtures/dev-map-fixture.const.ts'
@@ -76,6 +76,15 @@ async function downloadBbox(bounds: MapBounds): Promise<OsmElement[]> {
   return mergeElements(parts)
 }
 
+async function downloadAllBboxes(bboxes: MapBounds[]): Promise<OsmElement[]> {
+  const parts: OsmElement[][] = []
+  for (const bounds of bboxes) {
+    console.log(`Downloading bbox ${bboxParam(bounds)} (tiles if needed)`)
+    parts.push(await downloadBbox(bounds))
+  }
+  return sanitizeDevOsmFixtureTestStreet(mergeElements(parts))
+}
+
 async function main() {
   try {
     await access(fixturePath)
@@ -85,10 +94,8 @@ async function main() {
     // missing — download below
   }
 
-  console.log(
-    `Downloading dev OSM fixture for bbox ${bboxParam(DEV_OSM_FIXTURE_BBOX)} (tiles if needed)`,
-  )
-  const elements = sanitizeDevOsmFixtureTestStreet(await downloadBbox(DEV_OSM_FIXTURE_BBOX))
+  console.log(`Downloading ${DEV_OSM_FIXTURE_BBOXES.length} dev OSM fixture bbox(es)`)
+  const elements = await downloadAllBboxes(DEV_OSM_FIXTURE_BBOXES)
   const text = JSON.stringify({ elements })
   await mkdir(path.dirname(fixturePath), { recursive: true })
   await writeFile(fixturePath, text)

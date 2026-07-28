@@ -1,7 +1,7 @@
-import { boundsToPolygon } from '@osm-editor-kit/osm-coverage'
+import { unionIntoCoverage } from '@osm-editor-kit/osm-coverage'
 import { parseOsmResp, type RawOsmData } from '@osm-editor-kit/osm-data'
 import type { QueryClient } from '@tanstack/react-query'
-import { DEV_OSM_FIXTURE_BBOX } from '../../modes/parking/fixtures/dev-map-fixture.const'
+import { DEV_OSM_FIXTURE_BBOXES } from '../../modes/parking/fixtures/dev-map-fixture.const'
 import { isDevOsmFixtureActive } from '../dev-osm-fixture-store'
 import {
   currentOsmSessionParams,
@@ -34,6 +34,14 @@ async function loadDevFixtureRaw(): Promise<RawOsmData | null> {
   return (await response.json()) as RawOsmData
 }
 
+function fixtureCoverage() {
+  let coverage = null
+  for (const bounds of DEV_OSM_FIXTURE_BBOXES) {
+    coverage = unionIntoCoverage(coverage, bounds)
+  }
+  return coverage
+}
+
 async function buildDevFixtureQueryData(): Promise<OsmCoverageQueryData | null> {
   const raw = await loadDevFixtureRaw()
   if (!raw) return null
@@ -41,7 +49,7 @@ async function buildDevFixtureQueryData(): Promise<OsmCoverageQueryData | null> 
   return {
     ...emptyOsmCoverageData(),
     graph: parseOsmResp(raw),
-    coverage: boundsToPolygon(DEV_OSM_FIXTURE_BBOX),
+    coverage: fixtureCoverage(),
   }
 }
 

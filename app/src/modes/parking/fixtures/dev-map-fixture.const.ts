@@ -1,12 +1,13 @@
 import type { MapBounds } from '@osm-editor-kit/osm-data'
 
-/** OSM Map API bbox for the local dev fixture (west,south,east,north). */
-export const DEV_OSM_FIXTURE_BBOX: MapBounds = {
-  west: 13.4092,
-  south: 52.4598,
-  east: 13.455,
-  north: 52.4816,
-}
+/**
+ * OSM Map API bboxes for the local dev fixture (west,south,east,north).
+ * Non-overlapping regions are merged into one `dev-map-bbox.json` by `predev`.
+ */
+export const DEV_OSM_FIXTURE_BBOXES: MapBounds[] = [
+  { west: 13.4092, south: 52.4598, east: 13.455, north: 52.4816 },
+  { west: 13.3916, south: 52.3426, east: 13.4489, north: 52.37 },
+]
 
 /** Relative to the `app/` package root — gitignored, created by `predev`. */
 export const DEV_OSM_FIXTURE_RELATIVE_PATH = 'src/modes/parking/fixtures/dev-map-bbox.json'
@@ -38,7 +39,7 @@ export function sanitizeDevOsmFixtureTestStreet<T extends OsmFixtureElement>(ele
   })
 }
 
-export function devOsmFixtureBboxParam(): string {
-  const { west, south, east, north } = DEV_OSM_FIXTURE_BBOX
+export function devOsmFixtureBboxParam(bounds: MapBounds): string {
+  const { west, south, east, north } = bounds
   return `${west},${south},${east},${north}`
 }

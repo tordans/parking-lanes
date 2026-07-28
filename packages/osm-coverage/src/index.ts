@@ -6,6 +6,7 @@ export {
   boundsToPolygon,
   bufferPxAtZoom,
   computeMissingFetchRequests,
+  unionIntoCoverage,
 } from './coverage-geometry'
 export { OsmDataSource } from './osm-data-source'
 export { boundsToOverpassBbox, buildOverpassInterpreterUrl } from './overpass-url'
