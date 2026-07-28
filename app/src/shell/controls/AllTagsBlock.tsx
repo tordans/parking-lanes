@@ -18,7 +18,7 @@ export function AllTagsBlock(props: {
       onToggle={(event) => setAllTagsOpen(event.currentTarget.open)}
     >
       <summary className="cursor-pointer font-sans">{m.panel_all_tags()}</summary>
-      <table className="w-full table-fixed">
+      <table className="w-full table-fixed font-mono">
         <colgroup>
           <col className="w-1/2" />
           <col className="w-1/2" />

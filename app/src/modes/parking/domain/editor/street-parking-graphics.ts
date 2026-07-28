@@ -4,3 +4,11 @@ import { assetUrl } from '../../../../utils/asset-url'
 export function streetParkingGraphic(filename: string): string {
   return assetUrl(`assets/street_parking/${filename}`)
 }
+
+/**
+ * OSM Wiki Street parking illustrations
+ * (https://wiki.openstreetmap.org/wiki/Street_parking), already landscape.
+ */
+export function wikiStreetParkingGraphic(filename: string): string {
+  return assetUrl(`assets/street_parking/wiki/${filename}`)
+}

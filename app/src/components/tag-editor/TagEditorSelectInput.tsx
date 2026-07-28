@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Select } from '../catalyst/select'
 import { tagEditorFieldClassName } from './tag-editor-controls'
 
@@ -14,11 +15,13 @@ export function TagEditorSelectInput(props: {
       ? ['', ...props.values]
       : ['', props.value, ...props.values]
 
+  const showsTranslatedLabels = props.formatOptionLabel != null
+
   return (
     <Select
       name={props.tag}
       value={props.value}
-      className={tagEditorFieldClassName}
+      className={clsx(tagEditorFieldClassName, !showsTranslatedLabels && '[&_select]:font-mono')}
       disabled={props.disabled}
       onChange={(e) => props.onChange(e.target.value)}
     >

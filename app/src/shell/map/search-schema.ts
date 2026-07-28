@@ -8,7 +8,6 @@ import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
 import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '@osm-editor-kit/osm-way-chain'
 import { z } from 'zod'
 import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from '../../i18n/uiLocale'
-import { parkingPresetSetSchema } from '../../modes/parking/parking-preset-set-state'
 import { parseDebugSearch } from '../debug'
 import { hasNonDefaultPrimaryFocus, implicitBoundariesEnabled } from './map-focus-state'
 
@@ -149,8 +148,6 @@ export const mapSearchSchema = z.object({
     .optional()
     .transform(parseDebugSearch),
   focus: z.preprocess((raw) => parseFocusParam(raw), mapFocusSchema),
-  /** Parking sign preset set; omitted = default. */
-  presets: parkingPresetSetSchema.optional(),
   /** Highway inclusion style; omitted = public (skip private/driveway clutter). */
   ways: highwayInclusionStyleSchema.optional(),
   /** UI language (iD-compatible); omitted = English. */
@@ -193,7 +190,6 @@ export function serializeMapSearch(
     bg: search.bg,
     debug: search.debug,
     focus: serializeFocusParam(search.focus),
-    presets: search.presets && search.presets !== 'default' ? search.presets : undefined,
     ways: search.ways && search.ways !== DEFAULT_HIGHWAY_INCLUSION_STYLE ? search.ways : undefined,
     locale: search.locale && search.locale !== DEFAULT_UI_LOCALE ? search.locale : undefined,
   }

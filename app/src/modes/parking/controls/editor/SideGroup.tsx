@@ -13,7 +13,6 @@ import {
 } from '../../side-colors'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
-import { PresetSigns } from './PresetSigns'
 import { SimpleTagInput } from './SimpleTagInput'
 import { tagEditorTableClassName } from './tag-editor-controls'
 
@@ -41,12 +40,6 @@ export function SideGroup(props: {
       bodyColor={props.side === 'both' ? parkingBothBodyColor : undefined}
       className={`tags-block tags-block_${props.side}`}
     >
-      <PresetSigns
-        osm={props.osm}
-        side={props.side}
-        readOnly={props.readOnly}
-        onChange={props.onChange}
-      />
       <table className={tagEditorTableClassName}>
         <TagInputs
           osm={props.osm}

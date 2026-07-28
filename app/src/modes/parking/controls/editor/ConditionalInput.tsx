@@ -6,7 +6,7 @@ import {
 } from '@osm-editor-kit/osm-tag-syntax'
 import clsx from 'clsx'
 import { useState } from 'react'
-import { Input } from '../../../../components/catalyst/input'
+import { Textarea } from '../../../../components/catalyst/textarea'
 import { type TagValue } from '../../../../utils/types/parking'
 import {
   tagEditorConditionalConditionGroupClassName,
@@ -88,10 +88,11 @@ function ConditionalPartInput(props: {
   }
 
   const isYesNo = props.values != null && isYesNoTagValues(props.values)
+  const showConditionInput = value !== ''
 
   return (
-    <div className="flex w-full min-w-0 items-center gap-1.5">
-      <div className={clsx('min-w-0', isYesNo ? 'shrink-0' : 'w-1/2 shrink-0')}>
+    <div className="flex w-full min-w-0 flex-col items-stretch gap-1">
+      <div className={clsx('min-w-0', isYesNo ? 'shrink-0' : 'w-full')}>
         {props.values ? (
           <TagValueInput
             tag={props.tag}
@@ -110,18 +111,34 @@ function ConditionalPartInput(props: {
           />
         )}
       </div>
-      <div className={clsx(tagEditorConditionalConditionGroupClassName, 'min-w-0 flex-1')}>
-        <span className={tagEditorConditionalConditionPrefixClassName}>@</span>
-        <Input
-          type="text"
-          className={tagEditorConditionalConditionInputClassName}
-          placeholder="time interval"
-          name={props.tag}
-          value={condition ?? ''}
-          disabled={readOnly}
-          onChange={(e) => handleChangeCondition(e.currentTarget.value)}
-        />
-      </div>
+      {showConditionInput ? (
+        <div className={tagEditorConditionalConditionGroupClassName}>
+          <span className={tagEditorConditionalConditionPrefixClassName}>@</span>
+          <Textarea
+            rows={1}
+            resizable={false}
+            className={tagEditorConditionalConditionInputClassName}
+            placeholder="time interval"
+            name={props.tag}
+            value={condition ?? ''}
+            disabled={readOnly}
+            ref={adjustTextareaHeight}
+            onChange={(e) => {
+              handleChangeCondition(e.currentTarget.value.replaceAll('\n', ' '))
+              adjustTextareaHeight(e.currentTarget)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.preventDefault()
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   )
+}
+
+function adjustTextareaHeight(el: HTMLTextAreaElement | null) {
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
 }

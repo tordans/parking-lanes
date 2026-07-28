@@ -5,7 +5,6 @@ import { type TagValue } from '../../../../utils/types/parking'
 import { formatParkingTagValueLabel } from '../../domain/editor/format-tag-value-label'
 import {
   tagEditorParkingPositionButtonClassName,
-  tagEditorValueButtonDividerClassName,
   tagEditorValueButtonGroupClassName,
   tagEditorValueButtonIconClassName,
   tagEditorValueButtonSelectedClassName,
@@ -19,7 +18,7 @@ function tagValueOptions(value: string, values: TagValue[]): TagValue[] {
   return values
 }
 
-/** Segmented icon bar for `parking:both|left|right` only. */
+/** Segmented icon grid for `parking:both|left|right` only. */
 export function TagValueButtonGroup(props: {
   value: string
   values: TagValue[]
@@ -29,7 +28,12 @@ export function TagValueButtonGroup(props: {
   onChange: (tagValue: string) => void
 }) {
   const options = tagValueOptions(props.value, props.values)
-  const buttons: { key: string; label: string; imgSrc?: string; value: string }[] = [
+  const buttons: {
+    key: string
+    label: string
+    imgSrc?: string
+    value: string
+  }[] = [
     { key: '__clear__', label: m.editor_clear_value(), value: '' },
     ...options.map((option) => ({
       key: option.value,
@@ -45,7 +49,7 @@ export function TagValueButtonGroup(props: {
       role="group"
       aria-label={props.ariaLabel ?? 'Parking position'}
     >
-      {buttons.map((option, index) => {
+      {buttons.map((option) => {
         const isSelected = option.value === props.value
         const button = (
           <button
@@ -56,7 +60,6 @@ export function TagValueButtonGroup(props: {
             disabled={props.disabled}
             className={clsx(
               tagEditorParkingPositionButtonClassName,
-              index > 0 && tagEditorValueButtonDividerClassName,
               isSelected && tagEditorValueButtonSelectedClassName,
             )}
             onClick={() => props.onChange(option.value)}
@@ -78,7 +81,7 @@ export function TagValueButtonGroup(props: {
             key={option.key}
             content={option.label}
             placement="top"
-            wrapperClassName="shrink-0"
+            wrapperClassName="!flex min-h-0 min-w-0 w-full overflow-hidden"
           >
             {button}
           </Tooltip>

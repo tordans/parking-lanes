@@ -2,8 +2,12 @@
 
 ## `/street_parking`
 
-- Street parking position and orientation icons from [StreetComplete](https://github.com/streetcomplete/StreetComplete/tree/master/res/graphics/street%20parking) (`res/graphics/street parking/`), CC-BY-SA 4.0 © Tobias Zwick
-- Tag value mapping follows StreetComplete’s street parking overlay (`StreetParkingItem.kt`, `StreetParkingParser.kt`)
+- Restriction / legacy StreetComplete graphics (`no_standing/`, older SVGs): [StreetComplete](https://github.com/streetcomplete/StreetComplete/tree/master/res/graphics/street%20parking) (`res/graphics/street parking/`), CC-BY-SA 4.0 © Tobias Zwick
+
+## `/street_parking/wiki`
+
+- Parking position and orientation illustrations from the [OSM Wiki Street parking](https://wiki.openstreetmap.org/wiki/Street_parking) page (`Parking_position_*.png`, `Parking_orientation_*.png`)
+- Downloaded via Special:FilePath; see each file’s wiki File: page for license/author
 
 ## `/no_parking`
 

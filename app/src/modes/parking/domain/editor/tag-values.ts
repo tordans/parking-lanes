@@ -1,30 +1,33 @@
 import { assetUrl } from '../../../../utils/asset-url'
 import { type TagValue } from '../../../../utils/types/parking'
-import { streetParkingGraphic } from './street-parking-graphics'
+import { streetParkingGraphic, wikiStreetParkingGraphic } from './street-parking-graphics'
 
 export const laneValues: TagValue[] = [
-  { value: 'lane', imgSrc: streetParkingGraphic('street.svg') },
-  { value: 'street_side', imgSrc: streetParkingGraphic('street_parking_bays_parallel.svg') },
-  { value: 'on_kerb', imgSrc: streetParkingGraphic('street_very_narrow.svg') },
-  { value: 'half_on_kerb', imgSrc: streetParkingGraphic('street_narrow.svg') },
-  { value: 'shoulder', imgSrc: streetParkingGraphic('street_shoulder.svg') },
-  { value: 'no', imgSrc: streetParkingGraphic('no.svg') },
-  { value: 'separate', imgSrc: streetParkingGraphic('separate.svg') },
-  { value: 'yes', imgSrc: streetParkingGraphic('street_broad.svg') },
+  { value: 'lane', imgSrc: wikiStreetParkingGraphic('Parking_position_lane.png') },
+  { value: 'street_side', imgSrc: wikiStreetParkingGraphic('Parking_position_street_side.png') },
+  { value: 'on_kerb', imgSrc: wikiStreetParkingGraphic('Parking_position_on_kerb.png') },
+  {
+    value: 'half_on_kerb',
+    imgSrc: wikiStreetParkingGraphic('Parking_position_half_on_kerb.png'),
+  },
+  { value: 'shoulder', imgSrc: wikiStreetParkingGraphic('Parking_position_shoulder.png') },
+  { value: 'no', imgSrc: wikiStreetParkingGraphic('Parking_position_no.png') },
+  { value: 'separate', imgSrc: wikiStreetParkingGraphic('Parking_position_separate.png') },
+  { value: 'yes', imgSrc: wikiStreetParkingGraphic('Parking_position_yes.png') },
 ]
 
 export const orientationValues: TagValue[] = [
   {
     value: 'parallel',
-    imgSrc: streetParkingGraphic('street_marked_parking_parallel.svg'),
+    imgSrc: wikiStreetParkingGraphic('Parking_orientation_parallel.png'),
   },
   {
     value: 'diagonal',
-    imgSrc: streetParkingGraphic('street_marked_parking_diagonal.svg'),
+    imgSrc: wikiStreetParkingGraphic('Parking_orientation_diagonal.png'),
   },
   {
     value: 'perpendicular',
-    imgSrc: streetParkingGraphic('street_marked_parking_perpendicular.svg'),
+    imgSrc: wikiStreetParkingGraphic('Parking_orientation_perpendicular.png'),
   },
 ]
 
