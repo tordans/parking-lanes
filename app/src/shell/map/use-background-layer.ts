@@ -48,5 +48,7 @@ export function useBackgroundHotkeys() {
 
   useHotkey('Mod+B', () => togglePrevious(), {
     enabled: previousId !== undefined,
+    // HMR / Strict Mode can remount before the prior registration cleans up.
+    conflictBehavior: 'replace',
   })
 }

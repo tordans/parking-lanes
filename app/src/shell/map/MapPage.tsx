@@ -16,6 +16,7 @@ import { ControlPanel } from '../controls/ControlPanel'
 import { MapMobileToolbar } from '../controls/MapMobileToolbar'
 import { ModeSwitcher } from '../controls/ModeSwitcher'
 import { SaveChangesControl } from '../controls/SaveChangesControl'
+import { useModeHotkeys } from '../controls/use-mode-hotkeys'
 import { AtlasBoundariesSource } from './AtlasBoundariesSource'
 import { CoverageDebugMapLayers, CoverageDebugTooltip } from './CoverageDebugOverlay'
 import {
@@ -124,6 +125,7 @@ function MapPageContent({
   useVisibleViewportHeightVar(true)
   useSelectionBacklights()
   useSyncBackgroundImageryContext()
+  useModeHotkeys()
 
   return (
     <AppShell
@@ -173,14 +175,14 @@ function MapPageContent({
             </div>
           </div>
 
-          <MapMobileToolbar />
-
           {isDesktop ? (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2.5 [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
               <ModeSwitcher />
               <SaveChangesControl />
             </div>
-          ) : null}
+          ) : (
+            <MapMobileToolbar />
+          )}
 
           <MapNavigationControls />
 

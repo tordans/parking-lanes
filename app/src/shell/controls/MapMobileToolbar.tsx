@@ -4,7 +4,6 @@ import { useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState } from 'react'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { getModeLabel } from '../../i18n/mode-content'
 import { LanesBottomPanel } from '../../modes/lanes/LanesBottomPanel'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
@@ -28,7 +27,6 @@ import { SaveChangesControl } from './SaveChangesControl'
 type MobilePanel = 'info' | 'inspector' | 'settings' | 'lanes-editor' | null
 
 export function MapMobileToolbar() {
-  const isDesktop = useBreakpoint('sm')
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const mode = useActiveStreetSpaceMode(modeSlug as StreetSpaceModeId)
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
@@ -43,8 +41,6 @@ export function MapMobileToolbar() {
   const toolbarPanelModes = panelModesForMode(mode.id)
   const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
   const [lanesEditorOpenedForEpoch, setLanesEditorOpenedForEpoch] = useState(0)
-
-  if (isDesktop) return null
 
   if (!isLanesMode && selectedOsmRef && selectionEpoch !== inspectorOpenedForEpoch) {
     setInspectorOpenedForEpoch(selectionEpoch)

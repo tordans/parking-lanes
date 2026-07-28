@@ -54,7 +54,11 @@ export function SaveChangesControl() {
     setOpen(true)
   }
 
-  useHotkey('Mod+S', () => handleOpen(), { enabled: hasChanges && !open })
+  useHotkey('Mod+S', () => handleOpen(), {
+    enabled: hasChanges && !open,
+    // HMR / Strict Mode can remount before the prior registration cleans up.
+    conflictBehavior: 'replace',
+  })
 
   function handleDiscard(wayId: number) {
     const result = removeChangedEntity(wayId)

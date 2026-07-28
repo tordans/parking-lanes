@@ -1,5 +1,5 @@
 import * as m from '@app/paraglide/messages'
-import { formatForDisplay, useHotkeys } from '@tanstack/react-hotkeys'
+import { formatForDisplay } from '@tanstack/react-hotkeys'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { HotkeyKbd } from '../../components/HotkeyKbd'
@@ -20,22 +20,6 @@ import { SplitWayButton } from './SplitWayButton'
 export function ModeSwitcher() {
   const navigate = useNavigate({ from: '/$mode' })
   const { mode: currentMode } = useParams({ from: '/$mode' })
-
-  useHotkeys(
-    streetSpaceModes.map((mode) => ({
-      hotkey: MODE_HOTKEYS[mode.id],
-      callback: () => {
-        if (!mode.enabled || mode.id === currentMode) return
-        void navigate({
-          to: '/$mode',
-          params: { mode: mode.id },
-          search: (prev) => serializeMapSearch(prev),
-          replace: true,
-        })
-      },
-      options: { enabled: mode.enabled && mode.id !== currentMode },
-    })),
-  )
 
   return (
     <div className="flex items-center gap-2">
