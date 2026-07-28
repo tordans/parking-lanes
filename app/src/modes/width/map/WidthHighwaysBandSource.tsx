@@ -6,6 +6,8 @@ import type { WidthFeatureCollection } from './parse-highways'
 import {
   buildBandPaint,
   buildSidepathBandPaint,
+  selectedWidthHitAreaPaint,
+  selectedWidthSidepathHitAreaPaint,
   sidepathLineLayout,
   widthLineLayout,
 } from './width-layer-paint'
@@ -45,24 +47,30 @@ function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeature
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingSidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const selectedHit: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
+    const isSelected = matchesSelection(feature.properties, selectedRef)
     const isMissing = feature.properties.widthKind === 'default'
-    // Keep the selected width band for hit-testing / handles; drop pink missing chrome under
-    // the black hairline (same as parking/surface/bicycle).
-    const showMissing = isMissing && !matchesSelection(feature.properties, selectedRef)
+    // No pink missing chrome under the black hairline when selected.
+    const showMissing = isMissing && !isSelected
+
+    if (isSelected) {
+      selectedHit.features.push(feature)
+    }
 
     if (feature.properties.kind === 'sidepath') {
-      sidepaths.features.push(feature)
+      // Omit selected from the visible band so no pink/teal width shows under the hairline.
+      if (!isSelected) sidepaths.features.push(feature)
       if (showMissing) missingSidepaths.features.push(feature)
       continue
     }
 
-    highways.features.push(feature)
+    if (!isSelected) highways.features.push(feature)
     if (showMissing) missingHighways.features.push(feature)
   }
 
-  return { highways, sidepaths, missingHighways, missingSidepaths }
+  return { highways, sidepaths, missingHighways, missingSidepaths, selectedHit }
 }
 
 export function WidthHighwaysBandSource({
@@ -75,12 +83,13 @@ export function WidthHighwaysBandSource({
   focus: string
 }) {
   const dimNonCar = isCarHighwaySelection(features, selectedRef)
-  const bandPaint = buildBandPaint(focus, dimNonCar, selectedRef)
-  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar, selectedRef)
-  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(
+  const bandPaint = buildBandPaint(focus, dimNonCar)
+  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
+  const { highways, sidepaths, missingHighways, missingSidepaths, selectedHit } = splitFeatures(
     features,
     selectedRef,
   )
+  const selectedIsSidepath = selectedHit.features[0]?.properties.kind === 'sidepath'
 
   return (
     <>
@@ -129,6 +138,19 @@ export function WidthHighwaysBandSource({
               } as Record<string, unknown>
             }
             layout={sidepathLineLayout}
+          />
+        </Source>
+      ) : null}
+
+      {selectedHit.features.length > 0 ? (
+        <Source id="width-selected-hit-source" type="geojson" data={selectedHit}>
+          <Layer
+            id="width-selected-hit-layer"
+            type="line"
+            paint={
+              selectedIsSidepath ? selectedWidthSidepathHitAreaPaint : selectedWidthHitAreaPaint
+            }
+            layout={selectedIsSidepath ? sidepathLineLayout : widthLineLayout}
           />
         </Source>
       ) : null}

@@ -1,4 +1,3 @@
-import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import {
   focusCaseColor,
   focusCaseOpacity,
@@ -39,76 +38,49 @@ function activeInfraMatch(focus: string, dimNonCar: boolean): unknown | null {
   return ['all', ...clauses]
 }
 
-/** Matches the selected carriageway (no prefix/side), or null when nothing applies. */
-function selectedHighwayMatch(selectedRef: OsmFeatureRef | null): unknown | null {
-  if (!selectedRef || selectedRef.type !== 'way') return null
-  if (selectedRef.prefix != null || selectedRef.side != null) return null
-  return ['==', ['get', 'osmId'], selectedRef.id]
-}
-
-/** Matches the selected sidepath (prefix + side), or null when nothing applies. */
-function selectedSidepathMatch(selectedRef: OsmFeatureRef | null): unknown | null {
-  if (!selectedRef || selectedRef.type !== 'way') return null
-  if (selectedRef.prefix == null || selectedRef.side == null) return null
-  return [
-    'all',
-    ['==', ['get', 'osmId'], selectedRef.id],
-    ['==', ['get', 'prefix'], selectedRef.prefix],
-    ['==', ['get', 'side'], selectedRef.side],
-  ]
-}
-
-/**
- * The selected band renders invisible so the black hairline and handles stay readable, but the
- * layer keeps the feature so it remains the click target (no oversized transparent buffers).
- */
-function withSelectedBandHidden(
-  paint: Record<string, unknown>,
-  match: unknown | null,
-): Record<string, unknown> {
-  if (!match) return paint
-  return { ...paint, 'line-opacity': ['case', match, 0, paint['line-opacity']] }
-}
-
-export function buildBandPaint(
-  focus: string,
-  dimNonCar = false,
-  selectedRef: OsmFeatureRef | null = null,
-) {
+export function buildBandPaint(focus: string, dimNonCar = false) {
   const matchExpr = activeInfraMatch(focus, dimNonCar)
 
-  const paint = !matchExpr
-    ? ({
-        'line-color': widthKindColor,
-        'line-opacity': bandActiveOpacity,
-        'line-width': lineWidthFromMeters('roadWidthM'),
-      } as Record<string, unknown>)
-    : ({
-        'line-color': focusCaseColor(matchExpr, widthKindColor),
-        'line-opacity': focusCaseOpacity(matchExpr, bandActiveOpacity),
-        'line-width': lineWidthFromMeters('roadWidthM'),
-      } as Record<string, unknown>)
+  if (!matchExpr) {
+    return {
+      'line-color': widthKindColor,
+      'line-opacity': bandActiveOpacity,
+      'line-width': lineWidthFromMeters('roadWidthM'),
+    } as Record<string, unknown>
+  }
 
-  return withSelectedBandHidden(paint, selectedHighwayMatch(selectedRef))
+  return {
+    'line-color': focusCaseColor(matchExpr, widthKindColor),
+    'line-opacity': focusCaseOpacity(matchExpr, bandActiveOpacity),
+    'line-width': lineWidthFromMeters('roadWidthM'),
+  } as Record<string, unknown>
 }
 
-export function buildSidepathBandPaint(muted = false, selectedRef: OsmFeatureRef | null = null) {
-  const paint = !muted
-    ? ({
-        'line-color': widthKindColor,
-        'line-opacity': bandActiveOpacity,
-        'line-width': lineWidthFromMeters('roadWidthM'),
-        'line-offset': SIDEPATH_LINE_OFFSET,
-      } as Record<string, unknown>)
-    : ({
-        'line-color': MAP_FOCUS_MUTED_COLOR,
-        'line-opacity': MAP_FOCUS_MUTED_OPACITY,
-        'line-width': lineWidthFromMeters('roadWidthM'),
-        'line-offset': SIDEPATH_LINE_OFFSET,
-      } as Record<string, unknown>)
+export function buildSidepathBandPaint(muted = false) {
+  if (!muted) {
+    return {
+      'line-color': widthKindColor,
+      'line-opacity': bandActiveOpacity,
+      'line-width': lineWidthFromMeters('roadWidthM'),
+      'line-offset': SIDEPATH_LINE_OFFSET,
+    } as Record<string, unknown>
+  }
 
-  return withSelectedBandHidden(paint, selectedSidepathMatch(selectedRef))
+  return {
+    'line-color': MAP_FOCUS_MUTED_COLOR,
+    'line-opacity': MAP_FOCUS_MUTED_OPACITY,
+    'line-width': lineWidthFromMeters('roadWidthM'),
+    'line-offset': SIDEPATH_LINE_OFFSET,
+  } as Record<string, unknown>
 }
+
+/** Invisible full-width hit target for the selected way (band is omitted while selected). */
+export const selectedWidthHitAreaPaint = transparentLineHitPaint(lineWidthFromMeters('roadWidthM'))
+
+export const selectedWidthSidepathHitAreaPaint = {
+  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM')),
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
 
 export const sidepathCenterlinePaint = {
   'line-offset': SIDEPATH_LINE_OFFSET,
