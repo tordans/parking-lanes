@@ -88,12 +88,7 @@ export function LaneEditForm(props: {
             onChange={handleInputChange}
           />
         ))}
-        <AllTagsBlock
-          osmType={props.osm.type}
-          osmId={props.osm.id}
-          tags={props.osm.tags}
-          highlightKeyPrefix="parking:"
-        />
+        <AllTagsBlock tags={props.osm.tags} highlightKeyPrefix="parking:" />
       </div>
 
       {!readOnly ? (

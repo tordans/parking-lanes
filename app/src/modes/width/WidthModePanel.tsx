@@ -179,7 +179,7 @@ export function WidthModePanel() {
         </p>
       </ColoredEditorSection>
 
-      <AllTagsBlock osmType={selectedWay.type} osmId={selectedWay.id} tags={selectedWay.tags} />
+      <AllTagsBlock tags={selectedWay.tags} />
     </div>
   )
 }

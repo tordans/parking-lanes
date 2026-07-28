@@ -3,8 +3,6 @@ import { type OsmTags } from '@osm-editor-kit/osm-data'
 import { useAllTagsActions, useAllTagsOpen } from './all-tags-store'
 
 export function AllTagsBlock(props: {
-  osmType: string
-  osmId: number
   tags: OsmTags
   /** Bold keys that start with this prefix (e.g. `parking:`). */
   highlightKeyPrefix?: string
@@ -19,12 +17,7 @@ export function AllTagsBlock(props: {
       open={allTagsOpen}
       onToggle={(event) => setAllTagsOpen(event.currentTarget.open)}
     >
-      <summary className="cursor-pointer font-sans">
-        {m.panel_all_tags()}
-        <span className="ml-1.5 font-mono text-xs text-zinc-500">
-          {props.osmType}/{props.osmId}
-        </span>
-      </summary>
+      <summary className="cursor-pointer font-sans">{m.panel_all_tags()}</summary>
       <table className="w-full table-fixed">
         <colgroup>
           <col className="w-1/2" />

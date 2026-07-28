@@ -290,7 +290,7 @@ function BicycleModeEditor(props: {
         </table>
       </div>
 
-      <AllTagsBlock osmType={selectedWay.type} osmId={selectedWay.id} tags={selectedWay.tags} />
+      <AllTagsBlock tags={selectedWay.tags} />
     </div>
   )
 }
