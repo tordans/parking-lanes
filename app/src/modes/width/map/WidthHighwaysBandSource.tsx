@@ -27,7 +27,22 @@ function isCarHighwaySelection(
   return selected?.properties.kind === 'highway' && selected.properties.infra === 'car'
 }
 
-function splitFeatures(features: WidthFeatureCollection) {
+function matchesSelection(
+  properties: WidthFeatureCollection['features'][number]['properties'],
+  selectedRef: OsmFeatureRef | null,
+) {
+  if (!selectedRef || selectedRef.type !== 'way' || selectedRef.id !== properties.osmId) {
+    return false
+  }
+
+  if (properties.kind === 'sidepath') {
+    return selectedRef.prefix === properties.prefix && selectedRef.side === properties.side
+  }
+
+  return selectedRef.prefix == null && selectedRef.side == null
+}
+
+function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeatureRef | null) {
   const highways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -35,17 +50,18 @@ function splitFeatures(features: WidthFeatureCollection) {
 
   for (const feature of features.features) {
     const isMissing = feature.properties.widthKind === 'default'
-    // Keep the selected way's width band (and missing dots) under the black centerline /
-    // orange handles — omitting it made high-zoom selection look like empty map data.
+    // Keep the selected width band for hit-testing / handles; drop pink missing chrome under
+    // the black hairline (same as parking/surface/bicycle).
+    const showMissing = isMissing && !matchesSelection(feature.properties, selectedRef)
 
     if (feature.properties.kind === 'sidepath') {
       sidepaths.features.push(feature)
-      if (isMissing) missingSidepaths.features.push(feature)
+      if (showMissing) missingSidepaths.features.push(feature)
       continue
     }
 
     highways.features.push(feature)
-    if (isMissing) missingHighways.features.push(feature)
+    if (showMissing) missingHighways.features.push(feature)
   }
 
   return { highways, sidepaths, missingHighways, missingSidepaths }
@@ -63,7 +79,10 @@ export function WidthHighwaysBandSource({
   const dimNonCar = isCarHighwaySelection(features, selectedRef)
   const bandPaint = buildBandPaint(focus, dimNonCar)
   const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
-  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(features)
+  const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(
+    features,
+    selectedRef,
+  )
 
   return (
     <>
