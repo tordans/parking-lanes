@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import {
   DEV_OSM_FIXTURE_BBOX,
   DEV_OSM_FIXTURE_RELATIVE_PATH,
+  sanitizeDevOsmFixtureTestStreet,
 } from '../src/modes/parking/fixtures/dev-map-fixture.const.ts'
 
 type MapBounds = {
@@ -87,7 +88,7 @@ async function main() {
   console.log(
     `Downloading dev OSM fixture for bbox ${bboxParam(DEV_OSM_FIXTURE_BBOX)} (tiles if needed)`,
   )
-  const elements = await downloadBbox(DEV_OSM_FIXTURE_BBOX)
+  const elements = sanitizeDevOsmFixtureTestStreet(await downloadBbox(DEV_OSM_FIXTURE_BBOX))
   const text = JSON.stringify({ elements })
   await mkdir(path.dirname(fixturePath), { recursive: true })
   await writeFile(fixturePath, text)
