@@ -77,6 +77,20 @@ export function AppAboutContent({ modeId, about, modeLabel, maturity }: Props) {
             {m.shell_feedback_welcome_after({ modeLabel })}
           </p>
         </div>
+        {modeId === 'parking' ? (
+          <p className="mt-3 text-zinc-600">
+            {m.mode_parking_thanks_before()}{' '}
+            <a
+              href="https://github.com/zlant/parking-lanes"
+              target="_blank"
+              rel="noreferrer"
+              className={linkClass}
+            >
+              {m.mode_parking_thanks_link()}
+            </a>{' '}
+            {m.mode_parking_thanks_after()}
+          </p>
+        ) : null}
       </section>
 
       <PanelSectionDivider />
