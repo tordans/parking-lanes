@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.json"],
   "exclude": ["src/test/**"],
   "compilerOptions": {
     "tsBuildInfoFile": ".tsbuildinfo",
-    "types": ["bun-types"]
+    "types": ["bun-types"],
+    "resolveJsonModule": true
   }
 }

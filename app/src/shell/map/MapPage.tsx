@@ -1,6 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
-import { OPENFREEMAP_POSITRON_STYLE_URL } from '@osm-editor-kit/osm-maplibre'
+import { OPENFREEMAP_POSITRON_STYLE } from '@osm-editor-kit/osm-maplibre'
 import { useParams } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { AttributionControl } from 'react-map-gl/maplibre'
@@ -140,7 +140,7 @@ function MapPageContent({
               <MapGL
                 id={MAIN_MAP_ID}
                 reuseMaps
-                mapStyle={OPENFREEMAP_POSITRON_STYLE_URL}
+                mapStyle={OPENFREEMAP_POSITRON_STYLE}
                 initialViewState={{
                   longitude: initialView.longitude,
                   latitude: initialView.latitude,

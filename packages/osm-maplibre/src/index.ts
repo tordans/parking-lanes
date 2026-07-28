@@ -17,5 +17,7 @@ export {
 } from './map-focus-paint'
 export {
   OPENFREEMAP_POSITRON_IMAGERY_USED,
+  OPENFREEMAP_POSITRON_STYLE,
   OPENFREEMAP_POSITRON_STYLE_URL,
+  patchOpenFreeMapStyle,
 } from './openfreemap-style'
