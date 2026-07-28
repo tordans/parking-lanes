@@ -1,10 +1,10 @@
-import { focusCaseColor, focusCaseOpacity } from '@osm-editor-kit/osm-maplibre'
-import type { FilterSpecification } from 'maplibre-gl'
 import {
-  ROUND_LINE_LAYOUT,
-  SIDEPATH_LINE_OFFSET,
-  transparentLineHitPaint,
-} from '../../../shell/map/map-hit-paint'
+  focusCaseColor,
+  focusCaseOpacity,
+  lineOffsetFromMeters,
+} from '@osm-editor-kit/osm-maplibre'
+import type { FilterSpecification } from 'maplibre-gl'
+import { ROUND_LINE_LAYOUT, transparentLineHitPaint } from '../../../shell/map/map-hit-paint'
 import {
   MISSING_SMOOTHNESS_BASE_COLOR,
   MISSING_SMOOTHNESS_OVERLAY_COLOR,
@@ -19,6 +19,14 @@ const dottedMutedOpacity = 0.35
 export { ROUND_LINE_LAYOUT as surfaceLineLayout }
 /** Sidepaths use the same round layout; offset belongs in paint. */
 export { ROUND_LINE_LAYOUT as sidepathLineLayout }
+
+/**
+ * Per-feature offset from `offsetMeters` (unsigned metres from centerline).
+ * Left uses a negative sign so bands sit outside the carriageway on each side.
+ */
+export const SURFACE_FEATURE_LINE_OFFSET = lineOffsetFromMeters('offsetMeters', 1, {
+  sign: ['case', ['==', ['get', 'side'], 'left'], -1, 1],
+})
 
 const surfaceColor = [
   'case',
@@ -55,22 +63,23 @@ const surfaceBandLineWidth = [
   surfaceOtherLineWidth,
 ] as const
 
+/** Keep hit targets close to band width so stacked infra clicks do not overlap. */
 const surfaceHitLineWidth = [
   'case',
   ['get', 'isMajor'],
-  ['interpolate', ['linear'], ['zoom'], 12, 8, 16, 14, 20, 20],
-  ['interpolate', ['linear'], ['zoom'], 12, 6, 16, 10, 20, 14],
+  ['interpolate', ['linear'], ['zoom'], 12, 5, 16, 9, 20, 14],
+  ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 6, 20, 9],
 ] as const
 
-function withOptionalSidepathOffset(
+function withOptionalFeatureOffset(
   paint: Record<string, unknown>,
-  forSidepath: boolean,
+  withOffset: boolean,
 ): Record<string, unknown> {
-  if (!forSidepath) return paint
-  return { ...paint, 'line-offset': SIDEPATH_LINE_OFFSET }
+  if (!withOffset) return paint
+  return { ...paint, 'line-offset': SURFACE_FEATURE_LINE_OFFSET }
 }
 
-export function buildSurfaceBandPaint(focus: string, hasSelection = false, forSidepath = false) {
+export function buildSurfaceBandPaint(focus: string, hasSelection = false, withOffset = false) {
   const opacity = hasSelection ? bandMutedOpacity : bandActiveOpacity
   const basePaint = {
     'line-color': surfaceColor,
@@ -78,29 +87,29 @@ export function buildSurfaceBandPaint(focus: string, hasSelection = false, forSi
     'line-width': surfaceBandLineWidth,
   } as Record<string, unknown>
 
-  if (focus === 'all') return withOptionalSidepathOffset(basePaint, forSidepath)
+  if (focus === 'all') return withOptionalFeatureOffset(basePaint, withOffset)
 
   const matchExpr = ['==', ['get', 'infra'], focus]
 
-  return withOptionalSidepathOffset(
+  return withOptionalFeatureOffset(
     {
       'line-color': focusCaseColor(matchExpr, surfaceColor),
       'line-opacity': focusCaseOpacity(matchExpr, opacity, bandMutedOpacity),
       'line-width': surfaceBandLineWidth,
     } as Record<string, unknown>,
-    forSidepath,
+    withOffset,
   )
 }
 
-export function buildSurfaceDottedOverlayPaint(hasSelection = false, forSidepath = false) {
-  return withOptionalSidepathOffset(
+export function buildSurfaceDottedOverlayPaint(hasSelection = false, withOffset = false) {
+  return withOptionalFeatureOffset(
     {
       'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
       'line-opacity': hasSelection ? dottedMutedOpacity : dottedActiveOpacity,
       'line-width': surfaceBandLineWidth,
       'line-dasharray': [0.5, 1.5],
     } as Record<string, unknown>,
-    forSidepath,
+    withOffset,
   )
 }
 
@@ -114,9 +123,9 @@ export const surfaceHitAreaPaint = transparentLineHitPaint(surfaceHitLineWidth)
 
 export const sidepathHitAreaPaint = {
   ...transparentLineHitPaint(surfaceHitLineWidth),
-  'line-offset': SIDEPATH_LINE_OFFSET,
+  'line-offset': SURFACE_FEATURE_LINE_OFFSET,
 } as Record<string, unknown>
 
 export const sidepathCenterlinePaint = {
-  'line-offset': SIDEPATH_LINE_OFFSET,
+  'line-offset': SURFACE_FEATURE_LINE_OFFSET,
 } as Record<string, unknown>

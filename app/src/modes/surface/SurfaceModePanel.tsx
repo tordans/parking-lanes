@@ -153,7 +153,7 @@ function SurfaceModeEditor(props: {
       ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
       : undefined
 
-  const switcher =
+  const channelSwitcher =
     layout.kind === 'segregated' || layout.kind === 'cycleway-sides' ? (
       <SurfaceChannelSwitcher
         sameMode={sameMode}
@@ -161,6 +161,7 @@ function SurfaceModeEditor(props: {
         leftLabel={m.surface_split()}
         rightLabel={m.surface_same()}
         onSameModeChange={setSameMode}
+        compact
       />
     ) : null
 
@@ -170,7 +171,7 @@ function SurfaceModeEditor(props: {
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
         featureSuffix={featureSuffix}
-        leading={switcher}
+        identityStart
         className="flex items-center gap-2"
       />
 
@@ -184,8 +185,8 @@ function SurfaceModeEditor(props: {
 
       {layout.kind === 'segregated' ? (
         <>
-          <SurfaceChannelSection channel="same" shown={sameMode}>
-            {channelPicker(layout.footKeys, [layout.cycleKeys])}
+          <SurfaceChannelSection channel="same" shown headerTrailing={channelSwitcher}>
+            {sameMode ? channelPicker(layout.footKeys, [layout.cycleKeys]) : null}
           </SurfaceChannelSection>
           <SurfaceChannelSection channel="foot" shown={!sameMode}>
             {channelPicker(layout.footKeys)}
@@ -198,8 +199,8 @@ function SurfaceModeEditor(props: {
 
       {layout.kind === 'cycleway-sides' ? (
         <>
-          <SurfaceChannelSection channel="same" shown={sameMode}>
-            {channelPicker(layout.leftKeys, [layout.rightKeys])}
+          <SurfaceChannelSection channel="same" shown headerTrailing={channelSwitcher}>
+            {sameMode ? channelPicker(layout.leftKeys, [layout.rightKeys]) : null}
           </SurfaceChannelSection>
           <SurfaceChannelSection channel="left" shown={!sameMode}>
             {channelPicker(layout.leftKeys)}

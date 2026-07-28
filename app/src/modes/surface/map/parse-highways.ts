@@ -1,4 +1,4 @@
-import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
+import type { OsmTags, ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   expandSidepaths,
   formatSidepathFeatureId,
@@ -20,6 +20,11 @@ import {
   surfacePaintState,
   type SurfacePaintState,
 } from '../domain/surface-tag-read'
+import {
+  isSeparateSidepathValue,
+  SURFACE_SEGREGATED_HALF_GAP_M,
+  surfaceSidepathOffsetMeters,
+} from './surface-sidepath-offset'
 
 const majorHighwayRegex = /^motorway|trunk|primary|secondary|tertiary|unclassified|residential/
 
@@ -42,6 +47,11 @@ export type SurfaceHighwayProperties = {
   missingSurface: boolean
   missingSmoothness: boolean
   isMajor: boolean
+  /** Segregated foot/cycle channel; omitted for ordinary road centerlines. */
+  channel?: 'foot' | 'cycle'
+  /** Unsigned metres from centerline; sign comes from `side` in paint. */
+  offsetMeters?: number
+  side?: SidepathSide
 }
 
 export type SurfaceSidepathProperties = {
@@ -60,6 +70,8 @@ export type SurfaceSidepathProperties = {
   missingSmoothness: boolean
   isMajor: boolean
   parentRoadWidthM: number
+  /** Unsigned metres from centerline; sign comes from `side` in paint. */
+  offsetMeters: number
 }
 
 export type SurfaceFeatureProperties = SurfaceHighwayProperties | SurfaceSidepathProperties
@@ -127,6 +139,38 @@ function surfacePropertiesFromTags(
   }
 }
 
+function channelTagsFromWay(tags: OsmTags, channel: 'foot' | 'cycle'): Record<string, string> {
+  if (channel === 'cycle') {
+    return {
+      surface: tags['cycleway:surface'] ?? '',
+      smoothness: tags['cycleway:smoothness'] ?? '',
+      'sett:length': tags['cycleway:sett:length'] ?? '',
+    }
+  }
+
+  if (tags['footway:surface'] != null || tags['footway:smoothness'] != null) {
+    return {
+      surface: tags['footway:surface'] ?? '',
+      smoothness: tags['footway:smoothness'] ?? '',
+      'sett:length': tags['footway:sett:length'] ?? '',
+    }
+  }
+
+  return {
+    surface: tags.surface ?? '',
+    smoothness: tags.smoothness ?? '',
+    'sett:length': tags['sett:length'] ?? '',
+  }
+}
+
+function compactTags(tags: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(tags)) {
+    if (value) result[key] = value
+  }
+  return result
+}
+
 export function parseSurfaceFeaturesFromData(
   data: ParsedOsmData,
   bounds: MapBounds,
@@ -144,34 +188,83 @@ export function parseSurfaceFeaturesFromData(
     if (coordinates.length < 2) continue
 
     const width = roadWidthFromTags(way.tags)
-    const highwayProps = surfacePropertiesFromTags(
-      way.tags,
-      classifySurfaceInfra(way.tags),
-      surfaceWayIsMajor(way.tags.highway),
+    const isMajor = surfaceWayIsMajor(way.tags.highway)
+    const isSegregated = way.tags.segregated === 'yes'
+
+    if (isSegregated) {
+      for (const channel of ['foot', 'cycle'] as const) {
+        const channelTags = compactTags(channelTagsFromWay(way.tags, channel))
+        const channelProps = surfacePropertiesFromTags(
+          channelTags,
+          channel === 'cycle' ? 'bike' : classifySurfaceInfra(way.tags),
+          isMajor,
+        )
+        const side: SidepathSide = channel === 'foot' ? 'left' : 'right'
+
+        features.push({
+          type: 'Feature',
+          id: `${way.id}-${channel}`,
+          geometry: {
+            type: 'LineString',
+            coordinates,
+          },
+          properties: {
+            osmId: way.id,
+            osmType: 'way',
+            featureId: `way/${way.id}/${channel}`,
+            kind: 'highway',
+            highway: way.tags.highway,
+            channel,
+            side,
+            offsetMeters: SURFACE_SEGREGATED_HALF_GAP_M,
+            ...channelProps,
+          },
+        })
+      }
+    } else {
+      const highwayProps = surfacePropertiesFromTags(
+        way.tags,
+        classifySurfaceInfra(way.tags),
+        isMajor,
+      )
+
+      features.push({
+        type: 'Feature',
+        id: way.id,
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+        properties: {
+          osmId: way.id,
+          osmType: 'way',
+          featureId: `way/${way.id}`,
+          kind: 'highway',
+          highway: way.tags.highway,
+          offsetMeters: 0,
+          ...highwayProps,
+        },
+      })
+    }
+
+    const sidepaths = expandSidepaths(way.id, way.tags).filter(
+      (sidepath) => !isSeparateSidepathValue(sidepath.tags[sidepath.ref.prefix]),
     )
+    const prefixesBySide: Record<SidepathSide, SidepathPrefix[]> = { left: [], right: [] }
+    for (const sidepath of sidepaths) {
+      prefixesBySide[sidepath.ref.side].push(sidepath.ref.prefix)
+    }
 
-    features.push({
-      type: 'Feature',
-      id: way.id,
-      geometry: {
-        type: 'LineString',
-        coordinates,
-      },
-      properties: {
-        osmId: way.id,
-        osmType: 'way',
-        featureId: `way/${way.id}`,
-        kind: 'highway',
-        highway: way.tags.highway,
-        ...highwayProps,
-      },
-    })
-
-    for (const sidepath of expandSidepaths(way.id, way.tags)) {
+    for (const sidepath of sidepaths) {
       const sidepathProps = surfacePropertiesFromTags(
         sidepath.tags,
         classifySurfaceInfra(sidepath.tags, { prefix: sidepath.ref.prefix }),
         false,
+      )
+      const offsetMeters = surfaceSidepathOffsetMeters(
+        width.value,
+        sidepath.ref.prefix,
+        prefixesBySide[sidepath.ref.side],
       )
 
       features.push({
@@ -190,6 +283,7 @@ export function parseSurfaceFeaturesFromData(
           side: sidepath.ref.side,
           highway: sidepath.tags.highway ?? sidepath.ref.prefix,
           parentRoadWidthM: width.value,
+          offsetMeters,
           ...sidepathProps,
         },
       })

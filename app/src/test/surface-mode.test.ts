@@ -162,3 +162,133 @@ describe('surface edit layout', () => {
     ).toBe(false)
   })
 })
+
+describe('surface sidepath offset', () => {
+  const offsetModulePromise = import('../modes/surface/map/surface-sidepath-offset')
+
+  test('stacks sidewalk outside cycleway on the same side', async () => {
+    const { surfaceSidepathOffsetMeters, SURFACE_SIDEPATH_BAND_GAP_M } = await offsetModulePromise
+    const prefixes = ['cycleway', 'sidewalk'] as const
+    const cycle = surfaceSidepathOffsetMeters(10, 'cycleway', prefixes)
+    const sidewalk = surfaceSidepathOffsetMeters(10, 'sidewalk', prefixes)
+    expect(sidewalk - cycle).toBe(SURFACE_SIDEPATH_BAND_GAP_M)
+    expect(cycle).toBeGreaterThan(5)
+  })
+
+  test('isSeparateSidepathValue detects separate geometry', async () => {
+    const { isSeparateSidepathValue } = await offsetModulePromise
+    expect(isSeparateSidepathValue('separate')).toBe(true)
+    expect(isSeparateSidepathValue('yes')).toBe(false)
+    expect(isSeparateSidepathValue('lane')).toBe(false)
+  })
+})
+
+describe('parseSurfaceFeaturesFromData', () => {
+  const parseModulePromise = import('../modes/surface/map/parse-highways')
+
+  function makeData(wayId: number, tags: Record<string, string>, coords: [number, number][]) {
+    const nodeIds = coords.map((_, i) => i + 1)
+    const nodeCoords: Record<number, number[]> = {}
+    for (let i = 0; i < coords.length; i++) {
+      const [lat, lon] = coords[i]!
+      nodeCoords[i + 1] = [lat, lon]
+    }
+    return {
+      ways: {
+        [wayId]: { id: wayId, type: 'way' as const, nodes: nodeIds, tags, version: 1 },
+      },
+      nodes: {},
+      nodeCoords,
+      relations: {},
+    }
+  }
+
+  const bounds = { south: 52.35, west: 13.41, north: 52.36, east: 13.42 }
+  const coords: [number, number][] = [
+    [52.355, 13.415],
+    [52.356, 13.416],
+  ]
+
+  test('skips separate sidepaths and stacks on-way sidewalk + cycleway', async () => {
+    const { parseSurfaceFeaturesFromData } = await parseModulePromise
+    const features = parseSurfaceFeaturesFromData(
+      makeData(
+        1,
+        {
+          highway: 'residential',
+          width: '10',
+          surface: 'asphalt',
+          smoothness: 'good',
+          'sidewalk:left': 'separate',
+          'sidewalk:right': 'yes',
+          'sidewalk:right:surface': 'paving_stones',
+          'sidewalk:right:smoothness': 'good',
+          'cycleway:right': 'lane',
+          'cycleway:right:surface': 'asphalt',
+          'cycleway:right:smoothness': 'excellent',
+        },
+        coords,
+      ),
+      bounds,
+      'public',
+    )
+
+    const kinds = features.map((f) =>
+      f.properties.kind === 'sidepath'
+        ? `${f.properties.prefix}/${f.properties.side}`
+        : f.properties.kind,
+    )
+    expect(kinds).toContain('highway')
+    expect(kinds).toContain('sidewalk/right')
+    expect(kinds).toContain('cycleway/right')
+    expect(kinds).not.toContain('sidewalk/left')
+
+    const sidewalk = features.find(
+      (f) => f.properties.kind === 'sidepath' && f.properties.prefix === 'sidewalk',
+    )
+    const cycleway = features.find(
+      (f) => f.properties.kind === 'sidepath' && f.properties.prefix === 'cycleway',
+    )
+    expect(
+      sidewalk?.properties.kind === 'sidepath' && sidewalk.properties.offsetMeters,
+    ).toBeGreaterThan(
+      cycleway?.properties.kind === 'sidepath' ? cycleway.properties.offsetMeters : 0,
+    )
+  })
+
+  test('emits dual offset channels for segregated paths', async () => {
+    const { parseSurfaceFeaturesFromData } = await parseModulePromise
+    const features = parseSurfaceFeaturesFromData(
+      makeData(
+        2,
+        {
+          highway: 'path',
+          bicycle: 'designated',
+          foot: 'designated',
+          segregated: 'yes',
+          surface: 'asphalt',
+          smoothness: 'good',
+          'cycleway:surface': 'paving_stones',
+          'cycleway:smoothness': 'intermediate',
+        },
+        coords,
+      ),
+      bounds,
+      'inclusive',
+    )
+
+    const channels = features
+      .filter((f) => f.properties.kind === 'highway')
+      .map((f) => (f.properties.kind === 'highway' ? f.properties.channel : undefined))
+    expect(channels).toEqual(['foot', 'cycle'])
+    expect(features.every((f) => (f.properties.offsetMeters ?? 0) > 0)).toBe(true)
+    const foot = features.find(
+      (f) => f.properties.kind === 'highway' && f.properties.channel === 'foot',
+    )
+    const cycle = features.find(
+      (f) => f.properties.kind === 'highway' && f.properties.channel === 'cycle',
+    )
+    expect(foot?.properties.surface).toBe('asphalt')
+    expect(cycle?.properties.surface).toBe('paving_stones')
+  })
+})

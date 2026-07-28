@@ -40,7 +40,8 @@ export function surfaceChannelColor(
 export function SurfaceChannelSection(props: {
   channel: SurfaceChannelLabel
   shown: boolean
-  children: ReactNode
+  children?: ReactNode
+  headerTrailing?: ReactNode
 }) {
   if (!props.shown) return null
 
@@ -53,6 +54,7 @@ export function SurfaceChannelSection(props: {
       aria-label={surfaceChannelLabel(props.channel)}
       title={surfaceChannelLabel(props.channel)}
       color={surfaceChannelColor(props.channel)}
+      headerTrailing={props.headerTrailing}
       contentClassName="py-2"
     >
       {props.children}

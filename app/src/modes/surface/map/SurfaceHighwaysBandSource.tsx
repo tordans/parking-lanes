@@ -1,6 +1,5 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { Layer, Source } from 'react-map-gl/maplibre'
-import { SIDEPATH_LINE_OFFSET } from '../../../shell/map/map-hit-paint'
 import {
   MissingDataCenterlineSource,
   missingDataHitAreaLayerId,
@@ -13,6 +12,7 @@ import {
   sidepathCenterlinePaint,
   sidepathHitAreaPaint,
   sidepathLineLayout,
+  SURFACE_FEATURE_LINE_OFFSET,
   surfaceDottedOverlayFilter,
   surfaceHitAreaPaint,
   surfaceLineLayout,
@@ -37,7 +37,14 @@ function matchesSelection(
     return selectedRef.prefix === properties.prefix && selectedRef.side === properties.side
   }
 
+  // Segregated dual bands and ordinary centerlines both select the bare way.
   return selectedRef.prefix == null && selectedRef.side == null
+}
+
+function hasLineOffset(
+  properties: SurfaceFeatureCollection['features'][number]['properties'],
+): boolean {
+  return (properties.offsetMeters ?? 0) !== 0
 }
 
 function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatureRef | null) {
@@ -55,7 +62,7 @@ function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatu
     }
 
     if (feature.properties.missingSurface) {
-      if (feature.properties.kind === 'sidepath') {
+      if (feature.properties.kind === 'sidepath' || hasLineOffset(feature.properties)) {
         missingSidepaths.features.push(feature)
       } else {
         missingHighways.features.push(feature)
@@ -63,7 +70,7 @@ function splitFeatures(features: SurfaceFeatureCollection, selectedRef: OsmFeatu
       continue
     }
 
-    if (feature.properties.kind === 'sidepath') {
+    if (feature.properties.kind === 'sidepath' || hasLineOffset(feature.properties)) {
       sidepaths.features.push(feature)
       continue
     }
@@ -85,14 +92,14 @@ export function SurfaceHighwaysBandSource({
 }) {
   const hasSelection = selectedRef != null
   const bandPaint = buildSurfaceBandPaint(focus, hasSelection)
-  const sidepathBandPaint = buildSurfaceBandPaint(focus, hasSelection, true)
+  const offsetBandPaint = buildSurfaceBandPaint(focus, hasSelection, true)
   const dottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection)
-  const sidepathDottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection, true)
+  const offsetDottedOverlayPaint = buildSurfaceDottedOverlayPaint(hasSelection, true)
   const { highways, sidepaths, missingHighways, missingSidepaths, selected } = splitFeatures(
     features,
     selectedRef,
   )
-  const selectedIsSidepath = selected.features[0]?.properties.kind === 'sidepath'
+  const selectedUsesOffset = selected.features.some((feature) => hasLineOffset(feature.properties))
 
   return (
     <>
@@ -132,13 +139,13 @@ export function SurfaceHighwaysBandSource({
           <Layer
             id="surface-sidepaths-band-layer"
             type="line"
-            paint={sidepathBandPaint}
+            paint={offsetBandPaint}
             layout={sidepathLineLayout}
           />
           <Layer
             id="surface-sidepaths-dotted-layer"
             type="line"
-            paint={sidepathDottedOverlayPaint}
+            paint={offsetDottedOverlayPaint}
             layout={sidepathLineLayout}
             filter={surfaceDottedOverlayFilter}
           />
@@ -156,7 +163,7 @@ export function SurfaceHighwaysBandSource({
         layerIdPrefix={surfaceMissingSidepathsLayerIdPrefix}
         collection={missingSidepaths}
         layout={sidepathLineLayout}
-        paint={{ 'line-offset': SIDEPATH_LINE_OFFSET }}
+        paint={{ 'line-offset': SURFACE_FEATURE_LINE_OFFSET }}
       />
 
       <SelectedWayCenterlineSource
@@ -164,7 +171,7 @@ export function SurfaceHighwaysBandSource({
         layerId="surface-selected-centerline-layer"
         collection={selected}
         layout={surfaceLineLayout}
-        paint={selectedIsSidepath ? sidepathCenterlinePaint : undefined}
+        paint={selectedUsesOffset ? sidepathCenterlinePaint : undefined}
       />
     </>
   )
