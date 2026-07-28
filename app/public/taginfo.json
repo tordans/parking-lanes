@@ -5,7 +5,7 @@
     "name": "Street Space Editor",
     "description": "Street Space Editor for OpenStreetMap (parking mode)",
     "project_url": "https://osmberlin.github.io/street-space-editor/",
-    "icon_url": "https://osmberlin.github.io/street-space-editor/assets/free_parking/free_parking_russia.svg"
+    "icon_url": "https://osmberlin.github.io/street-space-editor/osm-street-space-editor-logo-2026.svg"
   },
   "tags": [
     { "key": "amenity", "value": "parking", "object_types": ["node", "way"] },

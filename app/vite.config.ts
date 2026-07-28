@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,10 +14,34 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 const monorepoRoot = path.resolve(projectRoot, '..')
 const bunLinksCache = path.join(os.homedir(), '.bun/install/cache/links')
 
+const appPackage = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf8')) as {
+  version: string
+}
+
+function resolveAppBuildDate(): string {
+  const fromEnv = process.env.APP_BUILD_DATE?.trim()
+  if (fromEnv) return fromEnv
+  try {
+    return execSync('git log -1 --format=%cs', {
+      cwd: monorepoRoot,
+      encoding: 'utf8',
+    }).trim()
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+}
+
+const appVersion = appPackage.version
+const appBuildDate = resolveAppBuildDate()
+
 export default defineConfig({
   envDir: monorepoRoot,
   envPrefix: ['VITE_', 'OSM_'],
   base: '/street-space-editor/',
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_BUILD_DATE__: JSON.stringify(appBuildDate),
+  },
   plugins: [
     paraglideVitePlugin({
       project: './project.inlang',

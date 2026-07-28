@@ -54,6 +54,7 @@
   "shell_report_feedback": "Feedback melden (Modus {modeLabel})",
   "shell_tagging_guide": "Tagging-Leitfaden",
   "shell_github": "GitHub",
+  "shell_changelog": "Änderungsprotokoll",
   "shell_close": "Schließen",
   "shell_drag_resize": "Ziehen zum Größenändern",
   "shell_osm_wiki": "OpenStreetMap-Wiki",
