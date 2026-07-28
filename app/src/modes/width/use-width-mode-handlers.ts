@@ -113,12 +113,34 @@ export function useWidthModeHandlers() {
     startClientY: number
     startClientX: number
     bearing: number
+    /** Last rounded width applied visually during this gesture. */
+    lastDraftWidthM: number
+    moved: boolean
   } | null>(null)
   /** Fraction of the click that triggered a new selection, applied once geometry is known. */
   const pendingClickFractionRef = useRef<number | null>(null)
+  /** Swallow the click that MapLibre synthesizes after a completed drag. */
+  const suppressMapClickRef = useRef(false)
+  const windowDragCleanupRef = useRef<(() => void) | null>(null)
+
+  const commitWidth = useCallback(
+    (way: OsmWay, widthM: number) => {
+      if (!selectedOsmRef || selectedOsmRef.type !== 'way') return
+
+      if (isSidepathRef(selectedOsmRef)) {
+        handleOsmChange(
+          stageWidthOnSidepath(way, selectedOsmRef.prefix, selectedOsmRef.side, widthM),
+        )
+        return
+      }
+
+      handleOsmChange(stageWidthOnWay(way, widthM))
+    },
+    [handleOsmChange, selectedOsmRef],
+  )
 
   const applyWidth = useCallback(
-    (way: OsmWay, widthM: number) => {
+    (way: OsmWay, widthM: number, options?: { commit?: boolean }) => {
       if (!selectedOsmRef || selectedOsmRef.type !== 'way') return
 
       const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
@@ -137,20 +159,17 @@ export function useWidthModeHandlers() {
 
       setHandles(buildHandleGeometry(handleCoordinates, clamped, fractions))
 
-      if (isSidepathRef(selectedOsmRef)) {
-        handleOsmChange(
-          stageWidthOnSidepath(way, selectedOsmRef.prefix, selectedOsmRef.side, clamped),
-        )
-        return
-      }
-
-      handleOsmChange(stageWidthOnWay(way, clamped))
+      if (options?.commit === false) return
+      commitWidth(way, clamped)
     },
-    [graph?.nodeCoords, handleOsmChange, selectedOsmRef, setDraftWidthM, setHandles],
+    [commitWidth, graph?.nodeCoords, selectedOsmRef, setDraftWidthM, setHandles],
   )
 
   useEffect(
     function syncSelectionDraft() {
+      // Mid-drag commits used to rewrite graph.ways and this effect fought live handle updates.
+      if (useWidthMapStore.getState().dragSide) return
+
       if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
         clearDraft()
         return
@@ -245,6 +264,12 @@ export function useWidthModeHandlers() {
 
   const handleLayerClick = useCallback(
     (event: MapLayerMouseEvent) => {
+      if (suppressMapClickRef.current) {
+        suppressMapClickRef.current = false
+        event.originalEvent.stopPropagation()
+        return
+      }
+
       const layerId = event.features?.[0]?.layer?.id
       if (layerId === 'width-handles-hitarea-layer') {
         event.originalEvent.stopPropagation()
@@ -286,10 +311,72 @@ export function useWidthModeHandlers() {
   )
 
   const handleMapClick = useCallback(() => {
-    if (dragSide) return
+    if (dragSide || suppressMapClickRef.current) {
+      suppressMapClickRef.current = false
+      return
+    }
     clearSelection()
     clearDraft()
   }, [clearDraft, clearSelection, dragSide])
+
+  const finishDrag = useCallback(() => {
+    windowDragCleanupRef.current?.()
+    windowDragCleanupRef.current = null
+
+    const drag = dragRef.current
+    dragRef.current = null
+
+    const map = mainMap?.getMap()
+    map?.dragPan.enable()
+
+    if (drag?.moved) {
+      suppressMapClickRef.current = true
+      if (selectedOsmRef?.type === 'way') {
+        const way = graph?.ways[selectedOsmRef.id]
+        if (way) commitWidth(way, drag.lastDraftWidthM)
+      }
+    }
+
+    endDrag()
+  }, [commitWidth, endDrag, graph?.ways, mainMap, selectedOsmRef])
+
+  const updateDragFromClientPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!dragRef.current || !selectedOsmRef || selectedOsmRef.type !== 'way') return
+
+      const way = graph?.ways[selectedOsmRef.id]
+      const map = mainMap?.getMap()
+      if (!way || !map) return
+
+      const { startWidthM, startClientX, startClientY, side, bearing, lastDraftWidthM } =
+        dragRef.current
+      const deltaX = clientX - startClientX
+      const deltaY = clientY - startClientY
+      if (deltaX !== 0 || deltaY !== 0) dragRef.current.moved = true
+
+      const widthDeltaM = widthDeltaFromScreenDrag({
+        deltaX,
+        deltaY,
+        side,
+        alongBearing: bearing,
+        mapBearing: map.getBearing(),
+        metersPerPixel: metersPerPixel(map.getZoom(), map.getCenter().lat),
+      })
+      const nextWidth = Math.max(MIN_WIDTH_M, startWidthM + widthDeltaM)
+      const rounded = Math.max(MIN_WIDTH_M, roundWidthMetres(nextWidth))
+      if (rounded === lastDraftWidthM) return
+
+      dragRef.current.lastDraftWidthM = rounded
+      // Visual-only during drag — OSM commit happens once on mouseup.
+      applyWidth(way, rounded, { commit: false })
+    },
+    [applyWidth, graph?.ways, mainMap, selectedOsmRef],
+  )
+
+  const finishDragRef = useRef(finishDrag)
+  finishDragRef.current = finishDrag
+  const updateDragFromClientPointRef = useRef(updateDragFromClientPoint)
+  updateDragFromClientPointRef.current = updateDragFromClientPoint
 
   const handleMouseDown = useCallback(
     (event: MapLayerMouseEvent) => {
@@ -311,50 +398,57 @@ export function useWidthModeHandlers() {
           ? (sidepathWidthFromWay(way, selectedOsmRef)?.value ?? roadWidthFromTags(way.tags).value)
           : roadWidthFromTags(way.tags).value)
 
+      const map = mainMap?.getMap()
+      map?.dragPan.disable()
+
       dragRef.current = {
         side,
         startWidthM: currentWidth,
         startClientX: event.originalEvent.clientX,
         startClientY: event.originalEvent.clientY,
         bearing: alongBearing,
+        lastDraftWidthM: Math.max(MIN_WIDTH_M, roundWidthMetres(currentWidth)),
+        moved: false,
       }
       startDrag(side, currentWidth)
       event.preventDefault()
+
+      windowDragCleanupRef.current?.()
+      const onWindowMove = (moveEvent: MouseEvent) => {
+        updateDragFromClientPointRef.current(moveEvent.clientX, moveEvent.clientY)
+      }
+      const onWindowUp = () => {
+        finishDragRef.current()
+      }
+      window.addEventListener('mousemove', onWindowMove)
+      window.addEventListener('mouseup', onWindowUp)
+      windowDragCleanupRef.current = () => {
+        window.removeEventListener('mousemove', onWindowMove)
+        window.removeEventListener('mouseup', onWindowUp)
+      }
     },
-    [draftWidthM, graph?.ways, selectedOsmRef, startDrag],
+    [draftWidthM, graph?.ways, mainMap, selectedOsmRef, startDrag],
   )
 
   const handleMouseMove = useCallback(
     (event: MapMouseEvent) => {
-      if (!dragRef.current || !selectedOsmRef || selectedOsmRef.type !== 'way') return
-
-      const way = graph?.ways[selectedOsmRef.id]
-      const map = mainMap?.getMap()
-      if (!way || !map) return
-
-      const { startWidthM, startClientX, startClientY, side, bearing } = dragRef.current
-      const deltaX = event.originalEvent.clientX - startClientX
-      const deltaY = event.originalEvent.clientY - startClientY
-
-      const widthDeltaM = widthDeltaFromScreenDrag({
-        deltaX,
-        deltaY,
-        side,
-        alongBearing: bearing,
-        mapBearing: map.getBearing(),
-        metersPerPixel: metersPerPixel(map.getZoom(), map.getCenter().lat),
-      })
-      const nextWidth = Math.max(MIN_WIDTH_M, startWidthM + widthDeltaM)
-
-      applyWidth(way, nextWidth)
+      if (!dragRef.current) return
+      updateDragFromClientPoint(event.originalEvent.clientX, event.originalEvent.clientY)
     },
-    [applyWidth, graph?.ways, mainMap, selectedOsmRef],
+    [updateDragFromClientPoint],
   )
 
   const handleMouseUp = useCallback(() => {
-    dragRef.current = null
-    endDrag()
-  }, [endDrag])
+    if (!dragRef.current) return
+    finishDrag()
+  }, [finishDrag])
+
+  useEffect(function cleanupWindowDragListenersOnUnmount() {
+    return () => {
+      windowDragCleanupRef.current?.()
+      windowDragCleanupRef.current = null
+    }
+  }, [])
 
   return {
     handleLayerClick,

@@ -106,9 +106,7 @@ export function useMapPageInteractions() {
   }
 
   function handleMouseLeave() {
-    if (isWidthMode) {
-      widthHandlers.handleMouseUp()
-    }
+    // Width drag uses window mouseup listeners — do not end it on canvas leave.
     if (isCutActive) {
       clearCutHoverState()
     }
