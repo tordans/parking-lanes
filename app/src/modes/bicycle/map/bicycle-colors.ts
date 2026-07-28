@@ -19,7 +19,7 @@ export const bicycleLegendItems = [
   },
   {
     paintState: 'noInfra',
-    label: 'No mapped infrastructure on this geometry',
+    label: 'Missing data',
     color: BICYCLE_PAINT_COLORS.noInfra,
     missing: true,
   },

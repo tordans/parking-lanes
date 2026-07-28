@@ -6,7 +6,10 @@ import {
 } from '../../../utils/types/conditions'
 import { legend } from '../legend'
 
-export function getLaneSchemeConditions(side: 'left' | 'right', tags: OsmTags): ParkingConditions {
+export function getLaneSchemeConditions(
+  side: 'left' | 'right' | 'both',
+  tags: OsmTags,
+): ParkingConditions {
   const conditions: ParkingConditions = { conditionalValues: [], default: null }
 
   conditions.conditionalValues = parseConditionsBySchemeV2(side, tags)

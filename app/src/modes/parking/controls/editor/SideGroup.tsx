@@ -1,6 +1,10 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { ColoredEditorSection } from '../../../../components/ColoredEditorSection'
+import { parkingConditionLegendLabel } from '../../../../i18n/legend-labels'
+import { useDatetime } from '../../../../shell/app-store'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
+import { getConditionByDate } from '../../domain/condition-color'
+import { getSideConditions } from '../../domain/side-conditions'
 import { parkingSideColor, parkingSideLabel, type ParkingEditorSide } from '../../side-colors'
 import { ConditionalInput } from './ConditionalInput'
 import { parkingLaneTags, getTagLabel, resolveTagKey, shouldShowTag } from './lane-tags'
@@ -15,13 +19,25 @@ export function SideGroup(props: {
   readOnly?: boolean
   onChange: (key: string, value: string) => void
 }) {
+  const datetime = useDatetime()
   if (!props.shown) return null
+
+  const sideLabel = parkingSideLabel(props.side)
+  const condition = getConditionByDate(getSideConditions(props.side, props.osm.tags), datetime)
+  const styleLabel = parkingConditionLegendLabel(condition)
 
   return (
     <ColoredEditorSection
       id={props.side}
-      aria-label={parkingSideLabel(props.side)}
-      title={parkingSideLabel(props.side)}
+      aria-label={`${sideLabel}: ${styleLabel}`}
+      title={
+        <>
+          <span>{sideLabel}</span>
+          <span className="min-w-0 truncate font-medium normal-case tracking-normal">
+            {styleLabel}
+          </span>
+        </>
+      }
       color={parkingSideColor(props.side)}
       className={`tags-block tags-block_${props.side}`}
     >

@@ -1,7 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { Layer, Source } from 'react-map-gl/maplibre'
 import { SIDEPATH_LINE_OFFSET } from '../../../shell/map/map-hit-paint'
-import { missingDataDottedOverlayPaint } from '../../../shell/map/missing-data-paint'
+import { missingDataCenterlinePaint } from '../../../shell/map/missing-data-paint'
 import type { WidthFeatureCollection } from './parse-highways'
 import {
   buildBandPaint,
@@ -106,9 +106,9 @@ export function WidthHighwaysBandSource({
       {missingHighways.features.length > 0 ? (
         <Source id="width-missing-highways-source" type="geojson" data={missingHighways}>
           <Layer
-            id="width-missing-highways-dotted-layer"
+            id="width-missing-highways-layer"
             type="line"
-            paint={missingDataDottedOverlayPaint}
+            paint={missingDataCenterlinePaint}
             layout={widthLineLayout}
           />
         </Source>
@@ -134,11 +134,11 @@ export function WidthHighwaysBandSource({
       {missingSidepaths.features.length > 0 ? (
         <Source id="width-missing-sidepaths-source" type="geojson" data={missingSidepaths}>
           <Layer
-            id="width-missing-sidepaths-dotted-layer"
+            id="width-missing-sidepaths-layer"
             type="line"
             paint={
               {
-                ...missingDataDottedOverlayPaint,
+                ...missingDataCenterlinePaint,
                 'line-offset': SIDEPATH_LINE_OFFSET,
               } as Record<string, unknown>
             }

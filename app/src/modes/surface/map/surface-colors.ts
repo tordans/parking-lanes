@@ -16,7 +16,7 @@ export const surfaceLegendItems = [
   {
     id: 'missing_surface',
     color: MISSING_DATA_PINK,
-    label: 'Surface tag missing',
+    label: 'Missing data',
     missing: true,
   },
   {

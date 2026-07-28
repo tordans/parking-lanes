@@ -23,19 +23,19 @@ const parkingLegendTextByCondition = {
 const bicycleLegendLabelByPaintState = {
   complete: m.legend_bicycle_complete,
   incomplete: m.legend_bicycle_incomplete,
-  noInfra: m.legend_bicycle_none,
+  noInfra: m.legend_missing_data,
   separateGeometry: m.legend_bicycle_separate,
   centerlinePresence: m.legend_bicycle_centerline,
 } as const satisfies Record<(typeof bicycleLegendItems)[number]['paintState'], () => string>
 
 const lanesLegendLabelById = {
-  none: m.legend_lanes_none,
+  none: m.legend_missing_data,
   'count-only': m.legend_lanes_count_only,
   rich: m.legend_lanes_rich,
 } as const satisfies Record<(typeof lanesLegendItems)[number]['id'], () => string>
 
 const surfaceLegendLabelById = {
-  missing_surface: m.legend_surface_missing,
+  missing_surface: m.legend_missing_data,
   missing_smoothness: m.legend_surface_smoothness_missing,
   very_bad: m.legend_surface_very_bad,
   bad: m.legend_surface_bad,
@@ -51,6 +51,15 @@ const widthLegendBeforeByKind = {
 
 export function getParkingLegendText(condition: ConditionName): string {
   return parkingLegendTextByCondition[condition]()
+}
+
+/** Legend label for a resolved parking condition, or “Missing data” when unset. */
+export function parkingConditionLegendLabel(condition: string | null | undefined): string {
+  if (condition == null) return m.legend_missing_data()
+  if (Object.hasOwn(parkingLegendTextByCondition, condition)) {
+    return parkingLegendTextByCondition[condition as ConditionName]()
+  }
+  return parkingLegendTextByCondition.unsupported()
 }
 
 export function getBicycleLegendItems() {

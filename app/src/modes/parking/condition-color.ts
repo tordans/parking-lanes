@@ -1,1 +1,1 @@
-export { getColor, getColorByDate } from './domain/condition-color'
+export { getColor, getColorByDate, getConditionByDate } from './domain/condition-color'

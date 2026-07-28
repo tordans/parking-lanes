@@ -48,7 +48,7 @@ export function ColoredEditorSection({
       {...props}
     >
       <div
-        className="px-2 py-1 text-xs font-semibold tracking-wide text-white uppercase"
+        className="flex items-center justify-between gap-2 px-2 py-1 text-xs font-semibold tracking-wide text-white uppercase"
         style={headerBackground(color)}
       >
         {title}

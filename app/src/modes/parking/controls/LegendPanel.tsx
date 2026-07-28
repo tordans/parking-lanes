@@ -9,7 +9,7 @@ export function LegendContent() {
   return (
     <div className="columns-2 gap-x-4">
       <div className="mb-1 break-inside-avoid">
-        <MissingDataLegendLine>{m.legend_parking_missing()}</MissingDataLegendLine>
+        <MissingDataLegendLine>{m.legend_missing_data()}</MissingDataLegendLine>
       </div>
       {legend.map((x) => (
         <div key={x.condition} className="mb-1 flex items-center gap-1.5 break-inside-avoid">

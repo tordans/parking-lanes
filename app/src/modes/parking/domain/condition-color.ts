@@ -10,18 +10,24 @@ export function getColor(condition: string | null | undefined): ConditionColor |
   }
 }
 
+/** Active parking condition at `datetime` (conditional intervals, else default). */
+export function getConditionByDate(conditions: ParkingConditions, datetime: Date): string | null {
+  if (!conditions) return null
+
+  for (const interval of conditions.conditionalValues ?? []) {
+    if (interval.condition && getOpeningHourseState(interval.condition, datetime)) {
+      const condition =
+        interval.parkingCondition === 'default' ? conditions.default : interval.parkingCondition
+      return condition ?? null
+    }
+  }
+  return conditions.default ?? null
+}
+
 export function getColorByDate(
   conditions: ParkingConditions,
   datetime: Date,
 ): ConditionColor | undefined {
   if (!conditions) return 'black'
-
-  // If conditions.intervals not defined, return the default color
-  for (const interval of conditions.conditionalValues ?? []) {
-    if (interval.condition && getOpeningHourseState(interval.condition, datetime))
-      return getColor(
-        interval.parkingCondition === 'default' ? conditions.default : interval.parkingCondition,
-      )
-  }
-  return getColor(conditions.default)
+  return getColor(getConditionByDate(conditions, datetime))
 }

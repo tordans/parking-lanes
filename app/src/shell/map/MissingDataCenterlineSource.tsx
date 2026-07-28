@@ -1,19 +1,15 @@
 import type { FeatureCollection } from 'geojson'
 import { Layer, Source } from 'react-map-gl/maplibre'
 import { ROUND_LINE_LAYOUT } from './map-hit-paint'
-import {
-  missingDataCenterlinePaint,
-  missingDataDottedOverlayPaint,
-  missingDataHitAreaPaint,
-} from './missing-data-paint'
+import { missingDataCenterlinePaint, missingDataHitAreaPaint } from './missing-data-paint'
 
 type Props = {
   sourceId: string
-  /** Base id; layers become `{layerIdPrefix}-pink-layer`, `-dotted-layer`, `-hitarea-layer`. */
+  /** Base id; layers become `{layerIdPrefix}-pink-layer`, `-hitarea-layer`. */
   layerIdPrefix: string
   collection: FeatureCollection
   layout?: Record<string, unknown>
-  /** Merged onto all three paints (e.g. sidepath `line-offset`). */
+  /** Merged onto pink + hitarea paints (e.g. sidepath `line-offset`). */
   paint?: Record<string, unknown>
 }
 
@@ -21,7 +17,7 @@ export function missingDataHitAreaLayerId(layerIdPrefix: string) {
   return `${layerIdPrefix}-hitarea-layer`
 }
 
-/** Pink centerline + black dots + hitarea for missing / untagged ways. */
+/** Pink centerline (2× black hairline) + hitarea for missing / untagged ways. */
 export function MissingDataCenterlineSource({
   sourceId,
   layerIdPrefix,
@@ -37,12 +33,6 @@ export function MissingDataCenterlineSource({
         id={`${layerIdPrefix}-pink-layer`}
         type="line"
         paint={{ ...missingDataCenterlinePaint, ...paint }}
-        layout={layout}
-      />
-      <Layer
-        id={`${layerIdPrefix}-dotted-layer`}
-        type="line"
-        paint={{ ...missingDataDottedOverlayPaint, ...paint }}
         layout={layout}
       />
       <Layer
