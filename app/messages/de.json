@@ -160,6 +160,7 @@
   "panel_bicycle_access": "Fahrrad-Zugang",
   "panel_bus_access": "Bus-Zugang",
   "panel_width_m": "Breite (m)",
+  "panel_all_tags": "Alle Tags",
   "parking_data_title": "Daten",
   "parking_datetime_label": "Datum und Uhrzeit",
   "parking_datetime_title": "Wenn parking:condition vorhanden ist: Parkart zu dieser Tageszeit und diesem Wochentag anzeigen.",

@@ -1,5 +1,5 @@
 import * as m from '@app/paraglide/messages'
-import { type OsmObject, type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
+import { type OsmObject, type OsmWay } from '@osm-editor-kit/osm-data'
 import { AuthState, useAuthState } from '../../../shell/app-store'
 import {
   MapFeatureLoadEmptyState,
@@ -12,7 +12,6 @@ import { screenOrderedParkingSides, wayLineCoordinates } from '../domain/way-sid
 import { viewMinZoom } from '../map/constants'
 import { useParkingOsmQuery } from '../map/parking-osm-query'
 import { useOsmAuth } from '../map/use-osm-auth'
-import { useAllTagsOpen, useParkingEditorActions } from '../parking-editor-store'
 import { useParkingOsmChangeHandler } from '../use-parking-mode-handlers'
 import { LaneEditForm } from './editor/EditorForm'
 import { LoginCallout } from './LoginCallout'
@@ -99,42 +98,5 @@ function OsmObjectInfo(props: { osm: OsmObject }) {
         ))}
       </tbody>
     </table>
-  )
-}
-
-export function AllTagsBlock(props: { osmType: string; osmId: number; tags: OsmTags }) {
-  const allTagsOpen = useAllTagsOpen()
-  const { setAllTagsOpen } = useParkingEditorActions()
-
-  return (
-    <details
-      className="pt-1.5 text-sm text-zinc-600"
-      open={allTagsOpen}
-      onToggle={(event) => setAllTagsOpen(event.currentTarget.open)}
-    >
-      <summary className="cursor-pointer font-sans">
-        All tags
-        <span className="ml-1.5 font-mono text-xs text-zinc-500">
-          {props.osmType}/{props.osmId}
-        </span>
-      </summary>
-      <table className="w-full table-fixed">
-        <colgroup>
-          <col className="w-1/2" />
-          <col className="w-1/2" />
-        </colgroup>
-        <tbody>
-          {Object.keys(props.tags).map((tag) => (
-            <tr
-              key={tag}
-              className={`hover:bg-zinc-950/5 ${tag.startsWith('parking:') ? 'font-semibold' : ''}`}
-            >
-              <td className="break-all pr-2 align-top">{tag}</td>
-              <td className="break-all align-top">{props.tags[tag]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </details>
   )
 }

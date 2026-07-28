@@ -1,14 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface ParkingEditorStore {
+interface AllTagsStore {
   allTagsOpen: boolean
   actions: {
     setAllTagsOpen: (open: boolean) => void
   }
 }
 
-const useParkingEditorStore = create<ParkingEditorStore>()(
+const useAllTagsStore = create<AllTagsStore>()(
   persist(
     (set) => ({
       allTagsOpen: false,
@@ -18,12 +18,12 @@ const useParkingEditorStore = create<ParkingEditorStore>()(
       },
     }),
     {
-      name: 'street-space-parking-editor',
+      name: 'street-space-all-tags',
       partialize: (state) => ({ allTagsOpen: state.allTagsOpen }),
     },
   ),
 )
 
-export const useAllTagsOpen = () => useParkingEditorStore((state) => state.allTagsOpen)
+export const useAllTagsOpen = () => useAllTagsStore((state) => state.allTagsOpen)
 
-export const useParkingEditorActions = () => useParkingEditorStore((state) => state.actions)
+export const useAllTagsActions = () => useAllTagsStore((state) => state.actions)

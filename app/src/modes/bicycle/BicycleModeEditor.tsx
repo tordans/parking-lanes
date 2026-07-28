@@ -14,6 +14,7 @@ import {
   tagEditorFieldClassName,
   tagEditorTableClassName,
 } from '../../components/tag-editor'
+import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { SideModeSwitcher } from '../parking/controls/editor/SideModeSwitcher'
 import { LoginCallout } from '../parking/controls/LoginCallout'
@@ -288,6 +289,8 @@ function BicycleModeEditor(props: {
           </tbody>
         </table>
       </div>
+
+      <AllTagsBlock osmType={selectedWay.type} osmId={selectedWay.id} tags={selectedWay.tags} />
     </div>
   )
 }

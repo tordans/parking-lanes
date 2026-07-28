@@ -160,6 +160,7 @@
   "panel_bicycle_access": "Bicycle access",
   "panel_bus_access": "Bus access",
   "panel_width_m": "Width (m)",
+  "panel_all_tags": "All tags",
   "parking_data_title": "Data",
   "parking_datetime_label": "Date and time",
   "parking_datetime_title": "If parking:condition present, show kind of parking at this time of day and day of week.",

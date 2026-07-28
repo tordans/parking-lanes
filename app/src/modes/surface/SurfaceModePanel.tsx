@@ -4,6 +4,7 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { useState } from 'react'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
 import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
@@ -208,6 +209,8 @@ function SurfaceModeEditor(props: {
           </SurfaceChannelSection>
         </>
       ) : null}
+
+      <AllTagsBlock osmType={selectedWay.type} osmId={selectedWay.id} tags={selectedWay.tags} />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { ColoredEditorSection } from '../../components/ColoredEditorSection'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
 import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
@@ -177,6 +178,8 @@ export function WidthModePanel() {
           Derived hint: {derived.value} m ({formatSourceLabel(derived.source)})
         </p>
       </ColoredEditorSection>
+
+      <AllTagsBlock osmType={selectedWay.type} osmId={selectedWay.id} tags={selectedWay.tags} />
     </div>
   )
 }

@@ -2,10 +2,10 @@ import { type OsmTags, type OsmWay } from '@osm-editor-kit/osm-data'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
 import { z } from 'zod'
+import { AllTagsBlock } from '../../../../shell/controls/AllTagsBlock'
 import { ModePanelIntro } from '../../../../shell/controls/ModePanelIntro'
 import type { Side } from '../../../../utils/types/parking'
 import { applyTagMigration } from '../../domain/editor/tag-migration'
-import { AllTagsBlock } from '../LaneInfo'
 import { SideGroup } from './SideGroup'
 import { SideModeSwitcher } from './SideModeSwitcher'
 import { TagMigrationToolbar } from './TagMigrationToolbar'
@@ -88,7 +88,12 @@ export function LaneEditForm(props: {
             onChange={handleInputChange}
           />
         ))}
-        <AllTagsBlock osmType={props.osm.type} osmId={props.osm.id} tags={props.osm.tags} />
+        <AllTagsBlock
+          osmType={props.osm.type}
+          osmId={props.osm.id}
+          tags={props.osm.tags}
+          highlightKeyPrefix="parking:"
+        />
       </div>
 
       {!readOnly ? (
