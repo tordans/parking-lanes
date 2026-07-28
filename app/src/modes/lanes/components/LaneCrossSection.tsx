@@ -1,6 +1,6 @@
 import type { LaneDirection, LaneSlot } from '@osm-editor-kit/osm-lanes'
 import clsx from 'clsx'
-import { Minus, Plus } from 'lucide-react'
+import { Minus, MousePointerClick, Plus } from 'lucide-react'
 import { crossSectionDisplaySlots, slotKey } from '../domain/display-order'
 import { LaneSlotChip } from './LaneSlotChip'
 
@@ -11,6 +11,8 @@ type Props = {
   highlighted?: boolean
   center?: boolean
   label: string
+  /** Neighbor label color (map prev/next highlight). */
+  labelColor?: string
   onSelectSlot: (wayId: number, slot: LaneSlot) => void
   onSelectSegment?: () => void
   readOnly?: boolean
@@ -41,6 +43,7 @@ export function LaneCrossSection({
   highlighted,
   center,
   label,
+  labelColor,
   onSelectSlot,
   onSelectSegment,
   readOnly,
@@ -51,6 +54,7 @@ export function LaneCrossSection({
 }: Props) {
   const displaySlots = crossSectionDisplaySlots(slots)
   const showEditControls = center && !readOnly && addDirections && addDirections.length > 0
+  const canFocusSegment = !center && onSelectSegment != null
 
   return (
     <div
@@ -63,17 +67,26 @@ export function LaneCrossSection({
             : 'border-transparent opacity-75',
       )}
     >
-      <button
-        type="button"
-        onClick={onSelectSegment}
-        className={clsx(
-          'truncate text-left text-xs font-medium',
-          center ? 'text-blue-800' : 'text-zinc-600 hover:text-zinc-900',
+      <div className="flex min-w-0 items-center gap-1">
+        {center ? (
+          <div className="truncate text-left text-xs font-medium text-zinc-900">{label}</div>
+        ) : (
+          <button
+            type="button"
+            onClick={onSelectSegment}
+            className={clsx(
+              'flex min-w-0 flex-1 items-center gap-1 truncate text-left text-xs font-medium',
+              labelColor ? 'hover:brightness-90' : 'text-zinc-600 hover:text-zinc-900',
+            )}
+            style={labelColor ? { color: labelColor } : undefined}
+          >
+            <span className="truncate">{label}</span>
+            {canFocusSegment ? (
+              <MousePointerClick className="size-3.5 shrink-0 opacity-70" aria-hidden />
+            ) : null}
+          </button>
         )}
-      >
-        {center ? '★ ' : ''}
-        {label}
-      </button>
+      </div>
       <div className="flex min-h-0 flex-1 items-stretch justify-center gap-1">
         {displaySlots.length === 0 ? (
           <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-200 text-xs text-zinc-400">
@@ -84,6 +97,7 @@ export function LaneCrossSection({
             <div key={slotKey(slot)} className="flex min-w-0 flex-1">
               <LaneSlotChip
                 kind={slot.kind}
+                direction={slot.direction}
                 turn={slot.turn}
                 widthMeters={slot.widthMeters}
                 dimmed={isSlotDimmed(slot)}

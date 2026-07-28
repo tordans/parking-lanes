@@ -49,7 +49,7 @@ export function useLanesFlyToWay() {
 
       map.fitBounds(bounds, {
         padding: { top: 80, bottom: 200, left: 80, right: 80 },
-        maxZoom: 18,
+        maxZoom: 15,
         duration: 700,
       })
     },

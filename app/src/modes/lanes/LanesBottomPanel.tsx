@@ -3,7 +3,9 @@ import { parseWayLanes } from '@osm-editor-kit/osm-lanes'
 import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
 import { ChainNavigator } from './components/ChainNavigator'
@@ -12,7 +14,9 @@ import { LanesSlotEditor } from './components/LanesSlotEditor'
 import { LanesTagTable } from './components/LanesTagTable'
 import { LanesViewToggle } from './components/LanesViewToggle'
 import { LanesWaySummary } from './components/LanesWaySummary'
+import { screenOrderedChainNeighbors } from './domain/screen-ordered-neighbors'
 import { useLanesChainBuilder, useVisibleChainSegments } from './domain/use-lanes-chain'
+import { lanesNextNeighborColor, lanesPrevNeighborColor } from './map/lanes-layer-paint'
 import {
   useLanesChain,
   useLanesMapActions,
@@ -53,8 +57,24 @@ export function LanesBottomPanel() {
   const { login } = useOsmAuth()
   const flyToWay = useLanesFlyToWay()
   const { addLane, removeLane, editableLaneDirections, commitSlotUpdate } = useLanesModeHandlers()
-
+  const mapViewport = useMapViewport()
   const { data: graph } = useLanesOsmQuery({ select: (data) => data.graph })
+
+  const centerIndex =
+    chain && centerWayId != null ? chain.segments.findIndex((s) => s.id === centerWayId) : -1
+  const prevSegment = visibleSegments.find(
+    (s) => s.id !== centerWayId && chain?.segments[centerIndex - 1]?.id === s.id,
+  )
+  const nextSegment = visibleSegments.find(
+    (s) => s.id !== centerWayId && chain?.segments[centerIndex + 1]?.id === s.id,
+  )
+  const centerSegment = visibleSegments.find((s) => s.id === centerWayId)
+  const { left: leftNeighbor, right: rightNeighbor } = screenOrderedChainNeighbors(
+    prevSegment,
+    nextSegment,
+    centerSegment,
+    mapViewport.bearing ?? 0,
+  )
 
   const walkToWay = useCallback(
     (wayId: number) => {
@@ -63,23 +83,6 @@ export function LanesBottomPanel() {
     },
     [flyToWay, selectFeature],
   )
-
-  const handlePrev = useCallback(() => {
-    if (!chain || centerWayId == null) return
-    const centerIndex = chain.segments.findIndex((s) => s.id === centerWayId)
-    const prev = centerIndex > 0 ? chain.segments[centerIndex - 1] : undefined
-    if (prev) walkToWay(prev.id)
-  }, [centerWayId, chain, walkToWay])
-
-  const handleNext = useCallback(() => {
-    if (!chain || centerWayId == null) return
-    const centerIndex = chain.segments.findIndex((s) => s.id === centerWayId)
-    const next =
-      centerIndex >= 0 && centerIndex < chain.segments.length - 1
-        ? chain.segments[centerIndex + 1]
-        : undefined
-    if (next) walkToWay(next.id)
-  }, [centerWayId, chain, walkToWay])
 
   useEffect(
     function keyboardWalkAlongStreet() {
@@ -91,10 +94,10 @@ export function LanesBottomPanel() {
 
         if (event.key === 'ArrowLeft') {
           event.preventDefault()
-          handlePrev()
+          if (leftNeighbor) walkToWay(leftNeighbor.id)
         } else if (event.key === 'ArrowRight') {
           event.preventDefault()
-          handleNext()
+          if (rightNeighbor) walkToWay(rightNeighbor.id)
         } else if (event.key === 'Escape') {
           selectSlot(null)
         }
@@ -103,7 +106,7 @@ export function LanesBottomPanel() {
       panel.addEventListener('keydown', onKeyDown)
       return () => panel.removeEventListener('keydown', onKeyDown)
     },
-    [handleNext, handlePrev, selectSlot],
+    [leftNeighbor, rightNeighbor, selectSlot, walkToWay],
   )
 
   if (!centerWayId || !graph) {
@@ -120,10 +123,6 @@ export function LanesBottomPanel() {
   const hasErrors = centerWarnings.some((warning) => warning.severity === 'error')
   const addDirections = centerModel ? editableLaneDirections(centerModel) : []
 
-  const centerIndex = chain ? chain.segments.findIndex((s) => s.id === centerWayId) : -1
-  const canPrev = centerIndex > 0
-  const canNext = chain != null && centerIndex >= 0 && centerIndex < chain.segments.length - 1
-
   const selectedSlotKey =
     selectedSlot && selectedSlot.wayId === centerWayId
       ? `${selectedSlot.direction}:${selectedSlot.index}`
@@ -136,21 +135,36 @@ export function LanesBottomPanel() {
         )
       : undefined
 
-  const prevSegment = visibleSegments.find(
-    (s) => s.id !== centerWayId && chain?.segments[centerIndex - 1]?.id === s.id,
-  )
-  const nextSegment = visibleSegments.find(
-    (s) => s.id !== centerWayId && chain?.segments[centerIndex + 1]?.id === s.id,
-  )
-  const centerSegment = visibleSegments.find((s) => s.id === centerWayId)
-
   const columnSlots: Array<{
     segment: (typeof visibleSegments)[number] | null
-    position: 'prev' | 'center' | 'next'
+    role: 'prev' | 'center' | 'next' | 'empty-left' | 'empty-right'
+    labelColor?: string
   }> = [
-    { segment: prevSegment ?? null, position: 'prev' },
-    { segment: centerSegment ?? null, position: 'center' },
-    { segment: nextSegment ?? null, position: 'next' },
+    {
+      segment: leftNeighbor,
+      role: leftNeighbor ? (leftNeighbor.id === prevSegment?.id ? 'prev' : 'next') : 'empty-left',
+      labelColor:
+        leftNeighbor == null
+          ? undefined
+          : leftNeighbor.id === prevSegment?.id
+            ? lanesPrevNeighborColor
+            : lanesNextNeighborColor,
+    },
+    { segment: centerSegment ?? null, role: 'center' },
+    {
+      segment: rightNeighbor,
+      role: rightNeighbor
+        ? rightNeighbor.id === nextSegment?.id
+          ? 'next'
+          : 'prev'
+        : 'empty-right',
+      labelColor:
+        rightNeighbor == null
+          ? undefined
+          : rightNeighbor.id === prevSegment?.id
+            ? lanesPrevNeighborColor
+            : lanesNextNeighborColor,
+    },
   ]
 
   return (
@@ -159,25 +173,27 @@ export function LanesBottomPanel() {
       tabIndex={0}
       className="flex h-full flex-col gap-3 overflow-hidden p-3 outline-none"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <LanesWaySummary way={centerWay} />
-          {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <ChainNavigator
-            onPrev={handlePrev}
-            onNext={handleNext}
-            canPrev={canPrev}
-            canNext={canNext}
-            pendingJunctions={pendingJunctions}
-            onJunctionPick={(choice, wayId) => {
-              if (!chain) return
-              void extendAtJunction(choice, wayId, chain).then(() => walkToWay(wayId))
-            }}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ModePanelIntro
+            wayId={centerWay.id}
+            highway={centerWay.tags.highway}
+            identityStart
+            className="flex min-w-0 items-center gap-2"
           />
-          <LanesViewToggle mode={viewMode} onChange={setViewMode} />
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <LanesViewToggle mode={viewMode} onChange={setViewMode} />
+            <ChainNavigator
+              pendingJunctions={pendingJunctions}
+              onJunctionPick={(choice, wayId) => {
+                if (!chain) return
+                void extendAtJunction(choice, wayId, chain).then(() => walkToWay(wayId))
+              }}
+            />
+          </div>
         </div>
+        <LanesWaySummary way={centerWay} />
+        {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
       </div>
 
       {centerWarnings.length > 0 ? (
@@ -201,20 +217,18 @@ export function LanesBottomPanel() {
           </div>
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-3 gap-3">
-            {columnSlots.map(({ segment, position }) => {
+            {columnSlots.map(({ segment, role, labelColor }) => {
               if (!segment) {
                 return (
                   <div
-                    key={position}
+                    key={role}
                     className="flex items-center justify-center rounded-md border border-dashed border-zinc-200 text-xs text-zinc-400"
-                  >
-                    {position === 'prev' ? '←' : position === 'next' ? '→' : ''}
-                  </div>
+                  />
                 )
               }
 
               const model = parseWayLanes(segment.tags)
-              const isCenter = position === 'center'
+              const isCenter = role === 'center'
               return (
                 <LaneCrossSection
                   key={segment.id}
@@ -224,6 +238,7 @@ export function LanesBottomPanel() {
                   highlighted={isCenter}
                   center={isCenter}
                   label={segmentLabel(segment.tags, segment.id)}
+                  labelColor={labelColor}
                   readOnly={readOnly}
                   addDirections={isCenter ? addDirections : undefined}
                   canRemoveLane={isCenter && Boolean(activeSlot)}
@@ -239,7 +254,7 @@ export function LanesBottomPanel() {
                   onSelectSlot={(wayId, slot) =>
                     selectSlot({ wayId, direction: slot.direction, index: slot.index })
                   }
-                  onSelectSegment={() => walkToWay(segment.id)}
+                  onSelectSegment={isCenter ? undefined : () => walkToWay(segment.id)}
                 />
               )
             })}

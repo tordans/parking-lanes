@@ -1,19 +1,29 @@
-import type { LaneKind } from '@osm-editor-kit/osm-lanes'
+import type { LaneDirection, LaneKind } from '@osm-editor-kit/osm-lanes'
 import clsx from 'clsx'
 import { motion } from 'motion/react'
 
-function turnGlyph(turn: string | undefined): string {
-  if (!turn) return '↑'
-  const parts = turn.toLowerCase().split(';')
+/**
+ * Glyphs for a cross-section faced along the way's forward direction:
+ * forward traffic draws away (↑), backward toward the viewer (↓).
+ * Turn left/right stay traveler-relative, so backward flips on screen.
+ */
+function turnGlyph(turn: string | undefined, direction: LaneDirection): string {
+  const facingBackward = direction === 'backward'
+  const through = facingBackward ? '↓' : direction === 'both_ways' ? '↕' : '↑'
+  const left = facingBackward ? '→' : '←'
+  const right = facingBackward ? '←' : '→'
+
+  if (!turn) return through
+
   const glyphs: string[] = []
-  for (const part of parts) {
-    if (part.includes('left') || part === 'merge_to_left') glyphs.push('←')
-    else if (part.includes('right') || part === 'merge_to_right') glyphs.push('→')
-    else if (part.includes('through') || part === 'straight') glyphs.push('↑')
+  for (const part of turn.toLowerCase().split(';')) {
+    if (part.includes('left') || part === 'merge_to_left') glyphs.push(left)
+    else if (part.includes('right') || part === 'merge_to_right') glyphs.push(right)
+    else if (part.includes('through') || part === 'straight') glyphs.push(through)
     else if (part.includes('reverse') || part.includes('both_ways')) glyphs.push('↕')
     else glyphs.push('·')
   }
-  return glyphs.join('') || '↑'
+  return glyphs.join('') || through
 }
 
 const kindStyles: Record<LaneKind, string> = {
@@ -25,6 +35,7 @@ const kindStyles: Record<LaneKind, string> = {
 
 type Props = {
   kind: LaneKind
+  direction: LaneDirection
   turn?: string
   widthMeters?: number
   dimmed?: boolean
@@ -32,7 +43,15 @@ type Props = {
   onClick?: () => void
 }
 
-export function LaneSlotChip({ kind, turn, widthMeters, dimmed, selected, onClick }: Props) {
+export function LaneSlotChip({
+  kind,
+  direction,
+  turn,
+  widthMeters,
+  dimmed,
+  selected,
+  onClick,
+}: Props) {
   return (
     <motion.button
       type="button"
@@ -46,7 +65,7 @@ export function LaneSlotChip({ kind, turn, widthMeters, dimmed, selected, onClic
         onClick && 'cursor-pointer hover:brightness-95',
       )}
     >
-      <span className="text-lg leading-none font-semibold">{turnGlyph(turn)}</span>
+      <span className="text-lg leading-none font-semibold">{turnGlyph(turn, direction)}</span>
       {widthMeters != null ? (
         <span className="text-[10px] leading-tight text-zinc-600">{widthMeters} m</span>
       ) : null}
