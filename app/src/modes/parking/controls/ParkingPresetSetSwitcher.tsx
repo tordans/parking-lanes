@@ -17,10 +17,10 @@ export function ParkingPresetSetSwitcher() {
       value={presetSet}
       onChange={(value) => setPresetSet(value as ParkingPresetSetId)}
       aria-label={m.parking_preset_set_title()}
-      className="!space-y-2"
+      className="!flex !flex-row !flex-wrap !items-center !gap-x-4 !gap-y-2 !space-y-0"
     >
       {parkingPresetSetIds.map((setId) => (
-        <RadioField key={setId}>
+        <RadioField key={setId} className="!grid-cols-[1.125rem_auto] sm:!grid-cols-[1rem_auto]">
           <Radio value={setId} color="dark/zinc" />
           <Label>{presetSetLabels[setId]()}</Label>
         </RadioField>

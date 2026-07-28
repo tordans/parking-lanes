@@ -17,10 +17,10 @@ export function LanguageSwitcher() {
       value={uiLocale}
       onChange={(value) => setUiLocale(value as UiLocale)}
       aria-label={m.shell_language_title()}
-      className="!space-y-2"
+      className="!flex !flex-row !flex-wrap !items-center !gap-x-4 !gap-y-2 !space-y-0"
     >
       {uiLocales.map((locale) => (
-        <RadioField key={locale}>
+        <RadioField key={locale} className="!grid-cols-[1.125rem_auto] sm:!grid-cols-[1rem_auto]">
           <Radio value={locale} color="dark/zinc" />
           <Label>{localeLabels[locale]()}</Label>
         </RadioField>
