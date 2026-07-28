@@ -100,8 +100,11 @@ function MapPageContent({
   useEffect(
     function resetModeLocalStateOnModeSwitch() {
       if (prevModeRef.current === resolvedModeId) return
-      clearWidthDraft()
-      clearLanesState()
+      // Clear only when leaving a mode. Clearing on enter wipes overlays that
+      // syncSelectionDraft already built for the preserved URL selection, and
+      // that effect does not re-run (selection/graph unchanged).
+      if (prevModeRef.current === 'width') clearWidthDraft()
+      if (prevModeRef.current === 'lanes') clearLanesState()
       cancelCut()
       prevModeRef.current = resolvedModeId
     },

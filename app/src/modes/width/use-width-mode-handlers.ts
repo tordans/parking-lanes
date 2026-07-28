@@ -2,6 +2,7 @@ import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { metersPerPixel } from '@osm-editor-kit/osm-maplibre'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
+import { useParams } from '@tanstack/react-router'
 import { lineString } from '@turf/helpers'
 import length from '@turf/length'
 import { useCallback, useEffect, useRef } from 'react'
@@ -10,6 +11,7 @@ import { useMap } from 'react-map-gl/maplibre'
 import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
+import type { StreetSpaceModeId } from '../types'
 import {
   addHandleFractionUnlessOverlap,
   buildHandleGeometry,
@@ -97,6 +99,8 @@ function lineLengthMeters(coordinates: [number, number][]): number {
 }
 
 export function useWidthModeHandlers() {
+  const { mode: modeSlug } = useParams({ from: '/$mode' })
+  const isWidthMode = (modeSlug as StreetSpaceModeId) === 'width'
   const { selectFeature, clearSelection } = useFeatureSelection()
   const selectedOsmRef = useSelectedOsmRef()
   const { data: graph } = useWidthOsmQuery({ select: (data) => data.graph })
@@ -170,6 +174,13 @@ export function useWidthModeHandlers() {
       // Mid-drag commits used to rewrite graph.ways and this effect fought live handle updates.
       if (useWidthMapStore.getState().dragSide) return
 
+      // Rebuild when entering width with a preserved URL selection; skip otherwise so
+      // parking/other modes do not keep stale handles after leave-mode clear.
+      if (!isWidthMode) {
+        clearDraft()
+        return
+      }
+
       if (!selectedOsmRef || selectedOsmRef.type !== 'way') {
         clearDraft()
         return
@@ -217,6 +228,7 @@ export function useWidthModeHandlers() {
       clearDraft,
       graph?.nodeCoords,
       graph?.ways,
+      isWidthMode,
       selectedOsmRef,
       setDraftWidthM,
       setHandleFractions,
