@@ -151,6 +151,12 @@
   "split_disabled_roundabout": "This roundabout is part of a larger relation — remove it from the relation first",
   "split_disabled_too_few_nodes": "This way needs at least two nodes to split",
   "panel_way_fallback": "Way",
+  "panel_sidepath_sidewalk": "Sidewalk",
+  "panel_sidepath_cycleway": "Bike lane/track",
+  "panel_sidepath_side_left": "left",
+  "panel_sidepath_side_right": "right",
+  "panel_sidepath_of_highway": "{kind} ({side}) of {highway}",
+
   "panel_warnings": "Warnings",
   "panel_lanes": "Lanes",
   "panel_turn": "Turn",

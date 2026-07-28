@@ -119,17 +119,16 @@ function BicycleModeEditor(props: {
     onOsmChange(commitFlatTagEdit(selectedWay, selectedOsmRef, key, value || undefined))
   }
 
-  const featureSuffix =
-    isSidepathRef(selectedOsmRef) && selectedOsmRef.prefix && selectedOsmRef.side
-      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-      : undefined
+  const sidepath = isSidepathRef(selectedOsmRef)
+    ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side }
+    : undefined
 
   return (
     <div className="flex min-w-[280px] flex-col gap-4 text-zinc-900">
       <ModePanelIntro
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
-        featureSuffix={featureSuffix}
+        sidepath={sidepath}
         className="flex items-center gap-2"
       />
 

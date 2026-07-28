@@ -1,21 +1,50 @@
 import * as m from '@app/paraglide/messages'
+import { serializeFeatureParam, type OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import type { ReactNode } from 'react'
 import { highwayCategoryLabel } from '../../i18n/highway-labels'
+
+type SidepathRef = Pick<OsmFeatureRef, 'prefix' | 'side'> & {
+  prefix: 'cycleway' | 'sidewalk'
+  side: 'left' | 'right'
+}
+
+function sidepathKindLabel(prefix: SidepathRef['prefix']): string {
+  return prefix === 'sidewalk' ? m.panel_sidepath_sidewalk() : m.panel_sidepath_cycleway()
+}
+
+function sidepathSideLabel(side: SidepathRef['side']): string {
+  return side === 'left' ? m.panel_sidepath_side_left() : m.panel_sidepath_side_right()
+}
+
+function categoryLabelFor(highway: string | undefined, sidepath?: SidepathRef): string {
+  const highwayLabel = highwayCategoryLabel(highway) ?? m.panel_way_fallback()
+  if (!sidepath) return highwayLabel
+
+  return m.panel_sidepath_of_highway({
+    kind: sidepathKindLabel(sidepath.prefix),
+    side: sidepathSideLabel(sidepath.side),
+    highway: highwayLabel,
+  })
+}
 
 export function ModePanelIntro(props: {
   wayId: number
   highway?: string
-  /** Extra context under the way id, e.g. `cycleway/left`. */
-  featureSuffix?: string
+  /** Sidepath selection derived from a centerline way (`cycleway`/`sidewalk` + side). */
+  sidepath?: SidepathRef
   leading?: ReactNode
   trailing?: ReactNode
   className?: string
   /** Place the way identity on the left (surface mode). Default keeps it right-aligned. */
   identityStart?: boolean
 }) {
-  const categoryLabel = highwayCategoryLabel(props.highway) ?? m.panel_way_fallback()
-  const wayRef = `way/${props.wayId}`
-  const idLine = props.featureSuffix ? `${wayRef} · ${props.featureSuffix}` : wayRef
+  const categoryLabel = categoryLabelFor(props.highway, props.sidepath)
+  const idLine = serializeFeatureParam({
+    type: 'way',
+    id: props.wayId,
+    prefix: props.sidepath?.prefix,
+    side: props.sidepath?.side,
+  })
   const identityOnStart = props.identityStart === true
 
   return (

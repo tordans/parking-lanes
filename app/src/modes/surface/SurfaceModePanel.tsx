@@ -148,10 +148,9 @@ function SurfaceModeEditor(props: {
     )
   }
 
-  const featureSuffix =
-    selectedOsmRef.prefix && selectedOsmRef.side
-      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
-      : undefined
+  const sidepath = isSidepathRef(selectedOsmRef)
+    ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side }
+    : undefined
 
   const channelSwitcher =
     layout.kind === 'segregated' || layout.kind === 'cycleway-sides' ? (
@@ -170,7 +169,7 @@ function SurfaceModeEditor(props: {
       <ModePanelIntro
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
-        featureSuffix={featureSuffix}
+        sidepath={sidepath}
         identityStart
         className="flex items-center gap-2"
       />

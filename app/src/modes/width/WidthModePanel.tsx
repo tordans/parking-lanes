@@ -140,9 +140,9 @@ export function WidthModePanel() {
     onOsmChange(stageWidthOnWay(selectedWay, clamped))
   }
 
-  const featureSuffix =
+  const sidepath =
     isSidepath && selectedOsmRef.prefix && selectedOsmRef.side
-      ? `${selectedOsmRef.prefix}/${selectedOsmRef.side}`
+      ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side }
       : undefined
 
   return (
@@ -150,7 +150,7 @@ export function WidthModePanel() {
       <ModePanelIntro
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
-        featureSuffix={featureSuffix}
+        sidepath={sidepath}
         className="flex items-center gap-2"
       />
 
