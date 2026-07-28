@@ -45,11 +45,12 @@ export function LaneEditForm(props: {
     <form
       id={props.osm.type + props.osm.id}
       key={props.osm.type + props.osm.id}
-      className="editor-form text-zinc-900"
+      className="editor-form flex flex-col gap-4 text-zinc-900"
     >
       <ModePanelIntro
         wayId={props.osm.id}
         highway={props.osm.tags.highway}
+        className="flex items-center gap-2"
         leading={
           <form.Field name="bothBlockShown">
             {(field) => (
