@@ -18,6 +18,4 @@ export {
 export {
   OPENFREEMAP_POSITRON_IMAGERY_USED,
   OPENFREEMAP_POSITRON_STYLE_URL,
-  openFreeMapTransformStyle,
-  patchOpenFreeMapStyle,
 } from './openfreemap-style'

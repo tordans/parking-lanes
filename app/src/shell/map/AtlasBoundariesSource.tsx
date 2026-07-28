@@ -7,20 +7,19 @@ import {
   atlasDistrictLinePaint,
   atlasXhainHighlightPaint,
 } from './atlas-boundaries-paint'
+import { useMapLoaded } from './map-store'
 import { CUSTOM_CONTENT_ANCHOR_LAYER_ID } from './MapBackgroundLayerSource'
 import { useMapBoundariesEnabled } from './use-map-boundaries'
-import { useMapLayerExists } from './use-map-layer-exists'
 
 /**
  * Berlin/DE admin boundaries from TILDA atlas tiles, stacked above basemap and below mode layers.
- * Waits for {@link CUSTOM_CONTENT_ANCHOR_LAYER_ID} so `beforeId` never targets a missing layer
- * during style load / layer re-hydration races.
+ * Waits for map load so `beforeId` can target the content anchor.
  */
 export function AtlasBoundariesSource() {
   const enabled = useMapBoundariesEnabled()
-  const anchorReady = useMapLayerExists(CUSTOM_CONTENT_ANCHOR_LAYER_ID)
+  const mapLoaded = useMapLoaded()
 
-  if (!enabled || !anchorReady) return null
+  if (!enabled || !mapLoaded) return null
 
   return (
     <Source

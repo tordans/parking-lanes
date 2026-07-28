@@ -1,10 +1,5 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
-import {
-  OPENFREEMAP_POSITRON_STYLE_URL,
-  openFreeMapTransformStyle,
-} from '@osm-editor-kit/osm-maplibre'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { useRef } from 'react'
 import type { MapEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { useLanesCoveragePace, viewMinZoom as lanesViewMinZoom } from '../../modes/lanes'
@@ -23,7 +18,6 @@ export function useMapCoverageLifecycle() {
   const isWidthMode = resolvedModeId === 'width'
   const isLanesMode = resolvedModeId === 'lanes'
   const usesHighwayCoverage = isWidthMode || isLanesMode
-  const styleTransformApplied = useRef(false)
 
   const { setMapBounds } = useAppActions()
   const { markMapLoaded, setMapTilesLoading } = useMapActions()
@@ -72,13 +66,6 @@ export function useMapCoverageLifecycle() {
 
   function onMapLoad(event: MapEvent) {
     const map = event.target
-
-    if (!styleTransformApplied.current) {
-      styleTransformApplied.current = true
-      map.setStyle(OPENFREEMAP_POSITRON_STYLE_URL, {
-        transformStyle: openFreeMapTransformStyle,
-      })
-    }
 
     markMapLoaded()
     exposeMainMapForDebugging(map)
