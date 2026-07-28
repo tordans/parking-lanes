@@ -52,23 +52,31 @@ const surfaceColor = [
 /**
  * Surface mode paints two categorical widths (major road vs everything else) instead of the
  * physical road width used by width mode.
+ * Zoom stays top-level — nesting zoom interpolates in `case` is rejected by MapLibre.
  */
-const surfaceMajorLineWidth = ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 7, 20, 12] as const
-const surfaceOtherLineWidth = ['interpolate', ['linear'], ['zoom'], 12, 2, 16, 4, 20, 7] as const
-
 const surfaceBandLineWidth = [
-  'case',
-  ['get', 'isMajor'],
-  surfaceMajorLineWidth,
-  surfaceOtherLineWidth,
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  12,
+  ['case', ['get', 'isMajor'], 3, 2],
+  16,
+  ['case', ['get', 'isMajor'], 7, 4],
+  20,
+  ['case', ['get', 'isMajor'], 12, 7],
 ] as const
 
 /** Keep hit targets close to band width so stacked infra clicks do not overlap. */
 const surfaceHitLineWidth = [
-  'case',
-  ['get', 'isMajor'],
-  ['interpolate', ['linear'], ['zoom'], 12, 5, 16, 9, 20, 14],
-  ['interpolate', ['linear'], ['zoom'], 12, 4, 16, 6, 20, 9],
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  12,
+  ['case', ['get', 'isMajor'], 5, 4],
+  16,
+  ['case', ['get', 'isMajor'], 9, 6],
+  20,
+  ['case', ['get', 'isMajor'], 14, 9],
 ] as const
 
 function withOptionalFeatureOffset(
