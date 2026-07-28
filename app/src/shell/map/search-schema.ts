@@ -18,16 +18,16 @@ export const bicycleFocusSchema = z.enum(['all', 'incomplete'])
 export const surfaceFocusSchema = z.enum(['all', 'roads', 'path', 'sidewalks', 'bike'])
 export const highwayInclusionStyleSchema = z.enum(['public', 'inclusive'])
 
-export const mapFocusSchema = z
-  .object({
-    parking: parkingFocusSchema.optional(),
-    width: widthFocusSchema.optional(),
-    bicycle: bicycleFocusSchema.optional(),
-    surface: surfaceFocusSchema.optional(),
-    /** Admin boundaries overlay; implicit default depends on whether other focus keys are set. */
-    boundaries: z.boolean().optional(),
-  })
-  .optional()
+export const mapFocusObjectSchema = z.object({
+  parking: parkingFocusSchema.optional(),
+  width: widthFocusSchema.optional(),
+  bicycle: bicycleFocusSchema.optional(),
+  surface: surfaceFocusSchema.optional(),
+  /** Admin boundaries overlay; implicit default depends on whether other focus keys are set. */
+  boundaries: z.boolean().optional(),
+})
+
+export const mapFocusSchema = mapFocusObjectSchema.optional()
 
 export type ParkingFocus = z.infer<typeof parkingFocusSchema>
 export type WidthFocus = z.infer<typeof widthFocusSchema>
@@ -35,6 +35,94 @@ export type BicycleFocus = z.infer<typeof bicycleFocusSchema>
 export type SurfaceFocus = z.infer<typeof surfaceFocusSchema>
 export type HighwayInclusionStyleParam = z.infer<typeof highwayInclusionStyleSchema>
 export type MapFocus = z.infer<typeof mapFocusSchema>
+export type MapFocusObject = z.infer<typeof mapFocusObjectSchema>
+
+const FOCUS_PRIMARY_KEYS = ['parking', 'width', 'bicycle', 'surface'] as const
+
+/**
+ * Compact focus URL encoding (avoids JSON `"` → `%22` in the address bar).
+ * Example: `bicycle:incomplete,boundaries:false`
+ * Also accepts legacy JSON objects / JSON strings from older share links.
+ */
+export function parseFocusParam(raw: unknown): MapFocus | undefined {
+  if (raw == null || raw === '') return undefined
+
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const parsed = mapFocusObjectSchema.safeParse(raw)
+    return parsed.success ? parsed.data : undefined
+  }
+
+  if (typeof raw !== 'string') return undefined
+
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = mapFocusObjectSchema.safeParse(JSON.parse(trimmed))
+      return parsed.success ? parsed.data : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  const next: MapFocusObject = {}
+  for (const part of trimmed.split(',')) {
+    if (!part) continue
+    const colon = part.indexOf(':')
+    if (colon <= 0) return undefined
+    const key = part.slice(0, colon)
+    const value = part.slice(colon + 1)
+
+    if (key === 'boundaries') {
+      if (value === 'true') next.boundaries = true
+      else if (value === 'false') next.boundaries = false
+      else return undefined
+      continue
+    }
+
+    if (key === 'parking') {
+      const parsed = parkingFocusSchema.safeParse(value)
+      if (!parsed.success) return undefined
+      next.parking = parsed.data
+      continue
+    }
+    if (key === 'width') {
+      const parsed = widthFocusSchema.safeParse(value)
+      if (!parsed.success) return undefined
+      next.width = parsed.data
+      continue
+    }
+    if (key === 'bicycle') {
+      const parsed = bicycleFocusSchema.safeParse(value)
+      if (!parsed.success) return undefined
+      next.bicycle = parsed.data
+      continue
+    }
+    if (key === 'surface') {
+      const parsed = surfaceFocusSchema.safeParse(value)
+      if (!parsed.success) return undefined
+      next.surface = parsed.data
+      continue
+    }
+
+    return undefined
+  }
+
+  return Object.keys(next).length > 0 ? next : undefined
+}
+
+/** Serialize slim focus as `key:value,…` (no JSON quotes). */
+export function serializeFocusParam(focus: MapFocus | undefined): string | undefined {
+  const slim = serializeMapFocus(focus)
+  if (!slim) return undefined
+
+  const parts: string[] = []
+  for (const key of FOCUS_PRIMARY_KEYS) {
+    const value = slim[key]
+    if (value) parts.push(`${key}:${value}`)
+  }
+  if (slim.boundaries !== undefined) parts.push(`boundaries:${slim.boundaries}`)
+  return parts.length > 0 ? parts.join(',') : undefined
+}
 
 /** Shared map search params (mode is the `/$mode` path slug, e.g. `/parking`). */
 export const mapSearchSchema = z.object({
@@ -60,7 +148,7 @@ export const mapSearchSchema = z.object({
     ])
     .optional()
     .transform(parseDebugSearch),
-  focus: mapFocusSchema,
+  focus: z.preprocess((raw) => parseFocusParam(raw), mapFocusSchema),
   /** Parking sign preset set; omitted = default. */
   presets: parkingPresetSetSchema.optional(),
   /** Highway inclusion style; omitted = public (skip private/driveway clutter). */
@@ -98,13 +186,13 @@ function serializeMapFocus(focus: MapFocus | undefined): MapFocus | undefined {
 
 export function serializeMapSearch(
   search: MapSearch,
-): Record<string, string | boolean | MapFocus | undefined> {
+): Record<string, string | boolean | undefined> {
   return {
     map: search.map ? serializeMapParam(search.map) : undefined,
     f: search.f ? serializeFeatureParam(search.f) : undefined,
     bg: search.bg,
     debug: search.debug,
-    focus: serializeMapFocus(search.focus),
+    focus: serializeFocusParam(search.focus),
     presets: search.presets && search.presets !== 'default' ? search.presets : undefined,
     ways: search.ways && search.ways !== DEFAULT_HIGHWAY_INCLUSION_STYLE ? search.ways : undefined,
     locale: search.locale && search.locale !== DEFAULT_UI_LOCALE ? search.locale : undefined,

@@ -52,13 +52,13 @@ describe('mapSearchSchema', () => {
   test('serializeMapSearch omits default focus values', () => {
     expect(serializeMapSearch({ focus: { parking: 'all', width: 'all' } })).toEqual({})
     expect(serializeMapSearch({ focus: { parking: 'noSurface' } })).toEqual({
-      focus: { parking: 'noSurface' },
+      focus: 'parking:noSurface',
     })
     expect(serializeMapSearch({ focus: { width: 'bicycle' } })).toEqual({
-      focus: { width: 'bicycle' },
+      focus: 'width:bicycle',
     })
     expect(serializeMapSearch({ focus: { surface: 'bike' } })).toEqual({
-      focus: { surface: 'bike' },
+      focus: 'surface:bike',
     })
   })
 
@@ -85,6 +85,16 @@ describe('mapSearchSchema', () => {
         focus: { parking: 'noSurface', width: 'car' },
       }).focus,
     ).toEqual({ parking: 'noSurface', width: 'car' })
+    expect(
+      mapSearchSchema.parse({
+        focus: 'bicycle:incomplete,boundaries:false',
+      }).focus,
+    ).toEqual({ bicycle: 'incomplete', boundaries: false })
+    expect(
+      mapSearchSchema.parse({
+        focus: '{"bicycle":"incomplete","boundaries":false}',
+      }).focus,
+    ).toEqual({ bicycle: 'incomplete', boundaries: false })
   })
 
   test('coerces debug search param to boolean', () => {

@@ -1,5 +1,5 @@
 import 'normalize.css'
-import { redirectLegacyMapHash, routerSearch } from '@osm-editor-kit/osm-map-url'
+import { redirectLegacyMapHash } from '@osm-editor-kit/osm-map-url'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client'
 import { Toaster } from 'sonner'
 import { createAppQueryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
+import { appRouterSearch } from './shell/map/app-router-search'
 import './styles/tailwind.css'
 import './styles/main.scss'
 redirectLegacyMapHash()
@@ -17,8 +18,8 @@ const router = createRouter({
   routeTree,
   basepath,
   trailingSlash: 'never',
-  parseSearch: routerSearch.parse,
-  stringifySearch: routerSearch.stringify,
+  parseSearch: appRouterSearch.parse,
+  stringifySearch: appRouterSearch.stringify,
 })
 
 declare module '@tanstack/react-router' {

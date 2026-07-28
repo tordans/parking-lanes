@@ -33,10 +33,11 @@ export function useMapFocus(): {
   const setFocus = useCallback(
     (value: ParkingFocus | WidthFocus | BicycleFocus | SurfaceFocus) => {
       void navigate({
-        search: (prev) => ({
-          ...serializeMapSearch(prev),
-          focus: nextFocusState(prev.focus, mode, value),
-        }),
+        search: (prev) =>
+          serializeMapSearch({
+            ...prev,
+            focus: nextFocusState(prev.focus, mode, value),
+          }),
         replace: true,
       })
     },

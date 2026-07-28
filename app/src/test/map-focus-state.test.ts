@@ -15,21 +15,21 @@ describe('map boundaries focus state', () => {
   test('turns boundaries off when a non-default primary filter is set', () => {
     expect(readBoundariesEnabled({ width: 'car' })).toBe(false)
     expect(serializeMapSearch({ focus: { width: 'car' } })).toEqual({
-      focus: { width: 'car' },
+      focus: 'width:car',
     })
   })
 
   test('keeps boundaries on when explicitly set with a primary filter', () => {
     expect(readBoundariesEnabled({ width: 'car', boundaries: true })).toBe(true)
     expect(serializeMapSearch({ focus: { width: 'car', boundaries: true } })).toEqual({
-      focus: { width: 'car', boundaries: true },
+      focus: 'width:car,boundaries:true',
     })
   })
 
   test('serializes boundaries off without a primary filter', () => {
     expect(readBoundariesEnabled({ boundaries: false })).toBe(false)
     expect(serializeMapSearch({ focus: { boundaries: false } })).toEqual({
-      focus: { boundaries: false },
+      focus: 'boundaries:false',
     })
   })
 
