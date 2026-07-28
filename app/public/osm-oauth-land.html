@@ -16,17 +16,30 @@
           return
         }
 
+        // Directory of this land page (= Vite base). Use '.' not '..':
+        // new URL('..', .../osm-oauth-land.html) resolves to the host root.
+        // Keep in sync with resolveOAuthLandReturnUrl in packages/osm-oauth.
+        var appBase = new URL('.', location.href)
+        var appBasePrefix = appBase.pathname.replace(/\/$/, '') || ''
+
         // Restore the pre-login deep link (mode, map, f, …). Key must match OSM_AUTH_RETURN_URL_KEY.
         var RETURN_KEY = '__osmAuthReturnUrl'
         var raw = localStorage.getItem(RETURN_KEY)
         localStorage.removeItem(RETURN_KEY)
 
-        var appUrl
+        var appUrl = new URL(appBase.href)
         try {
-          appUrl = raw ? new URL(raw, location.origin) : new URL('..', location.href)
-          if (appUrl.origin !== location.origin) appUrl = new URL('..', location.href)
+          if (raw) {
+            var candidate = new URL(raw, location.origin)
+            var underBase =
+              candidate.origin === location.origin &&
+              (appBasePrefix === '' ||
+                candidate.pathname === appBasePrefix ||
+                candidate.pathname.indexOf(appBasePrefix + '/') === 0)
+            if (underBase) appUrl = candidate
+          }
         } catch (e) {
-          appUrl = new URL('..', location.href)
+          appUrl = new URL(appBase.href)
         }
 
         ;['code', 'state', 'error', 'error_description'].forEach(function (key) {

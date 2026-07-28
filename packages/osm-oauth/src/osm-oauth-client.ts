@@ -156,7 +156,8 @@ export function createOsmOAuthClient(
     }
 
     if (!isLoggedIn()) {
-      const mode = oauthConfig.getLoginMode?.() ?? 'popup'
+      // Default redirect: OSM serves COOP: same-origin, which breaks popup opener.
+      const mode = oauthConfig.getLoginMode?.() ?? 'redirect'
       if (mode === 'redirect') saveOAuthReturnUrl()
       await osmLogin({
         mode,

@@ -17,7 +17,9 @@ const client = createOsmOAuthClient(
     getRedirectUrl: getOsmOAuthRedirectUrl,
     getApiUrl: (useDevServer) => (useDevServer ? osmDevUrl : osmProdApiUrl),
     getUseDevServer: getUseOsmDevServer,
-    getLoginMode: () => (import.meta.env.DEV ? 'redirect' : 'popup'),
+    // Always redirect: openstreetmap.org sends COOP: same-origin, which nulls
+    // window.opener and breaks osm-api's popup + BroadcastChannel completion.
+    getLoginMode: () => 'redirect',
   },
   { changesetTags: { comment: APP_NAME } },
 )

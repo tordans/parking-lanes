@@ -32,6 +32,49 @@ export function saveOAuthReturnUrl(): void {
 }
 
 /**
+ * Resolve where osm-oauth-land.html should send the browser after OSM redirects back.
+ * Must stay under the land page directory (Vite base). Never use `..` — for a file URL
+ * like `/street-space-editor/osm-oauth-land.html`, `new URL('..', href)` is the host root.
+ * Keep in sync with `app/public/osm-oauth-land.html`.
+ */
+export function resolveOAuthLandReturnUrl(options: {
+  landHref: string
+  returnPath: string | null
+  callbackSearch: string
+}): string {
+  const appBase = new URL('.', options.landHref)
+  const appBasePrefix = appBase.pathname.replace(/\/$/, '') || ''
+
+  let appUrl = new URL(appBase.href)
+  if (options.returnPath) {
+    try {
+      const candidate = new URL(options.returnPath, appBase.origin)
+      const underBase =
+        candidate.origin === appBase.origin &&
+        (appBasePrefix === '' ||
+          candidate.pathname === appBasePrefix ||
+          candidate.pathname.startsWith(`${appBasePrefix}/`))
+      if (underBase) appUrl = candidate
+    } catch {
+      // keep appBase
+    }
+  }
+
+  const params = new URLSearchParams(
+    options.callbackSearch.startsWith('?')
+      ? options.callbackSearch.slice(1)
+      : options.callbackSearch,
+  )
+  for (const key of OAUTH_CALLBACK_PARAM_KEYS) {
+    const value = params.get(key)
+    if (value) appUrl.searchParams.set(key, value)
+    else appUrl.searchParams.delete(key)
+  }
+
+  return `${appUrl.pathname}${appUrl.search}${appUrl.hash}`
+}
+
+/**
  * osm-api's authReady may exchange the redirect code before configure() runs.
  * Retry here once the correct API base URL is known.
  */

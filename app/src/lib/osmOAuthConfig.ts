@@ -23,7 +23,7 @@ export function getOsmOAuthClientId(useDevServer = false): string {
 }
 
 /**
- * Redirect URI for OAuth popup/redirect: Vite base + {@link OSM_OAUTH_LAND_FILENAME}.
+ * Redirect URI for OAuth redirect login: Vite base + {@link OSM_OAUTH_LAND_FILENAME}.
  * Uses `import.meta.env.BASE_URL` (not `location.pathname`) so `trailingSlash: 'never'`
  * routes like `/street-space-editor` do not collapse to the host root.
  * Register the resulting URLs on your OSM OAuth application (see `.env.example`).
