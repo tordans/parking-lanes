@@ -67,6 +67,18 @@ describe('mapSearchSchema', () => {
     expect(serializeMapSearch({ ways: 'inclusive' })).toEqual({ ways: 'inclusive' })
   })
 
+  test('serializeMapSearch omits default locale (en)', () => {
+    expect(serializeMapSearch({ locale: 'en' })).toEqual({})
+    expect(serializeMapSearch({ locale: 'de' })).toEqual({ locale: 'de' })
+  })
+
+  test('parses locale search param (iD-compatible)', () => {
+    expect(mapSearchSchema.parse({ locale: 'de' }).locale).toBe('de')
+    expect(mapSearchSchema.parse({ locale: 'en' }).locale).toBe('en')
+    expect(mapSearchSchema.parse({ locale: 'fr' }).locale).toBeUndefined()
+    expect(mapSearchSchema.parse({}).locale).toBeUndefined()
+  })
+
   test('parses focus search param', () => {
     expect(
       mapSearchSchema.parse({

@@ -2,7 +2,7 @@ import * as m from '@app/paraglide/messages'
 import { Label } from '../../components/catalyst/fieldset'
 import { Radio, RadioField, RadioGroup } from '../../components/catalyst/radio'
 import { uiLocales, type UiLocale } from '../../i18n/uiLocale'
-import { setUiLocale, useUiLocale } from '../../i18n/useUiLocale'
+import { useSetUiLocale, useUiLocale } from '../../i18n/useUiLocale'
 
 const localeLabels: Record<UiLocale, () => string> = {
   de: m.shell_lang_de,
@@ -11,6 +11,7 @@ const localeLabels: Record<UiLocale, () => string> = {
 
 export function LanguageSwitcher() {
   const uiLocale = useUiLocale()
+  const setUiLocale = useSetUiLocale()
 
   return (
     <RadioGroup

@@ -1,29 +1,42 @@
 import { getLocale, setLocale } from '@app/paraglide/runtime'
-import { useSyncExternalStore } from 'react'
-import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from './uiLocale'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useCallback } from 'react'
+import { serializeMapSearch } from '../shell/map/search-schema'
+import { DEFAULT_UI_LOCALE, isUiLocale, readUiLocale, type UiLocale } from './uiLocale'
 
-const localeListeners = new Set<() => void>()
-
-const notifyLocaleListeners = () => {
-  for (const listener of localeListeners) {
-    listener()
+function syncParaglideLocale(locale: UiLocale) {
+  const current = getLocale()
+  if (current !== locale) {
+    setLocale(locale, { reload: false })
   }
 }
 
-const subscribeToUiLocale = (listener: () => void) => {
-  localeListeners.add(listener)
-  return () => localeListeners.delete(listener)
+/** URL `locale` is source of truth; omitted means {@link DEFAULT_UI_LOCALE}. */
+export function useUiLocale(): UiLocale {
+  const { locale } = useSearch({ from: '/$mode' })
+  const uiLocale = readUiLocale(locale)
+  // Keep paraglide in sync during render so message calls in the same tree see the URL locale.
+  syncParaglideLocale(uiLocale)
+  return uiLocale
 }
 
-export const getUiLocale = (): UiLocale => {
-  const locale = getLocale()
-  return isUiLocale(locale) ? locale : DEFAULT_UI_LOCALE
-}
+export function useSetUiLocale() {
+  const navigate = useNavigate({ from: '/$mode' })
 
-export const setUiLocale = (locale: UiLocale) => {
-  setLocale(locale, { reload: false })
-  notifyLocaleListeners()
+  return useCallback(
+    (next: UiLocale) => {
+      if (!isUiLocale(next)) return
+      syncParaglideLocale(next)
+      void navigate({
+        search: (prev) => ({
+          ...serializeMapSearch({
+            ...prev,
+            locale: next === DEFAULT_UI_LOCALE ? undefined : next,
+          }),
+        }),
+        replace: true,
+      })
+    },
+    [navigate],
+  )
 }
-
-export const useUiLocale = (): UiLocale =>
-  useSyncExternalStore(subscribeToUiLocale, getUiLocale, () => DEFAULT_UI_LOCALE)
