@@ -21,6 +21,14 @@ import {
   type SurfacePaintState,
 } from '../domain/surface-tag-read'
 
+const majorHighwayRegex = /^motorway|trunk|primary|secondary|tertiary|unclassified|residential/
+
+/** Major roads get a wider band than other ways; surface mode uses two categorical widths. */
+export function surfaceWayIsMajor(highway: string | undefined): boolean {
+  if (!highway) return false
+  return majorHighwayRegex.test(highway)
+}
+
 export type SurfaceHighwayProperties = {
   osmId: number
   osmType: 'way'
@@ -33,7 +41,7 @@ export type SurfaceHighwayProperties = {
   paintState: SurfacePaintState
   missingSurface: boolean
   missingSmoothness: boolean
-  roadWidthM: number
+  isMajor: boolean
 }
 
 export type SurfaceSidepathProperties = {
@@ -50,7 +58,7 @@ export type SurfaceSidepathProperties = {
   paintState: SurfacePaintState
   missingSurface: boolean
   missingSmoothness: boolean
-  roadWidthM: number
+  isMajor: boolean
   parentRoadWidthM: number
 }
 
@@ -93,7 +101,7 @@ function wayCoordinates(
 function surfacePropertiesFromTags(
   tags: Record<string, string>,
   infra: SurfaceInfraClass,
-  roadWidthM: number,
+  isMajor: boolean,
 ): Pick<
   SurfaceHighwayProperties,
   | 'surface'
@@ -101,7 +109,7 @@ function surfacePropertiesFromTags(
   | 'paintState'
   | 'missingSurface'
   | 'missingSmoothness'
-  | 'roadWidthM'
+  | 'isMajor'
   | 'infra'
 > {
   const paintState = surfacePaintState(tags)
@@ -115,7 +123,7 @@ function surfacePropertiesFromTags(
     paintState,
     missingSurface: paintState === 'missing_surface',
     missingSmoothness: paintState === 'missing_smoothness',
-    roadWidthM,
+    isMajor,
   }
 }
 
@@ -139,7 +147,7 @@ export function parseSurfaceFeaturesFromData(
     const highwayProps = surfacePropertiesFromTags(
       way.tags,
       classifySurfaceInfra(way.tags),
-      width.value,
+      surfaceWayIsMajor(way.tags.highway),
     )
 
     features.push({
@@ -160,11 +168,10 @@ export function parseSurfaceFeaturesFromData(
     })
 
     for (const sidepath of expandSidepaths(way.id, way.tags)) {
-      const sidepathWidth = roadWidthFromTags(sidepath.tags)
       const sidepathProps = surfacePropertiesFromTags(
         sidepath.tags,
         classifySurfaceInfra(sidepath.tags, { prefix: sidepath.ref.prefix }),
-        sidepathWidth.value,
+        false,
       )
 
       features.push({

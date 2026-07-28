@@ -3,12 +3,15 @@ import bearing from '@turf/bearing'
 import destination from '@turf/destination'
 import { featureCollection, lineString, point, polygon } from '@turf/helpers'
 import length from '@turf/length'
+import nearestPointOnLine from '@turf/nearest-point-on-line'
 import type { Feature, FeatureCollection, LineString, Point, Polygon, Position } from 'geojson'
 
 export const HANDLE_ALONG_M = 10
 export const SHORT_MAX_M = 30
 export const LONG_MIN_M = 80
 export const MIN_WIDTH_M = 1
+/** Two handles closer than one handle length would overlap visually. */
+export const HANDLE_OVERLAP_MIN_M = HANDLE_ALONG_M
 
 export type HandleSide = 'left' | 'right'
 
@@ -30,6 +33,40 @@ export function handleFractionsForLength(lengthM: number): number[] {
   if (count === 1) return [0.5]
   if (count === 2) return [0.15, 0.85]
   return [0.05, 0.5, 0.95]
+}
+
+/** Where along the line (0–1) the given position projects onto. */
+export function fractionAlongLine(
+  coordinates: Position[],
+  lngLat: { lng: number; lat: number },
+): number | null {
+  if (coordinates.length < 2) return null
+
+  const line = lineString(coordinates)
+  const totalM = length(line, { units: 'meters' })
+  if (totalM <= 0) return null
+
+  const nearest = nearestPointOnLine(line, point([lngLat.lng, lngLat.lat]), { units: 'meters' })
+  const locationM = nearest.properties.location
+  if (locationM == null || !Number.isFinite(locationM)) return null
+
+  return Math.min(1, Math.max(0, locationM / totalM))
+}
+
+/**
+ * Insert a handle fraction, keeping the list sorted and dropping positions that would
+ * overlap an existing handle.
+ */
+export function addHandleFractionUnlessOverlap(
+  fractions: number[],
+  next: number,
+  totalM: number,
+  minSeparationM = HANDLE_OVERLAP_MIN_M,
+): number[] {
+  const clamped = Math.min(0.98, Math.max(0.02, next))
+  const minSeparation = totalM > 0 ? minSeparationM / totalM : 1
+  if (fractions.some((fraction) => Math.abs(fraction - clamped) < minSeparation)) return fractions
+  return [...fractions, clamped].sort((a, b) => a - b)
 }
 
 /** Project screen delta onto the outward normal for a handle side (map may be rotated). */
@@ -157,6 +194,7 @@ function buildHandleRectangle(
 export function buildHandleGeometry(
   coordinates: Position[],
   widthM: number,
+  fractions?: number[],
 ): HandleGeometry | null {
   if (coordinates.length < 2 || widthM <= 0) return null
 
@@ -169,7 +207,10 @@ export function buildHandleGeometry(
   const cues: Feature<Point>[] = []
   const hitAreas: Feature<LineString>[] = []
 
-  for (const fraction of handleFractionsForLength(totalM)) {
+  const placements =
+    fractions && fractions.length > 0 ? fractions : handleFractionsForLength(totalM)
+
+  for (const fraction of placements) {
     const center = positionAtFraction(line, fraction, totalM)
     const alongBearing = tangentBearingAt(line, fraction * totalM, totalM)
     const rect = buildHandleRectangle(center, alongBearing, widthM)

@@ -21,10 +21,10 @@ import {
 } from './domain/handle-geometry'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { viewMinZoom } from './map/constants'
-import { useDraftWidthM, useWidthMapActions } from './map/width-map-store'
+import { useDraftWidthM, useWidthMapActions, useWidthMapStore } from './map/width-map-store'
 import { stageWidthOnSidepath, stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
-import { useWidthOsmChangeHandler } from './use-width-mode-handlers'
+import { selectionKey, useWidthOsmChangeHandler } from './use-width-mode-handlers'
 
 function formatSourceLabel(source: string): string {
   switch (source) {
@@ -121,8 +121,14 @@ export function WidthModePanel() {
       )
     }
 
+    const stored = useWidthMapStore.getState()
+    const fractions =
+      stored.handleFractionsKey === selectionKey(selectedOsmRef)
+        ? (stored.handleFractions ?? undefined)
+        : undefined
+
     setDraftWidthM(clamped)
-    setHandles(buildHandleGeometry(handleCoordinates, clamped))
+    setHandles(buildHandleGeometry(handleCoordinates, clamped, fractions))
 
     if (isSidepath && selectedOsmRef.prefix && selectedOsmRef.side) {
       onOsmChange(

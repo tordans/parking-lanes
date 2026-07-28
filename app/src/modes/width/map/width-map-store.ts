@@ -4,31 +4,41 @@ import type { HandleGeometry } from '../domain/handle-geometry'
 interface WidthMapStore {
   draftWidthM: number | null
   handles: HandleGeometry | null
+  /** Handle positions (0–1) placed by the user for {@link handleFractionsKey}. */
+  handleFractions: number[] | null
+  handleFractionsKey: string | null
   dragSide: 'left' | 'right' | null
   dragStartWidthM: number | null
   actions: {
     setDraftWidthM: (widthM: number | null) => void
     setHandles: (handles: HandleGeometry | null) => void
+    setHandleFractions: (key: string, fractions: number[]) => void
     startDrag: (side: 'left' | 'right', startWidthM: number) => void
     endDrag: () => void
     clearDraft: () => void
   }
 }
 
-const useWidthMapStore = create<WidthMapStore>()((set) => ({
+export const useWidthMapStore = create<WidthMapStore>()((set) => ({
   draftWidthM: null,
   handles: null,
+  handleFractions: null,
+  handleFractionsKey: null,
   dragSide: null,
   dragStartWidthM: null,
   actions: {
     setDraftWidthM: (draftWidthM) => set({ draftWidthM }),
     setHandles: (handles) => set({ handles }),
+    setHandleFractions: (handleFractionsKey, handleFractions) =>
+      set({ handleFractionsKey, handleFractions }),
     startDrag: (dragSide, dragStartWidthM) => set({ dragSide, dragStartWidthM }),
     endDrag: () => set({ dragSide: null, dragStartWidthM: null }),
     clearDraft: () =>
       set({
         draftWidthM: null,
         handles: null,
+        handleFractions: null,
+        handleFractionsKey: null,
         dragSide: null,
         dragStartWidthM: null,
       }),

@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  addHandleFractionUnlessOverlap,
+  fractionAlongLine,
   handleCountForLength,
   handleFractionsForLength,
   widthDeltaFromScreenDrag,
@@ -21,6 +23,26 @@ describe('handleFractionsForLength', () => {
     expect(handleFractionsForLength(20)).toEqual([0.5])
     expect(handleFractionsForLength(50)).toEqual([0.15, 0.85])
     expect(handleFractionsForLength(120)).toEqual([0.05, 0.5, 0.95])
+  })
+})
+
+describe('fractionAlongLine', () => {
+  test('projects a click halfway up a northbound line to 0.5', () => {
+    const coordinates = [
+      [13.4, 52.5],
+      [13.4, 52.501],
+    ]
+    expect(fractionAlongLine(coordinates, { lng: 13.4, lat: 52.5005 })).toBeCloseTo(0.5, 3)
+  })
+})
+
+describe('addHandleFractionUnlessOverlap', () => {
+  test('inserts a new fraction in sorted order', () => {
+    expect(addHandleFractionUnlessOverlap([0.15, 0.85], 0.5, 100)).toEqual([0.15, 0.5, 0.85])
+  })
+
+  test('skips fractions that would overlap an existing handle', () => {
+    expect(addHandleFractionUnlessOverlap([0.15, 0.85], 0.2, 100)).toEqual([0.15, 0.85])
   })
 })
 

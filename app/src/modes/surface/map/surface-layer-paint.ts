@@ -1,4 +1,4 @@
-import { focusCaseColor, focusCaseOpacity, lineWidthFromMeters } from '@osm-editor-kit/osm-maplibre'
+import { focusCaseColor, focusCaseOpacity } from '@osm-editor-kit/osm-maplibre'
 import type { FilterSpecification } from 'maplibre-gl'
 import {
   ROUND_LINE_LAYOUT,
@@ -41,6 +41,27 @@ const surfaceColor = [
   ],
 ] as const
 
+/**
+ * Surface mode paints two categorical widths (major road vs everything else) instead of the
+ * physical road width used by width mode.
+ */
+const surfaceMajorLineWidth = ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 7, 20, 12] as const
+const surfaceOtherLineWidth = ['interpolate', ['linear'], ['zoom'], 12, 2, 16, 4, 20, 7] as const
+
+const surfaceBandLineWidth = [
+  'case',
+  ['get', 'isMajor'],
+  surfaceMajorLineWidth,
+  surfaceOtherLineWidth,
+] as const
+
+const surfaceHitLineWidth = [
+  'case',
+  ['get', 'isMajor'],
+  ['interpolate', ['linear'], ['zoom'], 12, 8, 16, 14, 20, 20],
+  ['interpolate', ['linear'], ['zoom'], 12, 6, 16, 10, 20, 14],
+] as const
+
 function withOptionalSidepathOffset(
   paint: Record<string, unknown>,
   forSidepath: boolean,
@@ -54,7 +75,7 @@ export function buildSurfaceBandPaint(focus: string, hasSelection = false, forSi
   const basePaint = {
     'line-color': surfaceColor,
     'line-opacity': opacity,
-    'line-width': lineWidthFromMeters('roadWidthM'),
+    'line-width': surfaceBandLineWidth,
   } as Record<string, unknown>
 
   if (focus === 'all') return withOptionalSidepathOffset(basePaint, forSidepath)
@@ -65,7 +86,7 @@ export function buildSurfaceBandPaint(focus: string, hasSelection = false, forSi
     {
       'line-color': focusCaseColor(matchExpr, surfaceColor),
       'line-opacity': focusCaseOpacity(matchExpr, opacity, bandMutedOpacity),
-      'line-width': lineWidthFromMeters('roadWidthM'),
+      'line-width': surfaceBandLineWidth,
     } as Record<string, unknown>,
     forSidepath,
   )
@@ -76,7 +97,7 @@ export function buildSurfaceDottedOverlayPaint(hasSelection = false, forSidepath
     {
       'line-color': MISSING_SMOOTHNESS_OVERLAY_COLOR,
       'line-opacity': hasSelection ? dottedMutedOpacity : dottedActiveOpacity,
-      'line-width': lineWidthFromMeters('roadWidthM'),
+      'line-width': surfaceBandLineWidth,
       'line-dasharray': [0.5, 1.5],
     } as Record<string, unknown>,
     forSidepath,
@@ -89,12 +110,10 @@ export const surfaceDottedOverlayFilter: FilterSpecification = [
   ['!=', ['get', 'missingSurface'], true],
 ]
 
-export const surfaceHitAreaPaint = transparentLineHitPaint(
-  lineWidthFromMeters('roadWidthM', { extraMeters: 4 }),
-)
+export const surfaceHitAreaPaint = transparentLineHitPaint(surfaceHitLineWidth)
 
 export const sidepathHitAreaPaint = {
-  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM', { extraMeters: 4 })),
+  ...transparentLineHitPaint(surfaceHitLineWidth),
   'line-offset': SIDEPATH_LINE_OFFSET,
 } as Record<string, unknown>
 

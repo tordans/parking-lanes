@@ -6,9 +6,7 @@ import type { WidthFeatureCollection } from './parse-highways'
 import {
   buildBandPaint,
   buildSidepathBandPaint,
-  sidepathHitAreaPaint,
   sidepathLineLayout,
-  widthHitAreaPaint,
   widthLineLayout,
 } from './width-layer-paint'
 
@@ -77,8 +75,8 @@ export function WidthHighwaysBandSource({
   focus: string
 }) {
   const dimNonCar = isCarHighwaySelection(features, selectedRef)
-  const bandPaint = buildBandPaint(focus, dimNonCar)
-  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
+  const bandPaint = buildBandPaint(focus, dimNonCar, selectedRef)
+  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar, selectedRef)
   const { highways, sidepaths, missingHighways, missingSidepaths } = splitFeatures(
     features,
     selectedRef,
@@ -92,12 +90,6 @@ export function WidthHighwaysBandSource({
             id="width-highways-band-layer"
             type="line"
             paint={bandPaint}
-            layout={widthLineLayout}
-          />
-          <Layer
-            id="width-highways-hitarea-layer"
-            type="line"
-            paint={widthHitAreaPaint}
             layout={widthLineLayout}
           />
         </Source>
@@ -120,12 +112,6 @@ export function WidthHighwaysBandSource({
             id="width-sidepaths-band-layer"
             type="line"
             paint={sidepathBandPaint}
-            layout={sidepathLineLayout}
-          />
-          <Layer
-            id="width-sidepaths-hitarea-layer"
-            type="line"
-            paint={sidepathHitAreaPaint}
             layout={sidepathLineLayout}
           />
         </Source>

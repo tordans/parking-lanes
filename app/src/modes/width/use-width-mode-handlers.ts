@@ -2,6 +2,8 @@ import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { metersPerPixel } from '@osm-editor-kit/osm-maplibre'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
+import { lineString } from '@turf/helpers'
+import length from '@turf/length'
 import { useCallback, useEffect, useRef } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
 import { useMap } from 'react-map-gl/maplibre'
@@ -9,14 +11,22 @@ import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import {
+  addHandleFractionUnlessOverlap,
   buildHandleGeometry,
+  fractionAlongLine,
+  handleFractionsForLength,
   MIN_WIDTH_M,
   offsetPolylineCoordinates,
   widthDeltaFromScreenDrag,
 } from './domain/handle-geometry'
 import { roadWidthFromTags } from './domain/road-width-from-tags'
 import { highwaysToCollection } from './map/parse-highways'
-import { useWidthMapActions, useWidthDragSide, useDraftWidthM } from './map/width-map-store'
+import {
+  useWidthMapActions,
+  useWidthMapStore,
+  useWidthDragSide,
+  useDraftWidthM,
+} from './map/width-map-store'
 import { stageWidthOnSidepath, stageWidthOnWay, roundWidthMetres } from './map/width-osm-edits'
 import { useWidthOsmQuery } from './map/width-osm-query'
 import { widthInteractiveLayerIds } from './map/WidthLayers'
@@ -62,11 +72,36 @@ function sidepathWidthFromWay(way: OsmWay, ref: OsmFeatureRef) {
   return roadWidthFromTags(match.tags)
 }
 
+/** Stable key so user-placed handle positions survive re-renders but reset on new selections. */
+export function selectionKey(ref: OsmFeatureRef): string {
+  const suffix = ref.prefix && ref.side ? `/${ref.prefix}/${ref.side}` : ''
+  return `${ref.type}/${ref.id}${suffix}`
+}
+
+/** Handles follow the carriageway centerline, or the offset sidepath line. */
+function handleCoordinatesForSelection(
+  way: OsmWay,
+  ref: OsmFeatureRef,
+  nodeCoords: Record<number, number[]> | undefined,
+): [number, number][] {
+  const coordinates = wayCoordinates(way, nodeCoords)
+  if (!isSidepathRef(ref)) return coordinates
+
+  const parentWidth = roadWidthFromTags(way.tags).value
+  return offsetPolylineCoordinates(coordinates, parentWidth / 2, ref.side)
+}
+
+function lineLengthMeters(coordinates: [number, number][]): number {
+  if (coordinates.length < 2) return 0
+  return length(lineString(coordinates), { units: 'meters' })
+}
+
 export function useWidthModeHandlers() {
   const { selectFeature, clearSelection } = useFeatureSelection()
   const selectedOsmRef = useSelectedOsmRef()
   const { data: graph } = useWidthOsmQuery({ select: (data) => data.graph })
-  const { setDraftWidthM, setHandles, startDrag, endDrag, clearDraft } = useWidthMapActions()
+  const { setDraftWidthM, setHandles, setHandleFractions, startDrag, endDrag, clearDraft } =
+    useWidthMapActions()
   const dragSide = useWidthDragSide()
   const draftWidthM = useDraftWidthM()
   const handleOsmChange = useWidthOsmChangeHandler()
@@ -79,24 +114,28 @@ export function useWidthModeHandlers() {
     startClientX: number
     bearing: number
   } | null>(null)
+  /** Fraction of the click that triggered a new selection, applied once geometry is known. */
+  const pendingClickFractionRef = useRef<number | null>(null)
 
   const applyWidth = useCallback(
     (way: OsmWay, widthM: number) => {
+      if (!selectedOsmRef || selectedOsmRef.type !== 'way') return
+
       const clamped = Math.max(MIN_WIDTH_M, roundWidthMetres(widthM))
       setDraftWidthM(clamped)
 
-      const coordinates = wayCoordinates(way, graph?.nodeCoords)
-      let handleCoordinates = coordinates
-      if (isSidepathRef(selectedOsmRef)) {
-        const parentWidth = roadWidthFromTags(way.tags).value
-        handleCoordinates = offsetPolylineCoordinates(
-          coordinates,
-          parentWidth / 2,
-          selectedOsmRef.side,
-        )
-      }
+      const handleCoordinates = handleCoordinatesForSelection(
+        way,
+        selectedOsmRef,
+        graph?.nodeCoords,
+      )
+      const stored = useWidthMapStore.getState()
+      const fractions =
+        stored.handleFractionsKey === selectionKey(selectedOsmRef)
+          ? (stored.handleFractions ?? undefined)
+          : undefined
 
-      setHandles(buildHandleGeometry(handleCoordinates, clamped))
+      setHandles(buildHandleGeometry(handleCoordinates, clamped, fractions))
 
       if (isSidepathRef(selectedOsmRef)) {
         handleOsmChange(
@@ -123,31 +162,85 @@ export function useWidthModeHandlers() {
         return
       }
 
-      const coordinates = wayCoordinates(way, graph?.nodeCoords)
-      if (isSidepathRef(selectedOsmRef)) {
-        const sidepathWidth = sidepathWidthFromWay(way, selectedOsmRef)
-        if (!sidepathWidth) {
-          clearDraft()
-          return
-        }
-
-        const parentWidth = roadWidthFromTags(way.tags).value
-        const handleCoordinates = offsetPolylineCoordinates(
-          coordinates,
-          parentWidth / 2,
-          selectedOsmRef.side,
-        )
-
-        setDraftWidthM(sidepathWidth.value)
-        setHandles(buildHandleGeometry(handleCoordinates, sidepathWidth.value))
+      const width = isSidepathRef(selectedOsmRef)
+        ? sidepathWidthFromWay(way, selectedOsmRef)
+        : roadWidthFromTags(way.tags)
+      if (!width) {
+        clearDraft()
         return
       }
 
-      const width = roadWidthFromTags(way.tags)
+      const handleCoordinates = handleCoordinatesForSelection(
+        way,
+        selectedOsmRef,
+        graph?.nodeCoords,
+      )
+      const totalM = lineLengthMeters(handleCoordinates)
+      const key = selectionKey(selectedOsmRef)
+      const stored = useWidthMapStore.getState()
+      const baseFractions =
+        stored.handleFractionsKey === key && stored.handleFractions
+          ? stored.handleFractions
+          : handleFractionsForLength(totalM)
+
+      const pendingFraction = pendingClickFractionRef.current
+      pendingClickFractionRef.current = null
+      const fractions =
+        pendingFraction == null
+          ? baseFractions
+          : addHandleFractionUnlessOverlap(baseFractions, pendingFraction, totalM)
+
+      setHandleFractions(key, fractions)
       setDraftWidthM(width.value)
-      setHandles(buildHandleGeometry(coordinates, width.value))
+      setHandles(buildHandleGeometry(handleCoordinates, width.value, fractions))
     },
-    [clearDraft, graph?.nodeCoords, graph?.ways, selectedOsmRef, setDraftWidthM, setHandles],
+    [
+      clearDraft,
+      graph?.nodeCoords,
+      graph?.ways,
+      selectedOsmRef,
+      setDraftWidthM,
+      setHandleFractions,
+      setHandles,
+    ],
+  )
+
+  /** Re-clicking the current selection adds another handle at that spot. */
+  const placeHandleAtClick = useCallback(
+    (lngLat: { lng: number; lat: number }) => {
+      if (!selectedOsmRef || selectedOsmRef.type !== 'way') return
+
+      const way = graph?.ways[selectedOsmRef.id]
+      if (!way) return
+
+      const handleCoordinates = handleCoordinatesForSelection(
+        way,
+        selectedOsmRef,
+        graph?.nodeCoords,
+      )
+      const fraction = fractionAlongLine(handleCoordinates, lngLat)
+      if (fraction == null) return
+
+      const totalM = lineLengthMeters(handleCoordinates)
+      const key = selectionKey(selectedOsmRef)
+      const stored = useWidthMapStore.getState()
+      const baseFractions =
+        stored.handleFractionsKey === key && stored.handleFractions
+          ? stored.handleFractions
+          : handleFractionsForLength(totalM)
+      const fractions = addHandleFractionUnlessOverlap(baseFractions, fraction, totalM)
+      if (fractions === baseFractions) return
+
+      const widthM =
+        draftWidthM ??
+        (isSidepathRef(selectedOsmRef)
+          ? (sidepathWidthFromWay(way, selectedOsmRef)?.value ?? roadWidthFromTags(way.tags).value)
+          : roadWidthFromTags(way.tags).value)
+
+      setHandleFractions(key, fractions)
+      setHandles(buildHandleGeometry(handleCoordinates, widthM, fractions))
+    },
+    [draftWidthM, graph?.nodeCoords, graph?.ways, selectedOsmRef, setHandleFractions, setHandles],
   )
 
   const handleLayerClick = useCallback(
@@ -164,19 +257,32 @@ export function useWidthModeHandlers() {
       if (!osmId || !osmType) return
 
       const kind = feature?.properties?.kind as string | undefined
+      let nextRef: OsmFeatureRef
       if (kind === 'sidepath') {
         const prefix = feature?.properties?.prefix as 'cycleway' | 'sidewalk' | undefined
         const side = feature?.properties?.side as 'left' | 'right' | undefined
         if (!prefix || !side) return
-        selectFeature({ type: osmType, id: osmId, prefix, side })
-        event.originalEvent.stopPropagation()
+        nextRef = { type: osmType, id: osmId, prefix, side }
+      } else {
+        nextRef = { type: osmType, id: osmId }
+      }
+
+      event.originalEvent.stopPropagation()
+
+      if (selectedOsmRef && selectionKey(selectedOsmRef) === selectionKey(nextRef)) {
+        placeHandleAtClick(event.lngLat)
         return
       }
 
-      selectFeature({ type: osmType, id: osmId })
-      event.originalEvent.stopPropagation()
+      const way = graph?.ways[nextRef.id]
+      if (way) {
+        const handleCoordinates = handleCoordinatesForSelection(way, nextRef, graph?.nodeCoords)
+        pendingClickFractionRef.current = fractionAlongLine(handleCoordinates, event.lngLat)
+      }
+
+      selectFeature(nextRef)
     },
-    [selectFeature],
+    [graph?.nodeCoords, graph?.ways, placeHandleAtClick, selectFeature, selectedOsmRef],
   )
 
   const handleMapClick = useCallback(() => {

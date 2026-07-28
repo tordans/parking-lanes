@@ -5,11 +5,13 @@ export const ROUND_LINE_LAYOUT = { 'line-cap': 'round', 'line-join': 'round' } a
 /**
  * MapLibre `line-offset` is a **paint** property (not layout). Use on sidepath layers so
  * left/right bands sit beside the carriageway.
+ * A positive offset moves the line to the right of the way direction (OSM `:left` / `:right`
+ * convention, same as parking), so `left` needs the negative sign.
  * Side sign is folded into {@link lineOffsetFromMeters} stop outputs — wrapping that
  * interpolate in `*` nests `zoom` and MapLibre rejects the layer.
  */
 export const SIDEPATH_LINE_OFFSET = lineOffsetFromMeters('parentRoadWidthM', 0.5, {
-  sign: ['case', ['==', ['get', 'side'], 'left'], 1, -1],
+  sign: ['case', ['==', ['get', 'side'], 'left'], -1, 1],
 })
 
 /** Zoom-interpolated transparent circle used for forgiving point hit targets. */

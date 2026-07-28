@@ -34,7 +34,7 @@ export function WidthLayers({ features, selectedRef, selectedCenterline, handles
 }
 
 export const widthInteractiveLayerIds = [
-  'width-highways-hitarea-layer',
-  'width-sidepaths-hitarea-layer',
+  'width-highways-band-layer',
+  'width-sidepaths-band-layer',
   'width-handles-hitarea-layer',
 ]
