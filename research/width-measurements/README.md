@@ -15,6 +15,7 @@ Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` edit
 | Do **buffer** widths include paint / hatching? | Berlin / ERA-style practice documented for OSM: **yes — markings are counted in `buffer`** | **Clear for Berlin numeric buffer**; global `cycleway:buffer` mostly `yes`/`no` |
 | Is there a tag for total ROW (carriageway + sidewalks + green median)? | **No single key.** Compose from components: `sidewalk:*:width`, `verge` / `verge:*:width`, `width=*`, separate areas | **Clear** (components exist; no aggregate) |
 | Narrowings? | **Split the way** and set `width=*` (or `est_width`) on the narrow segment; optional `narrow=yes` / `hazard=road_narrows` | **Clear** |
+| Unmarked roads (`lane_markings=no`) — `width` or `lanes`? | Prefer **`width=*` (+ street parking tags)**; they are more meaningful / verifiable than guessing `lanes=*` from width. `lanes=*` still OK when clearly surveyable (traffic, signs, stub centreline) — not invented from metres alone | **Clear for preferring width** (Supaplex030, forum Mar 2026); **situational** for whether `lanes=*` is also present |
 
 ---
 
@@ -84,17 +85,45 @@ OSM does **not** store one “streetscape width”. Widths attach to **component
 
 | | |
 |--|--|
-| **Meaning** | Per-lane physical widths, pipe-separated left→right in driving direction ([Lanes](https://wiki.openstreetmap.org/wiki/Lanes), [DE:Fahrspuren](https://wiki.openstreetmap.org/wiki/DE:Fahrspuren)) |
-| **Pipe count** | Follows `*:lanes` schema → **includes bicycle lanes** as slots; **excludes parking / standing traffic** |
-| **vs `lanes=*`** | `lanes=*` counts motor full-width lanes only → pipe count of `width:lanes` may be **greater** than `lanes` |
+| **Meaning** | Per-lane physical widths as **one pipe-separated value** left→right in driving direction ([Lanes](https://wiki.openstreetmap.org/wiki/Lanes), [DE:Fahrspuren](https://wiki.openstreetmap.org/wiki/DE:Fahrspuren)) |
+| **Pipe count** | Follows the `*:lanes` schema → **includes bicycle / Schutzstreifen slots**; **excludes parking / standing traffic**; **excludes** painted buffers tagged as `cycleway:*:buffer` |
+| **vs `lanes=*`** | `lanes=*` counts motor full-width lanes only → pipe count of `width:lanes` may be **greater** than `lanes` (bike slots) and must **not** grow for parking |
 | **Tapers** | `width:lanes:start` / `:end` with `placement=transition` (e.g. ending lane → `0`) |
 | **Status** | Documented but scarce (~8k uses globally at SC #5593 time); EN Key:width mentions it briefly |
+
+**Pipe schema (editor rule):** write a **single** tag, e.g. `width:lanes=3|2` for motor 3 m + bike 2 m. Do **not** invent separate `width:lanes` keys per band — the pipes *are* the per-slot list. Pipe order matches other `*:lanes` attributes on the same way.
+
+**What is a `:lanes` slot?** [DE:Fahrspuren](https://wiki.openstreetmap.org/wiki/DE:Fahrspuren):
+
+> Der Unterschlüssel `*:lanes` deckt alle Arten von Fahrstreifen (= **fließender Verkehr**) ab … allerdings geht es auch dort immer um Fahrstreifen (also z.B. **keine Spuren für „ruhenden“ Verkehr wie etwa Parkstreifen**).
+
+So:
+
+| Feature | In `width:lanes` pipes? | In `lanes=*`? |
+|---------|-------------------------|---------------|
+| Motor travel lane | Yes | Yes |
+| Bus / PSV reserved lane | Yes | Yes |
+| On-carriageway bike / Schutzstreifen | Yes | **No** |
+| `parking:*=lane` strip | **No** — use `parking:*:width` | **No** |
+| `cycleway:*:buffer` hatch package | **No** — use buffer tags | **No** |
 
 **Interaction with `width=*` (StreetComplete #5593):**
 
 > `width` includes parking, bike lanes, shoulders; `width:lanes` covers flowing-traffic lanes in the `:lanes` schema. Adding `width` beside existing `width:lanes` is **not** always redundant — especially with parking / bike lanes / gutters. ([westnordost](https://github.com/streetcomplete/StreetComplete/issues/5593))
 
 westnordost’s residual of ≈ **0.2–0.5 m** when parking/shoulder are absent is the right *order of magnitude* for small edge leftovers — but that note does **not** spell out longitudinal lane paint as a separate term. Under the measurement assumption below, paint alone often explains a similar gap (and can be larger than 0.5 m once several Breitstriche are counted).
+
+#### `lanes=*` when the edge strip is used for parking (forum Feb 2025)
+
+Poll and thread: [Quick Poll: Lane count](https://community.openstreetmap.org/t/quick-poll-lane-count/126298) (Supaplex030, Feb 2025). Situation: urban oneway / dual-carriageway direction with **permanent** on-street parking on the right (`parking:right=lane`), marked travel lanes beside it.
+
+The poll itself was **tight (~55% / ~45%)** between `lanes=2` and `lanes=3` — not a mandate. For **this package**, weight **Supaplex030’s** clarifications in the thread:
+
+1. `parking=lane` is a **position** (“on the carriageway”), not a traffic-law “lane”; it does not by itself invent a `:lanes` pipe slot ([#52](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/52)).
+2. Where parking is allowed **at all times** and the strip is in practice never driven, count **`lanes=*` as moving motor traffic only** (his worked examples use `lanes=2` with `parking:right=lane` + `parking:right:markings=no`, not `lanes=3` that folds parking into the count) ([#6](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/6), [#57](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/57)).
+3. Aligns with wiki / DE:Fahrspuren: dedicated or edge parking is tagged with **`parking:*`**, not as an extra `lanes=*` / `width:lanes` slot. Contested edge cases (unmarked “could drive if empty”, timed shared lanes) need `parking:*:markings`, conditionals, or future shared-lane nuance — **not** stuffing parking into `width:lanes` pipes.
+
+**Editor takeaway:** `width:lanes` pipes = flowing-traffic slots only; parking width stays on `parking:*:width` inside kerb→kerb `width=*`.
 
 #### Logical assumption: `width:lanes` excludes road markings
 
@@ -244,6 +273,8 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 | `narrow=yes` | Relative narrowing |
 | `hazard=road_narrows` | Signed / notable narrowing point |
 
+**Unmarked carriageways (`lane_markings=no`):** Community discussion (Mar 2026) did not settle a single rule for always adding/removing `lanes=*`, but **Supaplex030** (and agreeing replies) land on: tag **`width=*` and street parking** — more meaningful on unmarked roads than an estimated lane count; `width=*` is also more precise and verifiable ([poll thread](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099), [§3](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099/3), [§7](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099/7)). Others note that a verifiable lane count can still exist without paint (observed traffic, signs, intersection stub centreline) and that consumers must not derive multilane `lanes=*` from width alone. Editor takeaway: **ask for / show `width` first** on unmarked ways; keep or add `lanes=*` only when the mapper can justify it OTG.
+
 ---
 
 ## 3. Interaction matrix (street space)
@@ -278,17 +309,19 @@ Naive `sum(width:lanes) == width` fails even with no parking — the missing met
 │▓ parking 2.0 │█ motor 3.0 │░ buffer 1.0 │▒ cycle 2.0 │
  kerb ◄──────────────── width=* = 8.0 ────────────────► kerb
 
- Tags (illustrative):
+ Tags (illustrative; way direction ↑, parking on diagram-left):
    width=8
-   lanes=1
-   parking:right=lane + parking:right:width=2
+   lanes=1                              ← motor only (parking NOT in lanes=*)
+   parking:left=lane + parking:left:width=2
    cycleway:right=lane
    cycleway:right:width=2
-   cycleway:right:buffer:left=1          ← paint INCLUDED
-   width:lanes=3|2                       ← motor + bike only (parking out)
+   cycleway:right:buffer:left=1         ← paint INCLUDED; NOT a :lanes pipe
+   width:lanes=3|2                      ← ONE tag: motor|bike (parking out, buffer out)
 ```
 
 Check: `2 + 3 + 1 + 2 = 8` ✓. Here `sum(width:lanes)+parking+buffer = width`.
+
+**Pipe teaching point:** draw / edit `width:lanes=3|2` as a single pipe list over the flowing slots — not two independent `width:lanes` labels, and never a parking pipe.
 
 If bike is **only** in `cycleway:*:width` and **also** appears as a `width:lanes` slot, do not double-count in editor math — pick one modelling style per way (Straßenraumkarte often puts bike in `width:lanes`; Berlin side-tags use `cycleway:*:width`).
 
@@ -434,6 +467,7 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 - Split-way helper for narrowings (local `width`).
 - Document Berlin paint-in-buffer rule in help text when region=DE.
 - Optional paint estimate in the Streetmix sum bar when `lane_markings=yes`.
+- When `lane_markings=no`, prioritise carriageway `width` (+ parking) over prompting for an estimated `lanes=*` from width.
 
 **Nice**
 
@@ -457,5 +491,6 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 | Berlin Radwege schema | https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege |
 | StreetComplete #5593 | https://github.com/streetcomplete/StreetComplete/issues/5593 |
 | Tagging ML 2020 width thread | https://lists.openstreetmap.org/pipermail/tagging/2020-September/055362.html |
+| Forum: lanes vs width when `lane_markings=no` | https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099 |
 | Lane editor research | [../lane-editor-tags/](../lane-editor-tags/) |
 | Shorter tag card (lanes package) | [width-and-surface.md](../lane-editor-tags/tags/width-and-surface.md) |

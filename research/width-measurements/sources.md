@@ -1,6 +1,6 @@
 # Sources — OSM width measurements
 
-Source index for [README.md](./README.md) (width deep dive). Fetched or read **2026-07-26**.
+Source index for [README.md](./README.md) (width deep dive). Fetched or read **2026-07-26** (forum poll on unmarked `lanes=*` / `width` added **2026-07-29**).
 
 Related: [lane-editor-tags](../lane-editor-tags/) for `:lanes` / tool parser research.
 
@@ -52,7 +52,9 @@ Related: [lane-editor-tags](../lane-editor-tags/) for `:lanes` / tool parser res
 | [[Tagging] "width" on streets: Time for a recommendation](https://lists.openstreetmap.org/pipermail/tagging/2020-September/055362.html) (Supaplex030, Sep 2020) | Opens three options; argues for **kerb→kerb including on-street parking**, component tags for the rest. Thread → wiki “Width of streets”. |
 | [Replies in same thread](https://lists.openstreetmap.org/pipermail/tagging/2020-September/thread.html) (e.g. [dieterdreist](https://lists.openstreetmap.org/pipermail/tagging/2020-September/055364.html), [carnildo](https://lists.openstreetmap.org/pipermail/tagging/2020-September/055372.html), [Jeroen Hoek](https://lists.openstreetmap.org/pipermail/tagging/2020-September/055399.html)) | Agree option 2 for urban kerbs; exclude separate tracks from highway `width`; rural/unpaved definitions diverge; NL BGT/aerial makes kerb measure easy. |
 | [StreetComplete #5593](https://github.com/streetcomplete/StreetComplete/issues/5593) | `width` quest fires despite existing `width:lanes`. **westnordost:** tags answer different questions; gutters ≈0.2–0.5 m; closing **wontfix** — recording both can help consumers. Clarifies `:lanes` includes bike, not parking. |
+| [Forum poll: Lane count](https://community.openstreetmap.org/t/quick-poll-lane-count/126298) (Supaplex030, Feb 2025; esp. [#6](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/6), [#52](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/52), [#57](https://community.openstreetmap.org/t/quick-poll-lane-count/126298/57)) | `lanes=*` when edge strip is permanently parked: poll **~55/45** — not decisive. **Supaplex030:** count moving motor lanes only; `parking=lane` is carriageway **position**, not a `:lanes` slot; examples keep parking out of `lanes=*` / `width:lanes` pipes. |
 | Changeset cited in #5593 | https://www.openstreetmap.org/changeset/149289513 — example of SC adding `width` where `width:lanes` already existed. |
+| [Forum poll: `lanes=*` when `lane_markings=no`?](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099) (Mar 2026; [Supaplex030 #3](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099/3), [Matija_Nalis #7](https://community.openstreetmap.org/t/poll-add-keep-change-or-remove-lanes-tagging-when-lane-markings-no/142099/7)) | On unmarked roads, **prefer `width=*` (+ street parking tags)** over guessing `lanes=*` from width — more meaningful, precise, and verifiable (**Supaplex030**, strongly liked; Matija_Nalis agrees). Thread **not** unanimous that `lanes=*` is forbidden without paint: clear traffic/sign/stub-centreline cases still OK (GuardedBear, dieterdreist, Mateusz, Minh); do **not** invent multilane counts from width alone. Weighted here toward Supaplex030 for editor guidance. |
 
 ## D. Tools (width focus)
 
@@ -96,6 +98,8 @@ These ERA/infraD materials are **not** OSM tagging proposals; they justify how B
 |-------------------|-----------------|--------|
 | `width` vs parking / sidewalks | Key:width, tagging ML 2020, Talk | **Documented** |
 | `width` vs `width:lanes` | Key:width, Lanes, SC #5593, DE:Fahrspuren | **Documented** |
+| Parking in `lanes=*` / `width:lanes` pipes? | DE:Fahrspuren; Key:lanes; forum poll Feb 2025 (Supaplex030) | **Documented: no** — parking via `parking:*`; poll tight on edge cases, follow Supaplex030 for editor guidance |
+| `width` vs estimated `lanes` when unmarked | Forum poll Mar 2026 (Supaplex030) | **Documented (prefer width):** on `lane_markings=no`, add `width` + parking; `lanes=*` only when verifiable OTG — not from width alone |
 | Paint in motor lane widths | — (wiki silent) | **Logical assumption:** clear between markings; paint added in reconciliation formula (§2.2) |
 | Paint in cycle width | Berlin Radwege (“zwischen Begrenzungslinien”) | **Documented (DE practice)** |
 | Paint in buffer | ERA drawing + meetup note | **Documented (DE practice)** |
