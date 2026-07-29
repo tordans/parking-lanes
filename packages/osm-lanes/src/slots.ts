@@ -12,6 +12,9 @@ function defaultProvenance(): LaneSlotProvenance {
     busAccess: 'default',
     psvAccess: 'default',
     widthMeters: 'default',
+    change: 'default',
+    surface: 'default',
+    smoothness: 'default',
     kind: 'default',
   }
 }
@@ -129,6 +132,9 @@ const UNDIRECTED_PIPE_BASES = [
   'bus:lanes',
   'psv:lanes',
   'width:lanes',
+  'change:lanes',
+  'surface:lanes',
+  'smoothness:lanes',
 ] as const
 
 export function hasUndirectedLanePipes(tags: Record<string, string>): boolean {
@@ -171,8 +177,21 @@ export function buildDirectionSlots(
   const busPipe = readDirectionalTag(tags, 'bus:lanes', direction, useDirectional)
   const psvPipe = readDirectionalTag(tags, 'psv:lanes', direction, useDirectional)
   const widthPipe = readDirectionalTag(tags, 'width:lanes', direction, useDirectional)
+  const changePipe = readDirectionalTag(tags, 'change:lanes', direction, useDirectional)
+  const surfacePipe = readDirectionalTag(tags, 'surface:lanes', direction, useDirectional)
+  const smoothnessPipe = readDirectionalTag(tags, 'smoothness:lanes', direction, useDirectional)
 
-  const pipeLen = maxPipeLength(turnPipe, vehiclePipe, bicyclePipe, busPipe, psvPipe, widthPipe)
+  const pipeLen = maxPipeLength(
+    turnPipe,
+    vehiclePipe,
+    bicyclePipe,
+    busPipe,
+    psvPipe,
+    widthPipe,
+    changePipe,
+    surfacePipe,
+    smoothnessPipe,
+  )
   const slotCount = Math.max(pipeLen, declaredCount ?? 0)
 
   if (slotCount === 0) return []
@@ -183,6 +202,9 @@ export function buildDirectionSlots(
   let bus = padPipe(splitLanesPipe(busPipe), slotCount)
   const psv = padPipe(splitLanesPipe(psvPipe), slotCount)
   const width = padPipe(splitLanesPipe(widthPipe), slotCount)
+  const change = padPipe(splitLanesPipe(changePipe), slotCount)
+  const surface = padPipe(splitLanesPipe(surfacePipe), slotCount)
+  const smoothness = padPipe(splitLanesPipe(smoothnessPipe), slotCount)
 
   const dirSuffix = useDirectional ? directionSuffix(direction) : ''
   const lanesBusCount =
@@ -211,6 +233,9 @@ export function buildDirectionSlots(
     }
     if (psv[i]) prov.psvAccess = 'tagged'
     if (width[i]) prov.widthMeters = 'tagged'
+    if (change[i]) prov.change = 'tagged'
+    if (surface[i]) prov.surface = 'tagged'
+    if (smoothness[i]) prov.smoothness = 'tagged'
 
     const kind = inferKind(bicycle[i], bus[i], psv[i], turn[i], direction)
     prov.kind =
@@ -230,6 +255,9 @@ export function buildDirectionSlots(
       busAccess: bus[i] || undefined,
       psvAccess: psv[i] || undefined,
       widthMeters: parseWidthMeters(width[i]),
+      change: change[i] || undefined,
+      surface: surface[i] || undefined,
+      smoothness: smoothness[i] || undefined,
       provenance: prov,
     })
   }

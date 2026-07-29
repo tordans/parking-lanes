@@ -68,14 +68,31 @@ export function validateWayLanes(
 
     const turnPipe = readDirectionalTag(tags, 'turn:lanes', direction, useDirectional)
     const bicyclePipe = readDirectionalTag(tags, 'bicycle:lanes', direction, useDirectional)
-    const turnLen = splitLanesPipe(turnPipe).length
-    const bikeLen = splitLanesPipe(bicyclePipe).length
-    if (turnLen > 0 && bikeLen > 0 && turnLen !== bikeLen) {
-      warnings.push({
-        code: 'pipe_length_mismatch',
-        message: `turn:lanes (${turnLen}) and bicycle:lanes (${bikeLen}) differ for ${direction}`,
-        severity: 'warning',
-      })
+    const widthPipe = readDirectionalTag(tags, 'width:lanes', direction, useDirectional)
+    const changePipe = readDirectionalTag(tags, 'change:lanes', direction, useDirectional)
+    const surfacePipe = readDirectionalTag(tags, 'surface:lanes', direction, useDirectional)
+    const smoothnessPipe = readDirectionalTag(tags, 'smoothness:lanes', direction, useDirectional)
+
+    const pipeLengths: Array<{ name: string; length: number }> = [
+      { name: 'turn:lanes', length: splitLanesPipe(turnPipe).length },
+      { name: 'bicycle:lanes', length: splitLanesPipe(bicyclePipe).length },
+      { name: 'width:lanes', length: splitLanesPipe(widthPipe).length },
+      { name: 'change:lanes', length: splitLanesPipe(changePipe).length },
+      { name: 'surface:lanes', length: splitLanesPipe(surfacePipe).length },
+      { name: 'smoothness:lanes', length: splitLanesPipe(smoothnessPipe).length },
+    ].filter((p) => p.length > 0)
+
+    if (pipeLengths.length >= 2) {
+      const reference = pipeLengths[0]!
+      for (const other of pipeLengths.slice(1)) {
+        if (other.length !== reference.length) {
+          warnings.push({
+            code: 'pipe_length_mismatch',
+            message: `${reference.name} (${reference.length}) and ${other.name} (${other.length}) differ for ${direction}`,
+            severity: 'warning',
+          })
+        }
+      }
     }
   }
 

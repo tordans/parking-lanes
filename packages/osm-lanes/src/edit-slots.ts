@@ -10,6 +10,9 @@ function taggedProvenance(): LaneSlotProvenance {
     busAccess: 'tagged',
     psvAccess: 'tagged',
     widthMeters: 'tagged',
+    change: 'tagged',
+    surface: 'tagged',
+    smoothness: 'tagged',
     kind: 'tagged',
   }
 }
@@ -106,6 +109,9 @@ export function slotHasRichData(slot: LaneSlot): boolean {
   if (slot.busAccess != null && slot.busAccess !== '') return true
   if (slot.psvAccess != null && slot.psvAccess !== '') return true
   if (slot.widthMeters != null) return true
+  if (slot.change != null && slot.change !== '') return true
+  if (slot.surface != null && slot.surface !== '') return true
+  if (slot.smoothness != null && slot.smoothness !== '') return true
   if (slot.kind !== 'travel') return true
   return false
 }

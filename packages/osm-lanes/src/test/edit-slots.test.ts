@@ -85,6 +85,9 @@ describe('slotHasRichData', () => {
     expect(slotHasRichData({ ...base, turn: 'left' })).toBe(true)
     expect(slotHasRichData({ ...base, vehicleAccess: 'no' })).toBe(true)
     expect(slotHasRichData({ ...base, widthMeters: 3 })).toBe(true)
+    expect(slotHasRichData({ ...base, change: 'not' })).toBe(true)
+    expect(slotHasRichData({ ...base, surface: 'asphalt' })).toBe(true)
+    expect(slotHasRichData({ ...base, smoothness: 'good' })).toBe(true)
   })
 })
 
@@ -122,6 +125,9 @@ function defaultSlot(): LaneSlot {
       busAccess: 'tagged',
       psvAccess: 'tagged',
       widthMeters: 'tagged',
+      change: 'tagged',
+      surface: 'tagged',
+      smoothness: 'tagged',
       kind: 'tagged',
     },
   }

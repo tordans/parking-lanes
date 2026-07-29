@@ -32,5 +32,8 @@ export { parseWayLanes } from './parse'
 export { serializeWayLanes } from './serialize'
 export { validateWayLanes } from './validate'
 
+export { reconcileWidths } from './width-reconciliation'
+export type { WidthReconciliation, WidthWarningCode } from './width-reconciliation'
+
 export { outerLaneIndex, resolveDirectionCounts } from './slots'
 export { isOneway, PRIMARY_LANE_KEYS } from './tags'

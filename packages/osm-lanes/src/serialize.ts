@@ -58,6 +58,21 @@ function serializeDirectionSlots(
     laneTagKey('width:lanes', direction, useDirectional),
     dirSlots.map((s) => formatWidth(s.widthMeters)),
   )
+  writePipe(
+    out,
+    laneTagKey('change:lanes', direction, useDirectional),
+    dirSlots.map((s) => s.change),
+  )
+  writePipe(
+    out,
+    laneTagKey('surface:lanes', direction, useDirectional),
+    dirSlots.map((s) => s.surface),
+  )
+  writePipe(
+    out,
+    laneTagKey('smoothness:lanes', direction, useDirectional),
+    dirSlots.map((s) => s.smoothness),
+  )
   return out
 }
 
@@ -83,7 +98,13 @@ function preferUndirectedPipes(baseTags: Record<string, string>, oneway: boolean
     baseTags['turn:lanes:forward'] != null ||
     baseTags['turn:lanes:backward'] != null ||
     baseTags['bicycle:lanes:forward'] != null ||
-    baseTags['bicycle:lanes:backward'] != null
+    baseTags['bicycle:lanes:backward'] != null ||
+    baseTags['change:lanes:forward'] != null ||
+    baseTags['change:lanes:backward'] != null ||
+    baseTags['surface:lanes:forward'] != null ||
+    baseTags['surface:lanes:backward'] != null ||
+    baseTags['smoothness:lanes:forward'] != null ||
+    baseTags['smoothness:lanes:backward'] != null
   return !directionalPipe
 }
 

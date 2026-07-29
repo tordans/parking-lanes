@@ -17,6 +17,9 @@ export type LaneSlotProvenance = {
   busAccess: Provenance
   psvAccess: Provenance
   widthMeters: Provenance
+  change: Provenance
+  surface: Provenance
+  smoothness: Provenance
   kind: Provenance
 }
 
@@ -31,6 +34,12 @@ export type LaneSlot = {
   busAccess?: string
   psvAccess?: string
   widthMeters?: number
+  /** Per-lane `change:lanes` token (solid/dashed / not / etc.). */
+  change?: string
+  /** Per-lane `surface:lanes` token. */
+  surface?: string
+  /** Per-lane `smoothness:lanes` token. */
+  smoothness?: string
   provenance: LaneSlotProvenance
 }
 
