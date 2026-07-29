@@ -58,6 +58,16 @@ export const sidepathHitAreaPaint = {
   'line-offset': SIDEPATH_LINE_OFFSET,
 } as Record<string, unknown>
 
+/** Invisible full-width hit target for the selected way (band is omitted while selected). */
+export const selectedBicycleHitAreaPaint = transparentLineHitPaint(
+  lineWidthFromMeters('roadWidthM'),
+)
+
+export const selectedBicycleSidepathHitAreaPaint = {
+  ...transparentLineHitPaint(lineWidthFromMeters('roadWidthM')),
+  'line-offset': SIDEPATH_LINE_OFFSET,
+} as Record<string, unknown>
+
 export const sidepathCenterlinePaint = {
   'line-offset': SIDEPATH_LINE_OFFSET,
 } as Record<string, unknown>

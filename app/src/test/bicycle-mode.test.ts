@@ -12,7 +12,11 @@ import {
   defaultTargetCategory,
   planForSide,
 } from '../modes/bicycle/domain/bicycle-edit-helpers'
-import { parseBicycleFeaturesFromData } from '../modes/bicycle/map/parse-bikelanes'
+import {
+  bicycleToCollection,
+  parseBicycleFeaturesFromData,
+} from '../modes/bicycle/map/parse-bikelanes'
+import { selectedBicycleCenterline } from '../modes/bicycle/use-bicycle-mode-handlers'
 import { mergeWayEdit } from '../shell/map/merge-way-edit'
 
 function way(id: number, tags: Record<string, string>): OsmWay {
@@ -136,6 +140,41 @@ describe('parseBikelanes incomplete flag', () => {
       incomplete: true,
       paintState: 'noInfra',
       bikelaneSide: 'self',
+    })
+  })
+
+  test('cycleway:both keeps a parent centerline for map selection from other modes', () => {
+    const tags = { highway: 'secondary', 'cycleway:both': 'lane', name: 'Karl-Marx-Straße' }
+    const features = parseBicycleFeaturesFromData(
+      graphWithWay(940414774, tags),
+      parseBounds,
+      'public',
+    )
+
+    expect(features.map((feature) => feature.properties.kind).sort()).toEqual([
+      'highway',
+      'sidepath',
+      'sidepath',
+    ])
+    expect(
+      features.find((feature) => feature.properties.kind === 'highway')?.properties,
+    ).toMatchObject({
+      osmId: 940414774,
+      category: 'parentCenterline',
+      paintState: 'noInfra',
+      incomplete: false,
+      prefix: null,
+    })
+
+    const selected = selectedBicycleCenterline(bicycleToCollection(features), {
+      type: 'way',
+      id: 940414774,
+    })
+    expect(selected.features).toHaveLength(1)
+    expect(selected.features[0]?.properties).toMatchObject({
+      kind: 'highway',
+      osmId: 940414774,
+      category: 'parentCenterline',
     })
   })
 })

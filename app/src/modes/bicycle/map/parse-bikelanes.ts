@@ -193,9 +193,11 @@ export function parseBicycleFeaturesFromData(
       })
     }
 
-    // Bare highways (no cycleway tags) yield no processBikelanes results — still show a
-    // selectable missing centerline so mappers can start tagging from the map.
-    if (results.length === 0) {
+    // Keep a selectable parent centerline when processBikelanes only yielded sides
+    // (e.g. cycleway:both=lane) or nothing at all. Sides-only uses category
+    // `parentCenterline` so map paint can hit-test without a duplicate band.
+    if (!results.some((result) => result._side === 'self')) {
+      const sidesOnly = results.length > 0
       features.push({
         type: 'Feature',
         id: way.id,
@@ -206,8 +208,8 @@ export function parseBicycleFeaturesFromData(
           featureId: `way/${way.id}`,
           kind: 'highway',
           highway: way.tags.highway,
-          category: 'unknown',
-          incomplete: true,
+          category: sidesOnly ? 'parentCenterline' : 'unknown',
+          incomplete: !sidesOnly,
           paintState: 'noInfra',
           bikelaneSide: 'self',
           prefix: null,

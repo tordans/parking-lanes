@@ -2,7 +2,11 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { SelectedWayCenterlineSource } from '../../../shell/map/SelectedWayCenterlineSource'
 import { useMapFocus } from '../../../shell/map/use-map-focus'
 import { bicycleLineLayout, sidepathCenterlinePaint } from './bicycle-layer-paint'
-import { BicycleBandSource, bicycleMissingHitAreaLayerId } from './BicycleBandSource'
+import {
+  BicycleBandSource,
+  bicycleMissingHitAreaLayerId,
+  bicycleSelectedHitAreaLayerId,
+} from './BicycleBandSource'
 import type { BicycleFeatureCollection } from './parse-bikelanes'
 
 type Props = {
@@ -31,6 +35,8 @@ export function BicycleLayers({ features, selectedRef, selectedCenterline }: Pro
 
 export const bicycleInteractiveLayerIds = [
   'bicycle-highways-hitarea-layer',
+  'bicycle-parent-hitarea-layer',
   'bicycle-sidepaths-hitarea-layer',
+  bicycleSelectedHitAreaLayerId,
   bicycleMissingHitAreaLayerId,
 ]

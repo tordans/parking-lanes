@@ -9,6 +9,8 @@ import {
   bicycleLineLayout,
   buildBicycleBandPaint,
   centerlinePresencePaint,
+  selectedBicycleHitAreaPaint,
+  selectedBicycleSidepathHitAreaPaint,
   sidepathBandPaint,
   sidepathHitAreaPaint,
   sidepathLineLayout,
@@ -17,10 +19,18 @@ import type { BicycleFeatureCollection } from './parse-bikelanes'
 
 export const bicycleMissingLayerIdPrefix = 'bicycle-missing'
 export const bicycleMissingHitAreaLayerId = missingDataHitAreaLayerId(bicycleMissingLayerIdPrefix)
+export const bicycleSelectedHitAreaLayerId = 'bicycle-selected-hitarea-layer'
+
+function isParentCenterlineOnly(
+  properties: BicycleFeatureCollection['features'][number]['properties'],
+) {
+  return properties.kind === 'highway' && properties.category === 'parentCenterline'
+}
 
 function isMissingBicycleFeature(
   properties: BicycleFeatureCollection['features'][number]['properties'],
 ) {
+  if (isParentCenterlineOnly(properties)) return false
   return properties.paintState === 'noInfra' || properties.category === 'unknown'
 }
 
@@ -32,11 +42,16 @@ function matchesSelection(
     return false
   }
 
+  // Parent centerline selection (`f=way/id`) hides every painted piece of that way.
+  if (selectedRef.prefix == null && selectedRef.side == null) {
+    return true
+  }
+
   if (properties.kind === 'sidepath') {
     return selectedRef.prefix === properties.prefix && selectedRef.side === properties.side
   }
 
-  return selectedRef.prefix == null && selectedRef.side == null
+  return false
 }
 
 function splitFeatures(
@@ -48,10 +63,27 @@ function splitFeatures(
   const sidepaths: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missing: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
   const centerlinePresence: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const parentHits: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
+  const selectedHit: BicycleFeatureCollection = { type: 'FeatureCollection', features: [] }
 
   for (const feature of features.features) {
-    // Omit the selection so paint-state colors do not cover the black centerline.
-    if (matchesSelection(feature.properties, selectedRef)) continue
+    const isSelected = matchesSelection(feature.properties, selectedRef)
+    if (isSelected) {
+      // Hit target is only the canonical selection (parent centerline or one sidepath),
+      // not every sibling piece hidden for paint.
+      if (selectedRef?.prefix == null && selectedRef?.side == null) {
+        if (feature.properties.kind === 'highway') selectedHit.features.push(feature)
+      } else if (feature.properties.kind === 'sidepath') {
+        selectedHit.features.push(feature)
+      }
+      continue
+    }
+
+    // Hit-only parent centerline when sides carry the painted bands.
+    if (isParentCenterlineOnly(feature.properties)) {
+      parentHits.features.push(feature)
+      continue
+    }
 
     if (isMissingBicycleFeature(feature.properties)) {
       if (focus === 'incomplete' && !feature.properties.incomplete) continue
@@ -71,7 +103,7 @@ function splitFeatures(
     highways.features.push(feature)
   }
 
-  return { highways, sidepaths, missing, centerlinePresence }
+  return { highways, sidepaths, missing, centerlinePresence, parentHits, selectedHit }
 }
 
 export function BicycleBandSource({
@@ -84,11 +116,9 @@ export function BicycleBandSource({
   focus: string
 }) {
   const bandPaint = buildBicycleBandPaint(focus)
-  const { highways, sidepaths, missing, centerlinePresence } = splitFeatures(
-    features,
-    selectedRef,
-    focus,
-  )
+  const { highways, sidepaths, missing, centerlinePresence, parentHits, selectedHit } =
+    splitFeatures(features, selectedRef, focus)
+  const selectedIsSidepath = selectedHit.features[0]?.properties.kind === 'sidepath'
 
   return (
     <>
@@ -102,6 +132,17 @@ export function BicycleBandSource({
           />
           <Layer
             id="bicycle-highways-hitarea-layer"
+            type="line"
+            paint={bicycleHitAreaPaint}
+            layout={bicycleLineLayout}
+          />
+        </Source>
+      ) : null}
+
+      {parentHits.features.length > 0 ? (
+        <Source id="bicycle-parent-hit-source" type="geojson" data={parentHits}>
+          <Layer
+            id="bicycle-parent-hitarea-layer"
             type="line"
             paint={bicycleHitAreaPaint}
             layout={bicycleLineLayout}
@@ -140,6 +181,19 @@ export function BicycleBandSource({
             type="line"
             paint={sidepathHitAreaPaint}
             layout={sidepathLineLayout}
+          />
+        </Source>
+      ) : null}
+
+      {selectedHit.features.length > 0 ? (
+        <Source id="bicycle-selected-hit-source" type="geojson" data={selectedHit}>
+          <Layer
+            id={bicycleSelectedHitAreaLayerId}
+            type="line"
+            paint={
+              selectedIsSidepath ? selectedBicycleSidepathHitAreaPaint : selectedBicycleHitAreaPaint
+            }
+            layout={selectedIsSidepath ? sidepathLineLayout : bicycleLineLayout}
           />
         </Source>
       ) : null}
