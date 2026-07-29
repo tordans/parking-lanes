@@ -1,17 +1,26 @@
 import * as m from '@app/paraglide/messages'
 import { overpassDeUrl } from '@osm-editor-kit/osm-coverage'
-import type { LatLngLiteral, MapBounds } from '@osm-editor-kit/osm-data'
+import type { LatLngLiteral, MapBounds, OsmNode, OsmWay } from '@osm-editor-kit/osm-data'
 import {
   idEditorUrl,
   josmUrl,
   mapillaryRecentPanosUrl,
   mapillaryUrl,
+  osmchaChangesetUrl,
+  osmchaFiltersUrl,
+  osmChangesetUrl,
+  osmDeepHistoryUrl,
+  osmOrgUrl,
   osmProdUrl,
+  tildaInspectorUrlForInfra,
+  type TildaFeatureCoord,
+  type TildaInfra,
 } from '@osm-editor-kit/osm-editor-links'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
 import { overpassRoadLikeSelector } from '@osm-editor-kit/osm-way-chain'
 import axios from 'axios'
+import type { StreetSpaceModeId } from '../../modes/types'
 
 export type MapViewportSnapshot = {
   center: LatLngLiteral
@@ -23,15 +32,22 @@ export type OsmExternalLink = {
   id: string
   label: string
   href: string | null
-  group: 'view' | 'selection' | 'viewport'
+  group: 'view' | 'changeset' | 'selection' | 'viewport'
   /** Selection-scoped links stay visible but disabled when nothing is selected. */
   requiresSelection: boolean
   /** JOSM remote-control links need a special click handler. */
   josm?: boolean
 }
 
+/** Map parking-lanes modes to TILDA infra presets; roads modes have no public region. */
+export function tildaInfraForMode(mode: StreetSpaceModeId): TildaInfra | null {
+  if (mode === 'bicycle') return 'bikelanes'
+  if (mode === 'parking') return 'parking'
+  return null
+}
+
 export function buildOsmObjectUrl(ref: OsmFeatureRef) {
-  return `${osmProdUrl}/${ref.type}/${ref.id}`
+  return osmOrgUrl({ osmType: ref.type, osmId: ref.id }) ?? `${osmProdUrl}/${ref.type}/${ref.id}`
 }
 
 export function buildSelectedIdEditorUrl(ref: OsmFeatureRef) {
@@ -70,14 +86,92 @@ export function buildMapillaryRecentPanosViewportUrl(viewport: MapViewportSnapsh
   return mapillaryRecentPanosUrl(viewport.center)
 }
 
+export function buildOsmchaViewportUrl(viewport: MapViewportSnapshot): string | null {
+  if (viewport.bounds == null) return null
+  const { west, south, east, north } = viewport.bounds
+  const in_bbox = `${west},${south},${east},${north}`
+  return osmchaFiltersUrl({ in_bbox })
+}
+
+export function wayBboxCoords(
+  way: OsmWay,
+  nodes: Record<number, OsmNode>,
+): TildaFeatureCoord | null {
+  let minLon = Infinity
+  let minLat = Infinity
+  let maxLon = -Infinity
+  let maxLat = -Infinity
+  let found = false
+  for (const nodeId of way.nodes) {
+    const node = nodes[nodeId]
+    if (!node) continue
+    found = true
+    minLon = Math.min(minLon, node.lon)
+    minLat = Math.min(minLat, node.lat)
+    maxLon = Math.max(maxLon, node.lon)
+    maxLat = Math.max(maxLat, node.lat)
+  }
+  if (!found) return null
+  return { kind: 'bbox', minLon, minLat, maxLon, maxLat }
+}
+
+export function buildTildaInspectorLink(options: {
+  mode: StreetSpaceModeId
+  viewport: MapViewportSnapshot | null
+  selected: OsmFeatureRef | undefined
+  selectedWayBbox: TildaFeatureCoord | null
+}): string | null {
+  const infra = tildaInfraForMode(options.mode)
+  if (infra == null || options.viewport == null) return null
+
+  const map = {
+    zoom: Math.round(options.viewport.zoom * 10) / 10,
+    lat: options.viewport.center.lat,
+    lng: options.viewport.center.lng,
+  }
+
+  // Bikelanes: feature deeplink when we have an OSM way + bbox.
+  if (
+    infra === 'bikelanes' &&
+    options.selected?.type === 'way' &&
+    options.selectedWayBbox != null
+  ) {
+    return tildaInspectorUrlForInfra(infra, {
+      map,
+      featureId: `way/${options.selected.id}`,
+      coords: options.selectedWayBbox,
+    })
+  }
+
+  // Parking (and bicycle without selection geometry): viewport-only — Lars ids ≠ OSM way ids.
+  return tildaInspectorUrlForInfra(infra, { map })
+}
+
 /** Link list for the map external-links dropdown. */
 export function buildOsmExternalLinks(options: {
   selected: OsmFeatureRef | undefined
   viewport: MapViewportSnapshot | null
   inclusionStyle: HighwayInclusionStyle
+  mode: StreetSpaceModeId
+  changesetId?: number | null
+  selectedWayBbox?: TildaFeatureCoord | null
 }): OsmExternalLink[] {
-  const { selected, viewport, inclusionStyle } = options
+  const {
+    selected,
+    viewport,
+    inclusionStyle,
+    mode,
+    changesetId = null,
+    selectedWayBbox = null,
+  } = options
   const hasSelection = selected != null
+  const hasChangeset = changesetId != null && changesetId > 0
+  const tildaHref = buildTildaInspectorLink({
+    mode,
+    viewport,
+    selected,
+    selectedWayBbox,
+  })
 
   return [
     {
@@ -100,6 +194,47 @@ export function buildOsmExternalLinks(options: {
       href: viewport != null ? buildMapillaryRecentPanosViewportUrl(viewport) : null,
       group: 'view',
       requiresSelection: false,
+    },
+    {
+      id: 'view-osmcha-viewport',
+      label: m.link_view_osmcha_viewport(),
+      href: viewport != null ? buildOsmchaViewportUrl(viewport) : null,
+      group: 'view',
+      requiresSelection: false,
+    },
+    ...(tildaHref != null
+      ? [
+          {
+            id: 'view-tilda',
+            label: m.link_view_tilda(),
+            href: tildaHref,
+            group: 'view' as const,
+            requiresSelection: false,
+          },
+        ]
+      : []),
+    {
+      id: 'changeset-deep-history',
+      label: m.link_changeset_deep_history(),
+      href: hasSelection
+        ? (osmDeepHistoryUrl({ osmType: selected.type, osmId: selected.id }) ?? null)
+        : null,
+      group: 'changeset',
+      requiresSelection: true,
+    },
+    {
+      id: 'changeset-osm',
+      label: m.link_changeset_osm(),
+      href: hasChangeset ? osmChangesetUrl(changesetId) : null,
+      group: 'changeset',
+      requiresSelection: true,
+    },
+    {
+      id: 'changeset-osmcha',
+      label: m.link_changeset_osmcha(),
+      href: hasChangeset ? osmchaChangesetUrl(changesetId) : null,
+      group: 'changeset',
+      requiresSelection: true,
     },
     {
       id: 'edit-id-selected',

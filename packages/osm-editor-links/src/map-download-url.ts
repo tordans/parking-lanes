@@ -1,5 +1,5 @@
 import type { MapBounds } from '@osm-editor-kit/osm-data'
-import { osmDevUrl, osmProdApiUrl } from './links'
+import { osmDevUrl, osmProdApiUrl } from './hosts'
 
 export function getUrl(bounds: MapBounds, useDevServer: boolean): string {
   const bbox = [bounds.west, bounds.south, bounds.east, bounds.north].join(',')
