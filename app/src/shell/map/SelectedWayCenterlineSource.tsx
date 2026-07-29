@@ -1,7 +1,12 @@
 import type { FeatureCollection } from 'geojson'
 import { Layer, Source } from 'react-map-gl/maplibre'
+import { buildCenterlineDirectionMarkers } from './build-centerline-direction-markers'
 import { ROUND_LINE_LAYOUT } from './map-hit-paint'
-import { selectedWayCenterlinePaint } from './selected-way-centerline-paint'
+import {
+  selectedWayCenterlineDirectionLayout,
+  selectedWayCenterlineDirectionPaint,
+  selectedWayCenterlinePaint,
+} from './selected-way-centerline-paint'
 
 type Props = {
   sourceId: string
@@ -22,14 +27,28 @@ export function SelectedWayCenterlineSource({
 }: Props) {
   if (!collection.features.length) return null
 
+  const directionMarkers = buildCenterlineDirectionMarkers(collection)
+
   return (
-    <Source id={sourceId} type="geojson" data={collection}>
-      <Layer
-        id={layerId}
-        type="line"
-        paint={{ ...selectedWayCenterlinePaint, ...paint }}
-        layout={layout}
-      />
-    </Source>
+    <>
+      <Source id={sourceId} type="geojson" data={collection}>
+        <Layer
+          id={layerId}
+          type="line"
+          paint={{ ...selectedWayCenterlinePaint, ...paint }}
+          layout={layout}
+        />
+      </Source>
+      {directionMarkers.features.length > 0 ? (
+        <Source id={`${sourceId}-direction`} type="geojson" data={directionMarkers}>
+          <Layer
+            id={`${layerId}-direction`}
+            type="symbol"
+            layout={selectedWayCenterlineDirectionLayout}
+            paint={selectedWayCenterlineDirectionPaint}
+          />
+        </Source>
+      ) : null}
+    </>
   )
 }
