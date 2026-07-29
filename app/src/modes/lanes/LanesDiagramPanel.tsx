@@ -4,6 +4,7 @@ import type {
   RoadSpaceSlotKind,
   SeparatelyMappedSidepath,
 } from '@osm-editor-kit/osm-lane-diagram'
+import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import {
   RoadSpaceDiagram,
   ROAD_SPACE_KIND_SWATCH,
@@ -11,6 +12,10 @@ import {
   ROAD_SPACE_SIBLING_SWATCH,
 } from './components/RoadSpaceDiagram'
 import { useRoadSpaceChain } from './domain/use-road-space-chain'
+import {
+  separatelyMappedSidepathKey,
+  useSeparatelyMappedSidepathTargets,
+} from './domain/use-separately-mapped-sidepath-targets'
 import { useHighlightedLaneSlotId } from './map/lanes-map-store'
 
 const LEGEND_KINDS: Array<{ kind: RoadSpaceSlotKind; labelKey: () => string }> = [
@@ -47,6 +52,32 @@ function uniqueSeparatelyMapped(
   return out
 }
 
+function SeparatelyMappedNote({
+  hint,
+  wayId,
+  onSelect,
+}: {
+  hint: SeparatelyMappedSidepath
+  wayId: number | null
+  onSelect: (wayId: number) => void
+}) {
+  const label = separatelyMappedNote(hint)
+  if (wayId == null) {
+    return <li>{label}</li>
+  }
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(wayId)}
+        className="cursor-pointer text-left text-zinc-700 underline decoration-zinc-400/80 underline-offset-2 hover:text-zinc-900 hover:decoration-zinc-700"
+      >
+        {label}
+      </button>
+    </li>
+  )
+}
+
 function summarizeSlots(slots: RoadSpaceSlot[]): string {
   const motor = slots.filter((s) => s.kind === 'motor' || s.kind === 'both_ways').length
   const bus = slots.filter((s) => s.kind === 'bus').length
@@ -70,11 +101,12 @@ function segmentTitle(tags: Record<string, string> | undefined, wayId: number | 
 export function LanesDiagramPanel() {
   const { scene, currentSlots, centerWayId, centerSegment } = useRoadSpaceChain()
   const highlightedSlotId = useHighlightedLaneSlotId()
+  const { selectFeature } = useFeatureSelectionActions()
 
   const title = segmentTitle(centerSegment?.tags, centerWayId)
   const ariaLabel = scene ? summarizeSlots(currentSlots) : m.lanes_diagram_no_selection()
-  const separateNotes =
-    uniqueSeparatelyMapped(scene?.separatelyMapped).map(separatelyMappedNote) ?? []
+  const separateHints = uniqueSeparatelyMapped(scene?.separatelyMapped)
+  const sidepathTargets = useSeparatelyMappedSidepathTargets(centerWayId, separateHints)
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-3">
@@ -93,11 +125,19 @@ export function LanesDiagramPanel() {
               className="mx-auto max-w-full"
               siblingLabel={m.lanes_diagram_sibling()}
             />
-            {separateNotes.length > 0 ? (
+            {separateHints.length > 0 ? (
               <ul className="m-0 list-none space-y-0.5 pl-0 text-[11px] leading-snug text-zinc-500">
-                {separateNotes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
+                {separateHints.map((hint) => {
+                  const key = separatelyMappedSidepathKey(hint)
+                  return (
+                    <SeparatelyMappedNote
+                      key={key}
+                      hint={hint}
+                      wayId={sidepathTargets[key] ?? null}
+                      onSelect={(wayId) => selectFeature({ type: 'way', id: wayId })}
+                    />
+                  )
+                })}
               </ul>
             ) : null}
           </div>
