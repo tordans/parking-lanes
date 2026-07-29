@@ -1,10 +1,4 @@
-import {
-  focusCaseColor,
-  focusCaseOpacity,
-  lineWidthFromMeters,
-  MAP_FOCUS_MUTED_COLOR,
-  MAP_FOCUS_MUTED_OPACITY,
-} from '@osm-editor-kit/osm-maplibre'
+import { focusCaseColor, focusCaseOpacity, lineWidthFromMeters } from '@osm-editor-kit/osm-maplibre'
 import {
   ROUND_LINE_LAYOUT,
   SIDEPATH_LINE_OFFSET,
@@ -56,19 +50,10 @@ export function buildBandPaint(focus: string, dimNonCar = false) {
   } as Record<string, unknown>
 }
 
-export function buildSidepathBandPaint(muted = false) {
-  if (!muted) {
-    return {
-      'line-color': widthKindColor,
-      'line-opacity': bandActiveOpacity,
-      'line-width': lineWidthFromMeters('roadWidthM'),
-      'line-offset': SIDEPATH_LINE_OFFSET,
-    } as Record<string, unknown>
-  }
-
+export function buildSidepathBandPaint() {
   return {
-    'line-color': MAP_FOCUS_MUTED_COLOR,
-    'line-opacity': MAP_FOCUS_MUTED_OPACITY,
+    'line-color': widthKindColor,
+    'line-opacity': bandActiveOpacity,
     'line-width': lineWidthFromMeters('roadWidthM'),
     'line-offset': SIDEPATH_LINE_OFFSET,
   } as Record<string, unknown>

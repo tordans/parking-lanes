@@ -42,7 +42,12 @@ function matchesSelection(
   return selectedRef.prefix == null && selectedRef.side == null
 }
 
-function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeatureRef | null) {
+function splitFeatures(
+  features: WidthFeatureCollection,
+  selectedRef: OsmFeatureRef | null,
+  /** Hide offset sidewalk/cycleway bands while editing a car centerline. */
+  hideSidepaths: boolean,
+) {
   const highways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const sidepaths: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
   const missingHighways: WidthFeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -60,6 +65,7 @@ function splitFeatures(features: WidthFeatureCollection, selectedRef: OsmFeature
     }
 
     if (feature.properties.kind === 'sidepath') {
+      if (hideSidepaths) continue
       // Omit selected from the visible band so no pink/teal width shows under the hairline.
       if (!isSelected) sidepaths.features.push(feature)
       if (showMissing) missingSidepaths.features.push(feature)
@@ -82,12 +88,13 @@ export function WidthHighwaysBandSource({
   selectedRef: OsmFeatureRef | null
   focus: string
 }) {
-  const dimNonCar = isCarHighwaySelection(features, selectedRef)
-  const bandPaint = buildBandPaint(focus, dimNonCar)
-  const sidepathBandPaint = buildSidepathBandPaint(dimNonCar)
+  const editingCarCenterline = isCarHighwaySelection(features, selectedRef)
+  const bandPaint = buildBandPaint(focus, editingCarCenterline)
+  const sidepathBandPaint = buildSidepathBandPaint()
   const { highways, sidepaths, missingHighways, missingSidepaths, selectedHit } = splitFeatures(
     features,
     selectedRef,
+    editingCarCenterline,
   )
   const selectedIsSidepath = selectedHit.features[0]?.properties.kind === 'sidepath'
 
