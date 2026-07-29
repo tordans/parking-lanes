@@ -1,5 +1,5 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
-import { useParams, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import type { MapEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { useLanesCoveragePace, viewMinZoom as lanesViewMinZoom } from '../../modes/lanes'
@@ -8,11 +8,12 @@ import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
 import { useAppActions } from '../app-store'
 import { useMapActions } from './map-store'
+import { useMapUrlSyncSessionActive } from './map-url-sync-session'
 import { serializeMapSearch } from './search-schema'
-import { useModeSearchNavigate } from './use-mode-search-navigate'
 
 export function useMapCoverageLifecycle() {
-  const navigate = useModeSearchNavigate()
+  const navigate = useNavigate({ from: '/$mode' })
+  const isUrlSyncActive = useMapUrlSyncSessionActive()
   const { map: mapSearch } = useSearch({ from: '/$mode' })
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const resolvedModeId = modeSlug as StreetSpaceModeId
@@ -34,6 +35,8 @@ export function useMapCoverageLifecycle() {
     viewState: ViewStateChangeEvent['viewState'],
     bounds: ReturnType<typeof toBounds>,
   ) {
+    if (!isUrlSyncActive()) return
+
     const { zoom, latitude, longitude, bearing } = viewState
     setMapBounds(bounds)
     setLocationToCookie({ lat: latitude, lng: longitude }, zoom)
@@ -79,6 +82,7 @@ export function useMapCoverageLifecycle() {
     setMapBounds(bounds)
 
     if (!mapSearch) {
+      if (!isUrlSyncActive()) return
       void navigate({
         search: (prev) => ({
           ...serializeMapSearch(prev),

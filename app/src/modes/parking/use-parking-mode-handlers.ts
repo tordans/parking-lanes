@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { useFeatureSelection } from '../../shell/map/feature-selection'
+import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import { useLaneClickHandler, useOsmChangeHandler } from './map/use-parking-map'
 
 export function useParkingLayerClickHandler() {
@@ -15,7 +15,7 @@ export function useParkingLayerClickHandler() {
 }
 
 export function useParkingMapClickHandler() {
-  const { clearSelection } = useFeatureSelection()
+  const { clearSelection } = useFeatureSelectionActions()
 
   return useCallback(() => {
     clearSelection()

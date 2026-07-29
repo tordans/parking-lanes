@@ -1,5 +1,5 @@
 import { useMapBounds } from '../../shell/app-store'
-import { useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 import type { ModeMapProps } from '../types'
 import { useWidthMapFeatures } from './map/use-width-map-features'
 import { useWidthHandles } from './map/width-map-store'

@@ -11,7 +11,7 @@ import { useCallback, useRef } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import { addChangedEntity, addChangedNode, addChangedRelation } from '../../utils/changes-store'
 import { AuthState, useAuthState } from '../app-store'
-import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
+import { useFeatureSelectionActions, useSelectedOsmRef } from './feature-selection-store'
 import { recordEditingImagery } from './imagery-usage-session'
 import { useOsmCoverageQuery } from './osm-coverage-query'
 import { getOsmWayFromSession } from './osm-session-way-edits'
@@ -205,7 +205,7 @@ export function useWayCutHandler() {
   const preview = useWayCutPreview()
   const selectedOsmRef = useSelectedOsmRef()
   const { activateCut, cancelCut, setHoveredNodeId, setPreview } = useWayCutActions()
-  const { updateFeatureRef } = useFeatureSelection()
+  const { updateFeatureRef } = useFeatureSelectionActions()
   const newWayIdRef = useRef(-1)
   const newNodeIdRef = useRef(-1)
 

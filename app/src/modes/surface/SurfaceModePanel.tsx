@@ -10,7 +10,7 @@ import {
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
-import { useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { viewMinZoom } from '../parking/map/constants'

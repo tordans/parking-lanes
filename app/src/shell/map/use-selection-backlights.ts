@@ -8,7 +8,7 @@ import {
 import { createBacklightFeatures } from '../../modes/parking/map/parse-lanes'
 import { useParkingMapFeatures } from '../../modes/parking/map/use-parking-map-features'
 import { useDatetime, useMapBounds } from '../app-store'
-import { useSelectedOsmRef } from './feature-selection'
+import { useSelectedOsmRef } from './feature-selection-store'
 import { useMapViewport } from './map-viewport'
 
 /** Restore lane backlights when selection is hydrated from URL after data loads. */

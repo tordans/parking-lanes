@@ -22,14 +22,11 @@ import { SaveChangesControl } from '../controls/SaveChangesControl'
 import { useModeHotkeys } from '../controls/use-mode-hotkeys'
 import { AtlasBoundariesSource } from './AtlasBoundariesSource'
 import { CoverageDebugMapLayers, CoverageDebugTooltip } from './CoverageDebugOverlay'
-import {
-  FeatureSelectionProvider,
-  useFeatureSelection,
-  useSelectedOsmRef,
-} from './feature-selection'
+import { useSelectedOsmRef, useSelectionEpoch } from './feature-selection-store'
 import { MapGL, MapProvider } from './map-gl'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapActions } from './map-store'
+import { MapUrlSyncSessionProvider } from './map-url-sync-session'
 import { MapBackgroundLayerSource } from './MapBackgroundLayerSource'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
@@ -47,11 +44,11 @@ export function MapPage({
   initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
   return (
-    <FeatureSelectionProvider>
+    <MapUrlSyncSessionProvider>
       <MapProvider>
         <MapPageContent initialView={initialView} />
       </MapProvider>
-    </FeatureSelectionProvider>
+    </MapUrlSyncSessionProvider>
   )
 }
 
@@ -65,7 +62,7 @@ function MapPageContent({
   const mode = useActiveStreetSpaceMode(resolvedModeId)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const selectedOsmRef = useSelectedOsmRef()
-  const { selectionEpoch } = useFeatureSelection()
+  const selectionEpoch = useSelectionEpoch()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
   const { clearLanesState } = useLanesMapActions()
   const { cancelCut } = useWayCutActions()

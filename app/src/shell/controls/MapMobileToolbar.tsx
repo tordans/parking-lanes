@@ -11,7 +11,11 @@ import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
 import { canShowDebugToggle } from '../debug'
-import { useFeatureSelection, useSelectedOsmRef } from '../map/feature-selection'
+import {
+  useFeatureSelectionActions,
+  useSelectedOsmRef,
+  useSelectionEpoch,
+} from '../map/feature-selection-store'
 import {
   mapToolbarButtonDividerClassName,
   mapToolbarButtonGroupClassName,
@@ -33,7 +37,8 @@ export function MapMobileToolbar() {
   const [openPanel, setOpenPanel] = useState<MobilePanel>(null)
   const osmDisplayName = useOsmDisplayName()
   const selectedOsmRef = useSelectedOsmRef()
-  const { selectionEpoch, clearSelection } = useFeatureSelection()
+  const selectionEpoch = useSelectionEpoch()
+  const { clearSelection } = useFeatureSelectionActions()
   const showDebug = canShowDebugToggle(osmDisplayName)
   const { Panel, Legend } = mode
   const isLanesMode = mode.id === 'lanes'

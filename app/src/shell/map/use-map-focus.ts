@@ -1,4 +1,4 @@
-import { useParams, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { focusSearchIsEmpty } from './map-focus-state'
@@ -10,8 +10,6 @@ import {
   type WidthFocus,
   serializeMapSearch,
 } from './search-schema'
-import { useModeSearchNavigate } from './use-mode-search-navigate'
-
 const focusModes = new Set<StreetSpaceModeId>(['parking', 'width', 'bicycle', 'surface'])
 
 export function useMapFocusSupportsCurrentMode(): boolean {
@@ -25,7 +23,7 @@ export function useMapFocus(): {
   isActive: boolean
 } {
   const { mode } = useParams({ from: '/$mode' })
-  const navigate = useModeSearchNavigate()
+  const navigate = useNavigate({ from: '/$mode' })
   const search = useSearch({ from: '/$mode' })
 
   const focus = readFocusForMode(mode, search.focus)

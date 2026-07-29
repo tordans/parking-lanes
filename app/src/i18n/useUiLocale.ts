@@ -1,8 +1,7 @@
 import { getLocale, setLocale } from '@app/paraglide/runtime'
-import { useSearch } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { serializeMapSearch } from '../shell/map/search-schema'
-import { useModeSearchNavigate } from '../shell/map/use-mode-search-navigate'
 import { DEFAULT_UI_LOCALE, isUiLocale, readUiLocale, type UiLocale } from './uiLocale'
 
 function syncParaglideLocale(locale: UiLocale) {
@@ -22,7 +21,7 @@ export function useUiLocale(): UiLocale {
 }
 
 export function useSetUiLocale() {
-  const navigate = useModeSearchNavigate()
+  const navigate = useNavigate({ from: '/$mode' })
 
   return useCallback(
     (next: UiLocale) => {

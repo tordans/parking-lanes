@@ -1,7 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { useFeatureSelection } from '../../shell/map/feature-selection'
+import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import { bicycleInteractiveLayerIds } from './map/BicycleLayers'
 import { bicycleToCollection } from './map/parse-bikelanes'
@@ -13,7 +13,7 @@ export function useBicycleOsmChangeHandler() {
 }
 
 export function useBicycleModeHandlers() {
-  const { selectFeature, clearSelection } = useFeatureSelection()
+  const { selectFeature, clearSelection } = useFeatureSelectionActions()
 
   const handleLayerClick = useCallback(
     (event: MapLayerMouseEvent) => {

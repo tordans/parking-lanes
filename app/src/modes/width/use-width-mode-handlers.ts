@@ -8,7 +8,10 @@ import length from '@turf/length'
 import { useCallback, useEffect, useRef } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
 import { useMap } from 'react-map-gl/maplibre'
-import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
+import {
+  useFeatureSelectionActions,
+  useSelectedOsmRef,
+} from '../../shell/map/feature-selection-store'
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import type { StreetSpaceModeId } from '../types'
@@ -101,7 +104,7 @@ function lineLengthMeters(coordinates: [number, number][]): number {
 export function useWidthModeHandlers() {
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const isWidthMode = (modeSlug as StreetSpaceModeId) === 'width'
-  const { selectFeature, clearSelection } = useFeatureSelection()
+  const { selectFeature, clearSelection } = useFeatureSelectionActions()
   const selectedOsmRef = useSelectedOsmRef()
   const { data: graph } = useWidthOsmQuery({ select: (data) => data.graph })
   const { setDraftWidthM, setHandles, setHandleFractions, startDrag, endDrag, clearDraft } =

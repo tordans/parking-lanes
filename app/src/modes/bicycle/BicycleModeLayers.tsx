@@ -1,5 +1,5 @@
 import { useMapBounds } from '../../shell/app-store'
-import { useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 import type { ModeMapProps } from '../types'
 import { BicycleLayers } from './map/BicycleLayers'
 import { useBicycleMapFeatures } from './map/use-bicycle-map-features'

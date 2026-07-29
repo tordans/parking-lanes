@@ -13,7 +13,7 @@ import {
   DropdownSection,
 } from '../../components/catalyst/dropdown'
 import type { StreetSpaceModeId } from '../../modes/types'
-import { useSelectedOsmRef } from './feature-selection'
+import { useSelectedOsmRef } from './feature-selection-store'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapLoaded } from './map-store'
 import { mapControlButtonClassName } from './mobileMapChrome.const'

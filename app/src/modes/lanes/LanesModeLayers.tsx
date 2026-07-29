@@ -1,5 +1,5 @@
 import { useMapBounds } from '../../shell/app-store'
-import { useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 import type { ModeMapProps } from '../types'
 import { useChainNeighborIds, useLanesChainBuilder } from './domain/use-lanes-chain'
 import { LanesLayers } from './map/LanesLayers'

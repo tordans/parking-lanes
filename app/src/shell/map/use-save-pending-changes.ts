@@ -9,7 +9,7 @@ import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
 import { changesStore, clearChanges, removeChangedEntity } from '../../utils/changes-store'
 import { useMapBounds } from '../app-store'
-import { useFeatureSelection, useSelectedOsmRef } from './feature-selection'
+import { useFeatureSelectionActions, useSelectedOsmRef } from './feature-selection-store'
 import { getImageryUsageValues, ensureImageryUsageRecorded } from './imagery-usage-session'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapViewport } from './map-viewport'
@@ -34,7 +34,7 @@ export function useSavePendingChanges() {
   const maps = useMap()
   const mainMap = maps[MAIN_MAP_ID]
   const selectedOsmRef = useSelectedOsmRef()
-  const { updateFeatureRef } = useFeatureSelection()
+  const { updateFeatureRef } = useFeatureSelectionActions()
 
   async function handleSave(comment: string) {
     try {

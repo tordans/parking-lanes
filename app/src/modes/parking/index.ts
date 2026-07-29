@@ -26,6 +26,6 @@ export const parkingMode: StreetSpaceMode = {
 export { useOsmAuth } from './map/use-osm-auth'
 export { remapParkingOsmWayId } from './map/parking-osm-edits'
 export { useParkingCoveragePace } from './map/use-parking-coverage-pace'
-export { useSelectedOsmRef } from '../../shell/map/feature-selection'
+export { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 export { useParkingMapActions } from './map/parking-map-store'
 export { viewMinZoom, getMapSizePx, toBounds } from './map/use-parking-map'

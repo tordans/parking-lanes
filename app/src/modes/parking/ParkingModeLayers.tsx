@@ -1,5 +1,5 @@
 import { useDatetime, useMapBounds } from '../../shell/app-store'
-import { useSelectedOsmRef } from '../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import type { ModeMapProps } from '../types'
 import { useBacklightFeatures } from './map/parking-map-store'

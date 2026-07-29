@@ -18,7 +18,10 @@ import {
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
-import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
+import {
+  useFeatureSelectionActions,
+  useSelectedOsmRef,
+} from '../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
@@ -567,7 +570,7 @@ function WidthSumStrip({ tags }: { tags: Record<string, string> }) {
 
 export function LanesFormPanel() {
   const selectedOsmRef = useSelectedOsmRef()
-  const { selectFeature } = useFeatureSelection()
+  const { selectFeature } = useFeatureSelectionActions()
   const centerWayId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
   const chain = useLanesChain()
   const pendingJunctions = useLanesPendingJunctions()

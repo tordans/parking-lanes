@@ -6,7 +6,7 @@ import {
   type RoadSpaceSlot,
 } from '@osm-editor-kit/osm-lane-diagram'
 import type { Segment } from '@osm-editor-kit/osm-way-chain'
-import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../../shell/map/map-viewport'
 import { useLanesChain } from '../map/lanes-map-store'
 import { orientNeighborForCenter } from './orient-neighbor-tags'

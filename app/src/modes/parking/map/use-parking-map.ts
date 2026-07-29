@@ -1,7 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { useFeatureSelection } from '../../../shell/map/feature-selection'
+import { useFeatureSelectionActions } from '../../../shell/map/feature-selection-store'
 import { useOsmChangeHandler as useSharedOsmChangeHandler } from '../../../shell/map/use-osm-change-handler'
 import { parkingMissingHitAreaLayerId } from './ParkingLanesSource'
 import type { MapBounds, ParkingFeatureCollection } from './types'
@@ -21,7 +21,7 @@ export function useOsmChangeHandler() {
 }
 
 export function useLaneClickHandler() {
-  const { selectFeature } = useFeatureSelection()
+  const { selectFeature } = useFeatureSelectionActions()
 
   return useCallback(
     (event: MapLayerMouseEvent) => {

@@ -5,7 +5,7 @@ import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
 } from '../../../shell/controls/MapFeatureEmptyState'
-import { useSelectedOsmRef } from '../../../shell/map/feature-selection'
+import { useSelectedOsmRef } from '../../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../../shell/map/map-viewport'
 import type { Side } from '../../../utils/types/parking'
 import { screenOrderedParkingSides, wayLineCoordinates } from '../domain/way-side-order'

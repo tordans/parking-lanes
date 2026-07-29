@@ -4,7 +4,7 @@ import { parseWayLanes, validateWayLanes } from '@osm-editor-kit/osm-lanes'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { useFeatureSelection } from '../../shell/map/feature-selection'
+import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import { commitLaneModelToWay } from './domain/lanes-edits'
 import { useLanesMapActions } from './map/lanes-map-store'
@@ -24,7 +24,7 @@ function finalizeLaneModel(model: WayLaneModel, baseTags: Record<string, string>
 }
 
 export function useLanesModeHandlers() {
-  const { selectFeature, clearSelection } = useFeatureSelection()
+  const { selectFeature, clearSelection } = useFeatureSelectionActions()
   const { clearLanesState } = useLanesMapActions()
   const handleOsmChange = useLanesOsmChangeHandler()
 

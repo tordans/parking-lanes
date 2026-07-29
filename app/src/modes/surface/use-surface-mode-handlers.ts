@@ -1,7 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
-import { useFeatureSelection } from '../../shell/map/feature-selection'
+import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import { useOsmChangeHandler } from '../../shell/map/use-osm-change-handler'
 import { surfaceInteractiveLayerIds } from './map/SurfaceLayers'
 
@@ -12,7 +12,7 @@ export function useSurfaceOsmChangeHandler() {
 }
 
 export function useSurfaceModeHandlers() {
-  const { selectFeature, clearSelection } = useFeatureSelection()
+  const { selectFeature, clearSelection } = useFeatureSelectionActions()
 
   const handleLayerClick = useCallback(
     (event: MapLayerMouseEvent) => {

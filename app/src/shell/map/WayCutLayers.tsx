@@ -1,5 +1,5 @@
 import { buildWayCutGeojson } from './build-way-cut-geojson'
-import { useSelectedOsmRef } from './feature-selection'
+import { useSelectedOsmRef } from './feature-selection-store'
 import {
   useIsCutActive,
   useWayCutHoveredNodeId,
