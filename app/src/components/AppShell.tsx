@@ -4,9 +4,12 @@ import { floatingChromeElevationClassName } from '../shell/map/mobileMapChrome.c
 import {
   BOTTOM_PANEL_HEIGHT_MAX,
   BOTTOM_PANEL_HEIGHT_MIN,
+  MIDDLE_COLUMN_WIDTH_MAX,
+  MIDDLE_COLUMN_WIDTH_MIN,
   SIDEBAR_WIDTH_MAX,
   SIDEBAR_WIDTH_MIN,
   useBottomPanelHeight,
+  useMiddleColumnWidth,
   useShellPanelActions,
   useSidebarWidth,
 } from '../shell/shell-panel-store'
@@ -74,16 +77,19 @@ function ResizeGrip({
 
 export function AppShell({
   map,
+  middle,
   panel,
   bottom,
 }: {
   map: ReactNode
+  middle?: ReactNode
   panel?: ReactNode
   bottom?: ReactNode
 }) {
   const sidebarWidth = useSidebarWidth()
+  const middleColumnWidth = useMiddleColumnWidth()
   const bottomPanelHeight = useBottomPanelHeight()
-  const { setSidebarWidth, setBottomPanelHeight } = useShellPanelActions()
+  const { setSidebarWidth, setMiddleColumnWidth, setBottomPanelHeight } = useShellPanelActions()
 
   return (
     <div className="flex h-(--app-height,100dvh) w-full flex-col overflow-hidden overscroll-none bg-zinc-100 font-sans antialiased sm:flex-row">
@@ -109,6 +115,25 @@ export function AppShell({
           </div>
         ) : null}
       </div>
+      {middle ? (
+        <aside className="hidden h-full shrink-0 flex-col py-1.5 pr-0 pl-0 sm:flex">
+          <div
+            className={`flex h-full min-h-0 flex-col ${panelChromeClassName}`}
+            style={{
+              width: middleColumnWidth,
+              minWidth: MIDDLE_COLUMN_WIDTH_MIN,
+              maxWidth: MIDDLE_COLUMN_WIDTH_MAX,
+            }}
+          >
+            <ResizeGrip
+              edge="left"
+              value={middleColumnWidth}
+              onValueChange={setMiddleColumnWidth}
+            />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg">{middle}</div>
+          </div>
+        </aside>
+      ) : null}
       {panel ? (
         <aside className="hidden h-full shrink-0 flex-col py-1.5 pr-1.5 pl-0 sm:flex">
           <div

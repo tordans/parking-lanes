@@ -11,3 +11,12 @@ export function commitLaneModelToWay(way: OsmWay, model: WayLaneModel): OsmWay {
     tags: serializeWayLanes(model, way.tags),
   }
 }
+
+/**
+ * Oneway lane-count edit: keep `lanesTotal` and `lanesForward` in sync.
+ * `serializeWayLanes` (oneway) writes `lanes` from `lanesForward ?? lanesTotal`;
+ * updating only one of them drops the change.
+ */
+export function applyOnewayLaneCount(model: WayLaneModel, value: number | undefined): WayLaneModel {
+  return { ...model, lanesTotal: value, lanesForward: value }
+}

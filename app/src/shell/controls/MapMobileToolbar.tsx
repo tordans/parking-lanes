@@ -5,7 +5,8 @@ import clsx from 'clsx'
 import { Info, MousePointerClick, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { getModeLabel } from '../../i18n/mode-content'
-import { LanesBottomPanel } from '../../modes/lanes/LanesBottomPanel'
+import { LanesDiagramPanel } from '../../modes/lanes/LanesDiagramPanel'
+import { LanesFormPanel } from '../../modes/lanes/LanesFormPanel'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useOsmDisplayName } from '../app-store'
@@ -152,8 +153,14 @@ export function MapMobileToolbar() {
         onClose={handleLanesEditorClose}
         mapPeek="10%"
       >
-        <div className="pb-4" key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}>
-          <LanesBottomPanel />
+        <div
+          className="flex flex-col gap-3 pb-4"
+          key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}
+        >
+          <div className="max-h-48 overflow-hidden rounded-md border border-zinc-200 bg-white">
+            <LanesDiagramPanel />
+          </div>
+          <LanesFormPanel />
         </div>
       </MobileBottomSheet>
     </>

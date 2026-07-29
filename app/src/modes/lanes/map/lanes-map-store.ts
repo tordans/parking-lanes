@@ -1,24 +1,14 @@
-import type { LaneDirection } from '@osm-editor-kit/osm-lanes'
 import type { JunctionChoice, SegmentChain } from '@osm-editor-kit/osm-way-chain'
 import { create } from 'zustand'
-
-export type LanesViewMode = 'cross-section' | 'table'
-
-export type SelectedSlotRef = {
-  wayId: number
-  direction: LaneDirection
-  index: number
-}
 
 interface LanesMapStore {
   chain: SegmentChain | null
   pendingJunctions: JunctionChoice[]
-  selectedSlot: SelectedSlotRef | null
-  viewMode: LanesViewMode
+  /** Transient form hover/focus highlight for the plan sketch — not an editor selection. */
+  highlightedSlotId: string | null
   actions: {
     setChainResult: (chain: SegmentChain | null, pendingJunctions: JunctionChoice[]) => void
-    selectSlot: (slot: SelectedSlotRef | null) => void
-    setViewMode: (mode: LanesViewMode) => void
+    setHighlightedSlot: (slotId: string | null) => void
     clearLanesState: () => void
   }
 }
@@ -26,24 +16,20 @@ interface LanesMapStore {
 const useLanesMapStore = create<LanesMapStore>()((set) => ({
   chain: null,
   pendingJunctions: [],
-  selectedSlot: null,
-  viewMode: 'cross-section',
+  highlightedSlotId: null,
   actions: {
     setChainResult: (chain, pendingJunctions) => set({ chain, pendingJunctions }),
-    selectSlot: (selectedSlot) => set({ selectedSlot }),
-    setViewMode: (viewMode) => set({ viewMode }),
+    setHighlightedSlot: (highlightedSlotId) => set({ highlightedSlotId }),
     clearLanesState: () =>
       set({
         chain: null,
         pendingJunctions: [],
-        selectedSlot: null,
-        viewMode: 'cross-section',
+        highlightedSlotId: null,
       }),
   },
 }))
 
 export const useLanesChain = () => useLanesMapStore((s) => s.chain)
 export const useLanesPendingJunctions = () => useLanesMapStore((s) => s.pendingJunctions)
-export const useSelectedLaneSlot = () => useLanesMapStore((s) => s.selectedSlot)
-export const useLanesViewMode = () => useLanesMapStore((s) => s.viewMode)
+export const useHighlightedLaneSlotId = () => useLanesMapStore((s) => s.highlightedSlotId)
 export const useLanesMapActions = () => useLanesMapStore((s) => s.actions)

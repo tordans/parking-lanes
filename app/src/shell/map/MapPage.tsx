@@ -3,12 +3,15 @@ import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
 import { OPENFREEMAP_POSITRON_STYLE } from '@osm-editor-kit/osm-maplibre'
 import { useParams } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
-import { AttributionControl } from 'react-map-gl/maplibre'
+import { AttributionControl, useMap } from 'react-map-gl/maplibre'
 import { AppShell } from '../../components/AppShell'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useVisibleViewportHeightVar } from '../../hooks/useVisibleViewportHeightVar'
 import { useUiLocale } from '../../i18n/useUiLocale'
+import { LanesDiagramPanel } from '../../modes/lanes/LanesDiagramPanel'
+import { LanesFormPanel } from '../../modes/lanes/LanesFormPanel'
 import { useLanesMapActions } from '../../modes/lanes/map/lanes-map-store'
+import { useLanesCorridorCamera } from '../../modes/lanes/use-lanes-fly-to-way'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthMapActions } from '../../modes/width/map/width-map-store'
@@ -70,6 +73,19 @@ function MapPageContent({
   const prevModeRef = useRef(resolvedModeId)
   const isDesktop = useBreakpoint('sm')
   const uiLocale = useUiLocale()
+  const maps = useMap()
+  const map = maps[MAIN_MAP_ID]
+  const isLanesMode = resolvedModeId === 'lanes'
+  const hasWaySelection = selectedOsmRef?.type === 'way'
+  const showLanesThreeColumn = isLanesMode && hasWaySelection
+  /** Lanes mode lifts pitch for corridor camera; every other mode stays flat 2D. */
+  const allowPitch = isLanesMode
+  const prevAllowPitchRef = useRef(allowPitch)
+  const bearingBeforeLanesRef = useRef<number | null>(null)
+  const corridorWayId =
+    isLanesMode && selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
+
+  useLanesCorridorCamera(corridorWayId, isLanesMode)
 
   useEffect(() => {
     document.documentElement.lang = uiLocale
@@ -77,6 +93,38 @@ function MapPageContent({
     const description = document.querySelector('meta[name="description"]')
     if (description) description.setAttribute('content', m.app_description())
   }, [uiLocale])
+
+  useEffect(
+    function syncPitchAndBearingWithLanesMode() {
+      if (!map) return
+      const maplibre = map.getMap()
+      const wasLanes = prevAllowPitchRef.current
+      prevAllowPitchRef.current = allowPitch
+
+      maplibre.setMaxPitch(allowPitch ? 60 : 0)
+
+      if (allowPitch && !wasLanes) {
+        bearingBeforeLanesRef.current = maplibre.getBearing()
+        return
+      }
+
+      if (!allowPitch && wasLanes) {
+        const restoreBearing = bearingBeforeLanesRef.current ?? 0
+        bearingBeforeLanesRef.current = null
+        maplibre.easeTo({
+          pitch: 0,
+          bearing: restoreBearing,
+          duration: 300,
+        })
+        return
+      }
+
+      if (!allowPitch && maplibre.getPitch() !== 0) {
+        maplibre.easeTo({ pitch: 0, duration: 300 })
+      }
+    },
+    [allowPitch, map],
+  )
 
   const coverageLifecycle = useMapCoverageLifecycle()
   const {
@@ -92,10 +140,6 @@ function MapPageContent({
 
   const ModeMapLayers = mode.MapLayers
   const BottomPanel = mode.BottomPanel
-  const isLanesMode = resolvedModeId === 'lanes'
-  const hasWaySelection = selectedOsmRef?.type === 'way'
-  const showLanesBottomEditor = isLanesMode && hasWaySelection && BottomPanel != null
-  const showSidebar = !showLanesBottomEditor
 
   useEffect(
     function resetModeLocalStateOnModeSwitch() {
@@ -149,9 +193,9 @@ function MapPageContent({
                 }}
                 style={{ width: '100%', height: '100%' }}
                 attributionControl={false}
-                maxPitch={0}
-                touchPitch={false}
-                pitchWithRotate={false}
+                maxPitch={allowPitch ? 60 : 0}
+                touchPitch={allowPitch}
+                pitchWithRotate={allowPitch}
                 cursor={cursorStyle}
                 interactiveLayerIds={interactiveLayerIds}
                 onLoad={coverageLifecycle.onMapLoad}
@@ -194,15 +238,22 @@ function MapPageContent({
           </div>
         </div>
       }
-      bottom={showLanesBottomEditor && BottomPanel ? <BottomPanel /> : undefined}
+      middle={showLanesThreeColumn ? <LanesDiagramPanel /> : undefined}
+      bottom={!isLanesMode && BottomPanel ? <BottomPanel /> : undefined}
       panel={
-        showSidebar ? (
+        showLanesThreeColumn ? (
+          <LanesFormPanel
+            key={
+              selectedOsmRef ? `${serializeFeatureParam(selectedOsmRef)}:${selectionEpoch}` : 'none'
+            }
+          />
+        ) : (
           <ControlPanel
             key={
               selectedOsmRef ? `${serializeFeatureParam(selectedOsmRef)}:${selectionEpoch}` : 'none'
             }
           />
-        ) : undefined
+        )
       }
     />
   )

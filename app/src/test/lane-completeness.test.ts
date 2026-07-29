@@ -53,6 +53,9 @@ function defaultProv(): LaneSlot['provenance'] {
     busAccess: 'default',
     psvAccess: 'default',
     widthMeters: 'default',
+    change: 'default',
+    surface: 'default',
+    smoothness: 'default',
     kind: 'default',
   }
 }

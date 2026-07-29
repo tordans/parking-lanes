@@ -147,7 +147,7 @@ Ordered build order:
 
 ## 7. Web rendering for a React panel (not map)
 
-**Product constraint:** show lanes in a **React bottom/side panel** (edit + QA). Map overlay is out of scope for this chapter. The app already has an HTML cross-section (`LaneCrossSection` / `LaneSlotChip` via `@osm-editor-kit/osm-lanes`) — recommendations should extend that, not replace it blindly.
+**Product constraint:** show lanes in a **React panel** (edit + QA). Map overlay is out of scope for this chapter. The shipped UI is a three-column editor: map | SVG plan sketch (`RoadSpaceDiagram` via `@osm-editor-kit/osm-lane-diagram`, gallery at `/audit-lanes`) | all-lanes matrix form — not the older HTML chip strip (`LaneCrossSection` / `LaneSlotChip`, removed).
 
 Split three jobs that people often conflate:
 
@@ -161,7 +161,7 @@ Split three jobs that people often conflate:
 
 | Option | Fit for panel editor | Pros | Cons | Precedent |
 |--------|----------------------|------|------|-----------|
-| **HTML + CSS (React)** | **Best for schematic cross-section** | Native click/focus, selection, a11y, Tailwind, easy add/remove lane controls | Weak for curved plan geometry, miters, true metre scaling across a bent centreline | OsmLaneVisualizer (`div.lane` + SCSS); **this app today** |
+| **HTML + CSS (React)** | **Best for schematic cross-section** | Native click/focus, selection, a11y, Tailwind, easy add/remove lane controls | Weak for curved plan geometry, miters, true metre scaling across a bent centreline | OsmLaneVisualizer (`div.lane` + SCSS); older chip strip in this app (removed) |
 | **SVG (React or builder)** | **Best for short-segment plan sketch** | Crisp at any DPI; hit-testing per `<path>`/`<g>`; exportable; declarative | More code for text/layout; overkill for a pure chip strip | Map Machine (static SVG maps); Streetmix-like cross-sections often SVG |
 | **Canvas 2D** | Weak for editor UI | Fast for many pixels | Poor hit-testing/a11y; you reimplement selection; hard to style with design system | Game-like viz; not OsmLaneVisualizer |
 | **WebGL** | Not for panel | Map/GPU scale | Wrong tool for N≈10 lanes | MapLibre (map only) |
@@ -174,8 +174,8 @@ Split three jobs that people often conflate:
 
 Keep both; they answer different questions:
 
-1. **Schematic cross-section (HTML)** — LTR chips proportional to width (optional), turn glyphs, bike/bus colour, selection, +/- lanes. Evolve current `LaneCrossSection`. Closest UX: OsmLaneVisualizer + Streetmix.
-2. **Short-segment plan sketch (SVG)** — top-down abstract carriageway for the selected way (and maybe prev/next stubs): fills, separators, placement offset, optional sidewalk strips, crossing glyph at ends. **Not** full junction consolidation. Closest UX: Map Machine / Imagico / osm2streets lane polygons, but clipped to one segment in a panel `viewBox`.
+1. **Schematic cross-section (HTML)** — LTR chips proportional to width (optional), turn glyphs, bike/bus colour, selection, +/- lanes. Closest UX: OsmLaneVisualizer + Streetmix. *(Superseded in this app by the matrix form + SVG plan sketch — see `packages/osm-lane-diagram`, `RoadSpaceDiagram`, `/audit-lanes`.)*
+2. **Short-segment plan sketch (SVG)** — top-down abstract carriageway for the selected way (and maybe prev/next stubs): fills, separators, placement offset, optional sidewalk strips, crossing glyph at ends. **Not** full junction consolidation. Closest UX: Map Machine / Imagico / osm2streets lane polygons, but clipped to one segment in a panel `viewBox`. **This is what `@osm-editor-kit/osm-lane-diagram` implements.**
 
 Do **not** force one renderer to do both jobs.
 
@@ -219,9 +219,9 @@ OSM tags (selected way [+ neighbours])
         ▼
 @osm-editor-kit/osm-lanes  (TS) ──parity──► muv fixtures / optional WASM
         │
-        ├──► LaneCrossSection (HTML chips)     ← primary edit UI
+        ├──► LanesFormPanel (matrix + flyouts)  ← primary edit UI
         │
-        └──► LanePlanSketch (SVG)              ← secondary abstract plan
+        └──► RoadSpaceDiagram / osm-lane-diagram (SVG)  ← plan sketch (+ /audit-lanes)
                  • widths → rects / parallel paths
                  • placement → shift stack
                  • separators / bike colour / sidewalk strips

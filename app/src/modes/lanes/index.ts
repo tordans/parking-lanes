@@ -1,6 +1,5 @@
 import type { StreetSpaceMode } from '../types'
 import { LanesLegendPanel } from './controls/LegendPanel'
-import { LanesBottomPanel } from './LanesBottomPanel'
 import { LanesModeLayers } from './LanesModeLayers'
 import { LanesModePanel } from './LanesModePanel'
 import { interactiveLayerIds } from './use-lanes-mode-handlers'
@@ -12,7 +11,7 @@ export const lanesMode: StreetSpaceMode = {
   maturity: 'experimental',
   about: {
     description:
-      'Edit lane counts, turn restrictions, and access tags on OpenStreetMap highways. Select a road to view its cross-section and walk along the street chain.',
+      'Three-column lane editor: select geometry on the map, read the plan sketch in the middle, and edit all lanes in the attribute matrix. Walk the street chain to keep neighbouring segments in view.',
     taggingGuide: {
       label: 'Tagging guide',
       href: 'https://wiki.openstreetmap.org/wiki/Lanes',
@@ -20,7 +19,6 @@ export const lanesMode: StreetSpaceMode = {
   },
   MapLayers: LanesModeLayers,
   Panel: LanesModePanel,
-  BottomPanel: LanesBottomPanel,
   Legend: LanesLegendPanel,
   interactiveLayerIds,
 }

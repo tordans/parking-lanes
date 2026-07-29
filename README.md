@@ -51,6 +51,20 @@ bun run dev
 
 The Vite app lives in `app/` (`@osm-editor-kit/street-space-editor`). Run `bun run check` from the root before pushing.
 
+### Audit — how the app understands OSM data
+
+Flat audit pages (no mode chrome) for reviewing interpretation rules and fixtures:
+
+**Local (with `bun run dev`):**
+
+- [Width audit](http://localhost:5173/street-space-editor/audit-width) — measure rules and tag relations
+- [Lanes audit](http://localhost:5173/street-space-editor/audit-lanes) — cross-section / plan-sketch interpretation
+
+**Deployed:**
+
+- https://osmberlin.github.io/street-space-editor/audit-width
+- https://osmberlin.github.io/street-space-editor/audit-lanes
+
 ## Install git hook
 
 [Husky](https://github.com/typicode/husky) runs `bun run check-ci` on pre-push (see `.husky/pre-push`).

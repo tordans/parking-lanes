@@ -4,46 +4,46 @@ overview: Rework Lanes mode into a three-column editor (map | render-only plan-s
 todos:
   - id: scaffold-pkg
     content: Scaffold @osm-editor-kit/osm-lane-diagram (package.json, tsconfig, index, workspace + app dep)
-    status: pending
+    status: completed
   - id: slot-model
     content: Extended slot model + stable slot ids + sidepath/edge expansion via osm-sidepath-tags
-    status: pending
+    status: completed
   - id: orientation
     content: Orientation contract — normalizeTagsForDirection for neighbours + screen-ordered prev/next
-    status: pending
+    status: completed
   - id: layout-engine
     content: "Layout: placement anchor → metric offsets → 3-segment scene with continuous edges + tapers"
-    status: pending
+    status: completed
   - id: fork-layout
     content: SRK-style dual_carriageway spreading (fork discovery + median gap), OSM topology untouched
-    status: pending
+    status: completed
   - id: svg-serializer
     content: sceneToSvg() string serializer + scene/SVG snapshot tests (framework-free)
-    status: pending
+    status: completed
   - id: fixtures-gallery
     content: Typed fixture library in package + /audit-lanes gallery with tag sandbox (sibling of /audit-width; README links)
-    status: pending
+    status: completed
   - id: shell-layout
     content: AppShell middle column slot + resize + mobile fallback (no 3 columns below sm)
-    status: pending
+    status: completed
   - id: diagram-component
     content: App-side render-only RoadSpaceDiagram React SVG with highlightedSlotId (no hit-testing)
-    status: pending
+    status: completed
   - id: write-paths
     content: Write paths for every matrix row (extend serializeWayLanes; nestSideTags for edge slots)
-    status: pending
+    status: completed
   - id: width-validation
     content: Soft width reconciliation (width vs width:lanes + parking/buffer/paint) in form; share semantics with /audit-width research
-    status: pending
+    status: completed
   - id: matrix-form
     content: All-lanes matrix + cell flyouts + segment nav; focus/hover drives diagram highlight
-    status: pending
+    status: completed
   - id: corridor-camera
     content: Corridor camera (bearing + pitch, maxPitch per mode) with user-override escape hatch
-    status: pending
+    status: completed
   - id: cross-link-research
     content: Cross-link product decisions into research/lane-rendering (matrix+flyout vs osm_viewer, SVG vs §7.2)
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -439,21 +439,33 @@ Sidewalks are stated explicitly per fixture (no invention).
 
 Adapted from [methods-catalogue §6](research/lane-rendering/methods-catalogue.md); each step ends green on `bun run check`.
 
-1. **Scaffold** `packages/osm-lane-diagram` (package.json, tsconfig, README, `index.ts`) + app dependency + `bun install`.
-2. **Slot model & ids**: `types.ts`, `defaults.ts`, `slot-ids.ts`, `from-tags.ts` (carriageway + bike + sidepath expansion, provenance). Tests: expansion counts, provenance, id uniqueness.
-3. **Orientation contract**: neighbour tag normalisation helper + screen ordering used by the chain adapter. Test with fixture 15.
-4. **Placement + single-segment layout**: anchor resolution, metric offsets, fills, separators, turn glyphs → scene. Tests: clear-width sums, placement defaults.
-5. **`sceneToSvg`** + deterministic snapshots for fixtures 1–2.
-6. **Three-segment chain**: shared scale, continuous outer edges, taper policy. Tests: continuity invariants, fixtures 3–4, 10.
-7. **Dual carriageway spreading / fork** incl. single-side-selected case (fixture 5).
-8. **Junction butt-end policy** (fixtures 6–7).
-9. **Fixture library complete + `/audit-lanes` gallery** with sandbox; snapshot coverage for all fixtures; muv parity hooks in `osm-lanes`; About + README Audit discovery; sibling link to `/audit-width`.
-10. **Write paths**: extend `serializeWayLanes` (`change:lanes`, optional `surface:lanes` / `smoothness:lanes`) with round-trip tests; edge-slot writes through `nestSideTags`; way-level `width` / `est_width` via plain tag patch. Any row without a write path is marked read-only in step 13.
-11. **Width soft validation**: pure reconciliation helper + way-level sum strip + warnings (pipe count, sum > width, double-count, `lane_markings=no`); deep-link help to `/audit-width` sections. Do not import width `CrossSection`.
-12. **Shell**: `AppShell` `middle` slot + store width + mobile fallback; `MapPage` renders Map | Diagram | Form for lanes with a selection; stop mounting `LanesBottomPanel`.
-13. **App diagram + matrix form**: `RoadSpaceDiagram.tsx` (render-only, `highlightedSlotId`), matrix + flyouts + segment nav, focus/hover sync, read-only handling, paraglide messages for all new strings.
-14. **Corridor camera**: bearing + pitch `easeTo`, lanes-only `maxPitch`, once-per-selection guard, manual-override suppression.
-15. **Cleanup + cross-link**: delete `LaneCrossSection` / `LaneSlotChip` / `LanesSlotEditor` and the `BottomPanel` entry from [`modes/lanes/index.ts`](app/src/modes/lanes/index.ts) once nothing references them; update the mode `about.description`; record product decisions in [research/lane-rendering](research/lane-rendering/README.md) (matrix+flyout vs osm_viewer inspector; SVG scene vs §7.2 chips; pure-TS vs React package; width semantics shared with width-measurements / `/audit-width`).
+1. **Scaffold** `packages/osm-lane-diagram` (package.json, tsconfig, README, `index.ts`) + app dependency + `bun install`. ✅
+2. **Slot model & ids**: `types.ts`, `defaults.ts`, `slot-ids.ts`, `from-tags.ts` (carriageway + bike + sidepath expansion, provenance). Tests: expansion counts, provenance, id uniqueness. ✅
+3. **Orientation contract**: neighbour tag normalisation helper + screen ordering used by the chain adapter. Test with fixture 15. ✅
+4. **Placement + single-segment layout**: anchor resolution, metric offsets, fills, separators, turn glyphs → scene. Tests: clear-width sums, placement defaults. ✅
+5. **`sceneToSvg`** + deterministic snapshots for fixtures 1–2. ✅
+6. **Three-segment chain**: shared scale, continuous outer edges, taper policy. Tests: continuity invariants, fixtures 3–4, 10. ✅
+7. **Dual carriageway spreading / fork** incl. single-side-selected case (fixture 5). ✅
+8. **Junction butt-end policy** (fixtures 6–7). ✅
+9. **Fixture library complete + `/audit-lanes` gallery** with sandbox; snapshot coverage for all fixtures; muv parity hooks in `osm-lanes`; About + README Audit discovery; sibling link to `/audit-width`. ✅
+10. **Write paths**: extend `serializeWayLanes` (`change:lanes`, optional `surface:lanes` / `smoothness:lanes`) with round-trip tests; edge-slot writes through `nestSideTags`; way-level `width` / `est_width` via plain tag patch. Any row without a write path is marked read-only in step 13. ✅
+11. **Width soft validation**: pure reconciliation helper + way-level sum strip + warnings (pipe count, sum > width, double-count, `lane_markings=no`); deep-link help to `/audit-width` sections. Do not import width `CrossSection`. ✅
+12. **Shell**: `AppShell` `middle` slot + store width + mobile fallback; `MapPage` renders Map | Diagram | Form for lanes with a selection; stop mounting `LanesBottomPanel`. ✅
+13. **App diagram + matrix form**: `RoadSpaceDiagram.tsx` (render-only, `highlightedSlotId`), matrix + flyouts + segment nav, focus/hover sync, read-only handling, paraglide messages for all new strings. ✅
+14. **Corridor camera**: bearing + pitch `easeTo`, lanes-only `maxPitch`, once-per-selection guard, manual-override suppression. ✅
+15. **Cleanup + cross-link**: delete `LaneCrossSection` / `LaneSlotChip` / `LanesSlotEditor` and the `BottomPanel` entry from [`modes/lanes/index.ts`](app/src/modes/lanes/index.ts) once nothing references them; update the mode `about.description`; record product decisions in [research/lane-rendering](research/lane-rendering/README.md) (matrix+flyout vs osm_viewer inspector; SVG scene vs §7.2 chips; pure-TS vs React package; width semantics shared with width-measurements / `/audit-width`). ✅
+
+## As-built deltas
+
+Deliberate differences from the plan as written:
+
+- **Median as a scene rect** — dual-carriageway gap is an explicit `kind: 'median'` rect (`slotId: way/<id>/fork/median`, `direction: 'none'`) with kerbs on both faces, not only a polyline gap.
+- **`separate` excluded from geometry** — `sidewalk:*=separate` / `cycleway:*=separate` (and `no`/`none`) produce no slots; `separate` becomes `scene.separatelyMapped` text hints under the diagram.
+- **Arrows = way direction up** — forward travel draws ↑ (OSM way direction points up the page); diagram-left = `*:left` (same as `/audit-width`).
+- **`slotSumM` optional** — width reconciliation treats per-lane width sum as optional when no `width:lanes` pipes are tagged (quiet strip, no hard equality).
+- **Natural-size rendering** — `RoadSpaceDiagram` paints at `scene.widthPx`×`heightPx` with `max-width: 100%` / `height: auto`; never stretches beyond 1:1 (shared metre scale). Default scale `DEFAULT_METERS_TO_PX = 20`.
+- **`cycleway:lanes` matrix column** — read-only (diagram-only support); tagged `width:lanes` pipe value is shown; no write path for pipe-positioned slots.
+- **`source:width` / `placement:forward|backward`** — parsed/serialized by `@osm-editor-kit/osm-lanes` but not surfaced in the way-level form.
 
 ## Test plan
 
@@ -496,7 +508,7 @@ Adapted from [methods-catalogue §6](research/lane-rendering/methods-catalogue.m
 - Matrix shows all lanes of the current segment at once; every editable row round-trips through the changeset path; non-writable rows are visibly read-only.
 - Continuity invariants and taper/fork behaviour are asserted by package tests, not by eyeballing.
 - Soft width reconciliation matches research/width-measurements + `/audit-width` semantics (`clear` slots, parking/buffer out of `width:lanes` pipes, optional paint term, no hard equality).
-- All 18 fixtures render in `/audit-lanes` and have committed scene/SVG snapshots; gallery is discoverable beside `/audit-width`.
+- All 19 fixtures render in `/audit-lanes` and have committed scene/SVG snapshots; gallery is discoverable beside `/audit-width`.
 - `@osm-editor-kit/osm-lane-diagram` has no React, no app and no I/O dependency, and its scene JSON + `sceneToSvg` output are reusable outside the app.
 - Camera animates bearing + pitch on selection change and yields to manual interaction.
 - `bun run check` green; no leftover references to removed chip components.

@@ -1,13 +1,6 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import type { LaneDirection, LaneSlot, WayLaneModel } from '@osm-editor-kit/osm-lanes'
-import {
-  addLaneSlot,
-  editableLaneDirections,
-  parseWayLanes,
-  removeLaneSlot,
-  slotHasRichData,
-  validateWayLanes,
-} from '@osm-editor-kit/osm-lanes'
+import type { LaneSlot, WayLaneModel } from '@osm-editor-kit/osm-lanes'
+import { parseWayLanes, validateWayLanes } from '@osm-editor-kit/osm-lanes'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { useCallback } from 'react'
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre'
@@ -32,7 +25,7 @@ function finalizeLaneModel(model: WayLaneModel, baseTags: Record<string, string>
 
 export function useLanesModeHandlers() {
   const { selectFeature, clearSelection } = useFeatureSelection()
-  const { clearLanesState, selectSlot } = useLanesMapActions()
+  const { clearLanesState } = useLanesMapActions()
   const handleOsmChange = useLanesOsmChangeHandler()
 
   const commitLaneModel = useCallback(
@@ -50,32 +43,6 @@ export function useLanesModeHandlers() {
       commitLaneModel(way, { ...model, slots: nextSlots })
     },
     [commitLaneModel],
-  )
-
-  const addLane = useCallback(
-    (way: OsmWay, direction: LaneDirection) => {
-      const model = parseWayLanes(way.tags)
-      commitLaneModel(way, addLaneSlot(model, direction))
-    },
-    [commitLaneModel],
-  )
-
-  const removeLane = useCallback(
-    (way: OsmWay, direction: LaneDirection, index: number, slot: LaneSlot) => {
-      if (slotHasRichData(slot)) {
-        const confirmed = window.confirm('This lane has turn or access tags. Remove it anyway?')
-        if (!confirmed) return false
-      }
-
-      const model = parseWayLanes(way.tags)
-      const next = removeLaneSlot(model, direction, index)
-      if (!next) return false
-
-      commitLaneModel(way, next)
-      selectSlot(null)
-      return true
-    },
-    [commitLaneModel, selectSlot],
   )
 
   const handleLayerClick = useCallback(
@@ -101,8 +68,5 @@ export function useLanesModeHandlers() {
     handleMapClick,
     commitSlotUpdate,
     commitLaneModel,
-    addLane,
-    removeLane,
-    editableLaneDirections,
   }
 }

@@ -14,12 +14,6 @@ import type { ModeAboutContent, ModeMaturity, StreetSpaceModeId } from '../../mo
 import { assetUrl } from '../../utils/asset-url'
 import { PanelSectionDivider } from './PanelSectionDivider'
 
-/** In-app audit page path under the Vite base (e.g. `/street-space-editor/audit-width`). */
-function auditPageHref(slug: string): string {
-  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '')
-  return `${base}/${slug}`
-}
-
 const APP_LOGO_SRC = assetUrl('osm-street-space-editor-logo-2026.svg')
 
 const MATURITY_LABELS = {
@@ -114,9 +108,9 @@ export function AppAboutContent({ modeId, about, modeLabel, maturity }: Props) {
             </Link>
           ) : null}
           {modeId === 'lanes' ? (
-            <a href={auditPageHref('audit-lanes')} className={linkClass}>
+            <Link to="/audit-lanes" className={linkClass}>
               {m.shell_audit_lanes()}
-            </a>
+            </Link>
           ) : null}
           <a href={feedbackUrl} target="_blank" rel="noreferrer" className={linkClass}>
             {m.shell_report_feedback({ modeLabel })}

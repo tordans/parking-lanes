@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModeRouteImport } from './routes/$mode'
+import { Route as AuditLanesRouteImport } from './routes/audit-lanes'
 import { Route as AuditWidthRouteImport } from './routes/audit-width'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const ModeRoute = ModeRouteImport.update({
   path: '/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditLanesRoute = AuditLanesRouteImport.update({
+  id: '/audit-lanes',
+  path: '/audit-lanes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuditWidthRoute = AuditWidthRouteImport.update({
   id: '/audit-width',
   path: '/audit-width',
@@ -32,30 +38,34 @@ const AuditWidthRoute = AuditWidthRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$mode' | '/audit-width'
+  fullPaths: '/' | '/$mode' | '/audit-lanes' | '/audit-width'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$mode' | '/audit-width'
-  id: '__root__' | '/' | '/$mode' | '/audit-width'
+  to: '/' | '/$mode' | '/audit-lanes' | '/audit-width'
+  id: '__root__' | '/' | '/$mode' | '/audit-lanes' | '/audit-width'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ModeRoute: typeof ModeRoute
+  AuditLanesRoute: typeof AuditLanesRoute
   AuditWidthRoute: typeof AuditWidthRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit-lanes': {
+      id: '/audit-lanes'
+      path: '/audit-lanes'
+      fullPath: '/audit-lanes'
+      preLoaderRoute: typeof AuditLanesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/audit-width': {
       id: '/audit-width'
       path: '/audit-width'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ModeRoute: ModeRoute,
+  AuditLanesRoute: AuditLanesRoute,
   AuditWidthRoute: AuditWidthRoute,
 }
 export const routeTree = rootRouteImport
