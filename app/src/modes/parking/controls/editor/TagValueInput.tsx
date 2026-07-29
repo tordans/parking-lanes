@@ -1,8 +1,8 @@
+import { YesNoOrTextInput } from '../../../../components/tag-editor'
 import { type TagValue } from '../../../../utils/types/parking'
 import { SelectInput } from './SelectInput'
 import { isYesNoTagValues } from './tag-editor-controls'
 import { TagValueIconShortcuts } from './TagValueIconShortcuts'
-import { YesNoRadioInput } from './YesNoRadioInput'
 
 export function TagValueInput(props: {
   tag: string
@@ -17,7 +17,7 @@ export function TagValueInput(props: {
 
   if (isYesNoTagValues(props.values)) {
     return (
-      <YesNoRadioInput
+      <YesNoOrTextInput
         name={props.tag}
         value={value}
         disabled={props.disabled}

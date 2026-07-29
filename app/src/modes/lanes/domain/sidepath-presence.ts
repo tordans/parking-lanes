@@ -103,6 +103,3 @@ export const CYCLEWAY_PRESENCE_VALUES = [
   'crossing',
   'shoulder',
 ] as const
-
-export const ONEWAY_VALUES = ['yes', 'no', '-1'] as const
-export const YES_NO_VALUES = ['yes', 'no'] as const

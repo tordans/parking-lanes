@@ -12,6 +12,7 @@ import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { YesNoOrTextField } from '../../components/tag-editor'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import {
   MapFeatureLoadEmptyState,
@@ -38,11 +39,9 @@ import {
 } from './domain/lanes-matrix-model'
 import {
   CYCLEWAY_PRESENCE_VALUES,
-  ONEWAY_VALUES,
   resolveSidepathPresence,
   SIDEWALK_PRESENCE_VALUES,
   SIDEWALK_SIDE_VALUES,
-  YES_NO_VALUES,
   type SidepathPresence,
 } from './domain/sidepath-presence'
 import { useLanesChainBuilder } from './domain/use-lanes-chain'
@@ -331,22 +330,26 @@ function WayLevelFields(props: {
     <section className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-2">
       <h3 className="text-xs font-semibold text-zinc-800">{m.lanes_way_level_title()}</h3>
       <div className="grid grid-cols-2 gap-2">
-        <EnumSelect
+        <YesNoOrTextField
           label="oneway"
+          name="oneway"
           value={model.oneway ?? tags.oneway ?? ''}
-          options={ONEWAY_VALUES}
           disabled={readOnly}
           onChange={(v) => setModelField('oneway', v === '' ? undefined : v)}
         />
-        <EnumSelect
+        <YesNoOrTextField
           label="oneway:bicycle"
+          name="oneway:bicycle"
           value={tags['oneway:bicycle'] ?? ''}
-          options={ONEWAY_VALUES}
           disabled={readOnly}
           onChange={(v) => setTag('oneway:bicycle', v)}
         />
-        <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">lanes</span>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        <label className="flex min-w-0 flex-col gap-0.5 text-xs">
+          <span className="truncate text-zinc-600" title="lanes">
+            lanes
+          </span>
           <input
             type="number"
             min={0}
@@ -358,11 +361,13 @@ function WayLevelFields(props: {
               if (oneway) setOnewayLaneCount(value)
               else setModelField('lanesTotal', value)
             }}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
+            className="min-w-0 rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
           />
         </label>
-        <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">lanes:forward</span>
+        <label className="flex min-w-0 flex-col gap-0.5 text-xs">
+          <span className="truncate text-zinc-600" title="lanes:forward">
+            la…:forward
+          </span>
           <input
             type="number"
             min={0}
@@ -374,11 +379,13 @@ function WayLevelFields(props: {
               if (oneway) setOnewayLaneCount(value)
               else setModelField('lanesForward', value)
             }}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
+            className="min-w-0 rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
           />
         </label>
-        <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">lanes:backward</span>
+        <label className="flex min-w-0 flex-col gap-0.5 text-xs">
+          <span className="truncate text-zinc-600" title="lanes:backward">
+            la…:backward
+          </span>
           <input
             type="number"
             min={0}
@@ -389,11 +396,13 @@ function WayLevelFields(props: {
               const n = Number.parseInt(e.target.value, 10)
               setModelField('lanesBackward', Number.isFinite(n) ? n : undefined)
             }}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
+            className="min-w-0 rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
           />
         </label>
-        <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">lanes:both_ways</span>
+        <label className="flex min-w-0 flex-col gap-0.5 text-xs">
+          <span className="truncate text-zinc-600" title="lanes:both_ways">
+            la…:both_ways
+          </span>
           <input
             type="number"
             min={0}
@@ -404,9 +413,11 @@ function WayLevelFields(props: {
               const n = Number.parseInt(e.target.value, 10)
               setModelField('lanesBothWays', Number.isFinite(n) ? n : undefined)
             }}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
+            className="min-w-0 rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
           />
         </label>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-0.5 text-xs">
           <span className="text-zinc-600">
             width{' '}
@@ -443,43 +454,43 @@ function WayLevelFields(props: {
             className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
           />
         </label>
-        <EnumSelect
+        <YesNoOrTextField
           label="lane_markings"
+          name="lane_markings"
           value={model.laneMarkings ?? tags.lane_markings ?? ''}
-          options={YES_NO_VALUES}
           disabled={readOnly}
-          onChange={(v) => {
-            setModelField('laneMarkings', v === 'yes' || v === 'no' ? v : undefined)
-          }}
+          onChange={(v) => setModelField('laneMarkings', v === 'yes' || v === 'no' ? v : undefined)}
         />
-        <EnumSelect
+        <YesNoOrTextField
           label="dual_carriageway"
+          name="dual_carriageway"
           value={tags.dual_carriageway ?? ''}
-          options={YES_NO_VALUES}
           disabled={readOnly}
           onChange={(v) => setTag('dual_carriageway', v)}
         />
-        <PresenceFields
-          prefix="sidewalk"
-          presence={sidewalkPresence}
-          readOnly={readOnly}
-          options={SIDEWALK_PRESENCE_VALUES}
-          sideOptions={SIDEWALK_SIDE_VALUES}
-          onPatchTags={props.onPatchTags}
-        />
-        <PresenceFields
-          prefix="cycleway"
-          presence={cyclewayPresence}
-          readOnly={readOnly}
-          options={CYCLEWAY_PRESENCE_VALUES}
-          sideOptions={CYCLEWAY_PRESENCE_VALUES}
-          onPatchTags={props.onPatchTags}
-        />
+        <div className="col-span-2 grid grid-cols-2 gap-2">
+          <PresenceFields
+            prefix="sidewalk"
+            presence={sidewalkPresence}
+            readOnly={readOnly}
+            options={SIDEWALK_PRESENCE_VALUES}
+            sideOptions={SIDEWALK_SIDE_VALUES}
+            onPatchTags={props.onPatchTags}
+          />
+          <PresenceFields
+            prefix="cycleway"
+            presence={cyclewayPresence}
+            readOnly={readOnly}
+            options={CYCLEWAY_PRESENCE_VALUES}
+            sideOptions={CYCLEWAY_PRESENCE_VALUES}
+            onPatchTags={props.onPatchTags}
+          />
+        </div>
         {sharedSidepath ? (
-          <EnumSelect
+          <YesNoOrTextField
             label="segregated"
+            name="segregated"
             value={tags.segregated ?? ''}
-            options={YES_NO_VALUES}
             disabled={readOnly}
             onChange={(v) => setTag('segregated', v)}
           />
@@ -575,7 +586,7 @@ export function LanesFormPanel() {
   const chain = useLanesChain()
   const pendingJunctions = useLanesPendingJunctions()
   const { setHighlightedSlot } = useLanesMapActions()
-  const { scene, topNeighbor, bottomNeighbor, centerWayId: chainWayId } = useRoadSpaceChain()
+  const { scene, topNeighbor, bottomNeighbor } = useRoadSpaceChain()
   const { extendAtJunction } = useLanesChainBuilder(centerWayId)
   const authState = useAuthState()
   const readOnly = authState !== AuthState.success
@@ -674,12 +685,36 @@ export function LanesFormPanel() {
     >
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <ModePanelIntro
-            wayId={centerWay.id}
-            highway={centerWay.tags.highway}
-            identityStart
-            className="flex min-w-0 items-center gap-2"
-          />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                disabled={!topNeighbor}
+                aria-label={m.chain_prev_segment()}
+                title={m.chain_prev_segment()}
+                onClick={() => topNeighbor && walkToWay(topNeighbor.id)}
+                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+              >
+                <ChevronUp className="size-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={!bottomNeighbor}
+                aria-label={m.chain_next_segment()}
+                title={m.chain_next_segment()}
+                onClick={() => bottomNeighbor && walkToWay(bottomNeighbor.id)}
+                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+              >
+                <ChevronDown className="size-4" aria-hidden />
+              </button>
+            </div>
+            <ModePanelIntro
+              wayId={centerWay.id}
+              highway={centerWay.tags.highway}
+              identityStart
+              className="flex min-w-0 items-center gap-2"
+            />
+          </div>
           <ChainNavigator
             pendingJunctions={pendingJunctions}
             onJunctionPick={(choice, wayId) => {
@@ -687,32 +722,6 @@ export function LanesFormPanel() {
               void extendAtJunction(choice, wayId, chain).then(() => walkToWay(wayId))
             }}
           />
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={!topNeighbor}
-            aria-label={m.chain_prev_segment()}
-            title={m.chain_prev_segment()}
-            onClick={() => topNeighbor && walkToWay(topNeighbor.id)}
-            className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
-          >
-            <ChevronUp className="size-4" aria-hidden />
-          </button>
-          <span className="min-w-0 flex-1 truncate text-center text-xs text-zinc-600">
-            {centerWay.tags.name ?? centerWay.tags.ref ?? `way/${chainWayId}`}
-          </span>
-          <button
-            type="button"
-            disabled={!bottomNeighbor}
-            aria-label={m.chain_next_segment()}
-            title={m.chain_next_segment()}
-            onClick={() => bottomNeighbor && walkToWay(bottomNeighbor.id)}
-            className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
-          >
-            <ChevronDown className="size-4" aria-hidden />
-          </button>
         </div>
 
         {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}

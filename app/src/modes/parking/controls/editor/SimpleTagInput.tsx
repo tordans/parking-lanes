@@ -5,7 +5,7 @@ import {
   tagEditorValueCellClassName,
 } from '../../../../components/tag-editor'
 import { type TagValue } from '../../../../utils/types/parking'
-import { usesParkingPositionButtonGroup } from './tag-editor-controls'
+import { isYesNoTagValues, usesParkingPositionButtonGroup } from './tag-editor-controls'
 import { TagValueButtonGroup } from './TagValueButtonGroup'
 import { TagValueInput } from './TagValueInput'
 
@@ -21,6 +21,7 @@ export function SimpleTagInput(props: {
   const value = props.osm.tags[props.tag]
   const readOnly = props.readOnly ?? false
   const useParkingPositionLayout = props.values != null && usesParkingPositionButtonGroup(props.tag)
+  const isYesNo = props.values != null && isYesNoTagValues(props.values)
 
   if (useParkingPositionLayout) {
     return (
@@ -43,7 +44,14 @@ export function SimpleTagInput(props: {
   }
 
   return (
-    <TagEditorFieldRow tag={props.tag} label={props.label} hide={props.hide} hasValue={!!value}>
+    <TagEditorFieldRow
+      tag={props.tag}
+      label={props.label}
+      hide={props.hide}
+      hasValue={!!value}
+      onClear={isYesNo ? () => props.onChange('') : undefined}
+      clearDisabled={readOnly}
+    >
       {props.values ? (
         <TagValueInput
           tag={props.tag}

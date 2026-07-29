@@ -1,13 +1,14 @@
 import clsx from 'clsx'
-import { Tooltip } from '../../../../components/Tooltip/Tooltip'
 import {
+  tagEditorCompactControlClassName,
   tagEditorValueButtonDividerClassName,
   tagEditorValueButtonGroupCompactClassName,
   tagEditorValueButtonSelectedClassName,
-  tagEditorYesNoButtonClassName,
 } from './tag-editor-controls'
 
 const yesNoOptions = ['yes', 'no'] as const
+
+const baseButtonClassName = `flex shrink-0 cursor-pointer items-center justify-center disabled:cursor-not-allowed disabled:opacity-50 ${tagEditorCompactControlClassName}`
 
 export function YesNoRadioInput(props: {
   name: string
@@ -17,14 +18,15 @@ export function YesNoRadioInput(props: {
 }) {
   return (
     <div
-      className={tagEditorValueButtonGroupCompactClassName}
+      className={clsx(tagEditorValueButtonGroupCompactClassName, 'w-fit max-w-full')}
       role="radiogroup"
       aria-label={props.name}
     >
       {yesNoOptions.map((option, index) => {
         const isSelected = props.value === option
-        const button = (
+        return (
           <button
+            key={option}
             type="button"
             role="radio"
             aria-checked={isSelected}
@@ -32,20 +34,17 @@ export function YesNoRadioInput(props: {
             title={option}
             disabled={props.disabled}
             className={clsx(
-              tagEditorYesNoButtonClassName,
+              baseButtonClassName,
+              'w-8',
               index > 0 && tagEditorValueButtonDividerClassName,
-              isSelected && tagEditorValueButtonSelectedClassName,
+              isSelected
+                ? tagEditorValueButtonSelectedClassName
+                : 'bg-white text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100',
             )}
             onClick={() => props.onChange(option)}
           >
             {option}
           </button>
-        )
-
-        return (
-          <Tooltip key={option} content={option} wrapperClassName="shrink-0">
-            {button}
-          </Tooltip>
         )
       })}
     </div>
