@@ -26,6 +26,7 @@
     "@osm-editor-kit/osm-coverage": "workspace:*",
     "@osm-editor-kit/osm-data": "workspace:*",
     "@osm-editor-kit/osm-editor-links": "workspace:*",
+    "@osm-editor-kit/osm-lane-diagram": "workspace:*",
     "@osm-editor-kit/osm-lanes": "workspace:*",
     "@osm-editor-kit/osm-map-url": "workspace:*",
     "@osm-editor-kit/osm-maplibre": "workspace:*",
