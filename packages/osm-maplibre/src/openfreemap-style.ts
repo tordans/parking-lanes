@@ -1,4 +1,5 @@
 import type { StyleSpecification } from 'maplibre-gl'
+import { appendCustomContentAnchor } from './custom-content-anchor'
 import { patchOpenFreeMapStyle } from './patch-openfreemap-style'
 import openFreeMapPositronStyle from './styles/openfreemap-positron.json'
 
@@ -7,6 +8,11 @@ export const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/sty
 
 /** iD-style `imagery_used` label for the default basemap when no ELI overlay is active. */
 export const OPENFREEMAP_POSITRON_IMAGERY_USED = 'OpenFreeMap Positron'
+
+/** Patches upstream Positron (null-safe filters + app layer anchor). */
+export function buildOpenFreeMapPositronStyle(style: StyleSpecification): StyleSpecification {
+  return appendCustomContentAnchor(patchOpenFreeMapStyle(style))
+}
 
 /**
  * Local patched Positron style (no runtime `transformStyle`).
@@ -17,6 +23,12 @@ export const OPENFREEMAP_POSITRON_IMAGERY_USED = 'OpenFreeMap Positron'
  * https://github.com/hyperknot/openfreemap-styles/pull/18). Then point the map at
  * `OPENFREEMAP_POSITRON_STYLE_URL` again.
  */
-export const OPENFREEMAP_POSITRON_STYLE = openFreeMapPositronStyle as StyleSpecification
+export const OPENFREEMAP_POSITRON_STYLE = buildOpenFreeMapPositronStyle(
+  openFreeMapPositronStyle as StyleSpecification,
+)
 
-export { patchOpenFreeMapStyle }
+export { appendCustomContentAnchor, patchOpenFreeMapStyle }
+export {
+  MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID,
+  MAP_CUSTOM_CONTENT_ANCHOR_SOURCE_ID,
+} from './custom-content-anchor'

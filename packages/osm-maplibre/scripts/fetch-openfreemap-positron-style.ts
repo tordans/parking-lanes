@@ -16,7 +16,7 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { StyleSpecification } from 'maplibre-gl'
-import { patchOpenFreeMapStyle } from '../src/patch-openfreemap-style.ts'
+import { buildOpenFreeMapPositronStyle } from '../src/openfreemap-style.ts'
 
 /** Keep in sync with `OPENFREEMAP_POSITRON_STYLE_URL` in `src/openfreemap-style.ts`. */
 const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron'
@@ -51,7 +51,7 @@ async function main() {
   }
 
   const upstream = (await response.json()) as StyleSpecification
-  const patched = patchOpenFreeMapStyle(upstream)
+  const patched = buildOpenFreeMapPositronStyle(upstream)
   const text = `${JSON.stringify(patched, null, 2)}\n`
 
   if (exists) {

@@ -1,3 +1,4 @@
+import { MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID } from '@osm-editor-kit/osm-maplibre'
 import { Layer, Source } from 'react-map-gl/maplibre'
 import {
   ATLAS_BOUNDARIES_SOURCE_ID,
@@ -7,19 +8,15 @@ import {
   atlasDistrictLinePaint,
   atlasXhainHighlightPaint,
 } from './atlas-boundaries-paint'
-import { useMapLoaded } from './map-store'
-import { CUSTOM_CONTENT_ANCHOR_LAYER_ID } from './MapBackgroundLayerSource'
 import { useMapBoundariesEnabled } from './use-map-boundaries'
 
 /**
  * Berlin/DE admin boundaries from TILDA atlas tiles, stacked above basemap and below mode layers.
- * Waits for map load so `beforeId` can target the content anchor.
  */
 export function AtlasBoundariesSource() {
   const enabled = useMapBoundariesEnabled()
-  const mapLoaded = useMapLoaded()
 
-  if (!enabled || !mapLoaded) return null
+  if (!enabled) return null
 
   return (
     <Source
@@ -36,7 +33,7 @@ export function AtlasBoundariesSource() {
         source-layer="boundaries"
         filter={atlasDistrictFilter}
         paint={atlasDistrictLinePaint}
-        beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
+        beforeId={MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID}
       />
       <Layer
         id="atlas-xhain-highlight"
@@ -48,7 +45,7 @@ export function AtlasBoundariesSource() {
           ['==', ['get', 'name'], 'Friedrichshain-Kreuzberg'],
         ]}
         paint={atlasXhainHighlightPaint}
-        beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
+        beforeId={MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID}
       />
       <Layer
         id="atlas-district-labels"
@@ -65,7 +62,7 @@ export function AtlasBoundariesSource() {
           'text-size': 14,
         }}
         paint={atlasDistrictLabelPaint}
-        beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
+        beforeId={MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID}
       />
     </Source>
   )

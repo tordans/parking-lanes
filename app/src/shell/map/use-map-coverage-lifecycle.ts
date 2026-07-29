@@ -1,5 +1,5 @@
 import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useParams, useSearch } from '@tanstack/react-router'
 import type { MapEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { useLanesCoveragePace, viewMinZoom as lanesViewMinZoom } from '../../modes/lanes'
@@ -9,9 +9,10 @@ import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../mod
 import { useAppActions } from '../app-store'
 import { useMapActions } from './map-store'
 import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigate } from './use-mode-search-navigate'
 
 export function useMapCoverageLifecycle() {
-  const navigate = useNavigate({ from: '/$mode' })
+  const navigate = useModeSearchNavigate()
   const { map: mapSearch } = useSearch({ from: '/$mode' })
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const resolvedModeId = modeSlug as StreetSpaceModeId

@@ -4,23 +4,13 @@ import {
   getRasterSourceSpec,
   type EliLayer,
 } from '@osm-editor-kit/maplibre-editor-layer-index/react'
-import type { FeatureCollection } from 'geojson'
+import { MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID } from '@osm-editor-kit/osm-maplibre'
 import { useEffect, useState } from 'react'
 import { Layer, Source } from 'react-map-gl/maplibre'
 import { useBackgroundLayerId } from './use-background-layer'
 
 const BACKGROUND_SOURCE_ID = 'eli-background'
 const BACKGROUND_LAYER_ID = 'eli-background'
-
-/**
- * Invisible anchor that always sits below mode/debug layers.
- * The optional ELI raster uses `beforeId` so late selection still stacks under app content
- * (MapLibre appends newly added layers on top without `beforeId`).
- */
-export const CUSTOM_CONTENT_ANCHOR_SOURCE_ID = 'map-custom-content-anchor'
-export const CUSTOM_CONTENT_ANCHOR_LAYER_ID = 'map-custom-content-anchor'
-
-const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
 
 /** Drop style-layer maxzoom so MapLibre overzooms past ELI native tile zooms instead of hiding. */
 function rasterLayerPropsWithoutMaxzoom(layer: EliLayer) {
@@ -35,6 +25,7 @@ function rasterLayerPropsWithoutMaxzoom(layer: EliLayer) {
 /**
  * Optional ELI raster imagery above the default map style and below mode layers.
  * Does not change react-map-gl `mapStyle` — only adds a pixel overlay when selected.
+ * The invisible stacking anchor is baked into the Positron style.
  */
 export function MapBackgroundLayerSource() {
   const backgroundLayerId = useBackgroundLayerId()
@@ -59,25 +50,15 @@ export function MapBackgroundLayerSource() {
   const layer =
     backgroundLayerId != null && resolved?.id === backgroundLayerId ? resolved.layer : null
 
+  if (layer == null) return null
+
   return (
     <>
-      <Source id={CUSTOM_CONTENT_ANCHOR_SOURCE_ID} type="geojson" data={EMPTY_FEATURE_COLLECTION} />
+      <Source id={BACKGROUND_SOURCE_ID} {...getRasterSourceSpec(layer)} />
       <Layer
-        id={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
-        type="fill"
-        source={CUSTOM_CONTENT_ANCHOR_SOURCE_ID}
-        layout={{ visibility: 'none' }}
-        paint={{ 'fill-opacity': 0 }}
+        {...rasterLayerPropsWithoutMaxzoom(layer)}
+        beforeId={MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID}
       />
-      {layer != null ? (
-        <>
-          <Source id={BACKGROUND_SOURCE_ID} {...getRasterSourceSpec(layer)} />
-          <Layer
-            {...rasterLayerPropsWithoutMaxzoom(layer)}
-            beforeId={CUSTOM_CONTENT_ANCHOR_LAYER_ID}
-          />
-        </>
-      ) : null}
     </>
   )
 }

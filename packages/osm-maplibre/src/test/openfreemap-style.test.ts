@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import type { StyleSpecification } from 'maplibre-gl'
+import {
+  MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID,
+  MAP_CUSTOM_CONTENT_ANCHOR_SOURCE_ID,
+  appendCustomContentAnchor,
+} from '../custom-content-anchor'
 import { patchOpenFreeMapStyle } from '../patch-openfreemap-style'
 
 describe('patchOpenFreeMapStyle', () => {
@@ -102,5 +107,33 @@ describe('patchOpenFreeMapStyle', () => {
     }
 
     expect(patchOpenFreeMapStyle(style)).toEqual(style)
+  })
+})
+
+describe('appendCustomContentAnchor', () => {
+  test('appends invisible anchor source and layer at the top of the stack', () => {
+    const style: StyleSpecification = {
+      version: 8,
+      sources: {},
+      layers: [{ id: 'background', type: 'background' }],
+    }
+
+    const next = appendCustomContentAnchor(style)
+
+    expect(next.sources[MAP_CUSTOM_CONTENT_ANCHOR_SOURCE_ID]).toEqual({
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    })
+    expect(next.layers.at(-1)?.id).toBe(MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID)
+  })
+
+  test('is idempotent when anchor is already present', () => {
+    const style = appendCustomContentAnchor({
+      version: 8,
+      sources: {},
+      layers: [{ id: 'background', type: 'background' }],
+    })
+
+    expect(appendCustomContentAnchor(style)).toBe(style)
   })
 })

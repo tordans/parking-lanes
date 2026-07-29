@@ -1,8 +1,9 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
 import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigate } from './use-mode-search-navigate'
 
 /** Selected OSM feature from URL search (`f` param) — single source of truth. */
 export function useSelectedOsmRef(): OsmFeatureRef | undefined {
@@ -21,7 +22,7 @@ type FeatureSelectionContextValue = {
 const FeatureSelectionContext = createContext<FeatureSelectionContextValue | null>(null)
 
 export function FeatureSelectionProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate({ from: '/$mode' })
+  const navigate = useModeSearchNavigate()
   const [selectionEpoch, setSelectionEpoch] = useState(0)
 
   const selectFeature = useCallback(

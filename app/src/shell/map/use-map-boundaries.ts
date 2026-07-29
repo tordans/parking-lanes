@@ -1,7 +1,8 @@
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { nextBoundariesFocusState, readBoundariesEnabled } from './map-focus-state'
 import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigate } from './use-mode-search-navigate'
 
 export function useMapBoundariesEnabled(): boolean {
   const { focus } = useSearch({ from: '/$mode' })
@@ -9,7 +10,7 @@ export function useMapBoundariesEnabled(): boolean {
 }
 
 export function useMapBoundaries() {
-  const navigate = useNavigate({ from: '/$mode' })
+  const navigate = useModeSearchNavigate()
   const { focus } = useSearch({ from: '/$mode' })
   const boundariesEnabled = readBoundariesEnabled(focus)
 

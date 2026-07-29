@@ -16,8 +16,12 @@ export {
   MAP_FOCUS_MUTED_OPACITY,
 } from './map-focus-paint'
 export {
+  MAP_CUSTOM_CONTENT_ANCHOR_LAYER_ID,
+  MAP_CUSTOM_CONTENT_ANCHOR_SOURCE_ID,
   OPENFREEMAP_POSITRON_IMAGERY_USED,
   OPENFREEMAP_POSITRON_STYLE,
   OPENFREEMAP_POSITRON_STYLE_URL,
+  appendCustomContentAnchor,
+  buildOpenFreeMapPositronStyle,
   patchOpenFreeMapStyle,
 } from './openfreemap-style'

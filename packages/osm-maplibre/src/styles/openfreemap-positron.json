@@ -10,6 +10,13 @@
     "openmaptiles": {
       "type": "vector",
       "url": "https://tiles.openfreemap.org/planet"
+    },
+    "map-custom-content-anchor": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
     }
   },
   "sprite": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm",
@@ -1199,6 +1206,17 @@
         "text-halo-blur": 1,
         "text-halo-color": "#fff",
         "text-halo-width": 1
+      }
+    },
+    {
+      "id": "map-custom-content-anchor",
+      "type": "fill",
+      "source": "map-custom-content-anchor",
+      "layout": {
+        "visibility": "none"
+      },
+      "paint": {
+        "fill-opacity": 0
       }
     }
   ]
