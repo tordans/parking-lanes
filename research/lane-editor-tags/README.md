@@ -2,7 +2,7 @@
 
 Research package for a future OSM lane editor: which tags to read and write, how access tags differ from physical lane geometry, how existing tools interpret the same data, and which external test fixtures to adopt. Surveys projects from [AB Street discussion #789](sources/abstreet-discussion-789.md), consolidates tag coverage in one reference table, and tracks open confirmations below.
 
-Sibling: [width-measurements](../width-measurements/) (how OSM width tags are measured and interact). Index: [../README.md](../README.md).
+Siblings: [width-measurements](../width-measurements/) (how OSM width tags are measured and interact); [lane-rendering](../lane-rendering/) (algorithms and literature for drawing lanes / bike / sidewalk / crossings from centreline data). Index: [../README.md](../README.md).
 
 ## Quick start
 
