@@ -1,10 +1,10 @@
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { Checkbox, CheckboxField } from '../../../components/catalyst/checkbox'
 import { Label } from '../../../components/catalyst/fieldset'
-import { serializeMapSearch } from '../../map/search-schema'
+import { useModeSearchNavigation } from '../../map/use-mode-search-navigation'
 
 export function CoverageDebugToggle() {
-  const navigate = useNavigate({ from: '/$mode' })
+  const { updateSearch } = useModeSearchNavigation()
   const { debug } = useSearch({ from: '/$mode' })
 
   return (
@@ -14,12 +14,7 @@ export function CoverageDebugToggle() {
         <Checkbox
           checked={debug === true}
           onChange={(checked) => {
-            void navigate({
-              search: (prev) => ({
-                ...serializeMapSearch(prev),
-                debug: checked ? true : undefined,
-              }),
-            })
+            updateSearch({ debug: checked ? true : undefined })
           }}
         />
         <Label>Coverage debug</Label>

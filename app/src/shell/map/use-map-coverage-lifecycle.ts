@@ -1,5 +1,5 @@
-import { serializeMapParam, setLocationToCookie } from '@osm-editor-kit/osm-map-url'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { setLocationToCookie } from '@osm-editor-kit/osm-map-url'
+import { useParams } from '@tanstack/react-router'
 import type { MapEvent, ViewStateChangeEvent } from 'react-map-gl/maplibre'
 import { exposeMainMapForDebugging, firePlaywrightMapLoadedEvent } from '../../lib/map-debug'
 import { useLanesCoveragePace, viewMinZoom as lanesViewMinZoom } from '../../modes/lanes'
@@ -8,13 +8,10 @@ import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthCoveragePace, viewMinZoom as widthViewMinZoom } from '../../modes/width'
 import { useAppActions } from '../app-store'
 import { useMapActions } from './map-store'
-import { useMapUrlSyncSessionActive } from './map-url-sync-session'
-import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigation } from './use-mode-search-navigation'
 
 export function useMapCoverageLifecycle() {
-  const navigate = useNavigate({ from: '/$mode' })
-  const isUrlSyncActive = useMapUrlSyncSessionActive()
-  const { map: mapSearch } = useSearch({ from: '/$mode' })
+  const { search, updateSearch } = useModeSearchNavigation()
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const isWidthMode = resolvedModeId === 'width'
@@ -35,19 +32,16 @@ export function useMapCoverageLifecycle() {
     viewState: ViewStateChangeEvent['viewState'],
     bounds: ReturnType<typeof toBounds>,
   ) {
-    if (!isUrlSyncActive()) return
-
     const { zoom, latitude, longitude, bearing } = viewState
     setMapBounds(bounds)
     setLocationToCookie({ lat: latitude, lng: longitude }, zoom)
 
-    void navigate({
-      search: (prev) => ({
-        ...serializeMapSearch(prev),
-        map: serializeMapParam({ zoom, lat: latitude, lng: longitude, bearing }),
-      }),
-      replace: true,
-    })
+    updateSearch(
+      {
+        map: { zoom, lat: latitude, lng: longitude, bearing },
+      },
+      { replace: true },
+    )
   }
 
   function onMove(event: ViewStateChangeEvent) {
@@ -81,20 +75,18 @@ export function useMapCoverageLifecycle() {
     const bounds = toBounds(map.getBounds())
     setMapBounds(bounds)
 
-    if (!mapSearch) {
-      if (!isUrlSyncActive()) return
-      void navigate({
-        search: (prev) => ({
-          ...serializeMapSearch(prev),
-          map: serializeMapParam({
+    if (!search.map) {
+      updateSearch(
+        {
+          map: {
             zoom,
             lat: center.lat,
             lng: center.lng,
             bearing: bearing || undefined,
-          }),
-        }),
-        replace: true,
-      })
+          },
+        },
+        { replace: true },
+      )
     }
 
     if (zoom >= minZoom) {

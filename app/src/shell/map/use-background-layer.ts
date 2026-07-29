@@ -1,10 +1,11 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import {
   useBackgroundHistoryActions,
   usePreviousBackgroundLayerId,
 } from './background-history-store'
-import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigation } from './use-mode-search-navigation'
+
 /** ELI background slug from `?bg=…`, or `null` when omitted (default OpenFreeMap). */
 export function useBackgroundLayerId(): string | null {
   const { bg } = useSearch({ from: '/$mode' })
@@ -12,7 +13,7 @@ export function useBackgroundLayerId(): string | null {
 }
 
 export function useSetBackgroundLayerId() {
-  const navigate = useNavigate({ from: '/$mode' })
+  const { updateSearch } = useModeSearchNavigation()
   const currentId = useBackgroundLayerId()
   const { rememberPrevious } = useBackgroundHistoryActions()
 
@@ -20,13 +21,7 @@ export function useSetBackgroundLayerId() {
     if (backgroundLayerId !== currentId) {
       rememberPrevious(currentId)
     }
-    void navigate({
-      search: (prev) => ({
-        ...serializeMapSearch(prev),
-        bg: backgroundLayerId ?? undefined,
-      }),
-      replace: true,
-    })
+    updateSearch({ bg: backgroundLayerId ?? undefined }, { replace: true })
   }
 }
 

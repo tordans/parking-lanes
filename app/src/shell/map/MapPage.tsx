@@ -26,7 +26,6 @@ import { useSelectedOsmRef, useSelectionEpoch } from './feature-selection-store'
 import { MapGL, MapProvider } from './map-gl'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapActions } from './map-store'
-import { MapUrlSyncSessionProvider } from './map-url-sync-session'
 import { MapBackgroundLayerSource } from './MapBackgroundLayerSource'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
@@ -44,11 +43,9 @@ export function MapPage({
   initialView: { longitude: number; latitude: number; zoom: number; bearing?: number }
 }) {
   return (
-    <MapUrlSyncSessionProvider>
-      <MapProvider>
-        <MapPageContent initialView={initialView} />
-      </MapProvider>
-    </MapUrlSyncSessionProvider>
+    <MapProvider>
+      <MapPageContent initialView={initialView} />
+    </MapProvider>
   )
 }
 

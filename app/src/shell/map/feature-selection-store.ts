@@ -1,8 +1,7 @@
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
-import { serializeFeatureParam } from '@osm-editor-kit/osm-map-url'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useSearch } from '@tanstack/react-router'
 import { create } from 'zustand'
-import { serializeMapSearch } from './search-schema'
+import { useModeSearchNavigation } from './use-mode-search-navigation'
 
 /** Selected OSM feature from URL search (`f` param) — single source of truth. */
 export function useSelectedOsmRef(): OsmFeatureRef | undefined {
@@ -29,27 +28,18 @@ export const useSelectionEpoch = () => useFeatureSelectionStore((state) => state
 
 /** URL navigation helpers + epoch bump for map-driven selection. */
 export function useFeatureSelectionActions() {
-  const navigate = useNavigate({ from: '/$mode' })
+  const { updateSearch } = useModeSearchNavigation()
 
   return {
     selectFeature: (ref: OsmFeatureRef) => {
       useFeatureSelectionStore.getState().actions.bumpSelectionEpoch()
-      void navigate({
-        search: (prev) => ({ ...serializeMapSearch(prev), f: serializeFeatureParam(ref) }),
-        replace: true,
-      })
+      updateSearch({ f: ref }, { replace: true })
     },
     clearSelection: () => {
-      void navigate({
-        search: (prev) => ({ ...serializeMapSearch(prev), f: undefined }),
-        replace: true,
-      })
+      updateSearch({ f: undefined }, { replace: true })
     },
     updateFeatureRef: (ref: OsmFeatureRef) => {
-      void navigate({
-        search: (prev) => ({ ...serializeMapSearch(prev), f: serializeFeatureParam(ref) }),
-        replace: true,
-      })
+      updateSearch({ f: ref }, { replace: true })
     },
   }
 }
