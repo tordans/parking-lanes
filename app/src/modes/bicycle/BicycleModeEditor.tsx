@@ -13,11 +13,18 @@ import {
   TagEditorTextInput,
   tagEditorFieldClassName,
   tagEditorTableClassName,
+  useOsmTagDraft,
 } from '../../components/tag-editor'
 import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { SideModeSwitcher } from '../parking/controls/editor/SideModeSwitcher'
 import { LoginCallout } from '../parking/controls/LoginCallout'
+import {
+  parkingBothBodyColor,
+  parkingSideColor,
+  parkingSideLabel,
+  type ParkingEditorSide,
+} from '../parking/side-colors'
 import {
   applyCategoryPlan,
   bikelaneSideFromRef,
@@ -30,15 +37,21 @@ import {
   isSidepathRef,
   planForSide,
   sidepathTagsForRef,
-  stageBicycleTagsOnWay,
   type BicycleEditSide,
 } from './domain/bicycle-edit-helpers'
-import { BICYCLE_FLAT_EDIT_KEYS } from './domain/bicycle-tag-keys'
+import {
+  BICYCLE_COMMON_EDIT_KEYS,
+  BICYCLE_FLAT_EDIT_KEYS,
+  BICYCLE_LEFT_EDIT_KEYS,
+  BICYCLE_RIGHT_EDIT_KEYS,
+  type BicycleTagBoxSide,
+} from './domain/bicycle-tag-keys'
 import { BICYCLE_PAINT_COLORS } from './map/bicycle-colors'
 import { useBicycleOsmChangeHandler } from './use-bicycle-mode-handlers'
 
 const CENTERLINE_CYCLEWAY_VALUES = ['separate'] as const
 const CENTERLINE_BICYCLE_VALUES = ['use_sidepath', 'optional_sidepath'] as const
+const TAG_BOX_SIDES = ['left', 'right'] as const satisfies readonly BicycleTagBoxSide[]
 
 function readCenterlineValue(
   tags: OsmWay['tags'],
@@ -50,17 +63,90 @@ function readCenterlineValue(
 }
 
 function writeCenterlineValue(
-  way: OsmWay,
   base: 'cycleway' | 'bicycle',
   side: BicycleEditSide,
   value: string,
-  onOsmChange: ReturnType<typeof useBicycleOsmChangeHandler>,
+  setTag: (key: string, value: string, options?: { immediate?: boolean }) => void,
 ) {
-  const nextTags = { ...way.tags }
-  const key = centerlinePresenceKey(base, side)
-  if (value) nextTags[key] = value
-  else delete nextTags[key]
-  onOsmChange(stageBicycleTagsOnWay(way, nextTags))
+  setTag(centerlinePresenceKey(base, side), value, { immediate: true })
+}
+
+function CenterlinePresenceFields(props: {
+  way: OsmWay
+  side: BicycleEditSide
+  readOnly: boolean
+  setTag: (key: string, value: string, options?: { immediate?: boolean }) => void
+  idPrefix: string
+}) {
+  const { way, side, readOnly, setTag, idPrefix } = props
+  return (
+    <table className={tagEditorTableClassName}>
+      <tbody>
+        <TagEditorFieldRow id={`${idPrefix}-cycleway`} tag="cycleway" label="cycleway">
+          <TagEditorSelectInput
+            tag="cycleway"
+            value={readCenterlineValue(way.tags, 'cycleway', side)}
+            values={CENTERLINE_CYCLEWAY_VALUES}
+            disabled={readOnly}
+            onChange={(value) => writeCenterlineValue('cycleway', side, value, setTag)}
+          />
+        </TagEditorFieldRow>
+        <TagEditorFieldRow id={`${idPrefix}-bicycle`} tag="bicycle" label="bicycle">
+          <TagEditorSelectInput
+            tag="bicycle"
+            value={readCenterlineValue(way.tags, 'bicycle', side)}
+            values={CENTERLINE_BICYCLE_VALUES}
+            disabled={readOnly}
+            onChange={(value) => writeCenterlineValue('bicycle', side, value, setTag)}
+          />
+        </TagEditorFieldRow>
+      </tbody>
+    </table>
+  )
+}
+
+function BicycleTagBox(props: {
+  side: BicycleTagBoxSide
+  title?: string
+  color?: string | readonly [string, string]
+  bodyColor?: string
+  keys: readonly string[]
+  shown: boolean
+  tags: OsmWay['tags']
+  readOnly: boolean
+  onTagChange: (key: string, value: string) => void
+}) {
+  if (!props.shown) return null
+
+  const editorSide = props.side as ParkingEditorSide
+  const title = props.title ?? parkingSideLabel(editorSide)
+  const color = props.color ?? parkingSideColor(editorSide)
+
+  return (
+    <ColoredEditorSection
+      aria-label={title}
+      title={title}
+      color={color}
+      bodyColor={props.bodyColor ?? (props.side === 'both' ? parkingBothBodyColor : undefined)}
+      className="mb-0"
+      contentClassName="py-2"
+    >
+      <table className={tagEditorTableClassName}>
+        <tbody>
+          {props.keys.map((key) => (
+            <TagEditorFieldRow key={`${props.side}-${key}`} tag={key} label={key}>
+              <TagEditorTextInput
+                tag={key}
+                value={props.tags[key] ?? ''}
+                disabled={props.readOnly}
+                onChange={(value) => props.onTagChange(key, value)}
+              />
+            </TagEditorFieldRow>
+          ))}
+        </tbody>
+      </table>
+    </ColoredEditorSection>
+  )
 }
 
 function BicycleModeEditor(props: {
@@ -71,12 +157,18 @@ function BicycleModeEditor(props: {
   onOsmChange: ReturnType<typeof useBicycleOsmChangeHandler>
 }) {
   const { selectedWay, selectedOsmRef, readOnly, onLogin, onOsmChange } = props
+  const sidepath = isSidepathRef(selectedOsmRef)
   const [bothSides, setBothSides] = useState(false)
   const [targetCategoryId, setTargetCategoryId] = useState<string | undefined>(undefined)
 
+  const { draftWay, draftTags, setTag, setTags, setWay } = useOsmTagDraft({
+    way: selectedWay,
+    onCommit: onOsmChange,
+  })
+
   const bikelaneSide = bikelaneSideFromRef(selectedOsmRef)
-  const bikelaneResult = findBikelaneResult(selectedWay.tags, bikelaneSide)
-  const gapResult = findGapResult(selectedWay.tags, bikelaneSide)
+  const bikelaneResult = findBikelaneResult(draftWay.tags, bikelaneSide)
+  const gapResult = findGapResult(draftWay.tags, bikelaneSide)
   const currentCategory = bikelaneResult?.category ?? 'unknown'
   const incomplete = gapResult?.incomplete ?? false
   const gapUnlocks = gapResult?.missing
@@ -95,41 +187,41 @@ function BicycleModeEditor(props: {
 
   const plan =
     resolvedTarget && resolvedTarget !== 'unknown'
-      ? planForSide(selectedWay.tags, resolvedTarget, bikelaneSide)
+      ? planForSide(draftWay.tags, resolvedTarget, bikelaneSide)
       : null
 
-  const sidepathTags = isSidepathRef(selectedOsmRef)
-    ? sidepathTagsForRef(selectedWay, selectedOsmRef)
-    : undefined
-  const editTags = sidepathTags ?? selectedWay.tags
-  const editSide: BicycleEditSide = bothSides
-    ? 'both'
-    : isSidepathRef(selectedOsmRef)
-      ? selectedOsmRef.side!
-      : 'both'
-  const showCenterlineSection = !isSidepathRef(selectedOsmRef)
+  const sidepathTags = sidepath ? sidepathTagsForRef(draftWay, selectedOsmRef) : undefined
+  const editTags = sidepathTags ?? draftWay.tags
+  const showCenterlineSection = !sidepath
+  const sidepathBoxSide: BicycleTagBoxSide | null = sidepath ? selectedOsmRef.side : null
 
   function applySuggestions() {
     if (!plan) return
-    const nextTags = applyCategoryPlan(selectedWay.tags, plan)
-    onOsmChange(stageBicycleTagsOnWay(selectedWay, nextTags))
+    setTags(applyCategoryPlan(draftWay.tags, plan), { immediate: true })
   }
 
   function handleFlatTagChange(key: string, value: string) {
-    onOsmChange(commitFlatTagEdit(selectedWay, selectedOsmRef, key, value || undefined))
+    setWay(commitFlatTagEdit(draftWay, selectedOsmRef, key, value || undefined))
   }
-
-  const sidepath = isSidepathRef(selectedOsmRef)
-    ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side }
-    : undefined
 
   return (
     <div className="flex min-w-[280px] flex-col gap-4 text-zinc-900">
       <ModePanelIntro
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
-        sidepath={sidepath}
+        sidepath={
+          sidepath ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side } : undefined
+        }
         className="flex items-center gap-2"
+        leading={
+          showCenterlineSection ? (
+            <SideModeSwitcher
+              bothBlockShown={bothSides}
+              readOnly={false}
+              onBothBlockShownChange={setBothSides}
+            />
+          ) : null
+        }
       />
 
       {readOnly ? <LoginCallout onLogin={onLogin} /> : null}
@@ -205,11 +297,17 @@ function BicycleModeEditor(props: {
               ))}
               {plan.conflicts.map((entry) => (
                 <li key={`conflict-${entry.key}`} className="text-red-700">
-                  Conflict:{' '}
-                  <code>
-                    {entry.key}={entry.value}
-                  </code>{' '}
-                  — {entry.reason}
+                  {entry.key === 'category' || entry.key === '_category' ? (
+                    entry.reason
+                  ) : (
+                    <>
+                      Not possible with{' '}
+                      <code className="text-red-800">
+                        {entry.key}={entry.value}
+                      </code>
+                      : {entry.reason}
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -231,65 +329,91 @@ function BicycleModeEditor(props: {
       </ColoredEditorSection>
 
       {showCenterlineSection ? (
-        <div className="flex flex-col gap-3 border-t border-zinc-200 pt-3">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-zinc-900">
-              {m.bicycle_centerline_presence()}
-            </span>
-            <SideModeSwitcher
-              bothBlockShown={bothSides}
+        <ColoredEditorSection
+          aria-label={m.bicycle_centerline_presence()}
+          title={m.bicycle_centerline_presence()}
+          color={BICYCLE_PAINT_COLORS.centerlinePresence}
+          className="mb-0"
+          contentClassName="flex flex-col gap-3 py-2"
+        >
+          {bothSides ? (
+            <CenterlinePresenceFields
+              way={draftWay}
+              side="both"
               readOnly={readOnly}
-              onBothBlockShownChange={setBothSides}
+              setTag={setTag}
+              idPrefix="centerline-both"
             />
-          </div>
-          <table className={tagEditorTableClassName}>
-            <tbody>
-              <TagEditorFieldRow id="centerline-cycleway" tag="cycleway" label="cycleway">
-                <TagEditorSelectInput
-                  tag="cycleway"
-                  value={readCenterlineValue(selectedWay.tags, 'cycleway', editSide)}
-                  values={CENTERLINE_CYCLEWAY_VALUES}
-                  disabled={readOnly}
-                  onChange={(value) =>
-                    writeCenterlineValue(selectedWay, 'cycleway', editSide, value, onOsmChange)
-                  }
+          ) : (
+            TAG_BOX_SIDES.map((side) => (
+              <div key={side} className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold tracking-wide text-zinc-700 uppercase">
+                  {parkingSideLabel(side)}
+                </span>
+                <CenterlinePresenceFields
+                  way={draftWay}
+                  side={side}
+                  readOnly={readOnly}
+                  setTag={setTag}
+                  idPrefix={`centerline-${side}`}
                 />
-              </TagEditorFieldRow>
-              <TagEditorFieldRow id="centerline-bicycle" tag="bicycle" label="bicycle">
-                <TagEditorSelectInput
-                  tag="bicycle"
-                  value={readCenterlineValue(selectedWay.tags, 'bicycle', editSide)}
-                  values={CENTERLINE_BICYCLE_VALUES}
-                  disabled={readOnly}
-                  onChange={(value) =>
-                    writeCenterlineValue(selectedWay, 'bicycle', editSide, value, onOsmChange)
-                  }
-                />
-              </TagEditorFieldRow>
-            </tbody>
-          </table>
-        </div>
+              </div>
+            ))
+          )}
+        </ColoredEditorSection>
       ) : null}
 
-      <div className="flex flex-col gap-2 border-t border-zinc-200 pt-3">
-        <span className="text-sm font-medium text-zinc-900">{m.bicycle_tags()}</span>
-        <table className={tagEditorTableClassName}>
-          <tbody>
-            {BICYCLE_FLAT_EDIT_KEYS.map((key) => (
-              <TagEditorFieldRow key={key} tag={key} label={key}>
-                <TagEditorTextInput
-                  tag={key}
-                  value={editTags[key] ?? ''}
-                  disabled={readOnly}
-                  onChange={(value) => handleFlatTagChange(key, value)}
-                />
-              </TagEditorFieldRow>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {sidepathBoxSide ? (
+        <BicycleTagBox
+          side={sidepathBoxSide}
+          keys={BICYCLE_FLAT_EDIT_KEYS}
+          shown
+          tags={editTags}
+          readOnly={readOnly}
+          onTagChange={handleFlatTagChange}
+        />
+      ) : bothSides ? (
+        <BicycleTagBox
+          side="both"
+          keys={BICYCLE_FLAT_EDIT_KEYS}
+          shown
+          tags={editTags}
+          readOnly={readOnly}
+          onTagChange={handleFlatTagChange}
+        />
+      ) : (
+        <>
+          <BicycleTagBox
+            side="both"
+            title={m.bicycle_tags()}
+            color="#52525b"
+            bodyColor="#a1a1aa"
+            keys={BICYCLE_COMMON_EDIT_KEYS}
+            shown
+            tags={editTags}
+            readOnly={readOnly}
+            onTagChange={handleFlatTagChange}
+          />
+          <BicycleTagBox
+            side="left"
+            keys={BICYCLE_LEFT_EDIT_KEYS}
+            shown
+            tags={editTags}
+            readOnly={readOnly}
+            onTagChange={handleFlatTagChange}
+          />
+          <BicycleTagBox
+            side="right"
+            keys={BICYCLE_RIGHT_EDIT_KEYS}
+            shown
+            tags={editTags}
+            readOnly={readOnly}
+            onTagChange={handleFlatTagChange}
+          />
+        </>
+      )}
 
-      <AllTagsBlock tags={selectedWay.tags} />
+      <AllTagsBlock tags={draftTags} />
     </div>
   )
 }

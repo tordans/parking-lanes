@@ -1,12 +1,15 @@
-import type { OsmTags, OsmWay } from '@osm-editor-kit/osm-data'
+import type { OsmWay } from '@osm-editor-kit/osm-data'
 import type { SidepathPrefix, SidepathSide } from '@osm-editor-kit/osm-sidepath-tags'
 import { nestSideTags } from '@osm-editor-kit/osm-sidepath-tags'
 import type { QueryClient } from '@tanstack/react-query'
+import { applyTagPatch } from '../../../components/tag-editor'
 import {
   remapOsmWayIdInSession,
   updateOsmWayInSession,
 } from '../../../shell/map/osm-session-way-edits'
 import type { TagPatch } from '../domain/surface-tag-patches'
+
+export { applyTagPatch }
 
 export function updateSurfaceOsmWay(queryClient: QueryClient, way: OsmWay) {
   updateOsmWayInSession(queryClient, way)
@@ -18,19 +21,6 @@ export function remapSurfaceOsmWayId(
   newId: number,
 ): OsmWay | null {
   return remapOsmWayIdInSession(queryClient, oldId, newId)
-}
-
-export function applyTagPatch(tags: OsmTags, patch: TagPatch): OsmTags {
-  const next = { ...tags }
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete next[key]
-    } else {
-      next[key] = value
-    }
-  }
-  return next
 }
 
 function toNestablePatch(patch: TagPatch): Record<string, string | undefined> {

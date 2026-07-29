@@ -1,5 +1,7 @@
 import * as m from '@app/paraglide/messages'
 import type { LaneSlot } from '@osm-editor-kit/osm-lanes'
+import { useState } from 'react'
+import { useDebouncedCommit } from '../../../components/tag-editor'
 import { slotKey } from '../domain/display-order'
 
 type Props = {
@@ -9,27 +11,47 @@ type Props = {
 }
 
 export function LanesSlotEditor({ slot, readOnly, onCommitSlotUpdate }: Props) {
+  const [draftSlot, setDraftSlot] = useState(slot)
+  const [trackedKey, setTrackedKey] = useState(() => slotKey(slot))
+
+  const { commit } = useDebouncedCommit((nextSlot: LaneSlot) => {
+    onCommitSlotUpdate((slots) =>
+      slots.map((current) => (slotKey(current) === slotKey(nextSlot) ? nextSlot : current)),
+    )
+  })
+
+  if (slotKey(slot) !== trackedKey) {
+    setTrackedKey(slotKey(slot))
+    setDraftSlot(slot)
+  }
+
   function updateSlot(field: keyof LaneSlot, value: string) {
     if (readOnly) return
-    onCommitSlotUpdate((slots) =>
-      slots.map((current) => {
-        if (current.direction !== slot.direction || current.index !== slot.index) return current
-        return { ...current, [field]: value || undefined }
-      }),
-    )
+    const next = { ...draftSlot, [field]: value || undefined }
+    setDraftSlot(next)
+    commit(next)
+  }
+
+  function updateWidthMeters(value: string) {
+    if (readOnly) return
+    const nextWidth = Number.parseFloat(value)
+    if (!Number.isFinite(nextWidth)) return
+    const next = { ...draftSlot, widthMeters: nextWidth }
+    setDraftSlot(next)
+    commit(next)
   }
 
   return (
     <section className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-zinc-50/80 p-3">
       <h3 className="text-sm font-semibold text-zinc-900">
-        {m.panel_lanes()} {slot.index + 1} ({slot.direction})
+        {m.panel_lanes()} {draftSlot.index + 1} ({draftSlot.direction})
       </h3>
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">{m.panel_turn()}</span>
         <input
           type="text"
           disabled={readOnly}
-          value={slot.turn ?? ''}
+          value={draftSlot.turn ?? ''}
           placeholder="e.g. left|through|right"
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm disabled:bg-zinc-50"
           onChange={(event) => updateSlot('turn', event.target.value)}
@@ -40,7 +62,7 @@ export function LanesSlotEditor({ slot, readOnly, onCommitSlotUpdate }: Props) {
         <input
           type="text"
           disabled={readOnly}
-          value={slot.vehicleAccess ?? ''}
+          value={draftSlot.vehicleAccess ?? ''}
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm disabled:bg-zinc-50"
           onChange={(event) => updateSlot('vehicleAccess', event.target.value)}
         />
@@ -50,7 +72,7 @@ export function LanesSlotEditor({ slot, readOnly, onCommitSlotUpdate }: Props) {
         <input
           type="text"
           disabled={readOnly}
-          value={slot.bicycleAccess ?? ''}
+          value={draftSlot.bicycleAccess ?? ''}
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm disabled:bg-zinc-50"
           onChange={(event) => updateSlot('bicycleAccess', event.target.value)}
         />
@@ -60,7 +82,7 @@ export function LanesSlotEditor({ slot, readOnly, onCommitSlotUpdate }: Props) {
         <input
           type="text"
           disabled={readOnly}
-          value={slot.busAccess ?? ''}
+          value={draftSlot.busAccess ?? ''}
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm disabled:bg-zinc-50"
           onChange={(event) => updateSlot('busAccess', event.target.value)}
         />
@@ -72,18 +94,9 @@ export function LanesSlotEditor({ slot, readOnly, onCommitSlotUpdate }: Props) {
           min={0}
           step={0.1}
           disabled={readOnly}
-          value={slot.widthMeters ?? ''}
+          value={draftSlot.widthMeters ?? ''}
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm disabled:bg-zinc-50"
-          onChange={(event) => {
-            const next = Number.parseFloat(event.target.value)
-            if (!Number.isFinite(next)) return
-            onCommitSlotUpdate((slots) =>
-              slots.map((current) => {
-                if (slotKey(current) !== slotKey(slot)) return current
-                return { ...current, widthMeters: next }
-              }),
-            )
-          }}
+          onChange={(event) => updateWidthMeters(event.target.value)}
         />
       </label>
     </section>

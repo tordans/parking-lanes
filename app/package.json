@@ -38,7 +38,6 @@
     "@osm-editor-kit/osm-way-edit": "workspace:*",
     "@osm-editor-kit/surface-smoothness-data": "^0.0.0",
     "@rapideditor/country-coder": "^5.6.1",
-    "@tanstack/react-form": "^1.19.2",
     "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-pacer": "^0.22.1",
     "@tanstack/react-query": "^5.85.5",

@@ -10,6 +10,7 @@ import {
   applyCategoryPlan,
   bikelaneSideFromRef,
   defaultTargetCategory,
+  planForSide,
 } from '../modes/bicycle/domain/bicycle-edit-helpers'
 import { parseBicycleFeaturesFromData } from '../modes/bicycle/map/parse-bikelanes'
 import { mergeWayEdit } from '../shell/map/merge-way-edit'
@@ -161,5 +162,40 @@ describe('plan apply nests cycleway:right:lane', () => {
   test('defaultTargetCategory does not treat unknown as a plan target', () => {
     expect(defaultTargetCategory('unknown', false, [])).toBeUndefined()
     expect(defaultTargetCategory('unknown', true, [])).toBeUndefined()
+  })
+})
+
+describe('planCategoryForSide conflict UX', () => {
+  test('sidewalk footway rejecting bicycle road explains geometry mismatch', () => {
+    const tags = {
+      highway: 'footway',
+      footway: 'sidewalk',
+      'is_sidepath:of': 'residential',
+      surface: 'sett',
+    }
+    const plan = planForSide(tags, 'bicycleRoad_vehicleDestination', 'self')
+    expect(plan.aligned).toBe(false)
+    expect(plan.add).toHaveLength(0)
+    expect(plan.conflicts[0]?.reason).toContain('not a sidewalk footway')
+    expect(plan.conflicts[0]?.reason).toContain('Footway Bicycle Yes')
+  })
+
+  test('sidewalk footway rejecting on-highway lane explains centerline tagging', () => {
+    const tags = { highway: 'footway', footway: 'sidewalk', 'is_sidepath:of': 'residential' }
+    const plan = planForSide(tags, 'cyclewayOnHighway_exclusive', 'self')
+    expect(plan.aligned).toBe(false)
+    expect(plan.add).toHaveLength(0)
+    expect(plan.conflicts[0]?.reason).toContain('cycleway:left/right=lane')
+  })
+
+  test('residential bicycle road gets actionable tag suggestions', () => {
+    const tags = { highway: 'residential', name: 'Teststraße' }
+    const plan = planForSide(tags, 'bicycleRoad_vehicleDestination', 'self')
+    expect(plan.aligned).toBe(true)
+    expect(plan.conflicts).toHaveLength(0)
+    expect(applyCategoryPlan(tags, plan)).toMatchObject({
+      bicycle_road: 'yes',
+      vehicle: 'destination',
+    })
   })
 })

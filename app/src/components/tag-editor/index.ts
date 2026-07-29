@@ -1,6 +1,9 @@
 export { TagEditorFieldRow } from './TagEditorFieldRow'
 export { TagEditorSelectInput } from './TagEditorSelectInput'
 export { TagEditorTextInput } from './TagEditorTextInput'
+export { applyTagKeyChange, applyTagPatch, type TagCommitOptions } from './tag-draft'
+export { tagEditCommitDebounceMs, useDebouncedCommit } from './use-debounced-commit'
+export { useOsmTagDraft } from './use-osm-tag-draft'
 export {
   tagEditorCompactControlClassName,
   tagEditorCompactFieldOverrides,

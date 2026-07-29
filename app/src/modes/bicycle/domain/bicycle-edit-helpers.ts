@@ -6,10 +6,10 @@ import {
   analyzeCategoryGaps,
   isIncompleteCategoryId,
   listTargetCategories,
-  planTagsForCategory,
   processBikelanes,
   type BikelaneResult,
 } from '@tilda-geo/bicycle-infrastructure'
+import { planCategoryForSide } from './bicycle-category-plan'
 
 export type BicycleEditSide = 'left' | 'right' | 'both'
 
@@ -82,8 +82,7 @@ export function planForSide(
   targetCategoryId: string,
   side: BikelaneResult['_side'],
 ): CategoryTagPlan {
-  if (side === 'self') return planTagsForCategory(tags, targetCategoryId)
-  return planTagsForCategory(tags, targetCategoryId, { side })
+  return planCategoryForSide(tags, targetCategoryId, side)
 }
 
 export function applyCategoryPlan(tags: OsmTags, plan: CategoryTagPlan): OsmTags {

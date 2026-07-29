@@ -27,6 +27,38 @@ export function pickBicycleTags(tags: OsmTags): OsmTags {
   return picked
 }
 
+/** Shared flat keys (not left/right-qualified). */
+export const BICYCLE_COMMON_EDIT_KEYS = [
+  'cycleway',
+  'lane',
+  'segregated',
+  'is_sidepath',
+  'bicycle',
+  'foot',
+  'traffic_sign',
+  'separation',
+  'traffic_mode',
+  'marking',
+  'buffer',
+  'surface',
+] as const
+
+/** Left-edge keys on a cycleway/footway feature (TILDA `*_left`). */
+export const BICYCLE_LEFT_EDIT_KEYS = [
+  'separation_left',
+  'traffic_mode_left',
+  'marking_left',
+  'buffer_left',
+] as const
+
+/** Right-edge keys on a cycleway/footway feature (TILDA `*_right`). */
+export const BICYCLE_RIGHT_EDIT_KEYS = [
+  'separation_right',
+  'traffic_mode_right',
+  'marking_right',
+  'buffer_right',
+] as const
+
 /** Flat keys shown in the sidepath tag editor (nested via nestSideTags). */
 export const BICYCLE_FLAT_EDIT_KEYS = [
   'cycleway',
@@ -50,3 +82,5 @@ export const BICYCLE_FLAT_EDIT_KEYS = [
   'buffer_right',
   'surface',
 ] as const
+
+export type BicycleTagBoxSide = 'left' | 'right' | 'both'

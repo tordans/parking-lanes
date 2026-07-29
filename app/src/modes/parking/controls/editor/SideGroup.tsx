@@ -1,5 +1,6 @@
 import { type OsmWay } from '@osm-editor-kit/osm-data'
 import { ColoredEditorSection } from '../../../../components/ColoredEditorSection'
+import { type TagCommitOptions } from '../../../../components/tag-editor'
 import { parkingConditionLegendLabel } from '../../../../i18n/legend-labels'
 import { useDatetime } from '../../../../shell/app-store'
 import { type ParkingTagInfo } from '../../../../utils/types/parking'
@@ -21,7 +22,7 @@ export function SideGroup(props: {
   side: ParkingEditorSide
   shown: boolean
   readOnly?: boolean
-  onChange: (key: string, value: string) => void
+  onChange: (key: string, value: string, options?: TagCommitOptions) => void
 }) {
   const datetime = useDatetime()
   if (!props.shown) return null
@@ -56,7 +57,7 @@ function TagInputs(props: {
   osm: OsmWay
   side: ParkingEditorSide
   readOnly?: boolean
-  onChange: (key: string, value: string) => void
+  onChange: (key: string, value: string, options?: TagCommitOptions) => void
 }) {
   const unsupportedTags = Object.keys(props.osm.tags)
     .filter((x) => x.startsWith('parking:'))
@@ -90,11 +91,12 @@ function TagInput(props: {
   side: ParkingEditorSide
   tagInfo: ParkingTagInfo
   readOnly?: boolean
-  onChange: (key: string, value: string) => void
+  onChange: (key: string, value: string, options?: TagCommitOptions) => void
 }) {
   const tag = resolveTagKey(props.tagInfo.template, props.side)
   const label = getTagLabel(props.tagInfo.template, props.side, tag)
   const hide = !shouldShowTag(props.tagInfo, props.osm.tags, props.side)
+  const hasPresetValues = props.tagInfo.values != null
   return tag.endsWith(':conditional') ? (
     <ConditionalInput
       osm={props.osm}
@@ -113,7 +115,7 @@ function TagInput(props: {
       hide={hide}
       readOnly={props.readOnly}
       values={props.tagInfo.values}
-      onChange={(v) => props.onChange(tag, v)}
+      onChange={(v) => props.onChange(tag, v, { immediate: hasPresetValues })}
     />
   )
 }

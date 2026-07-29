@@ -1,9 +1,10 @@
 import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
-import type { MapBounds } from '@osm-editor-kit/osm-data'
+import type { MapBounds, OsmWay } from '@osm-editor-kit/osm-data'
 import { getUrl } from '@osm-editor-kit/osm-editor-links'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { viewMinZoom } from '../../modes/parking/map/constants'
+import { changesStore } from '../../utils/changes-store'
 import { getUseOsmDevServer, useUseOsmDevServer } from '../debug-settings-store'
 import { isDevOsmFixtureActive, useLiveViewportOsmFetch } from '../dev-osm-fixture-store'
 
@@ -64,6 +65,7 @@ export function useOsmCoverageFetch() {
           ...sessionParams,
           force: options?.force,
         })
+        reapplyPendingWaysIntoSession(queryClient, sessionParams)
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         console.error(
@@ -105,4 +107,30 @@ export function clearOsmCoverageSessions(queryClient: ReturnType<typeof useQuery
 
 export function currentOsmSessionParams(): OsmSessionParams {
   return { osmServer: osmServerFromSettings() }
+}
+
+/** Keep local create/modify ways after a coverage merge (newer server versions included). */
+function reapplyPendingWaysIntoSession(
+  queryClient: ReturnType<typeof useQueryClient>,
+  sessionParams: OsmSessionParams,
+) {
+  const pendingWays = [...changesStore.create.way, ...changesStore.modify.way] as OsmWay[]
+  if (pendingWays.length === 0) return
+
+  queryClient.setQueryData<OsmCoverageQueryData>(
+    osmCoverageSessionKey(sessionParams),
+    (current = emptyOsmCoverageData()) => {
+      const ways = { ...current.graph.ways }
+      for (const way of pendingWays) {
+        ways[way.id] = way
+      }
+      return {
+        ...current,
+        graph: {
+          ...current.graph,
+          ways,
+        },
+      }
+    },
+  )
 }

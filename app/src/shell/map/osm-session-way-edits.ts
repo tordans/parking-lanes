@@ -1,6 +1,6 @@
 import type { OsmNode, OsmWay } from '@osm-editor-kit/osm-data'
 import type { QueryClient } from '@tanstack/react-query'
-import { addChangedEntity, getPendingWay } from '../../utils/changes-store'
+import { addChangedEntity, changesStore, getPendingWay } from '../../utils/changes-store'
 import type { ChangeSource } from '../../utils/changeset-message'
 import { recordEditingImagery } from './imagery-usage-session'
 import { mergeWayEdit } from './merge-way-edit'
@@ -19,6 +19,32 @@ export function getOsmWayFromSession(queryClient: QueryClient, wayId: number): O
   const current =
     queryClient.getQueryData<OsmCoverageQueryData>(sessionKey()) ?? emptyOsmCoverageData()
   return current.graph.ways[wayId] ?? null
+}
+
+/**
+ * Re-apply pending create/modify ways onto the session graph.
+ * Use after coverage fetches so a newer server version cannot drop local edits.
+ */
+export function reapplyPendingWaysToSession(queryClient: QueryClient) {
+  const pendingWays = [...changesStore.create.way, ...changesStore.modify.way] as OsmWay[]
+  if (pendingWays.length === 0) return
+
+  queryClient.setQueryData<OsmCoverageQueryData>(
+    sessionKey(),
+    (current = emptyOsmCoverageData()) => {
+      const ways = { ...current.graph.ways }
+      for (const way of pendingWays) {
+        ways[way.id] = way
+      }
+      return {
+        ...current,
+        graph: {
+          ...current.graph,
+          ways,
+        },
+      }
+    },
+  )
 }
 
 export function updateOsmWayInSession(queryClient: QueryClient, way: OsmWay) {

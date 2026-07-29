@@ -160,4 +160,87 @@ describe('ensureCoverage', () => {
     expect(stored?.fetchHistory.features.length).toBe(2)
     expect(downloadCount).toBe(2)
   })
+
+  test('preserves session way edits made while a download is in flight', async () => {
+    let releaseDownload!: () => void
+    const downloadGate = new Promise<void>((resolve) => {
+      releaseDownload = resolve
+    })
+
+    const api = createOsmCoverageApi<TestSessionParams>({
+      getSessionKey: ({ editorMode, osmDataSource }) =>
+        ['test-osm-edit-race', editorMode, osmDataSource] as const,
+      minZoom: 14,
+      getDownloadUrl: () => 'https://example.test/overpass',
+      download: async () => {
+        await downloadGate
+        return {
+          ...emptyParsedOsmData(),
+          ways: {
+            42: {
+              type: 'way',
+              id: 42,
+              version: 1,
+              nodes: [1, 2],
+              tags: { highway: 'residential' },
+            },
+          },
+        }
+      },
+    })
+
+    const queryClient = new QueryClient()
+    const params = { editorMode: false, osmDataSource: OsmDataSource.OverpassVk }
+    const key = api.sessionKey(params)
+    queryClient.setQueryData(key, {
+      graph: {
+        ...emptyParsedOsmData(),
+        ways: {
+          42: {
+            type: 'way',
+            id: 42,
+            version: 1,
+            nodes: [1, 2],
+            tags: { highway: 'residential' },
+          },
+        },
+      },
+      coverage: null,
+      fetchHistory: { type: 'FeatureCollection', features: [] },
+    })
+
+    const fetchPromise = api.ensureCoverage(queryClient, {
+      bounds: viewport,
+      zoom: 18,
+      mapSizePx,
+      ...params,
+    })
+
+    await Bun.sleep(10)
+    queryClient.setQueryData(key, (current) => {
+      const data = current ?? api.emptyData()
+      return {
+        ...data,
+        graph: {
+          ...data.graph,
+          ways: {
+            ...data.graph.ways,
+            42: {
+              type: 'way',
+              id: 42,
+              version: 1,
+              nodes: [1, 2],
+              tags: { highway: 'residential', 'parking:both:maxstay': '30 minutes' },
+            },
+          },
+        },
+      }
+    })
+
+    releaseDownload()
+    await fetchPromise
+
+    const stored = queryClient.getQueryData<ReturnType<typeof api.emptyData>>(key)
+    expect(stored?.graph.ways[42]?.tags['parking:both:maxstay']).toBe('30 minutes')
+  })
 })

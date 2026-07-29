@@ -2,6 +2,7 @@ import * as m from '@app/paraglide/messages'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { ColoredEditorSection } from '../../components/ColoredEditorSection'
+import { useDebouncedCommit } from '../../components/tag-editor'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
 import {
@@ -69,6 +70,7 @@ export function WidthModePanel() {
   const draftWidthM = useDraftWidthM()
   const { setDraftWidthM, setHandles } = useWidthMapActions()
   const { data: graph, isFetching } = useWidthOsmQuery({ select: (data) => data.graph })
+  const { commit: commitWidthWay } = useDebouncedCommit(onOsmChange)
 
   if (!selectedOsmRef) {
     return <MapFeaturePromptEmptyState message={m.empty_click_width()} />
@@ -132,13 +134,13 @@ export function WidthModePanel() {
     setHandles(buildHandleGeometry(handleCoordinates, clamped, fractions))
 
     if (isSidepath && selectedOsmRef.prefix && selectedOsmRef.side) {
-      onOsmChange(
+      commitWidthWay(
         stageWidthOnSidepath(selectedWay, selectedOsmRef.prefix, selectedOsmRef.side, clamped),
       )
       return
     }
 
-    onOsmChange(stageWidthOnWay(selectedWay, clamped))
+    commitWidthWay(stageWidthOnWay(selectedWay, clamped))
   }
 
   const sidepath =

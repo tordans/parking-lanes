@@ -108,23 +108,27 @@ export function createOsmCoverageApi<TSessionParams>({
 
           const groupId = crypto.randomUUID()
           const fetchedAt = new Date().toISOString()
-          let graph = current.graph
           let coverage = force ? null : current.coverage
           let fetchHistory = force ? emptyFetchHistory() : current.fetchHistory
+          const fetchedGraphs: ParsedOsmData[] = []
 
           for (const request of requests) {
             const url = getDownloadUrl(request.bounds, params)
-            const newGraph = await download(url)
-            graph = mergeParsedOsm(graph, newGraph)
+            fetchedGraphs.push(await download(url))
             coverage = unionIntoCoverage(coverage, request.bounds)
           }
 
           fetchHistory = appendFetchHistory(fetchHistory, groupId, fetchedAt, requests)
 
-          queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, {
-            graph,
-            coverage,
-            fetchHistory,
+          // Merge onto the latest session graph at write time so edits made while
+          // downloads were in flight are not wiped by a stale fetch-start snapshot.
+          queryClient.setQueryData<OsmCoverageQueryData>(sessionKey, (latest) => {
+            const base = force ? emptyData() : (latest ?? emptyData())
+            let graph = base.graph
+            for (const newGraph of fetchedGraphs) {
+              graph = mergeParsedOsm(graph, newGraph)
+            }
+            return { graph, coverage, fetchHistory }
           })
 
           return { skipped: false as const }

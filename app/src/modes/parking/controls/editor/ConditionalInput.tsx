@@ -9,13 +9,13 @@ import { useState } from 'react'
 import { Textarea } from '../../../../components/catalyst/textarea'
 import { type TagValue } from '../../../../utils/types/parking'
 import {
+  isYesNoTagValues,
   tagEditorConditionalConditionGroupClassName,
   tagEditorConditionalConditionInputClassName,
   tagEditorConditionalConditionPrefixClassName,
   tagEditorLabelCellClassName,
   tagEditorLabelClassName,
   tagEditorValueStackClassName,
-  isYesNoTagValues,
 } from './tag-editor-controls'
 import { TagValueInput } from './TagValueInput'
 import { TextInput } from './TextInput'
@@ -33,10 +33,6 @@ export function ConditionalInput(props: {
   const parsedConditionalTag = parseConditionalTagForEdit(props.osm.tags[props.tag])
   const conditionalValue = props.osm.tags[props.tag]
 
-  const buildTagValue = (newConditionalValue: ConditionalValue, index: number) => {
-    return buildConditionalTagValue(parsedConditionalTag, newConditionalValue, index)
-  }
-
   return (
     <tr
       id={props.tag}
@@ -49,14 +45,16 @@ export function ConditionalInput(props: {
         </label>
       </td>
       <td className={tagEditorValueStackClassName}>
-        {parsedConditionalTag.map((conditionalValue, index) => (
+        {parsedConditionalTag.map((part, index) => (
           <ConditionalPartInput
             key={index}
             tag={props.tag}
-            part={conditionalValue}
+            part={part}
             values={props.values}
             readOnly={readOnly}
-            onChange={(vp) => props.onChange(buildTagValue(vp, index))}
+            onChange={(updatedPart) =>
+              props.onChange(buildConditionalTagValue(parsedConditionalTag, updatedPart, index))
+            }
           />
         ))}
       </td>
@@ -64,6 +62,10 @@ export function ConditionalInput(props: {
   )
 }
 
+/**
+ * Incomplete value/@ pairs stay local until both sides are set (OSM conditional
+ * syntax requires both). Committed parts stay controlled from `part`.
+ */
 function ConditionalPartInput(props: {
   tag: string
   part: ConditionalValue
@@ -72,19 +74,40 @@ function ConditionalPartInput(props: {
   onChange: (tagValuePart: ConditionalValue) => void
 }) {
   const readOnly = props.readOnly ?? false
-  const [value, setValue] = useState(props.part.value)
-  const [condition, setCondition] = useState(props.part.condition)
+  const isComplete = Boolean(props.part.value && props.part.condition)
+  const [draft, setDraft] = useState<ConditionalValue | null>(null)
 
-  const handleChangeValue = (newValue: string) => {
-    if (readOnly) return
-    setValue(newValue)
-    if (newValue && condition) props.onChange({ value: newValue, condition })
+  const active = draft ?? props.part
+  const value = active.value
+  const condition = active.condition
+
+  function publish(next: ConditionalValue) {
+    if (next.value && next.condition) {
+      setDraft(null)
+      props.onChange(next)
+      return
+    }
+    setDraft(next)
   }
 
-  const handleChangeCondition = (newCondition: string) => {
+  function handleChangeValue(newValue: string) {
     if (readOnly) return
-    setCondition(newCondition)
-    if (value && newCondition) props.onChange({ value, condition: newCondition })
+    publish({ value: newValue, condition })
+  }
+
+  function handleChangeCondition(newCondition: string) {
+    if (readOnly) return
+    publish({ value, condition: newCondition })
+  }
+
+  // Drop local draft once the parent draft/session has caught up with a complete part.
+  if (
+    draft &&
+    isComplete &&
+    draft.value === props.part.value &&
+    draft.condition === props.part.condition
+  ) {
+    setDraft(null)
   }
 
   const isYesNo = props.values != null && isYesNoTagValues(props.values)
