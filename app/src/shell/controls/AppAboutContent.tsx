@@ -1,4 +1,5 @@
 import * as m from '@app/paraglide/messages'
+import { Link } from '@tanstack/react-router'
 import { Badge } from '../../components/catalyst/badge'
 import { getModeAboutDescription } from '../../i18n/mode-content'
 import {
@@ -12,6 +13,12 @@ import {
 import type { ModeAboutContent, ModeMaturity, StreetSpaceModeId } from '../../modes/types'
 import { assetUrl } from '../../utils/asset-url'
 import { PanelSectionDivider } from './PanelSectionDivider'
+
+/** In-app audit page path under the Vite base (e.g. `/street-space-editor/audit-width`). */
+function auditPageHref(slug: string): string {
+  const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '')
+  return `${base}/${slug}`
+}
 
 const APP_LOGO_SRC = assetUrl('osm-street-space-editor-logo-2026.svg')
 
@@ -101,6 +108,16 @@ export function AppAboutContent({ modeId, about, modeLabel, maturity }: Props) {
           <a href={about.taggingGuide.href} target="_blank" rel="noreferrer" className={linkClass}>
             {m.shell_tagging_guide()}
           </a>
+          {modeId === 'width' ? (
+            <Link to="/audit-width" className={linkClass}>
+              {m.shell_audit_width()}
+            </Link>
+          ) : null}
+          {modeId === 'lanes' ? (
+            <a href={auditPageHref('audit-lanes')} className={linkClass}>
+              {m.shell_audit_lanes()}
+            </a>
+          ) : null}
           <a href={feedbackUrl} target="_blank" rel="noreferrer" className={linkClass}>
             {m.shell_report_feedback({ modeLabel })}
           </a>

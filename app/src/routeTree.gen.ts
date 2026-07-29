@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModeRouteImport } from './routes/$mode'
+import { Route as AuditWidthRouteImport } from './routes/audit-width'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const ModeRoute = ModeRouteImport.update({
   path: '/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditWidthRoute = AuditWidthRouteImport.update({
+  id: '/audit-width',
+  path: '/audit-width',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
+  '/audit-width': typeof AuditWidthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$mode'
+  fullPaths: '/' | '/$mode' | '/audit-width'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$mode'
-  id: '__root__' | '/' | '/$mode'
+  to: '/' | '/$mode' | '/audit-width'
+  id: '__root__' | '/' | '/$mode' | '/audit-width'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ModeRoute: typeof ModeRoute
+  AuditWidthRoute: typeof AuditWidthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit-width': {
+      id: '/audit-width'
+      path: '/audit-width'
+      fullPath: '/audit-width'
+      preLoaderRoute: typeof AuditWidthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ModeRoute: ModeRoute,
+  AuditWidthRoute: AuditWidthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

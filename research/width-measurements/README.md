@@ -19,6 +19,7 @@ Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` edit
 
 ---
 
+<a id="sec-1"></a>
 ## 1. Hierarchical model of the street space
 
 OSM does **not** store one “streetscape width”. Widths attach to **components**. Think Streetmix slices:
@@ -60,8 +61,10 @@ OSM does **not** store one “streetscape width”. Widths attach to **component
 
 ---
 
+<a id="sec-2"></a>
 ## 2. Deep dive per tag
 
+<a id="sec-2-1"></a>
 ### 2.1 `width=*` (and `width:carriageway=*`)
 
 | | |
@@ -81,6 +84,7 @@ OSM does **not** store one “streetscape width”. Widths attach to **component
 
 ---
 
+<a id="sec-2-2"></a>
 ### 2.2 `width:lanes=*` (+ `:forward` / `:backward` / `:start` / `:end`)
 
 | | |
@@ -173,18 +177,21 @@ Same layout with Breitstrich edges (0.25) + Schmalstrich centre (0.12) → paint
 
 ---
 
+<a id="sec-2-3"></a>
 ### 2.3 `est_width=*`
 
 Estimated width when measurement is uncertain. Same semantics as `width=*` ([Key:est_width](https://wiki.openstreetmap.org/wiki/Key:est_width)). Prefer over inventing precise `width` from aerial guesswork.
 
 ---
 
+<a id="sec-2-4"></a>
 ### 2.4 `width:effective=*`
 
 Rarely used. Intended as usable width for flowing traffic (`width` minus parking, etc.). Wiki itself calls the measurement boundary unclear “with or without markings, relocated vehicles, …” — prefer deriving from `width` + parking scheme or from `width:lanes`.
 
 ---
 
+<a id="sec-2-5"></a>
 ### 2.5 `maxwidth=*` vs `maxwidth:physical=*`
 
 | Tag | Meaning | Sign required? |
@@ -199,6 +206,7 @@ There is **no** established `min_width=*` for roads. For narrowings use `width=*
 
 ---
 
+<a id="sec-2-6"></a>
 ### 2.6 Side feature widths
 
 | Tag | Role | Inside `width=*`? |
@@ -215,6 +223,7 @@ There is **no** established `min_width=*` for roads. For narrowings use `width=*
 
 ---
 
+<a id="sec-2-7"></a>
 ### 2.7 Cycleway width — `cycleway:*:width` / path `width=*`
 
 Berlin / Verkehrswende schema ([Berlin/Verkehrswende/Radwege](https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege)):
@@ -229,6 +238,7 @@ On a **separate** `highway=cycleway` / `path`, use plain `width=*` (and `cyclewa
 
 ---
 
+<a id="sec-2-8"></a>
 ### 2.8 Buffer — `cycleway:*:buffer` / `buffer:left/right`
 
 | Variant | Where | Values |
@@ -262,6 +272,7 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 
 ---
 
+<a id="sec-2-9"></a>
 ### 2.9 Related geometry tags (not widths, but affect interpretation)
 
 | Tag | Role |
@@ -277,8 +288,10 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 
 ---
 
+<a id="sec-3"></a>
 ## 3. Interaction matrix (street space)
 
+<a id="sec-3-1"></a>
 ### 3.1 What adds up to what?
 
 | Aggregate | Typical formula | Notes |
@@ -290,6 +303,7 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 | On-road cycle package | `cycleway:*:width + cycleway:*:buffer(:*)` | Buffer includes paint (Berlin); cycle width does not |
 | Full ROW | sidewalks + verges + carriageway + medians | **No aggregate tag** — sum `sidewalk:*:width` + `verge:*:width` + `width=*` (+ areas for medians) |
 
+<a id="sec-3-2"></a>
 ### 3.2 Scenario A — simple two-lane street, no parking
 
 ```text
@@ -303,6 +317,7 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 
 Naive `sum(width:lanes) == width` fails even with no parking — the missing metres are mostly **markings**, not only “gutter”.
 
+<a id="sec-3-3"></a>
 ### 3.3 Scenario B — parking + bike lane + buffer (Berlin-style)
 
 ```text
@@ -325,6 +340,7 @@ Check: `2 + 3 + 1 + 2 = 8` ✓. Here `sum(width:lanes)+parking+buffer = width`.
 
 If bike is **only** in `cycleway:*:width` and **also** appears as a `width:lanes` slot, do not double-count in editor math — pick one modelling style per way (Straßenraumkarte often puts bike in `width:lanes`; Berlin side-tags use `cycleway:*:width`).
 
+<a id="sec-3-4"></a>
 ### 3.4 Scenario C — separate cycle track + green strip
 
 ```text
@@ -336,10 +352,12 @@ If bike is **only** in `cycleway:*:width` and **also** appears as a `width:lanes
 - Green strip / verge: tag **`verge=*`** (+ **`verge:width`** / **`verge:*:width`**) on the highway, and/or map as area / `separation=greenery`. Use those metres when composing ROW — there is still **no** single `width:total_row`.
 - Median with planting between dual carriageways: dual ways each with own `width`; median as separate area — again **no** aggregate ROW key.
 
+<a id="sec-3-5"></a>
 ### 3.5 Scenario D — Schutzstreifen counted in `:lanes`
 
 On-carriageway advisory bike lane is a `:lanes` slot (flowing traffic), so it appears in `width:lanes` / `bicycle:lanes` / `cycleway:lanes`, while `lanes=*` stays motor-only ([DE:Fahrspuren](https://wiki.openstreetmap.org/wiki/DE:Fahrspuren), Berlin FAQ).
 
+<a id="sec-3-6"></a>
 ### 3.6 Narrowings / Verengungen
 
 Analogous to `maxheight` at a bridge:
@@ -353,6 +371,7 @@ Tapering lanes at junctions: `placement=transition` + `width:lanes:start/end` ra
 
 ---
 
+<a id="sec-4"></a>
 ## 4. Decision tree for mappers / editor UX
 
 ```mermaid
@@ -383,6 +402,7 @@ flowchart TD
 
 ---
 
+<a id="sec-5"></a>
 ## 5. Tool behaviour (width focus)
 
 ### 5.1 muv-osm (primary parser gold standard)
@@ -423,6 +443,7 @@ Heavy consumer of `width:lanes`, defaults (3.0 / 1.5 / 2.2 m), `cycleway:*:buffe
 
 ---
 
+<a id="sec-6"></a>
 ## 6. Empirical / reference diagrams (non-OSM standards vs OSM tags)
 
 German design drawings used as **measurement convention** references (not OSM tags themselves):
@@ -438,8 +459,10 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 ---
 
+<a id="sec-7"></a>
 ## 7. Gaps & open questions
 
+<a id="sec-7-1"></a>
 1. **No wiki rule** for whether motor `width:lanes` includes painted line millimetres — this package documents a **clear-between-markings** logical assumption (§2.2) so editors can reconcile `width` vs `sum(width:lanes)`; confirm or reject against more surveys / a Key:width note.
 2. **No aggregate `width` for full ROW** — intentional. Component tags exist (`sidewalk:*:width`, `verge` / `verge:*:width`, carriageway `width=*`); planted medians / boulevards still tend to be areas.
 3. **Global `cycleway:buffer`** usage is mostly boolean; numeric+paint-included rule is **Berlin/DE strong practice**, not universal wiki text on Key:cycleway:buffer.
@@ -450,6 +473,7 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 ---
 
+<a id="sec-8"></a>
 ## 8. Editor requirements (width)
 
 **Must**
