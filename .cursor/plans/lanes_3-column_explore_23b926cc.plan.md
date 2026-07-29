@@ -1,6 +1,6 @@
 ---
 name: Lanes 3-column explore
-overview: Rework Lanes mode into a three-column editor (map | render-only plan-sketch diagram | all-lanes matrix form with flyouts), backed by a new pure-TS `@osm-editor-kit/osm-lane-diagram` layout package with a serializable scene model, SVG string serializer, fixture library and dev gallery.
+overview: Rework Lanes mode into a three-column editor (map | render-only plan-sketch diagram | all-lanes matrix form with flyouts), backed by a new pure-TS `@osm-editor-kit/osm-lane-diagram` layout package with a serializable scene model, SVG string serializer, fixture library and flat `/audit-lanes` gallery (sibling of `/audit-width`).
 todos:
   - id: scaffold-pkg
     content: Scaffold @osm-editor-kit/osm-lane-diagram (package.json, tsconfig, index, workspace + app dep)
@@ -21,7 +21,7 @@ todos:
     content: sceneToSvg() string serializer + scene/SVG snapshot tests (framework-free)
     status: pending
   - id: fixtures-gallery
-    content: Typed fixture library in package + /dev/lane-diagram gallery with tag sandbox
+    content: Typed fixture library in package + /audit-lanes gallery with tag sandbox (sibling of /audit-width; README links)
     status: pending
   - id: shell-layout
     content: AppShell middle column slot + resize + mobile fallback (no 3 columns below sm)
@@ -244,7 +244,7 @@ flowchart TB
   scene[JSON scene model]
   svgString[sceneToSvg string]
   appSvg[App RoadSpaceDiagram React SVG]
-  gallery["/dev/lane-diagram"]
+  gallery["/audit-lanes"]
   lanesMode[Lanes mode 3-column]
   fixtures --> diagramPkg
   osmLanes --> diagramPkg
@@ -328,7 +328,7 @@ Wiring: `workspaces: ["app", "packages/*"]` already globs the package; add `"@os
 ### Test-case library + gallery
 
 - Fixtures live **in the package** (`src/fixtures/`) so package tests and the app gallery share one list; exported via the `./fixtures` subpath.
-- Gallery route `app/src/routes/dev.lane-diagram.tsx`: fixture list with tags + live diagram, plus one sandbox where raw tags can be edited and the scene inspected. Dev-only page: English strings, no paraglide messages, linked from nowhere in production UI (regenerate `routeTree.gen.ts` via the TanStack Router plugin).
+- Audit route **`/audit-lanes`** (`app/src/routes/audit-lanes.tsx`): fixture list with tags + live diagram, plus one sandbox where raw tags can be edited and the scene inspected. Flat sibling of **`/audit-width`** (no `/dev` prefix, no audit index). Static route must win over `/$mode`. English strings, no paraglide, **no mode chrome** — discover via root [README.md](README.md) **Audit** subsection and a header link to the sibling page. Page title: “Lanes — cross-section interpretation”. When shipping lanes gallery, add/confirm the Lanes bullet in that README section.
 - Snapshot tests live with the package (`src/test/`), goldens committed as inline snapshots; they run in `bun run check`.
 - Parse-parity hooks stay in `packages/osm-lanes/src/test/` and reuse cases from [lane-editor-tags/test-cases](research/lane-editor-tags/test-cases/) — parity for *parse results*, not a muv dump in the gallery.
 
@@ -374,7 +374,7 @@ Adapted from [methods-catalogue §6](research/lane-rendering/methods-catalogue.m
 6. **Three-segment chain**: shared scale, continuous outer edges, taper policy. Tests: continuity invariants, fixtures 3–4, 10.
 7. **Dual carriageway spreading / fork** incl. single-side-selected case (fixture 5).
 8. **Junction butt-end policy** (fixtures 6–7).
-9. **Fixture library complete + `/dev/lane-diagram` gallery** with sandbox; snapshot coverage for all fixtures; muv parity hooks in `osm-lanes`.
+9. **Fixture library complete + `/audit-lanes` gallery** with sandbox; snapshot coverage for all fixtures; muv parity hooks in `osm-lanes`.
 10. **Write paths**: extend `serializeWayLanes` (`change:lanes`, optional `surface:lanes` / `smoothness:lanes`) with round-trip tests; edge-slot writes through `nestSideTags`. Any row without a write path is marked read-only in step 12.
 11. **Shell**: `AppShell` `middle` slot + store width + mobile fallback; `MapPage` renders Map | Diagram | Form for lanes with a selection; stop mounting `LanesBottomPanel`.
 12. **App diagram + matrix form**: `RoadSpaceDiagram.tsx` (render-only, `highlightedSlotId`), matrix + flyouts + segment nav, focus/hover sync, read-only handling, paraglide messages for all new strings.
@@ -416,7 +416,7 @@ Adapted from [methods-catalogue §6](research/lane-rendering/methods-catalogue.m
 - Middle is provably render-only (no pointer handlers, no selection writes) and highlights the slot the form focuses/hovers.
 - Matrix shows all lanes of the current segment at once; every editable row round-trips through the changeset path; non-writable rows are visibly read-only.
 - Continuity invariants and taper/fork behaviour are asserted by package tests, not by eyeballing.
-- All 15 fixtures render in `/dev/lane-diagram` and have committed scene/SVG snapshots.
+- All 15 fixtures render in `/audit-lanes` and have committed scene/SVG snapshots.
 - `@osm-editor-kit/osm-lane-diagram` has no React, no app and no I/O dependency, and its scene JSON + `sceneToSvg` output are reusable outside the app.
 - Camera animates bearing + pitch on selection change and yields to manual interaction.
 - `bun run check` green; no leftover references to removed chip components.
