@@ -231,8 +231,8 @@ function dedupePoints(points: Array<{ x: number; y: number }>): Array<{ x: numbe
 
 /**
  * One continuous vertical run across contiguous bands.
- * Unchanged x → dead-straight (only endpoints). Changing x → square step at the
- * band boundary (horizontal jog, then vertical) — no diagonal notches.
+ * Unchanged x → dead-straight (only endpoints). Changing x → diagonal taper in the
+ * arriving band's top third (departing band stays straight to the boundary).
  */
 function appendContinuousVerticalRun(
   points: Array<{ x: number; y: number }>,
@@ -251,15 +251,16 @@ function appendContinuousVerticalRun(
     if (!prev) {
       points.push({ x, y: topY })
     } else if (differs(prev.x, x)) {
-      // Square step at the shared boundary: arrive on prev.x, jog to x, then down.
+      // Taper in this (arriving) band's top third from previous x
+      const taperY = round2(band.y + band.height / 3)
       points.push({ x: prev.x, y: topY })
-      points.push({ x, y: topY })
+      points.push({ x, y: taperY })
     }
 
     if (!next) {
       points.push({ x, y: botY })
     } else if (differs(next.x, x)) {
-      // Stay at current x through to the boundary; next band owns the horizontal jog
+      // Stay at current x through to the boundary; next band owns the diagonal
       points.push({ x, y: botY })
     }
     // else: continuous same-x — no intermediate points
@@ -277,16 +278,15 @@ function outermostSlot(
 }
 
 /**
- * Fill the L-shaped white gap when adjacent bands have different outer extents:
- * paint the step region in the *narrower* band using the wider band's outermost
- * slot kind so the silhouette reads continuous.
+ * Fill the triangular notch when adjacent bands have different outer extents:
+ * paint the taper region (arriving band's top third) using the wider band's
+ * outermost slot kind so the silhouette reads continuous — like a map lane merge.
  */
-function appendOuterStepFills(slotRects: SceneSlotRect[], bands: BandGeometry[]): void {
+function appendOuterTaperFills(slotRects: SceneSlotRect[], bands: BandGeometry[]): void {
   for (let i = 0; i < bands.length - 1; i++) {
     const a = bands[i]!
     const b = bands[i + 1]!
-    // Same rule as outer-edge merges: never fill across dual ↔ non-dual
-    // (would invent a sibling footprint on the non-dual neighbour).
+    // Never fill across dual ↔ non-dual (would invent a sibling footprint).
     if ((a.segment.fork != null) !== (b.segment.fork != null)) continue
 
     for (const side of ['left', 'right'] as const) {
@@ -296,33 +296,134 @@ function appendOuterStepFills(slotRects: SceneSlotRect[], bands: BandGeometry[])
 
       const aWider = side === 'left' ? aOuter < bOuter - EPS : aOuter > bOuter + EPS
       const wider = aWider ? a : b
-      const narrower = aWider ? b : a
       const source = outermostSlot(wider, side)
       if (!source) continue
 
-      const inner = side === 'left' ? Math.max(aOuter, bOuter) : Math.min(aOuter, bOuter)
-      const outer = side === 'left' ? Math.min(aOuter, bOuter) : Math.max(aOuter, bOuter)
-      const left = Math.min(inner, outer)
-      const width = round2(Math.abs(outer - inner))
-      if (width <= EPS) continue
+      // Taper lives in the arriving band (b); departing stays straight to the boundary.
+      // Diagonal: (aOuter, topY) → (bOuter, taperY). Fill the wedge under the top edge.
+      const topY = round2(b.y)
+      const taperY = round2(b.y + b.height / 3)
+      const points = [
+        { x: round2(aOuter), y: topY },
+        { x: round2(bOuter), y: topY },
+        { x: round2(bOuter), y: taperY },
+      ]
 
-      const narrowerIndex = bands.indexOf(narrower)
-      const extent = rectVerticalExtent(narrowerIndex, bands.length, narrower.y, narrower.height)
+      const xs = points.map((p) => p.x)
+      const ys = points.map((p) => p.y)
+      const left = Math.min(...xs)
+      const right = Math.max(...xs)
+      const top = Math.min(...ys)
+      const bot = Math.max(...ys)
+
       slotRects.push({
-        slotId: `way/${narrower.segment.wayId}/step-fill/${side}/${i}`,
-        wayId: narrower.segment.wayId,
-        role: narrower.segment.role,
+        slotId: `way/${b.segment.wayId}/step-fill/${side}/${i}`,
+        wayId: b.segment.wayId,
+        role: b.segment.role,
         kind: source.kind,
         zone: source.zone,
         direction: 'none',
         x: round2(left),
-        y: extent.y,
-        width,
-        height: extent.height,
+        y: round2(top),
+        width: round2(right - left),
+        height: round2(bot - top),
         widthProvenance: 'inferred',
         label: 'step_fill',
-        dimmed: narrower.segment.role !== 'current' || undefined,
+        dimmed: b.segment.role !== 'current' || undefined,
+        points,
       })
+    }
+  }
+}
+
+/**
+ * When a dual oneway band meets a non-dual neighbour, OSM centrelines diverge
+ * (road centre vs carriageway centre). Re-anchor the dual travel stack to the
+ * neighbour's continuing kerb so bike/motor lanes line up like a map.
+ */
+function realignDualBandsToNeighbors(bands: BandGeometry[], metersToPx: number): void {
+  for (let i = 0; i < bands.length; i++) {
+    const dual = bands[i]!
+    const fork = dual.segment.fork
+    if (!fork || !dual.placeholder) continue
+
+    const neighbors = [bands[i - 1], bands[i + 1]].filter(
+      (b): b is BandGeometry => b != null && b.segment.fork == null,
+    )
+    if (neighbors.length === 0) continue
+
+    // Prefer the neighbour whose continuing kerb is already closest.
+    const neighbor = neighbors.reduce((best, n) => {
+      const dualEdge = fork.dimmedSide === 'left' ? dual.rightKerbX : dual.leftKerbX
+      const bestEdge = fork.dimmedSide === 'left' ? best.rightKerbX : best.leftKerbX
+      const nEdge = fork.dimmedSide === 'left' ? n.rightKerbX : n.leftKerbX
+      return Math.abs(nEdge - dualEdge) < Math.abs(bestEdge - dualEdge) ? n : best
+    })
+
+    const travelWidth = round2(dual.rightKerbX - dual.leftKerbX)
+    if (travelWidth <= EPS) continue
+
+    const gapPx =
+      dual.medianLeftX != null && dual.medianRightX != null
+        ? round2(dual.medianRightX - dual.medianLeftX)
+        : round2(forkGapM(fork) * metersToPx)
+
+    if (fork.dimmedSide === 'left') {
+      const targetRight = neighbor.rightKerbX
+      const targetLeftBound = neighbor.leftKerbX
+      const newTravelRight = targetRight
+      const newTravelLeft = round2(newTravelRight - travelWidth)
+      if (newTravelLeft < targetLeftBound - EPS) continue
+
+      const newMedianRight = newTravelLeft
+      const newMedianLeft = round2(newMedianRight - gapPx)
+      const newPlaceholderX = targetLeftBound
+      const newPlaceholderWidth = round2(newMedianLeft - newPlaceholderX)
+      if (newPlaceholderWidth < EPS) continue
+
+      const delta = round2(newTravelLeft - dual.leftKerbX)
+      dual.slotLeftX = dual.slotLeftX.map((x) => round2(x + delta))
+      dual.leftKerbX = newTravelLeft
+      dual.rightKerbX = newTravelRight
+      dual.placeholder = { x: newPlaceholderX, width: newPlaceholderWidth }
+      dual.medianLeftX = newMedianLeft
+      dual.medianRightX = newMedianRight
+      dual.leftOuterX = newPlaceholderX
+      dual.leftSpreadOuterX = newPlaceholderX
+      dual.rightOuterX = round2(
+        Math.max(
+          newTravelRight,
+          ...dual.segment.slots.map((s, idx) => dual.slotLeftX[idx]! + s.widthM * metersToPx),
+        ),
+      )
+      dual.rightSpreadOuterX = dual.rightOuterX
+      dual.centrelineX = round2((newTravelLeft + newTravelRight) / 2)
+    } else if (fork.dimmedSide === 'right') {
+      const targetLeft = neighbor.leftKerbX
+      const targetRightBound = neighbor.rightKerbX
+      const newTravelLeft = targetLeft
+      const newTravelRight = round2(newTravelLeft + travelWidth)
+      if (newTravelRight > targetRightBound + EPS) continue
+
+      const newMedianLeft = newTravelRight
+      const newMedianRight = round2(newMedianLeft + gapPx)
+      const newPlaceholderRight = targetRightBound
+      const newPlaceholderX = newMedianRight
+      const newPlaceholderWidth = round2(newPlaceholderRight - newPlaceholderX)
+      if (newPlaceholderWidth < EPS) continue
+
+      const delta = round2(newTravelLeft - dual.leftKerbX)
+      dual.slotLeftX = dual.slotLeftX.map((x) => round2(x + delta))
+      dual.leftKerbX = newTravelLeft
+      dual.rightKerbX = newTravelRight
+      dual.placeholder = { x: newPlaceholderX, width: newPlaceholderWidth }
+      dual.medianLeftX = newMedianLeft
+      dual.medianRightX = newMedianRight
+      dual.rightOuterX = newPlaceholderRight
+      dual.rightSpreadOuterX = newPlaceholderRight
+      dual.leftOuterX = round2(Math.min(newTravelLeft, ...dual.slotLeftX))
+      dual.leftSpreadOuterX = dual.leftOuterX
+      dual.centrelineX = round2((newTravelLeft + newTravelRight) / 2)
     }
   }
 }
@@ -422,9 +523,19 @@ export function layoutRoadSpace(
     bands.push(buildBandGeometry(segment, y, bandHeight, centrelineX, metersToPx))
     y += bandHeight + gap
   }
+  realignDualBandsToNeighbors(bands, metersToPx)
 
   const heightPx = round2(y - (bands.length > 0 ? gap : 0) + PADDING_PX)
-  const widthPx = round2(centrelineX + maxRightOverhang + PADDING_PX)
+  // After dual realignment, outer extents may exceed the initial centreline overhang estimate.
+  const maxRightX = Math.max(...bands.map((b) => b.rightOuterX), centrelineX)
+  const minLeftX = Math.min(...bands.map((b) => b.leftOuterX), PADDING_PX)
+  const widthPx = round2(
+    Math.max(
+      centrelineX + maxRightOverhang + PADDING_PX,
+      maxRightX + PADDING_PX,
+      maxRightX - minLeftX + PADDING_PX * 2,
+    ),
+  )
 
   const sceneBands: SceneSegmentBand[] = bands.map((b) => ({
     wayId: b.segment.wayId,
@@ -510,7 +621,7 @@ export function layoutRoadSpace(
     }
   }
 
-  appendOuterStepFills(slotRects, bands)
+  appendOuterTaperFills(slotRects, bands)
 
   const polylines: ScenePolyline[] = []
 
@@ -554,22 +665,34 @@ export function layoutRoadSpace(
     })
   }
 
-  // Continuous travel-kerbs at carriageway boundaries (aligned across dual/non-dual
-  // when centreline placement matches — square steps, no diagonal through the median).
-  emitVerticalPolyline(
-    polylines,
-    'kerb-left',
-    'kerb',
-    'solid',
-    bands.map((b) => ({ y: b.y, height: b.height, x: b.leftKerbX })),
-  )
-  emitVerticalPolyline(
-    polylines,
-    'kerb-right',
-    'kerb',
-    'solid',
-    bands.map((b) => ({ y: b.y, height: b.height, x: b.rightKerbX })),
-  )
+  // Continuous travel-kerbs at carriageway boundaries. Broken at dual ↔ non-dual
+  // so tapers never diagonal-cross the median / opposite-carriageway placeholder.
+  {
+    const hasFork = (i: number) => bands[i]!.segment.fork != null
+    let start = 0
+    let runIdx = 0
+    while (start < bands.length) {
+      let end = start + 1
+      while (end < bands.length && hasFork(end) === hasFork(start)) end++
+      const slice = bands.slice(start, end)
+      emitVerticalPolyline(
+        polylines,
+        `kerb-left-${runIdx}`,
+        'kerb',
+        'solid',
+        slice.map((b) => ({ y: b.y, height: b.height, x: b.leftKerbX })),
+      )
+      emitVerticalPolyline(
+        polylines,
+        `kerb-right-${runIdx}`,
+        'kerb',
+        'solid',
+        slice.map((b) => ({ y: b.y, height: b.height, x: b.rightKerbX })),
+      )
+      runIdx++
+      start = end
+    }
+  }
 
   // Placeholder outer face (spreading side) — dual bands only; never merged into a
   // taper that crosses the median from a non-dual neighbour.
@@ -675,14 +798,26 @@ export function layoutRoadSpace(
   emitMergedVerticalRuns(polylines, 'sep-solid', 'separator', 'solid', solidSep, bands)
   emitMergedVerticalRuns(polylines, 'sep-dashed', 'separator', 'dashed', dashedSep, bands)
 
-  // Centreline: one continuous run
-  emitVerticalPolyline(
-    polylines,
-    'centreline',
-    'centreline',
-    'dashed',
-    bands.map((b) => ({ y: b.y, height: b.height, x: b.centrelineX })),
-  )
+  // Centreline: continuous within fork-homogeneous runs (never diagonal through median).
+  {
+    const hasFork = (i: number) => bands[i]!.segment.fork != null
+    let start = 0
+    let runIdx = 0
+    while (start < bands.length) {
+      let end = start + 1
+      while (end < bands.length && hasFork(end) === hasFork(start)) end++
+      const slice = bands.slice(start, end)
+      emitVerticalPolyline(
+        polylines,
+        runIdx === 0 ? 'centreline' : `centreline-${runIdx}`,
+        'centreline',
+        'dashed',
+        slice.map((b) => ({ y: b.y, height: b.height, x: b.centrelineX })),
+      )
+      runIdx++
+      start = end
+    }
+  }
 
   const separatelyMappedRaw = segments.flatMap((s) => s.separatelyMapped ?? [])
   const separatelyMappedSeen = new Set<string>()

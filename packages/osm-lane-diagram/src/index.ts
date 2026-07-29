@@ -38,6 +38,8 @@ export {
   parsePlacement,
   resolvePlacement,
   centrelineOffsetM,
+  centrelineOffsetMDriving,
+  drivingLaneCount,
   type Placement,
   type PlacementKind,
 } from './placement'

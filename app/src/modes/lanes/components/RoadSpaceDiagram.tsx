@@ -344,6 +344,36 @@ function SiblingPlaceholderLabel({
   )
 }
 
+function MedianLabel({
+  rect,
+  cx,
+  cy,
+}: {
+  rect: SceneSlotRect
+  cx: number
+  cy: number
+}): ReactElement | null {
+  if (rect.width < 10 || rect.height < 28) return null
+  const maxGlyphRun = Math.max(20, rect.height - 14)
+  const fontSize = Math.min(7.5, Math.max(5, rect.width * 0.28))
+  return (
+    <text
+      x={cx}
+      y={cy}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fontSize={fontSize}
+      fill={COLORS.siblingLabel}
+      fontFamily="ui-sans-serif, system-ui, sans-serif"
+      transform={`rotate(-90 ${cx} ${cy})`}
+      textLength={maxGlyphRun}
+      lengthAdjust="spacingAndGlyphs"
+    >
+      Median
+    </text>
+  )
+}
+
 function SlotRect({
   rect,
   highlightedSlotId,
@@ -367,7 +397,14 @@ function SlotRect({
   const cx = rect.x + rect.width / 2
   const cy = rect.y + rect.height / 2
   const glyphSize = Math.min(rect.width, rect.height) * 0.42
-  const opacity = rect.dimmed || isSiblingDimmed ? 0.4 : 1
+  const opacity =
+    isSibling || isMedian
+      ? rect.dimmed || isSiblingDimmed
+        ? 0.7
+        : 1
+      : rect.dimmed || isSiblingDimmed
+        ? 0.4
+        : 1
   const widthM = metersToPx > 0 ? rect.width / metersToPx : undefined
   const inset = 2
   const hasTravelGlyph =
@@ -381,17 +418,27 @@ function SlotRect({
 
   return (
     <g opacity={opacity} pointerEvents="none">
-      <rect
-        x={rect.x}
-        y={rect.y}
-        width={rect.width}
-        height={rect.height}
-        fill={fill}
-        stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
-        strokeWidth={isHighlighted ? 2.5 : 0}
-        opacity={zone === 'sidepath' && isTagged ? 0.95 : 1}
-        shapeRendering="crispEdges"
-      />
+      {rect.points && rect.points.length >= 3 ? (
+        <polygon
+          points={pointsAttr(rect.points)}
+          fill={fill}
+          stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+          strokeWidth={isHighlighted ? 2.5 : 0}
+          shapeRendering="crispEdges"
+        />
+      ) : (
+        <rect
+          x={rect.x}
+          y={rect.y}
+          width={rect.width}
+          height={rect.height}
+          fill={fill}
+          stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+          strokeWidth={isHighlighted ? 2.5 : 0}
+          opacity={zone === 'sidepath' && isTagged ? 0.95 : 1}
+          shapeRendering="crispEdges"
+        />
+      )}
       {/* Untagged width: vertical dotted edges only — no full rectangle (avoids per-band boxes). */}
       {!isTagged &&
       !isMedian &&
@@ -423,6 +470,7 @@ function SlotRect({
       {isSibling ? (
         <SiblingPlaceholderLabel rect={rect} siblingLabel={siblingLabel} cx={cx} cy={cy} />
       ) : null}
+      {isMedian ? <MedianLabel rect={rect} cx={cx} cy={cy} /> : null}
       {isTagged &&
       !isMedian &&
       !isSibling &&

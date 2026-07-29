@@ -61,6 +61,17 @@ describe('placement', () => {
     })
   })
 
+  test('lanes:forward/backward default to opposing-traffic boundary', () => {
+    expect(resolvePlacement({ 'lanes:backward': '1', 'lanes:forward': '2' }, 3)).toEqual({
+      kind: 'left_of',
+      lane: 2,
+    })
+    expect(resolvePlacement({ 'lanes:backward': '2', 'lanes:forward': '2' }, 4)).toEqual({
+      kind: 'left_of',
+      lane: 3,
+    })
+  })
+
   test('centrelineOffsetM maths', () => {
     const slots: RoadSpaceSlot[] = [motorSlot('a'), motorSlot('b'), motorSlot('c'), motorSlot('d')]
     expect(centrelineOffsetM(slots, { kind: 'left_of', lane: 3 })).toBe(6)
@@ -334,8 +345,8 @@ describe('layout continuity', () => {
     const scene = layoutRoadSpace(chain)
     expect(scene.bands).toHaveLength(3)
 
-    const leftKerb = scene.polylines.find((p) => p.id === 'kerb-left')!
-    const rightKerb = scene.polylines.find((p) => p.id === 'kerb-right')!
+    const leftKerb = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
+    const rightKerb = scene.polylines.find((p) => p.id.startsWith('kerb-right'))!
     expect(leftKerb).toBeDefined()
     expect(rightKerb).toBeDefined()
 
@@ -393,10 +404,10 @@ describe('layout continuity', () => {
     }
   })
 
-  test('fixture 3: right-side pocket steps right; left edge stays straight', () => {
+  test('fixture 3: right-side pocket tapers right; left edge stays straight', () => {
     const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
-    const left = scene.polylines.find((p) => p.id === 'kerb-left')!
-    const right = scene.polylines.find((p) => p.id === 'kerb-right')!
+    const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
+    const right = scene.polylines.find((p) => p.id.startsWith('kerb-right') && p.points.length > 2)!
 
     const leftXs = [...new Set(left.points.map((p) => p.x))]
     expect(leftXs).toHaveLength(1)
@@ -405,29 +416,29 @@ describe('layout continuity', () => {
     expect(rightXs.length).toBeGreaterThan(1)
     expect(Math.max(...rightXs)).toBeGreaterThan(Math.min(...rightXs))
 
-    // Square steps only — no diagonal (no segment where both x and y change)
-    for (const line of [left, right]) {
-      for (let i = 1; i < line.points.length; i++) {
-        const a = line.points[i - 1]!
-        const b = line.points[i]!
-        const dx = Math.abs(a.x - b.x) > 0.01
-        const dy = Math.abs(a.y - b.y) > 0.01
-        expect(dx && dy).toBe(false)
-      }
+    // Diagonal taper: at least one segment changes both x and y
+    let hasDiagonal = false
+    for (let i = 1; i < right.points.length; i++) {
+      const a = right.points[i - 1]!
+      const b = right.points[i]!
+      const dx = Math.abs(a.x - b.x) > 0.01
+      const dy = Math.abs(a.y - b.y) > 0.01
+      if (dx && dy) hasDiagonal = true
     }
+    expect(hasDiagonal).toBe(true)
   })
 
-  test('fixture 4: square step when pocket ends (left stays straight for oneway drop on right)', () => {
+  test('fixture 4: taper when pocket ends (left stays straight for oneway drop on right)', () => {
     const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
-    const left = scene.polylines.find((p) => p.id === 'kerb-left')!
-    const right = scene.polylines.find((p) => p.id === 'kerb-right')!
+    const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
+    const rightRuns = scene.polylines.filter((p) => p.id.startsWith('kerb-right'))
     const leftXs = [...new Set(left.points.map((p) => p.x))]
     expect(leftXs).toHaveLength(1)
-    const rightXs = [...new Set(right.points.map((p) => p.x))]
+    const rightXs = [...new Set(rightRuns.flatMap((p) => p.points.map((pt) => pt.x)))]
     expect(rightXs.length).toBeGreaterThan(1)
   })
 
-  test('width-step between bands fills the narrower side and uses square outer edges', () => {
+  test('width-step between bands fills the taper with a triangle', () => {
     const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
     const fills = scene.slotRects.filter((r) => r.label === 'step_fill')
     expect(fills.length).toBeGreaterThan(0)
@@ -435,17 +446,25 @@ describe('layout continuity', () => {
       expect(fill.direction).toBe('none')
       expect(fill.widthProvenance).toBe('inferred')
       expect(fill.width).toBeGreaterThan(0)
+      expect(fill.points).toBeDefined()
+      expect(fill.points!.length).toBe(3)
     }
-    // No diagonal on any polyline
-    for (const line of scene.polylines) {
-      for (let i = 1; i < line.points.length; i++) {
-        const a = line.points[i - 1]!
-        const b = line.points[i]!
-        const dx = Math.abs(a.x - b.x) > 0.01
-        const dy = Math.abs(a.y - b.y) > 0.01
-        expect(dx && dy).toBe(false)
-      }
-    }
+  })
+
+  test('karl-marx dual split: forward cycle lanes share a right edge; median labeled', () => {
+    const scene = layoutRoadSpace(fixtureChain('karl-marx-dual-split'))
+    const forwardCycles = scene.slotRects.filter(
+      (r) => r.kind === 'cycle' && r.direction === 'forward' && r.label !== 'step_fill',
+    )
+    expect(forwardCycles).toHaveLength(3)
+    const rights = forwardCycles.map((r) => Math.round((r.x + r.width) * 100) / 100)
+    expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(0.05)
+
+    const sibling = scene.slotRects.find((r) => r.label === 'sibling')
+    expect(sibling).toBeDefined()
+    const median = scene.slotRects.find((r) => r.label === 'median')
+    expect(median).toBeDefined()
+    expect(median!.kind).toBe('median')
   })
 
   test('fixture 5: dual median gap + placeholder inside scene', () => {
@@ -585,7 +604,7 @@ describe('sceneToSvg snapshots', () => {
 
 describe('all fixtures', () => {
   test('every fixture lays out without throwing and has ≥1 slot rect per segment', () => {
-    expect(laneDiagramFixtures).toHaveLength(19)
+    expect(laneDiagramFixtures).toHaveLength(20)
     for (const fixture of laneDiagramFixtures) {
       const chain = fixtureChain(fixture.id)
       const scene = layoutRoadSpace(chain)

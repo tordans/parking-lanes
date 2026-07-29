@@ -37,7 +37,7 @@ const FIXTURE_GROUPS: readonly {
   {
     id: 'islands',
     label: 'Islands & junctions',
-    fixtureIds: ['dual-carriageway-island', 't-junction', 'cross-junction'],
+    fixtureIds: ['dual-carriageway-island', 'karl-marx-dual-split', 't-junction', 'cross-junction'],
   },
   {
     id: 'bike',

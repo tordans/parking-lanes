@@ -22,11 +22,27 @@ export function parsePlacement(value: string | undefined): Placement | null {
 /**
  * SRK defaults when placement is absent:
  * odd lane count → middle_of:ceil(n/2); even → left_of:(n/2 + 1).
+ * When `lanes:forward` + `lanes:backward` are both set, default to the boundary
+ * between opposing directions (`left_of:backward+1`) so the centreline sits in
+ * the median of traffic flow — not inside a turn lane.
  * `transition` falls back to the same default anchor when neighbours are unknown.
  */
 export function resolvePlacement(tags: Record<string, string>, laneCount: number): Placement {
   const parsed = parsePlacement(tags.placement)
   if (parsed && parsed.kind !== 'transition') return parsed
+
+  const backward = Number.parseInt(tags['lanes:backward'] ?? '', 10)
+  const forward = Number.parseInt(tags['lanes:forward'] ?? '', 10)
+  if (
+    Number.isInteger(backward) &&
+    Number.isInteger(forward) &&
+    backward > 0 &&
+    forward > 0 &&
+    backward + forward === laneCount
+  ) {
+    return { kind: 'left_of', lane: backward + 1 }
+  }
+
   if (laneCount <= 0) return { kind: 'middle_of', lane: 1 }
   if (laneCount % 2 === 1) {
     return { kind: 'middle_of', lane: Math.ceil(laneCount / 2) }
@@ -55,4 +71,43 @@ export function centrelineOffsetM(slots: RoadSpaceSlot[], placement: Placement):
   if (placement.kind === 'left_of') return offset
   if (placement.kind === 'right_of') return offset + laneWidth
   return offset + laneWidth / 2
+}
+
+function isDrivingSlot(slot: RoadSpaceSlot): boolean {
+  return slot.kind === 'motor' || slot.kind === 'bus' || slot.kind === 'both_ways'
+}
+
+/**
+ * Like `centrelineOffsetM`, but placement lane indices refer to driving lanes only
+ * (motor/bus/both_ways). On-carriageway cycle lanes are skipped when counting lanes,
+ * then re-added to the metre offset so the centreline stays correct in the full stack.
+ */
+export function centrelineOffsetMDriving(slots: RoadSpaceSlot[], placement: Placement): number {
+  const driving = slots.filter(isDrivingSlot)
+  if (driving.length === 0) return centrelineOffsetM(slots, placement)
+
+  const targetInDriving = centrelineOffsetM(driving, placement)
+  if (placement.kind === 'transition') {
+    return slots.reduce((sum, s) => sum + s.widthM, 0) / 2
+  }
+
+  let drivingAcc = 0
+  let fullAcc = 0
+  for (const slot of slots) {
+    if (isDrivingSlot(slot)) {
+      const nextDriving = drivingAcc + slot.widthM
+      if (targetInDriving <= nextDriving + 1e-9) {
+        return fullAcc + (targetInDriving - drivingAcc)
+      }
+      drivingAcc = nextDriving
+    }
+    fullAcc += slot.widthM
+  }
+  return fullAcc
+}
+
+/** Driving-lane count for `resolvePlacement` (excludes on-carriageway cycle slots). */
+export function drivingLaneCount(slots: RoadSpaceSlot[]): number {
+  const n = slots.filter(isDrivingSlot).length
+  return n > 0 ? n : slots.length
 }

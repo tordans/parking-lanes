@@ -6,7 +6,7 @@ import {
   type SidepathSide,
 } from '@osm-editor-kit/osm-sidepath-tags'
 import { DEFAULT_MEDIAN_GAP_M, DEFAULT_WIDTHS_M } from './defaults'
-import { centrelineOffsetM, resolvePlacement } from './placement'
+import { centrelineOffsetMDriving, drivingLaneCount, resolvePlacement } from './placement'
 import { formatEdgeSlotId, formatLaneSlotId } from './slot-ids'
 import type {
   RoadSpaceDirection,
@@ -544,8 +544,8 @@ export function buildRoadSpaceSegment(
   const slots = [...edges.left, ...carriageway, ...edges.right]
   const separatelyMapped = collectSeparatelyMapped(tags)
 
-  const placement = resolvePlacement(tags, carriageway.length)
-  const carriagewayOffset = centrelineOffsetM(carriageway, placement)
+  const placement = resolvePlacement(tags, drivingLaneCount(carriageway))
+  const carriagewayOffset = centrelineOffsetMDriving(carriageway, placement)
   const leftEdgeWidth = edges.left.reduce((sum, s) => sum + s.widthM, 0)
   const fork = buildDualCarriagewayFork(tags, carriageway)
 

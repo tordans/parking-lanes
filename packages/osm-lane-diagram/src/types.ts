@@ -71,6 +71,8 @@ export type SceneSlotRect = {
   label?: string
   turn?: string
   dimmed?: boolean
+  /** When set, render as polygon (taper fills) instead of the axis-aligned rect. */
+  points?: Array<{ x: number; y: number }>
 }
 
 export type ScenePolyline = {

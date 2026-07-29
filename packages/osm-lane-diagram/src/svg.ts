@@ -100,9 +100,15 @@ export function sceneToSvg(
       rect.widthProvenance === 'default' ? COLOR_SEPARATOR : isHi ? COLOR_HIGHLIGHT : 'none'
     const strokeWidth = rect.widthProvenance === 'default' || isHi ? '1' : '0'
     const opacity = rect.dimmed && !isHi ? '0.45' : '1'
-    parts.push(
-      `<rect data-slot="${escapeXml(rect.slotId)}" data-zone="${rect.zone}" x="${round2(rect.x)}" y="${round2(rect.y)}" width="${round2(rect.width)}" height="${round2(rect.height)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"/>`,
-    )
+    if (rect.points && rect.points.length >= 3) {
+      parts.push(
+        `<polygon data-slot="${escapeXml(rect.slotId)}" data-zone="${rect.zone}" points="${pointsAttr(rect.points)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"/>`,
+      )
+    } else {
+      parts.push(
+        `<rect data-slot="${escapeXml(rect.slotId)}" data-zone="${rect.zone}" x="${round2(rect.x)}" y="${round2(rect.y)}" width="${round2(rect.width)}" height="${round2(rect.height)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"/>`,
+      )
+    }
   }
 
   for (const line of scene.polylines) {
