@@ -83,7 +83,8 @@ destination:lanes=A|A|B
 
 | Consumer | Support |
 |----------|---------|
-| OsmAnd, Organic Maps, Magic Earth | `turn:lanes` for navigation |
+| OsmAnd ([note](../projects/_osmand.md)), Organic Maps, Magic Earth | `turn:lanes` for navigation |
+| Mapbox Navigation SDK | Turn-by-turn via OSRM/Valhalla ([Key:turn](https://wiki.openstreetmap.org/wiki/Key:turn)) |
 | OSM2World | Painted markings in 3D |
 | OsmLaneVisualizer | Unicode arrows per lane |
 | JOSM Lane and Road Attributes | Arrow overlay; prefers `turn:lanes:forward/backward` on two-way |

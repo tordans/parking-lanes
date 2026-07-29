@@ -26,7 +26,12 @@ Research for lane-editor tag documentation. Fetched or read **2026-07-25**. Wiki
 | [Bus lanes](https://wiki.openstreetmap.org/wiki/Bus_lanes) | Two schemes: `lanes:psv`/`lanes:bus` vs `psv:lanes`/`bus:lanes`; counting; conditional bus lanes; contraflow. |
 | [Key:overtaking](https://wiki.openstreetmap.org/wiki/Key:overtaking) | Centre-line overtaking restrictions; regional defaults; overlap with `change:lanes`. |
 | [Proposal:Separation](https://wiki.openstreetmap.org/wiki/Proposal:Separation) | Draft `separation` / `marking` / `traffic_mode` schema for protected bike lanes, lane edges, and road dividers. Berlin practice since 2019; full notes: [tags/separation-proposal.md](./tags/separation-proposal.md). Old URL `Proposed_features/cycleway:separation` serves same page. |
-| [JOSM lane_features style](https://wiki.openstreetmap.org/wiki/Josm/styles/lane_features) | JOSM interpretation of lanes, turn:lanes, access:lanes, change:lanes, cycleway, sidewalk. |
+| [JOSM lane_features style](https://wiki.openstreetmap.org/wiki/Josm/styles/lane_features) | JOSM interpretation of lanes, turn:lanes, access:lanes, change:lanes, cycleway, sidewalk. See [projects/josm-lane-features.md](./projects/josm-lane-features.md). |
+| [Key:*:lanes](https://wiki.openstreetmap.org/wiki/Key:*:lanes) | Approved `:lanes` suffix spec. |
+| [Relation:connectivity](https://wiki.openstreetmap.org/wiki/Relation:connectivity) | Lane connectivity between ways. |
+| [Proposal:Transit](https://wiki.openstreetmap.org/wiki/Proposal:Transit) | Alternative connectivity (`transit=*`) — discussed in iD #387. |
+| [OSM Lane Visualizer](https://wiki.openstreetmap.org/wiki/OSM_Lane_Visualizer) | Tool wiki entry; see [projects/osm-lane-visualizer.md](./projects/osm-lane-visualizer.md). |
+| [Quality assurance](https://wiki.openstreetmap.org/wiki/Quality_assurance) | Lists lane QA tools. |
 
 ## OSM Wiki (German)
 
@@ -44,16 +49,33 @@ Research for lane-editor tag documentation. Fetched or read **2026-07-25**. Wiki
 | Source | Summary |
 |--------|---------|
 | [AB Street discussion #789](https://github.com/a-b-street/abstreet/discussions/789) | Shared lane-spec library proposal; links StreetComplete CyclewayParser, shared-row, twpol/osm-tiles, BjornRasmussen/Lanes, Berlin Radwege, CycleStreets area:highway. |
-| [twpol/osm-tiles](https://github.com/twpol/osm-tiles) | C# overlay tiles drawing lane-level road cross-section from OSM tags; cited in #789. See [projects/twpol-osm-tiles.md](./projects/twpol-osm-tiles.md). |
+| [twpol/osm-tiles](https://github.com/twpol/osm-tiles) | C# overlay tiles drawing lane-level road cross-section from OSM tags; cited in #789. See [projects/_twpol-osm-tiles.md](./projects/_twpol-osm-tiles.md). |
 | [BjornRasmussen/Lanes](https://github.com/BjornRasmussen/Lanes) | JOSM visual lane editor plugin; #789 stakeholder. See [projects/bjornrasmussen-josm-lanes.md](./projects/bjornrasmussen-josm-lanes.md). |
-| [d-wasserman/shared-row Slice spec](https://github.com/d-wasserman/shared-row/blob/main/specification/MarkdownTables/Slice.md) | ROW slice vocabulary (not OSM parser). See [projects/shared-row.md](./projects/shared-row.md). |
-| [StreetComplete CyclewayParser](https://github.com/streetcomplete/StreetComplete/tree/master/app/src/commonMain/kotlin/de/westnordost/streetcomplete/osm/cycleway) | Exhaustive cycleway tag parser + tests; #789 reference. See [projects/streetcomplete-cycleway-parser.md](./projects/streetcomplete-cycleway-parser.md). |
+| [d-wasserman/shared-row Slice spec](https://github.com/d-wasserman/shared-row/blob/main/specification/MarkdownTables/Slice.md) | ROW slice vocabulary (not OSM parser). See [projects/_shared-row.md](./projects/_shared-row.md). |
+| [StreetComplete CyclewayParser](https://github.com/streetcomplete/StreetComplete/tree/master/app/src/commonMain/kotlin/de/westnordost/streetcomplete/osm/cycleway) | Exhaustive cycleway tag parser + tests; #789 reference. See [projects/_streetcomplete-cycleway-parser.md](./projects/_streetcomplete-cycleway-parser.md). |
 | [Straßenraumkarte micromap update (2021)](https://strassenraumkarte.osm-berlin.org/posts/2021-12-31-micromap-update) | Berlin Neukölln experimental renderer; uses placement, width:lanes, bicycle:lanes, lane_markings, change, area:highway junction cutouts. |
 | [OsmLaneVisualizer README](https://github.com/mueschel/OsmLaneVisualizer) | 105+ lane-related keys interpreted for HTML QA visualization; placement experimental support. Live: [`/lanes/render.pl`](https://osm.mueschelsoft.de/lanes/render.pl); legacy [`/cgi-bin/render.pl`](https://osm.mueschelsoft.de/cgi-bin/render.pl). [A 661 QA deep link](https://osm.mueschelsoft.de/lanes/render.pl?relref=A%20661&start=1&country=de&placement&adjacent&lanewidth&usenodes). |
 | [Map Machine README](https://github.com/enzet/map-machine) | Python SVG/PNG renderer; experimental `--roads lanes` mode — width from `width` or `lanes`, lane separators; inspired by [Navigating the Maze](https://blog.imagico.de/navigating-the-maze-part-2/). |
 | [osm2lanes README](https://github.com/a-b-street/osm2lanes) | Archived; lane parsing moved to osm2streets; defines lane as continuous area; separator assumptions. |
 | [osm2streets README](https://github.com/a-b-street/osm2streets) | Active lane-level street model; StreetExplorer, lane editor; classic lane parsing in Rust. |
-| [JOSM Lane and Road Attributes style](https://wiki.openstreetmap.org/wiki/Lanes#Editor_support) | Referenced from Lanes wiki; validates pipe counts and visualizes lane tags. |
+| [JOSM Lane and Road Attributes style](https://josm.openstreetmap.de/wiki/Styles/Lane_and_Road_Attributes) | Active MapCSS lane QA; see [projects/josm-lane-and-road-attributes.md](./projects/josm-lane-and-road-attributes.md). |
+| [JOSM turnlanes-tagging](https://github.com/JOSM/turnlanes-tagging) | Maintained `turn:lanes` editor plugin. See [projects/josm-turnlanes-tagging.md](./projects/josm-turnlanes-tagging.md). |
+| [zlant/parking-lanes](https://github.com/zlant/parking-lanes) | Parking micro-editor; separate-facet UX precedent. See [projects/_zlant-parking-lanes.md](./projects/_zlant-parking-lanes.md). |
+| [OsmAnd Lanes widget](https://osmand.net/docs/user/widgets/nav-widgets/) | Production `turn:lanes` consumer. See [projects/_osmand.md](./projects/_osmand.md). |
+| [Streetmix](https://streetmix.net/) | Cross-section UX design reference (no OSM export). See [projects/_streetmix.md](./projects/_streetmix.md). |
+| [3DStreet](https://github.com/3DStreet/3dstreet) | 3D street viz from Streetmix segments. See [projects/_3dstreet.md](./projects/_3dstreet.md). |
+| [OSM Lane Visualizer wiki](https://wiki.openstreetmap.org/wiki/OSM_Lane_Visualizer) | Tool entry; detail in [projects/osm-lane-visualizer.md](./projects/osm-lane-visualizer.md). |
+| [Quality assurance wiki](https://wiki.openstreetmap.org/wiki/Quality_assurance) | Lists lane QA tools; notes OsmLaneVisualizer `parking:lane` usage (needs re-check). |
+
+## Forum threads (lane editors / visualization)
+
+| URL | Topic |
+| --- | --- |
+| https://community.openstreetmap.org/t/consensus-regarding-lane-and-turn-lane-tagging-guidelines/133364 | Turn:lanes tagging policy (Lyft team; physical markings vs maneuvers) |
+| https://community.openstreetmap.org/t/how-to-use-turn-lanes-in-osm-to-find-lane-connectivity-on-intersection/9260 | `turn:lanes` vs connectivity relations |
+| https://community.openstreetmap.org/t/making-lanes-orthagonal-and-consistent/105033 | Lane count semantics; JOSM lane editor mentions |
+| https://community.openstreetmap.org/t/josm-map-style-lane-and-road-attributes/99251 | Lane and Road Attributes style behavior / defaults |
+| https://community.openstreetmap.org/t/josm-plugin-available/136910 | Pointers to Lane and Road Attributes + StreetComplete |
 
 ## Method
 

@@ -1,6 +1,6 @@
 # JOSM `lane_features` map paint style
 
-Research note on the older JOSM MapCSS style documented at **Josm/styles/lane_features** — distinct from the newer, actively maintained [**Lane and Road Attributes**](https://josm.openstreetmap.de/wiki/Styles/Lane_and_Road_Attributes) style by Martin Vonwald (covered in [other-tools-and-visualizations.md](./other-tools-and-visualizations.md)).
+Research note on the older JOSM MapCSS style documented at **Josm/styles/lane_features** — distinct from the newer, actively maintained [**Lane and Road Attributes**](https://josm.openstreetmap.de/wiki/Styles/Lane_and_Road_Attributes) style by Martin Vonwald (see [josm-lane-and-road-attributes.md](./josm-lane-and-road-attributes.md)).
 
 ## Overview
 

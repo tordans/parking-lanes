@@ -246,6 +246,6 @@ Lane-relevant history on [`muv-osm/src/lanes`](https://gitlab.com/api/v4/project
 | **muv-osm (this file)** | [muv-osm.md](./muv-osm.md) | **Primary** — active parser gold standard |
 | osm2streets `tests.rs` | [osm2lanes-osm2streets.md](./osm2lanes-osm2streets.md) § osm2streets in-crate | Downstream companion (~27 cases) |
 | Archived osm2lanes | [osm2lanes-osm2streets.md](./osm2lanes-osm2streets.md) | Secondary tag coverage; re-assert via muv |
-| StreetComplete CyclewayParser | [streetcomplete-cycleway-parser.md](../projects/streetcomplete-cycleway-parser.md) | `cycleway:*` read-only; 215+ tests |
+| StreetComplete CyclewayParser | [_streetcomplete-cycleway-parser.md](../projects/_streetcomplete-cycleway-parser.md) | `cycleway:*` read-only; 215+ tests |
 
 **See also:** [projects/muv-osm.md](../projects/muv-osm.md) — full tag interpretation reference.
