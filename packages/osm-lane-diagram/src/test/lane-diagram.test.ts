@@ -383,7 +383,7 @@ describe('layout continuity', () => {
     // Segment boundaries present between bands; no per-band horizontal kerb boxes
     const boundaries = scene.polylines.filter((p) => p.kind === 'segment_boundary')
     expect(boundaries).toHaveLength(2)
-    expect(boundaries.every((b) => b.style === 'dashed')).toBe(true)
+    expect(boundaries.every((b) => b.style === 'solid')).toBe(true)
 
     // Contiguous bands (zero gap)
     for (let i = 0; i < scene.bands.length - 1; i++) {
@@ -393,7 +393,7 @@ describe('layout continuity', () => {
     }
   })
 
-  test('fixture 3: right-side pocket tapers right; left edge stays straight', () => {
+  test('fixture 3: right-side pocket steps right; left edge stays straight', () => {
     const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
     const left = scene.polylines.find((p) => p.id === 'kerb-left')!
     const right = scene.polylines.find((p) => p.id === 'kerb-right')!
@@ -404,9 +404,20 @@ describe('layout continuity', () => {
     const rightXs = [...new Set(right.points.map((p) => p.x))]
     expect(rightXs.length).toBeGreaterThan(1)
     expect(Math.max(...rightXs)).toBeGreaterThan(Math.min(...rightXs))
+
+    // Square steps only — no diagonal (no segment where both x and y change)
+    for (const line of [left, right]) {
+      for (let i = 1; i < line.points.length; i++) {
+        const a = line.points[i - 1]!
+        const b = line.points[i]!
+        const dx = Math.abs(a.x - b.x) > 0.01
+        const dy = Math.abs(a.y - b.y) > 0.01
+        expect(dx && dy).toBe(false)
+      }
+    }
   })
 
-  test('fixture 4: taper when pocket ends (left stays straight for oneway drop on right)', () => {
+  test('fixture 4: square step when pocket ends (left stays straight for oneway drop on right)', () => {
     const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
     const left = scene.polylines.find((p) => p.id === 'kerb-left')!
     const right = scene.polylines.find((p) => p.id === 'kerb-right')!
@@ -414,6 +425,27 @@ describe('layout continuity', () => {
     expect(leftXs).toHaveLength(1)
     const rightXs = [...new Set(right.points.map((p) => p.x))]
     expect(rightXs.length).toBeGreaterThan(1)
+  })
+
+  test('width-step between bands fills the narrower side and uses square outer edges', () => {
+    const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
+    const fills = scene.slotRects.filter((r) => r.label === 'step_fill')
+    expect(fills.length).toBeGreaterThan(0)
+    for (const fill of fills) {
+      expect(fill.direction).toBe('none')
+      expect(fill.widthProvenance).toBe('inferred')
+      expect(fill.width).toBeGreaterThan(0)
+    }
+    // No diagonal on any polyline
+    for (const line of scene.polylines) {
+      for (let i = 1; i < line.points.length; i++) {
+        const a = line.points[i - 1]!
+        const b = line.points[i]!
+        const dx = Math.abs(a.x - b.x) > 0.01
+        const dy = Math.abs(a.y - b.y) > 0.01
+        expect(dx && dy).toBe(false)
+      }
+    }
   })
 
   test('fixture 5: dual median gap + placeholder inside scene', () => {

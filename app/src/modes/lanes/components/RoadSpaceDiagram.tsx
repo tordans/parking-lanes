@@ -181,7 +181,23 @@ function DirectionHint({
   )
 }
 
-function turnGlyphPaths(turn: string, cx: number, cy: number, size: number): ReactElement | null {
+function turnGlyphFlipTransform(
+  direction: RoadSpaceDirection,
+  cx: number,
+  cy: number,
+): string | undefined {
+  if (direction !== 'backward') return undefined
+  // Mirror forward-oriented glyphs so through/right match backward travel (↓ on the page).
+  return `translate(${cx} ${cy}) scale(1 -1) translate(${-cx} ${-cy})`
+}
+
+function turnGlyphPaths(
+  turn: string,
+  direction: RoadSpaceDirection,
+  cx: number,
+  cy: number,
+  size: number,
+): ReactElement | null {
   const tokens = turn
     .split(';')
     .map((t) => t.trim())
@@ -289,7 +305,7 @@ function turnGlyphPaths(turn: string, cx: number, cy: number, size: number): Rea
 
   if (elements.length === 0) return null
   return (
-    <g opacity={0.9} pointerEvents="none">
+    <g opacity={0.9} pointerEvents="none" transform={turnGlyphFlipTransform(direction, cx, cy)}>
       {elements}
     </g>
   )
@@ -344,6 +360,7 @@ function SlotRect({
   const isSiblingDimmed = hasHighlight && !isHighlighted
   const isMedian = rect.kind === 'median'
   const isSibling = rect.label === 'sibling'
+  const isStepFill = rect.label === 'step_fill'
   const isTagged = rect.widthProvenance === 'tagged'
   const zone: RoadSpaceZone = rect.zone
   const fill = isSibling ? COLORS.sibling : kindFill(rect.kind, isTagged)
@@ -356,6 +373,7 @@ function SlotRect({
   const hasTravelGlyph =
     !isMedian &&
     !isSibling &&
+    !isStepFill &&
     (rect.kind === 'motor' ||
       rect.kind === 'bus' ||
       rect.kind === 'cycle' ||
@@ -372,9 +390,15 @@ function SlotRect({
         stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
         strokeWidth={isHighlighted ? 2.5 : 0}
         opacity={zone === 'sidepath' && isTagged ? 0.95 : 1}
+        shapeRendering="crispEdges"
       />
       {/* Untagged width: vertical dotted edges only — no full rectangle (avoids per-band boxes). */}
-      {!isTagged && !isMedian && !isSibling && rect.width > inset * 2 && rect.height > inset * 2 ? (
+      {!isTagged &&
+      !isMedian &&
+      !isSibling &&
+      !isStepFill &&
+      rect.width > inset * 2 &&
+      rect.height > inset * 2 ? (
         <g
           fill="none"
           stroke={COLORS.untaggedEdge}
@@ -402,6 +426,7 @@ function SlotRect({
       {isTagged &&
       !isMedian &&
       !isSibling &&
+      !isStepFill &&
       widthM != null &&
       rect.width >= 18 &&
       rect.height >= 14 ? (
@@ -419,7 +444,13 @@ function SlotRect({
         </text>
       ) : null}
       {rect.turn && !isMedian && !isSibling ? (
-        turnGlyphPaths(rect.turn, cx, cy - (isTagged ? 4 : 0), Math.max(10, glyphSize))
+        turnGlyphPaths(
+          rect.turn,
+          rect.direction,
+          cx,
+          cy - (isTagged ? 4 : 0),
+          Math.max(10, glyphSize),
+        )
       ) : hasTravelGlyph ? (
         <DirectionHint
           direction={rect.direction}
@@ -482,6 +513,18 @@ export function RoadSpaceDiagram({
         />
       ))}
 
+      {scene.polylines
+        .filter((line) => line.kind === 'segment_boundary')
+        .map((line) => (
+          <polyline
+            key={line.id}
+            fill="none"
+            stroke={polylineStroke(line)}
+            strokeWidth={polylineStrokeWidth(line)}
+            points={pointsAttr(line.points)}
+          />
+        ))}
+
       {scene.slotRects.map((rect) => (
         <SlotRect
           key={rect.slotId}
@@ -492,18 +535,18 @@ export function RoadSpaceDiagram({
         />
       ))}
 
-      {scene.polylines.map((line) => (
-        <polyline
-          key={line.id}
-          fill="none"
-          stroke={polylineStroke(line)}
-          strokeWidth={polylineStrokeWidth(line)}
-          strokeDasharray={
-            line.kind === 'segment_boundary' ? '2 3' : line.style === 'dashed' ? '4 3' : undefined
-          }
-          points={pointsAttr(line.points)}
-        />
-      ))}
+      {scene.polylines
+        .filter((line) => line.kind !== 'segment_boundary')
+        .map((line) => (
+          <polyline
+            key={line.id}
+            fill="none"
+            stroke={polylineStroke(line)}
+            strokeWidth={polylineStrokeWidth(line)}
+            strokeDasharray={line.style === 'dashed' ? '4 3' : undefined}
+            points={pointsAttr(line.points)}
+          />
+        ))}
     </svg>
   )
 }

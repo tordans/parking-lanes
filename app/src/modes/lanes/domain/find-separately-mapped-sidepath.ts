@@ -36,9 +36,10 @@ function isBicycleAccess(tags: OsmTags): boolean {
 
 /** Whether a way is a plausible separately mapped sidepath for the given prefix. */
 export function isSeparatelyMappedSidepathCandidate(
-  tags: OsmTags,
+  tags: OsmTags | undefined,
   prefix: SeparatelyMappedSidepath['prefix'],
 ): boolean {
+  if (!tags) return false
   const highway = tags.highway
   if (!highway || isCrossing(tags)) return false
 
@@ -51,7 +52,11 @@ export function isSeparatelyMappedSidepathCandidate(
   return false
 }
 
-function preferenceScore(tags: OsmTags, prefix: SeparatelyMappedSidepath['prefix']): number {
+function preferenceScore(
+  tags: OsmTags | undefined,
+  prefix: SeparatelyMappedSidepath['prefix'],
+): number {
+  if (!tags) return 0
   if (prefix === 'sidewalk' && tags.footway === 'sidewalk') return 2
   if (prefix === 'cycleway' && tags.highway === 'cycleway') return 2
   return 1

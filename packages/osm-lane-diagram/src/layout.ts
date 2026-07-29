@@ -15,6 +15,8 @@ import type {
 } from './types'
 
 const PADDING_PX = 16
+/** Slight vertical overlap between band rects to avoid hairline gaps from sub-pixel rounding. */
+const SEAM_OVERLAP_PX = 1
 const EPS = 0.01
 
 function round2(n: number): number {
@@ -199,6 +201,24 @@ function differs(a: number, b: number): boolean {
   return Math.abs(a - b) > EPS
 }
 
+function rectVerticalExtent(
+  bandIndex: number,
+  bandCount: number,
+  y: number,
+  height: number,
+): { y: number; height: number } {
+  let top = y
+  let h = height
+  if (bandIndex > 0) {
+    top -= SEAM_OVERLAP_PX / 2
+    h += SEAM_OVERLAP_PX / 2
+  }
+  if (bandIndex < bandCount - 1) {
+    h += SEAM_OVERLAP_PX / 2
+  }
+  return { y: round2(top), height: round2(h) }
+}
+
 function dedupePoints(points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
   const out: Array<{ x: number; y: number }> = []
   for (const p of points) {
@@ -211,8 +231,8 @@ function dedupePoints(points: Array<{ x: number; y: number }>): Array<{ x: numbe
 
 /**
  * One continuous vertical run across contiguous bands.
- * Unchanged x → dead-straight (only endpoints). Changing x → diagonal taper in the
- * arriving band's top third (departing band stays straight to the boundary).
+ * Unchanged x → dead-straight (only endpoints). Changing x → square step at the
+ * band boundary (horizontal jog, then vertical) — no diagonal notches.
  */
 function appendContinuousVerticalRun(
   points: Array<{ x: number; y: number }>,
@@ -231,19 +251,79 @@ function appendContinuousVerticalRun(
     if (!prev) {
       points.push({ x, y: topY })
     } else if (differs(prev.x, x)) {
-      // Taper in this (arriving) band's top third from previous x
-      const taperY = round2(band.y + band.height / 3)
+      // Square step at the shared boundary: arrive on prev.x, jog to x, then down.
       points.push({ x: prev.x, y: topY })
-      points.push({ x, y: taperY })
+      points.push({ x, y: topY })
     }
 
     if (!next) {
       points.push({ x, y: botY })
     } else if (differs(next.x, x)) {
-      // Stay at current x through to the boundary; next band owns the diagonal
+      // Stay at current x through to the boundary; next band owns the horizontal jog
       points.push({ x, y: botY })
     }
     // else: continuous same-x — no intermediate points
+  }
+}
+
+/** Leftmost / rightmost travel-or-sidepath slot of a band (excludes placeholder/median). */
+function outermostSlot(
+  band: BandGeometry,
+  side: 'left' | 'right',
+): RoadSpaceSegment['slots'][number] | undefined {
+  const slots = band.segment.slots
+  if (slots.length === 0) return undefined
+  return side === 'left' ? slots[0] : slots[slots.length - 1]
+}
+
+/**
+ * Fill the L-shaped white gap when adjacent bands have different outer extents:
+ * paint the step region in the *narrower* band using the wider band's outermost
+ * slot kind so the silhouette reads continuous.
+ */
+function appendOuterStepFills(slotRects: SceneSlotRect[], bands: BandGeometry[]): void {
+  for (let i = 0; i < bands.length - 1; i++) {
+    const a = bands[i]!
+    const b = bands[i + 1]!
+    // Same rule as outer-edge merges: never fill across dual ↔ non-dual
+    // (would invent a sibling footprint on the non-dual neighbour).
+    if ((a.segment.fork != null) !== (b.segment.fork != null)) continue
+
+    for (const side of ['left', 'right'] as const) {
+      const aOuter = side === 'left' ? a.leftOuterX : a.rightOuterX
+      const bOuter = side === 'left' ? b.leftOuterX : b.rightOuterX
+      if (!differs(aOuter, bOuter)) continue
+
+      const aWider = side === 'left' ? aOuter < bOuter - EPS : aOuter > bOuter + EPS
+      const wider = aWider ? a : b
+      const narrower = aWider ? b : a
+      const source = outermostSlot(wider, side)
+      if (!source) continue
+
+      const inner = side === 'left' ? Math.max(aOuter, bOuter) : Math.min(aOuter, bOuter)
+      const outer = side === 'left' ? Math.min(aOuter, bOuter) : Math.max(aOuter, bOuter)
+      const left = Math.min(inner, outer)
+      const width = round2(Math.abs(outer - inner))
+      if (width <= EPS) continue
+
+      const narrowerIndex = bands.indexOf(narrower)
+      const extent = rectVerticalExtent(narrowerIndex, bands.length, narrower.y, narrower.height)
+      slotRects.push({
+        slotId: `way/${narrower.segment.wayId}/step-fill/${side}/${i}`,
+        wayId: narrower.segment.wayId,
+        role: narrower.segment.role,
+        kind: source.kind,
+        zone: source.zone,
+        direction: 'none',
+        x: round2(left),
+        y: extent.y,
+        width,
+        height: extent.height,
+        widthProvenance: 'inferred',
+        label: 'step_fill',
+        dimmed: narrower.segment.role !== 'current' || undefined,
+      })
+    }
   }
 }
 
@@ -355,7 +435,9 @@ export function layoutRoadSpace(
   }))
 
   const slotRects: SceneSlotRect[] = []
-  for (const band of bands) {
+  for (let bandIndex = 0; bandIndex < bands.length; bandIndex++) {
+    const band = bands[bandIndex]!
+    const extent = rectVerticalExtent(bandIndex, bands.length, band.y, band.height)
     const dimmedBand = band.segment.role !== 'current'
     const fork = band.segment.fork
     const leftSet = new Set(fork?.leftSlotIds ?? [])
@@ -371,9 +453,9 @@ export function layoutRoadSpace(
         zone: 'carriageway',
         direction: 'none',
         x: band.placeholder.x,
-        y: round2(band.y),
+        y: extent.y,
         width: band.placeholder.width,
-        height: round2(band.height),
+        height: extent.height,
         widthProvenance: 'inferred',
         label: 'sibling',
         dimmed: true,
@@ -394,9 +476,9 @@ export function layoutRoadSpace(
         zone: 'carriageway',
         direction: 'none',
         x: band.medianLeftX,
-        y: round2(band.y),
+        y: extent.y,
         width: round2(band.medianRightX - band.medianLeftX),
-        height: round2(band.height),
+        height: extent.height,
         widthProvenance: 'inferred',
         label: 'median',
         dimmed: dimmedBand || undefined,
@@ -417,9 +499,9 @@ export function layoutRoadSpace(
         zone: slot.zone,
         direction: slot.direction,
         x: band.slotLeftX[i]!,
-        y: round2(band.y),
+        y: extent.y,
         width: round2(slot.widthM * metersToPx),
-        height: round2(band.height),
+        height: extent.height,
         widthProvenance: slot.widthProvenance,
         label: slot.label,
         turn: slot.turn,
@@ -427,6 +509,8 @@ export function layoutRoadSpace(
       })
     }
   }
+
+  appendOuterStepFills(slotRects, bands)
 
   const polylines: ScenePolyline[] = []
 
@@ -462,7 +546,7 @@ export function layoutRoadSpace(
     polylines.push({
       id: `segment-boundary-${i}`,
       kind: 'segment_boundary',
-      style: 'dashed',
+      style: 'solid',
       points: [
         { x: left, y: yBound },
         { x: right, y: yBound },
@@ -471,7 +555,7 @@ export function layoutRoadSpace(
   }
 
   // Continuous travel-kerbs at carriageway boundaries (aligned across dual/non-dual
-  // when centreline placement matches — no diagonal through the median).
+  // when centreline placement matches — square steps, no diagonal through the median).
   emitVerticalPolyline(
     polylines,
     'kerb-left',
@@ -517,7 +601,7 @@ export function layoutRoadSpace(
   }
 
   // Outer edges only where they differ from the travel kerb (sidepath present),
-  // broken at dual ↔ non-dual so the spreading envelope does not diagonal-cross
+  // broken at dual ↔ non-dual so the spreading envelope does not step-cross
   // the placeholder / median.
   {
     const leftOuterPerBand = bands.map((b) => {

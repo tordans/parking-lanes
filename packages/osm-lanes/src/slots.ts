@@ -164,6 +164,28 @@ function directionSuffix(direction: LaneDirection): string {
   return ':both_ways'
 }
 
+/** `turn:lanes` first; then SRK-style `turn:forward` / `turn:backward` / bare `turn`. */
+function readTurnLanePipe(
+  tags: Record<string, string>,
+  direction: LaneDirection,
+  useDirectional: boolean,
+): string | undefined {
+  const fromLanes = readDirectionalTag(tags, 'turn:lanes', direction, useDirectional)
+  if (fromLanes != null) return fromLanes
+
+  if (!useDirectional) return tags.turn
+
+  const directionalFallback =
+    direction === 'forward'
+      ? tags['turn:forward']
+      : direction === 'backward'
+        ? tags['turn:backward']
+        : tags['turn:both_ways']
+  if (directionalFallback != null) return directionalFallback
+
+  return direction === 'forward' ? tags.turn : undefined
+}
+
 export function buildDirectionSlots(
   tags: Record<string, string>,
   direction: LaneDirection,
@@ -171,7 +193,7 @@ export function buildDirectionSlots(
   declaredCount: number | undefined,
   drivingSide: DrivingSide,
 ): LaneSlot[] {
-  const turnPipe = readDirectionalTag(tags, 'turn:lanes', direction, useDirectional)
+  const turnPipe = readTurnLanePipe(tags, direction, useDirectional)
   const vehiclePipe = readDirectionalTag(tags, 'vehicle:lanes', direction, useDirectional)
   const bicyclePipe = readDirectionalTag(tags, 'bicycle:lanes', direction, useDirectional)
   const busPipe = readDirectionalTag(tags, 'bus:lanes', direction, useDirectional)

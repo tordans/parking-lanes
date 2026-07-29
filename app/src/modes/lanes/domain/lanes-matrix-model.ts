@@ -169,7 +169,13 @@ export function buildMatrixColumns(
 ): MatrixColumn[] {
   if (!scene) return []
   return scene.slotRects
-    .filter((rect) => rect.role === 'current' && rect.kind !== 'median' && rect.label !== 'sibling')
+    .filter(
+      (rect) =>
+        rect.role === 'current' &&
+        rect.kind !== 'median' &&
+        rect.label !== 'sibling' &&
+        rect.label !== 'step_fill',
+    )
     .slice()
     .sort((a, b) => a.x - b.x || a.slotId.localeCompare(b.slotId))
     .map((rect) => columnFromRect(rect, tags))

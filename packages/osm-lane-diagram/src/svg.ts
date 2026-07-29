@@ -86,6 +86,13 @@ export function sceneToSvg(
     )
   }
 
+  for (const line of scene.polylines) {
+    if (line.kind !== 'segment_boundary') continue
+    parts.push(
+      `<polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="${polylineStrokeWidth(line)}" points="${pointsAttr(line.points)}"/>`,
+    )
+  }
+
   for (const rect of scene.slotRects) {
     const isHi = highlighted != null && rect.slotId === highlighted
     const fill = slotFill(rect, isHi)
@@ -99,6 +106,7 @@ export function sceneToSvg(
   }
 
   for (const line of scene.polylines) {
+    if (line.kind === 'segment_boundary') continue
     const dash = line.style === 'dashed' ? ' stroke-dasharray="4 3"' : ''
     parts.push(
       `<polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="${polylineStrokeWidth(line)}"${dash} points="${pointsAttr(line.points)}"/>`,

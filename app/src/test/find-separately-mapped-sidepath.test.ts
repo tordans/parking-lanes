@@ -101,6 +101,11 @@ describe('isSeparatelyMappedSidepathCandidate', () => {
       ),
     ).toBe(false)
   })
+
+  test('rejects missing tags', () => {
+    expect(isSeparatelyMappedSidepathCandidate(undefined, 'sidewalk')).toBe(false)
+    expect(isSeparatelyMappedSidepathCandidate(undefined, 'cycleway')).toBe(false)
+  })
 })
 
 describe('findSeparatelyMappedSidepath', () => {
@@ -219,5 +224,29 @@ describe('findSeparatelyMappedSidepath', () => {
     })
 
     expect(findSeparatelyMappedSidepath(graph, 1, { prefix: 'cycleway', side: 'left' })).toBeNull()
+  })
+
+  test('skips ways with missing tags without throwing', () => {
+    const graph = buildGraph({
+      roadNodes: [ROAD_START, ROAD_END],
+      sidepaths: [
+        {
+          id: 10,
+          tags: { highway: 'footway', footway: 'sidewalk' },
+          nodes: left8m,
+        },
+      ],
+    })
+    graph.ways[99] = {
+      id: 99,
+      type: 'way',
+      version: 1,
+      changeset: 1,
+      nodes: [],
+      tags: undefined as unknown as Record<string, string>,
+    }
+
+    const match = findSeparatelyMappedSidepath(graph, 1, { prefix: 'sidewalk', side: 'left' })
+    expect(match?.wayId).toBe(10)
   })
 })

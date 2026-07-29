@@ -262,6 +262,20 @@ describe('muv-inspired fixtures', () => {
     // TODO: deduplicate side cycleway vs on-carriageway slot when building geometry
   })
 
+  test('turn:backward fallback when turn:lanes:backward is absent', () => {
+    const tags = {
+      highway: 'secondary',
+      lanes: '2',
+      'width:lanes:backward': '3.2',
+      'width:lanes:forward': '3.2',
+      'turn:backward': 'through;right',
+    }
+    const model = parseWayLanes(tags)
+    const backward = model.slots.filter((s) => s.direction === 'backward')
+    expect(backward).toHaveLength(1)
+    expect(backward[0]?.turn).toBe('through;right')
+  })
+
   test('round-trip preserves primary lane tags', () => {
     const tags = {
       highway: 'secondary',
