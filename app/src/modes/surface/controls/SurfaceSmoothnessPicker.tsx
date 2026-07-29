@@ -14,7 +14,6 @@ import {
   surfaceChangePatch,
   withSettLengthKey,
 } from '../domain/surface-tag-patches'
-import { PhotoAttributionFooter } from './PhotoAttributionFooter'
 import { SettSizePicker, settLengthForSize } from './SettSizePicker'
 import { surfaceDataAssetUrl } from './surface-data-asset-url'
 import { SurfaceSuggestions } from './SurfaceSuggestions'
@@ -35,12 +34,6 @@ export function SurfaceSmoothnessPicker(props: {
   const smoothness = channel.smoothness
   const smoothnessOptions = surface ? getSmoothnessOptionsForSurface(surface) : []
   const surfaceInfo = surface ? getSurfaceInfo(surface) : undefined
-
-  const attributionPaths: string[] = []
-  if (surfaceInfo?.icon) attributionPaths.push(surfaceInfo.icon)
-  for (const option of smoothnessOptions) {
-    if (option.cell.photo) attributionPaths.push(option.cell.photo)
-  }
 
   function applySurface(nextSurface: string | undefined, settLength?: number) {
     const patch = surfaceChangePatch(smoothness, nextSurface, props.keys)
@@ -170,8 +163,6 @@ export function SurfaceSmoothnessPicker(props: {
           </div>
         )}
       </div>
-
-      <PhotoAttributionFooter assetPaths={attributionPaths} />
     </div>
   )
 }

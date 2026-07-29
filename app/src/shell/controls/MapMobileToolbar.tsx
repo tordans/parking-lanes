@@ -121,6 +121,7 @@ export function MapMobileToolbar() {
             about={mode.about}
             maturity={mode.maturity}
             Legend={Legend}
+            InfoExtras={mode.InfoExtras}
           />
         </div>
       </MobileBottomSheet>

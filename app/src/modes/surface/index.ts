@@ -1,5 +1,6 @@
 import type { StreetSpaceMode } from '../types'
 import { SurfaceLegendPanel } from './controls/LegendPanel'
+import { SurfacePhotoAttributionSection } from './controls/SurfacePhotoAttributionSection'
 import { SurfaceModeLayers } from './SurfaceModeLayers'
 import { SurfaceModePanel } from './SurfaceModePanel'
 import { interactiveLayerIds } from './use-surface-mode-handlers'
@@ -20,5 +21,6 @@ export const surfaceMode: StreetSpaceMode = {
   MapLayers: SurfaceModeLayers,
   Panel: SurfaceModePanel,
   Legend: SurfaceLegendPanel,
+  InfoExtras: SurfacePhotoAttributionSection,
   interactiveLayerIds,
 }

@@ -39,8 +39,10 @@ export function InfoPanelContent(props: {
   about: StreetSpaceMode['about']
   maturity: StreetSpaceMode['maturity']
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
+  InfoExtras?: ComponentType
 }) {
   const Legend = props.Legend
+  const InfoExtras = props.InfoExtras
 
   return (
     <div className="flex flex-col p-1">
@@ -66,6 +68,12 @@ export function InfoPanelContent(props: {
         <h3 className="mb-2 text-sm font-semibold text-zinc-900">{m.shell_language_title()}</h3>
         <LanguageSwitcher />
       </section>
+      {InfoExtras ? (
+        <>
+          <PanelSectionDivider />
+          <InfoExtras />
+        </>
+      ) : null}
     </div>
   )
 }
@@ -73,7 +81,7 @@ export function InfoPanelContent(props: {
 export function ControlPanel() {
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const mode = useActiveStreetSpaceMode(modeSlug as StreetSpaceModeId)
-  const { Panel, Legend } = mode
+  const { Panel, Legend, InfoExtras } = mode
   const selectedOsmRef = useSelectedOsmRef()
   const osmDisplayName = useOsmDisplayName()
   const showDebug = canShowDebugToggle(osmDisplayName)
@@ -98,6 +106,7 @@ export function ControlPanel() {
             about={mode.about}
             maturity={mode.maturity}
             Legend={Legend}
+            InfoExtras={InfoExtras}
           />
         ) : null}
         {activePanelMode === 'inspector' ? <Panel /> : null}
