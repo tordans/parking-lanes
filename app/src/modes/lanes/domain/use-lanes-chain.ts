@@ -22,7 +22,7 @@ export function useLanesChainBuilder(centerWayId: number | undefined) {
 
   useEffect(
     function rebuildChainOnCenterChange() {
-      if (!centerWayId || !graph) {
+      if (!centerWayId || !graph?.ways[centerWayId]) {
         setChainResult(null, [])
         return
       }
@@ -36,9 +36,13 @@ export function useLanesChainBuilder(centerWayId: number | undefined) {
         centerWayId,
         maxPerSide: CHAIN_MAX_PER_SIDE,
         candidateFilter,
-      }).then((result) => {
-        if (!cancelled) setChainResult(result.chain, result.pendingJunctions)
       })
+        .then((result) => {
+          if (!cancelled) setChainResult(result.chain, result.pendingJunctions)
+        })
+        .catch(() => {
+          if (!cancelled) setChainResult(null, [])
+        })
 
       return () => {
         cancelled = true

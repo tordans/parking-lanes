@@ -3,6 +3,10 @@ import { parseWayLanes } from '@osm-editor-kit/osm-lanes'
 import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import {
+  MapFeatureLoadEmptyState,
+  MapFeaturePromptEmptyState,
+} from '../../shell/controls/MapFeatureEmptyState'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
 import { useFeatureSelection, useSelectedOsmRef } from '../../shell/map/feature-selection'
 import { useMapViewport } from '../../shell/map/map-viewport'
@@ -16,6 +20,7 @@ import { LanesViewToggle } from './components/LanesViewToggle'
 import { LanesWaySummary } from './components/LanesWaySummary'
 import { screenOrderedChainNeighbors } from './domain/screen-ordered-neighbors'
 import { useLanesChainBuilder, useVisibleChainSegments } from './domain/use-lanes-chain'
+import { viewMinZoom } from './map/constants'
 import { lanesNextNeighborColor, lanesPrevNeighborColor } from './map/lanes-layer-paint'
 import {
   useLanesChain,
@@ -24,7 +29,7 @@ import {
   useLanesViewMode,
   useSelectedLaneSlot,
 } from './map/lanes-map-store'
-import { useLanesOsmQuery } from './map/lanes-osm-query'
+import { useIsLanesOsmFetching, useLanesOsmQuery } from './map/lanes-osm-query'
 import { useLanesFlyToWay } from './use-lanes-fly-to-way'
 import { useLanesModeHandlers } from './use-lanes-mode-handlers'
 
@@ -59,6 +64,9 @@ export function LanesBottomPanel() {
   const { addLane, removeLane, editableLaneDirections, commitSlotUpdate } = useLanesModeHandlers()
   const mapViewport = useMapViewport()
   const { data: graph } = useLanesOsmQuery({ select: (data) => data.graph })
+  const isFetching = useIsLanesOsmFetching()
+
+  const centerWay = centerWayId != null ? (graph?.ways[centerWayId] ?? null) : null
 
   const centerIndex =
     chain && centerWayId != null ? chain.segments.findIndex((s) => s.id === centerWayId) : -1
@@ -109,31 +117,36 @@ export function LanesBottomPanel() {
     [leftNeighbor, rightNeighbor, selectSlot, walkToWay],
   )
 
-  if (!centerWayId || !graph) {
+  if (!centerWayId) {
+    return <MapFeaturePromptEmptyState message={m.empty_click_lanes()} />
+  }
+
+  if (!centerWay) {
     return (
-      <div className="flex h-full items-center justify-center px-4 text-sm text-zinc-500">
-        {m.empty_click_lanes()}
-      </div>
+      <MapFeatureLoadEmptyState
+        zoom={mapViewport.zoom}
+        minZoom={viewMinZoom}
+        isFetching={isFetching}
+        featureLabel={`way/${centerWayId}`}
+      />
     )
   }
 
-  const centerWay = graph.ways[centerWayId]
-  const centerModel = centerWay ? parseWayLanes(centerWay.tags) : null
-  const centerWarnings = centerModel?.warnings ?? []
+  const centerModel = parseWayLanes(centerWay.tags)
+  const centerWarnings = centerModel.warnings
   const hasErrors = centerWarnings.some((warning) => warning.severity === 'error')
-  const addDirections = centerModel ? editableLaneDirections(centerModel) : []
+  const addDirections = editableLaneDirections(centerModel)
 
   const selectedSlotKey =
     selectedSlot && selectedSlot.wayId === centerWayId
       ? `${selectedSlot.direction}:${selectedSlot.index}`
       : null
 
-  const activeSlot =
-    selectedSlot && centerModel
-      ? centerModel.slots.find(
-          (slot) => slot.direction === selectedSlot.direction && slot.index === selectedSlot.index,
-        )
-      : undefined
+  const activeSlot = selectedSlot
+    ? centerModel.slots.find(
+        (slot) => slot.direction === selectedSlot.direction && slot.index === selectedSlot.index,
+      )
+    : undefined
 
   const columnSlots: Array<{
     segment: (typeof visibleSegments)[number] | null
@@ -242,11 +255,9 @@ export function LanesBottomPanel() {
                   readOnly={readOnly}
                   addDirections={isCenter ? addDirections : undefined}
                   canRemoveLane={isCenter && Boolean(activeSlot)}
-                  onAddLane={
-                    isCenter && centerWay ? (direction) => addLane(centerWay, direction) : undefined
-                  }
+                  onAddLane={isCenter ? (direction) => addLane(centerWay, direction) : undefined}
                   onRemoveLane={
-                    isCenter && centerWay && activeSlot
+                    isCenter && activeSlot
                       ? () =>
                           removeLane(centerWay, activeSlot.direction, activeSlot.index, activeSlot)
                       : undefined
@@ -261,7 +272,7 @@ export function LanesBottomPanel() {
           </div>
         )}
 
-        {activeSlot && centerWay ? (
+        {activeSlot ? (
           <div className="w-72 shrink-0 overflow-y-auto">
             <LanesSlotEditor
               slot={activeSlot}
