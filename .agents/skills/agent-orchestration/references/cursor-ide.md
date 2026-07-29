@@ -105,7 +105,7 @@ The Task tool's inline `model` parameter only exposes **`composer-2.5-fast`** fo
 | Task + `model: composer-2.5` or `[fast=false]` | set                  | rejected or unpredictable ❌  |
 | `generalPurpose` + inline Composer             | set                  | **fast** ❌                   |
 
-Built-in `explore` is for search only. Do **not** pass Task `model: composer-2.5-fast` (or any inline model) for explore, implementer, or verifier — omit `model` so workers keep `composer-2.5[fast=false]`.
+Built-in `explore` is for search only and does **not** read `.cursor/agents/` frontmatter — it uses Cursor's own default (typically a faster model). Still **omit** Task inline `model` for explore (do not force `composer-2.5-fast`). For `/implementer` and `/verifier`, omit `model` so the frontmatter pin `composer-2.5[fast=false]` applies.
 
 Parallel subagents = parallel token spend. Cursor may fall back from a pinned worker model when blocked by admin, unavailable Max Mode, or plan limits.
 

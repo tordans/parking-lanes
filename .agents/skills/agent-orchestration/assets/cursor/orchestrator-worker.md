@@ -22,6 +22,7 @@ When spawning subagents via Task (`implementer`, `verifier`, `explore`, or other
 
 - **Omit `model`** — never pass `composer-2.5-fast`, `composer-2.5`, `fast`, or any inline model.
 - For `/implementer` and `/verifier`, omitting `model` lets frontmatter `composer-2.5[fast=false]` apply.
+- Built-in `explore` ignores `.cursor/agents/` pins (its own default); still omit inline `model`.
 - Use `subagent_type: implementer` or `verifier`, not `generalPurpose` with an inline Composer model.
 
 ## Orchestrator must not

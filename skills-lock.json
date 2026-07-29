@@ -5,7 +5,7 @@
       "source": "FixMyBerlin/fixmyskills",
       "sourceType": "github",
       "skillPath": "skills/agent-orchestration/SKILL.md",
-      "computedHash": "635412d3f7ac826c49ae6c6f5154a86ec9dc33be5a04e40b6607f87446410564"
+      "computedHash": "60e794ac6f9fe17770ca357d5fe21c05245433177f2b25d7ae3488ac819ceda7"
     },
     "finish-work": {
       "source": "FixMyBerlin/fixmyskills",
@@ -47,7 +47,7 @@
       "source": "FixMyBerlin/fixmyskills",
       "sourceType": "github",
       "skillPath": "skills/tech-stack/SKILL.md",
-      "computedHash": "7d2de8913d3b16c114f22e66fb1de0631de28068714b6f448e7cbf6b03de3101"
+      "computedHash": "271d23af284ebe98947a47a1ba4a66f77490322de9a1fd60ee39f6637ef36a5f"
     },
     "zustand-state-management": {
       "source": "FixMyBerlin/fixmyskills",
