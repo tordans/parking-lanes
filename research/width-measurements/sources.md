@@ -29,6 +29,9 @@ Related: [lane-editor-tags](../lane-editor-tags/) for `:lanes` / tool parser res
 | [Key:narrow](https://wiki.openstreetmap.org/wiki/Key:narrow) | Relative narrowing (`narrow=yes`); combine with `width=*`. |
 | [Tag:hazard=road_narrows](https://wiki.openstreetmap.org/wiki/Tag:hazard%3Droad_narrows) | Signed / notable road-narrows hazard. |
 | [Key:lane_markings](https://wiki.openstreetmap.org/wiki/Key:lane_markings) | Whether lanes are painted; see-also points at `width` / `width:lanes` / `width:carriageway`. |
+| [Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks) | Pedestrian infrastructure; with/without sidewalks tag **`verge=*`** + **`verge:width=*`**; same pedestrian-fallback idea for **`shoulder=*`** beyond motorways. |
+| [Key:verge](https://wiki.openstreetmap.org/wiki/Key:verge) | Verge presence (`yes`/`left`/`right`/`both`/`no`/`separate` + sided `verge:*=`); **`verge:*:width`** (metres or feet); optional area mapping with `verge=yes`. |
+| [Key:shoulder](https://wiki.openstreetmap.org/wiki/Key:shoulder) | Shoulder presence/width; Sidewalks notes pedestrian use where available off motorways. |
 | [Proposal:Separation](https://wiki.openstreetmap.org/wiki/Proposal:Separation) | Draft separation/marking; buffer widths as companion quality; `barred_area` marking ↔ buffer. |
 | [File:Radweg Edinburger Straße beschriftet.jpg](https://wiki.openstreetmap.org/wiki/File:Radweg_Edinburger_Stra%C3%9Fe_beschriftet.jpg) | Mapillary-based labelled width photo (Berlin); used on meetup/Radwege pages; 2025 “fix buffer left” revision. |
 
@@ -98,5 +101,5 @@ These ERA/infraD materials are **not** OSM tagging proposals; they justify how B
 | Paint in buffer | ERA drawing + meetup note | **Documented (DE practice)** |
 | `maxwidth` / `maxwidth:physical` | Key pages, DE:Key:width | **Documented** |
 | Narrowings | Key:narrow, hazard=road_narrows, Talk min-width | **Documented** |
-| Full ROW / median green | — | **Gap** (no tag) |
+| Full ROW / median green | Sidewalks, Key:verge, Key:width | **Documented components** (`sidewalk:*:width`, `verge`/`verge:*:width`); **no aggregate** ROW key |
 | Parser behaviour | muv-osm, Straßenraumkarte | **Documented** |

@@ -96,11 +96,13 @@ Projects: **SRK** = Straßenraumkarte, **O2L** = osm2lanes (archived), **O2S** =
 | `cycleway:share_busway` | access | — | should | [Bus lanes](https://wiki.openstreetmap.org/wiki/Bus_lanes) | — | Bike in bus lane |
 | `cycleway:*:width` | physical | OLV | should | [Key:cycleway](https://wiki.openstreetmap.org/wiki/Key:cycleway) | — | Side path width |
 | `cycleway:*:oneway` | access | — | should | [Key:cycleway](https://wiki.openstreetmap.org/wiki/Key:cycleway) | — | Contraflow `-1` |
-| `shoulder` | physical | O2L, OLV | should | [Key:shoulder](https://wiki.openstreetmap.org/wiki/Key:shoulder) | — | Excluded from `lanes` |
+| `shoulder` | physical | O2L, OLV | should | [Key:shoulder](https://wiki.openstreetmap.org/wiki/Key:shoulder) | — | Excluded from `lanes`; Sidewalks: pedestrian fallback where usable |
 | `shoulder:left` / `:right` | physical | OLV | should | [Key:shoulder](https://wiki.openstreetmap.org/wiki/Key:shoulder) | — | |
 | `shoulder:width` | physical | OLV | nice | [Key:shoulder](https://wiki.openstreetmap.org/wiki/Key:shoulder) | — | |
 | `sidewalk` | physical | JOSM-LF, OLV | should | [Key:sidewalk](https://wiki.openstreetmap.org/wiki/Key:sidewalk) | — | Not a traffic lane |
-| `sidewalk:*:width` | physical | OLV | nice | [Key:sidewalk](https://wiki.openstreetmap.org/wiki/Key:sidewalk) | — | |
+| `sidewalk:*:width` | physical | OLV | nice | [Key:sidewalk](https://wiki.openstreetmap.org/wiki/Key:sidewalk) | — | Outside carriageway `width=*` |
+| `verge` / `verge:left` / `:right` / `:both` | physical | twpol | nice | [Key:verge](https://wiki.openstreetmap.org/wiki/Key:verge) | — | Berm / curb strip / tree lawn; [Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks) pedestrian context |
+| `verge:width` / `verge:*:width` | physical | — | nice | [Key:verge](https://wiki.openstreetmap.org/wiki/Key:verge) | — | Outside carriageway `width=*`; ROW composition |
 | `oneway` | access | O2S, OLV, JOSM-LF | must | [Key:oneway](https://wiki.openstreetmap.org/wiki/Key:oneway) | — | Affects lane direction model |
 | `oneway:bus` | access | — | should | [Bus lanes](https://wiki.openstreetmap.org/wiki/Bus_lanes) | — | Contraflow bus |
 | `oneway:bicycle` | access | SRK | should | [Key:oneway](https://wiki.openstreetmap.org/wiki/Key:oneway) | — | Contraflow cycle |
@@ -119,7 +121,7 @@ Projects: **SRK** = Straßenraumkarte, **O2L** = osm2lanes (archived), **O2S** =
 | `arrow` (on `road_marking`) | marking | — | nice | [Key:road_marking](https://wiki.openstreetmap.org/wiki/Key:road_marking) | — | Subtag for `road_marking=arrow`; values from `turn=*`; must match `turn:lanes` |
 | `inscription` / `reason` | marking | — | nice | [Key:road_marking](https://wiki.openstreetmap.org/wiki/Key:road_marking) | — | `inscription=*` for `text`; `reason=*` for `restriction` (`bus_stop`, `junction`, …) |
 
-**Tag count:** 101 rows in table above.
+**Tag count:** 103 rows in table above.
 
 ## Priority summary for lane editor MVP
 

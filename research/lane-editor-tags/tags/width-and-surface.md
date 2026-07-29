@@ -25,7 +25,8 @@ Default unit: **metres** (no suffix required).
 | `width:carriageway` | Synonym emphasis for full carriageway — prefer `width=*` |
 | `est_width=*` | Estimated width |
 | `source:width=estimated` | Provenance for guessed widths |
-| `cycleway:right:width`, `shoulder:width` | Side feature widths |
+| `cycleway:right:width`, `shoulder:width`, `verge:width` / `verge:*:width` | Side feature widths (outside carriageway `width=*`) |
+| `sidewalk:*:width` | Sidewalk width on highway tags |
 | `parking:*:width` | Parking lane width |
 
 ### Defaults in tools
@@ -106,6 +107,8 @@ Effective usable width: `width=*` minus parking, or sum of `width:lanes` — `wi
 | **Width deep dive** | [../../width-measurements/](../../width-measurements/) |
 | Width source index | [../../width-measurements/sources.md](../../width-measurements/sources.md) |
 | Key:width (EN) | https://wiki.openstreetmap.org/wiki/Key:width |
+| Sidewalks (verge / shoulder) | https://wiki.openstreetmap.org/wiki/Sidewalks |
+| Key:verge | https://wiki.openstreetmap.org/wiki/Key:verge |
 | Lanes | https://wiki.openstreetmap.org/wiki/Lanes |
 | DE:Fahrspuren | https://wiki.openstreetmap.org/wiki/DE:Fahrspuren |
 | Key:surface | https://wiki.openstreetmap.org/wiki/Key:surface |
@@ -133,3 +136,4 @@ Effective usable width: `width=*` minus parking, or sum of `width:lanes` — `wi
 - `surface:colour` per lane or cycle slot.
 - Measurement tool integration (JOSM-style cross-line).
 - Parking lane width via `parking:*:width` in cross-section view.
+- `verge=*` / `verge:*:width` (and shoulder) when composing ROW / pedestrian context.

@@ -13,7 +13,7 @@ Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` edit
 | Do motor `width:lanes` values include painted lines? | **Not documented** on the wiki. **Logical assumption (editor):** slots are **clear width between markings** (paint excluded), analogous to Berlin cycleway practice. Paint strokes are part of kerb→kerb `width=*` and must be added separately when reconciling | **Assumption** — not wiki text |
 | Do cycleway **usable** widths include paint? | Berlin practice: **distance between boundary lines** (`cycleway:*:width`) | **Clear for Berlin schema** |
 | Do **buffer** widths include paint / hatching? | Berlin / ERA-style practice documented for OSM: **yes — markings are counted in `buffer`** | **Clear for Berlin numeric buffer**; global `cycleway:buffer` mostly `yes`/`no` |
-| Is there a tag for total ROW (carriageway + sidewalks + green median)? | **No.** Compose from component widths / separate geometries | **Clear gap** |
+| Is there a tag for total ROW (carriageway + sidewalks + green median)? | **No single key.** Compose from components: `sidewalk:*:width`, `verge` / `verge:*:width`, `width=*`, separate areas | **Clear** (components exist; no aggregate) |
 | Narrowings? | **Split the way** and set `width=*` (or `est_width`) on the narrow segment; optional `narrow=yes` / `hazard=road_narrows` | **Clear** |
 
 ---
@@ -23,12 +23,12 @@ Sibling package: [lane-editor-tags](../lane-editor-tags/) (lanes / `:lanes` edit
 OSM does **not** store one “streetscape width”. Widths attach to **components**. Think Streetmix slices:
 
 ```text
- FULL RIGHT-OF-WAY  (no single OSM width tag)
+ FULL RIGHT-OF-WAY  (no single OSM width tag — sum components)
  ┌──────────────────────────────────────────────────────────────────────────┐
- │ sidewalk:*:width │ green / verge │████ CARRIAGEWAY width=* ████│ green │ sidewalk │
- │  (or separate    │ (often no     │ parking + lanes + bike +     │       │          │
- │   highway=footway│  width tag)   │ buffer + gutter              │       │          │
- │   + width)       │               │                              │       │          │
+ │ sidewalk:*:width │ verge:*:width │████ CARRIAGEWAY width=* ████│ verge │ sidewalk │
+ │  (or separate    │  (or area /   │ parking + lanes + bike +     │       │          │
+ │   highway=footway│  separation=  │ buffer + gutter              │       │          │
+ │   + width)       │  greenery)    │                              │       │          │
  └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -175,10 +175,14 @@ There is **no** established `min_width=*` for roads. For narrowings use `width=*
 | Tag | Role | Inside `width=*`? |
 |-----|------|-------------------|
 | `parking:left/right/both:width` | On-street parking strip | **Yes** if parking is on the carriageway |
-| `shoulder:width` / `shoulder:left:width` | Shoulder | Situational (often edge of carriageway) |
+| `shoulder=*` / `shoulder:width` / `shoulder:left/right:width` | Shoulder (incl. non-motorway) | Situational (often edge of carriageway); **outside** when not part of the paved carriageway practice |
 | `cycleway:left/right/both:width` | Cycle lane/track tagged **on** the highway | **Yes** for `=lane`; **No** for separate `highway=cycleway` |
 | `sidewalk:left/right/both:width` | Sidewalk on highway tags | **Outside** `width=*` |
+| `verge=*` / `verge:left/right/both=*` | Road verge presence (berm, curb strip, tree lawn, …) | **Outside** `width=*` |
+| `verge:width` / `verge:left/right/both:width` | Verge strip width (metres; Key:verge also allows feet with `'`) | **Outside** `width=*` |
 | `cycleway:width` / `footway:width` on segregated path | Split of shared path | On the **path** way’s own `width` |
+
+**Pedestrian context** ([Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks), [Key:verge](https://wiki.openstreetmap.org/wiki/Key:verge)): with or without sidewalks, tag verge presence/width on the highway. In many jurisdictions pedestrians walk the verge when sidewalks are missing; the same idea applies to `shoulder=*` where shoulders exist beyond motorways and are usable on foot. Neither belongs in carriageway `width=*`. Optionally map the green strip as a separate area (`landuse=grass` / … + `verge=yes`) and set `verge:*=separate` on the road.
 
 ---
 
@@ -253,7 +257,7 @@ Hatched / barred areas belong in **`buffer`** (and optionally `marking=barred_ar
 | Full `:lanes` strip (clear) | `Σ width:lanes` | **Excludes** longitudinal paint under §2.2 assumption |
 | Clear lanes + paint → carriageway | `Σ width:lanes + Σ marking strokes (+ parking/shoulder/gutter/buffer)` | Paint term is **logical assumption**, not wiki |
 | On-road cycle package | `cycleway:*:width + cycleway:*:buffer(:*)` | Buffer includes paint (Berlin); cycle width does not |
-| Full ROW | sidewalks + verges + carriageway + medians | **No tag** — sum components or use areas |
+| Full ROW | sidewalks + verges + carriageway + medians | **No aggregate tag** — sum `sidewalk:*:width` + `verge:*:width` + `width=*` (+ areas for medians) |
 
 ### 3.2 Scenario A — simple two-lane street, no parking
 
@@ -296,8 +300,8 @@ If bike is **only** in `cycleway:*:width` and **also** appears as a `width:lanes
 ```
 
 - Main highway `width` does **not** include the cycle track.
-- Green strip: usually **no** width on the highway; map as area / `separation=greenery` / verge — **gap** if you need a total ROW metre value.
-- Median with planting between dual carriageways: dual ways each with own `width`; median as separate area — again **no** `width:total_row`.
+- Green strip / verge: tag **`verge=*`** (+ **`verge:width`** / **`verge:*:width`**) on the highway, and/or map as area / `separation=greenery`. Use those metres when composing ROW — there is still **no** single `width:total_row`.
+- Median with planting between dual carriageways: dual ways each with own `width`; median as separate area — again **no** aggregate ROW key.
 
 ### 3.5 Scenario D — Schutzstreifen counted in `:lanes`
 
@@ -328,11 +332,13 @@ flowchart TD
   B -->|Paint/hatch buffer beside cycle| G["cycleway:*:buffer = metres — INCLUDE paint"]
   B -->|Separate cycleway/footway| H[width=* on that way]
   B -->|Sidewalk on highway tags| I[sidewalk:*:width — outside width]
+  B -->|Road verge / berm / tree lawn| V[verge=* + verge:*:width — outside width]
+  B -->|Shoulder usable on foot| S[shoulder=* / shoulder:*:width]
   B -->|Legal vehicle limit| J[maxwidth=*]
   B -->|Physical clearance| K[maxwidth:physical=*]
   B -->|Guess only| L[est_width=* / source:width]
   B -->|Local pinch point| M[Split way + width=* + optional narrow=yes]
-  B -->|Whole ROW incl. greens/sidewalks| N[No single tag — sum parts / areas]
+  B -->|Whole ROW incl. greens/sidewalks| N[No aggregate — sum sidewalk + verge + width / areas]
 ```
 
 ### Soft consistency checks (editor)
@@ -402,7 +408,7 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 ## 7. Gaps & open questions
 
 1. **No wiki rule** for whether motor `width:lanes` includes painted line millimetres — this package documents a **clear-between-markings** logical assumption (§2.2) so editors can reconcile `width` vs `sum(width:lanes)`; confirm or reject against more surveys / a Key:width note.
-2. **No `width` for full ROW** including both sidewalks + planted median / boulevard — intentional; micromappers use areas.
+2. **No aggregate `width` for full ROW** — intentional. Component tags exist (`sidewalk:*:width`, `verge` / `verge:*:width`, carriageway `width=*`); planted medians / boulevards still tend to be areas.
 3. **Global `cycleway:buffer`** usage is mostly boolean; numeric+paint-included rule is **Berlin/DE strong practice**, not universal wiki text on Key:cycleway:buffer.
 4. **Dual tagging** (`cycleway:*:width` **and** bike slot in `width:lanes`) — pick one primary for sum checks.
 5. **Unpaved / rural** roads: tagging ML showed no single “width” definition (obstacle-free vs driven ruts) — urban kerb rule does not travel well.
@@ -433,7 +439,8 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 
 - Import measurement from map measure tool / StreetMeasure.
 - Toggle: “buffers include markings (DE)” for QA overlays.
-- Optional ROW composition view (sidewalk + verge + carriageway) without inventing a new OSM key.
+- Optional ROW composition view (`sidewalk:*:width` + `verge:*:width` + carriageway `width=*`) without inventing an aggregate OSM key.
+- `verge=*` / `verge:*:width` (and shoulder) in cross-section when editing pedestrian context.
 
 ---
 
@@ -444,6 +451,9 @@ Wiki file history note (2025-07-14): “fix buffer left” on the Edinburger ima
 | Source index (this research) | [sources.md](./sources.md) |
 | Key:width | https://wiki.openstreetmap.org/wiki/Key:width |
 | Lanes / width:lanes | https://wiki.openstreetmap.org/wiki/Lanes |
+| Sidewalks (verge / shoulder) | https://wiki.openstreetmap.org/wiki/Sidewalks |
+| Key:verge | https://wiki.openstreetmap.org/wiki/Key:verge |
+| Key:shoulder | https://wiki.openstreetmap.org/wiki/Key:shoulder |
 | Berlin Radwege schema | https://wiki.openstreetmap.org/wiki/Berlin/Verkehrswende/Radwege |
 | StreetComplete #5593 | https://github.com/streetcomplete/StreetComplete/issues/5593 |
 | Tagging ML 2020 width thread | https://lists.openstreetmap.org/pipermail/tagging/2020-September/055362.html |
