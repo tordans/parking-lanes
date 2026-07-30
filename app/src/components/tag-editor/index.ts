@@ -3,7 +3,7 @@ export { TagEditorFieldRow } from './TagEditorFieldRow'
 export { TagEditorSelectInput } from './TagEditorSelectInput'
 export { TagEditorTextInput } from './TagEditorTextInput'
 export { isYesNoCompatibleValue, YesNoOrTextField, YesNoOrTextInput } from './YesNoOrTextInput'
-export { YesNoRadioInput } from './YesNoRadioInput'
+export { YesNoRadioInput, type YesNoValue } from './YesNoRadioInput'
 export { applyTagKeyChange, applyTagPatch, type TagCommitOptions } from './tag-draft'
 export { tagEditCommitDebounceMs, useDebouncedCommit } from './use-debounced-commit'
 export { useOsmTagDraft } from './use-osm-tag-draft'
@@ -26,6 +26,7 @@ export {
   tagEditorValueButtonGroupCompactClassName,
   tagEditorValueButtonIconClassName,
   tagEditorValueButtonIconCompactClassName,
+  tagEditorValueButtonImpliedClassName,
   tagEditorValueButtonSelectedClassName,
   tagEditorValueCellClassName,
   tagEditorValueRowClassName,

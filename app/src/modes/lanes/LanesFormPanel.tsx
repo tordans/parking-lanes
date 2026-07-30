@@ -38,6 +38,10 @@ import {
   type MatrixRowId,
 } from './domain/lanes-matrix-model'
 import {
+  resolveImpliedOneway,
+  resolveImpliedOnewayBicycle,
+} from './domain/oneway-defaults'
+import {
   CYCLEWAY_PRESENCE_VALUES,
   resolveSidepathPresence,
   SIDEWALK_PRESENCE_VALUES,
@@ -298,7 +302,20 @@ function WayLevelFields(props: {
 }) {
   const { way, model, readOnly } = props
   const tags = way.tags
-  const oneway = isOneway({ oneway: model.oneway ?? tags.oneway ?? '' })
+  const effectiveOnewayTags = {
+    ...tags,
+    oneway: model.oneway ?? tags.oneway ?? '',
+  }
+  const oneway = isOneway(effectiveOnewayTags)
+  const impliedOneway = resolveImpliedOneway(tags)
+  const impliedOnewayHint =
+    impliedOneway === 'yes'
+      ? m.editor_implied_default_roundabout()
+      : m.editor_implied_default({ value: impliedOneway })
+  const impliedOnewayBicycle = resolveImpliedOnewayBicycle(effectiveOnewayTags)
+  const impliedOnewayBicycleHint = m.lanes_oneway_bicycle_implied_hint({
+    value: impliedOnewayBicycle,
+  })
 
   function setModelField<K extends keyof WayLaneModel>(key: K, value: WayLaneModel[K]) {
     if (readOnly) return
@@ -334,6 +351,8 @@ function WayLevelFields(props: {
           label="oneway"
           name="oneway"
           value={model.oneway ?? tags.oneway ?? ''}
+          impliedValue={impliedOneway}
+          impliedHint={impliedOnewayHint}
           disabled={readOnly}
           onChange={(v) => setModelField('oneway', v === '' ? undefined : v)}
         />
@@ -341,6 +360,8 @@ function WayLevelFields(props: {
           label="oneway:bicycle"
           name="oneway:bicycle"
           value={tags['oneway:bicycle'] ?? ''}
+          impliedValue={impliedOnewayBicycle}
+          impliedHint={impliedOnewayBicycleHint}
           disabled={readOnly}
           onChange={(v) => setTag('oneway:bicycle', v)}
         />

@@ -1,6 +1,6 @@
 import { TagEditorClearValueButton } from './TagEditorClearValueButton'
 import { TagEditorTextInput } from './TagEditorTextInput'
-import { YesNoRadioInput } from './YesNoRadioInput'
+import { YesNoRadioInput, type YesNoValue } from './YesNoRadioInput'
 
 /** Empty / yes / no use the shared yes–no control; any other existing value falls back to text. */
 export function isYesNoCompatibleValue(value: string): boolean {
@@ -10,6 +10,8 @@ export function isYesNoCompatibleValue(value: string): boolean {
 export function YesNoOrTextInput(props: {
   name: string
   value: string
+  impliedValue?: YesNoValue
+  impliedHint?: string
   disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
@@ -18,6 +20,8 @@ export function YesNoOrTextInput(props: {
       <YesNoRadioInput
         name={props.name}
         value={props.value}
+        impliedValue={props.impliedValue}
+        impliedHint={props.impliedHint}
         disabled={props.disabled}
         onChange={props.onChange}
       />
@@ -39,6 +43,8 @@ export function YesNoOrTextField(props: {
   label: string
   name: string
   value: string
+  impliedValue?: YesNoValue
+  impliedHint?: string
   disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
@@ -55,6 +61,8 @@ export function YesNoOrTextField(props: {
       <YesNoOrTextInput
         name={props.name}
         value={props.value}
+        impliedValue={props.impliedValue}
+        impliedHint={props.impliedHint}
         disabled={props.disabled}
         onChange={props.onChange}
       />

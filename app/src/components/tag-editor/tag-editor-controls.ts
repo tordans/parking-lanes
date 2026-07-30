@@ -53,6 +53,10 @@ export const tagEditorValueButtonIconCompactClassName = 'block size-full object-
 export const tagEditorValueButtonSelectedClassName =
   'bg-zinc-200 text-zinc-950 hover:bg-zinc-200 active:bg-zinc-200'
 
+/** Soft highlight for OSM-implied defaults when the tag is unset (display-only). */
+export const tagEditorValueButtonImpliedClassName =
+  'bg-zinc-50 text-zinc-400 italic ring-1 ring-inset ring-dashed ring-zinc-300 hover:bg-zinc-100 hover:text-zinc-500 active:bg-zinc-100'
+
 export const tagEditorValueButtonDividerClassName = 'border-l border-zinc-950/10'
 
 export const tagEditorYesNoButtonClassName = `flex shrink-0 cursor-pointer items-center justify-center bg-white text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 ${tagEditorCompactControlClassName}`
