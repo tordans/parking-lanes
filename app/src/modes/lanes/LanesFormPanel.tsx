@@ -308,14 +308,7 @@ function WayLevelFields(props: {
   }
   const oneway = isOneway(effectiveOnewayTags)
   const impliedOneway = resolveImpliedOneway(tags)
-  const impliedOnewayHint =
-    impliedOneway === 'yes'
-      ? m.editor_implied_default_roundabout()
-      : m.editor_implied_default({ value: impliedOneway })
   const impliedOnewayBicycle = resolveImpliedOnewayBicycle(effectiveOnewayTags)
-  const impliedOnewayBicycleHint = m.lanes_oneway_bicycle_implied_hint({
-    value: impliedOnewayBicycle,
-  })
 
   function setModelField<K extends keyof WayLaneModel>(key: K, value: WayLaneModel[K]) {
     if (readOnly) return
@@ -352,7 +345,6 @@ function WayLevelFields(props: {
           name="oneway"
           value={model.oneway ?? tags.oneway ?? ''}
           impliedValue={impliedOneway}
-          impliedHint={impliedOnewayHint}
           disabled={readOnly}
           onChange={(v) => setModelField('oneway', v === '' ? undefined : v)}
         />
@@ -361,7 +353,6 @@ function WayLevelFields(props: {
           name="oneway:bicycle"
           value={tags['oneway:bicycle'] ?? ''}
           impliedValue={impliedOnewayBicycle}
-          impliedHint={impliedOnewayBicycleHint}
           disabled={readOnly}
           onChange={(v) => setTag('oneway:bicycle', v)}
         />

@@ -16,10 +16,8 @@ const baseButtonClassName = `flex shrink-0 cursor-pointer items-center justify-c
 export function YesNoRadioInput(props: {
   name: string
   value: string
-  /** When `value` is empty, softly highlight this option as the OSM-implied default. */
+  /** When `value` is empty, highlight this option as the OSM-implied default. */
   impliedValue?: YesNoValue
-  /** Tooltip / accessible description for the soft-selected default option. */
-  impliedHint?: string
   disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
@@ -32,7 +30,7 @@ export function YesNoRadioInput(props: {
       {yesNoOptions.map((option, index) => {
         const isSelected = props.value === option
         const isImplied = props.value === '' && props.impliedValue === option
-        const title = isSelected ? option : isImplied ? (props.impliedHint ?? option) : option
+        const label = isImplied ? `${option} (implicit)` : option
 
         return (
           <button
@@ -40,13 +38,12 @@ export function YesNoRadioInput(props: {
             type="button"
             role="radio"
             aria-checked={isSelected}
-            aria-label={option}
-            aria-description={isImplied ? props.impliedHint : undefined}
-            title={title}
+            aria-label={label}
+            title={label}
             disabled={props.disabled}
             className={clsx(
               baseButtonClassName,
-              'w-8',
+              isImplied ? 'px-1.5' : 'w-8',
               index > 0 && tagEditorValueButtonDividerClassName,
               isSelected
                 ? tagEditorValueButtonSelectedClassName
@@ -56,7 +53,7 @@ export function YesNoRadioInput(props: {
             )}
             onClick={() => props.onChange(option)}
           >
-            {option}
+            {label}
           </button>
         )
       })}

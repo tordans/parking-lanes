@@ -11,7 +11,6 @@ export function YesNoOrTextInput(props: {
   name: string
   value: string
   impliedValue?: YesNoValue
-  impliedHint?: string
   disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
@@ -21,7 +20,6 @@ export function YesNoOrTextInput(props: {
         name={props.name}
         value={props.value}
         impliedValue={props.impliedValue}
-        impliedHint={props.impliedHint}
         disabled={props.disabled}
         onChange={props.onChange}
       />
@@ -44,7 +42,6 @@ export function YesNoOrTextField(props: {
   name: string
   value: string
   impliedValue?: YesNoValue
-  impliedHint?: string
   disabled?: boolean
   onChange: (tagValue: string) => void
 }) {
@@ -62,7 +59,6 @@ export function YesNoOrTextField(props: {
         name={props.name}
         value={props.value}
         impliedValue={props.impliedValue}
-        impliedHint={props.impliedHint}
         disabled={props.disabled}
         onChange={props.onChange}
       />
