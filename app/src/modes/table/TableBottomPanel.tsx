@@ -33,10 +33,12 @@ export function TableBottomPanel() {
   const chain = useTableChain()
   const pendingJunctions = useTablePendingJunctions()
   const { setChainResult } = useTableMapActions()
-  const { extendAtJunction } = useWayChainBuilder({
+  // Rebuild runs only in TableModeLayers — avoid racing two buildChain calls.
+  const { extendAtJunction, recenterOnWay } = useWayChainBuilder({
     centerWayId,
     maxPerSide: CHAIN_MAX_PER_SIDE,
     setChainResult,
+    rebuild: false,
   })
   const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
   const isFetching = useIsOsmCoverageFetching()
@@ -48,6 +50,9 @@ export function TableBottomPanel() {
   const panelRef = useRef<HTMLDivElement>(null)
 
   function walkToWay(wayId: number) {
+    if (chain?.segments.some((segment) => segment.id === wayId)) {
+      recenterOnWay(chain, wayId)
+    }
     selectFeature({ type: 'way', id: wayId })
   }
 
@@ -81,7 +86,12 @@ export function TableBottomPanel() {
     )
   }
 
-  if (!chain) {
+  // Prefer live selection over store.centerIndex so the matrix/propagate baseline
+  // updates immediately on walk, before async rebuild finishes.
+  const liveCenterIndex =
+    chain != null ? chain.segments.findIndex((segment) => segment.id === centerWayId) : -1
+
+  if (!chain || liveCenterIndex === -1) {
     return (
       <div className="flex h-full items-center justify-center p-4">
         <p className="text-sm text-zinc-500">{m.table_building_chain()}</p>
@@ -89,7 +99,7 @@ export function TableBottomPanel() {
     )
   }
 
-  const activeChain = chain
+  const activeChain = { segments: chain.segments, centerIndex: liveCenterIndex }
   const rows = buildTagRows(activeChain)
   const suggestions = suggestPropagateFromCenter(
     activeChain.segments,

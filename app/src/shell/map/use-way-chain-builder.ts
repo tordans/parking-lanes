@@ -17,21 +17,29 @@ type SetChainResult = (chain: SegmentChain | null, pendingJunctions: JunctionCho
 /**
  * Build / extend / recenter a way chain for highway modes (lanes, table).
  * Callers own the Zustand store and pass `setChainResult` + `maxPerSide`.
+ *
+ * Mount the rebuild effect in exactly one place per mode (`rebuild: true`, default).
+ * Other callers that only need extend/recenter should pass `rebuild: false` so two
+ * effects do not race on the same `setChainResult`.
  */
 export function useWayChainBuilder({
   centerWayId,
   maxPerSide,
   setChainResult,
+  rebuild = true,
 }: {
   centerWayId: number | undefined
   maxPerSide: number
   setChainResult: SetChainResult
+  rebuild?: boolean
 }) {
   const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
   const inclusionStyle = useHighwayInclusionStyle()
 
   useEffect(
     function rebuildChainOnCenterChange() {
+      if (!rebuild) return
+
       if (!centerWayId || !graph?.ways[centerWayId]) {
         setChainResult(null, [])
         return
@@ -58,7 +66,7 @@ export function useWayChainBuilder({
         cancelled = true
       }
     },
-    [centerWayId, graph, inclusionStyle, maxPerSide, setChainResult],
+    [centerWayId, graph, inclusionStyle, maxPerSide, rebuild, setChainResult],
   )
 
   async function extendAtJunction(

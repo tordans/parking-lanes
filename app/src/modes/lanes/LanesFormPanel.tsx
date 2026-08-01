@@ -642,7 +642,7 @@ export function LanesFormPanel() {
   const pendingJunctions = useLanesPendingJunctions()
   const { setHighlightedSlot } = useLanesMapActions()
   const { scene, topNeighbor, bottomNeighbor } = useRoadSpaceChain()
-  const { extendAtJunction } = useLanesChainBuilder(centerWayId)
+  const { extendAtJunction } = useLanesChainBuilder(centerWayId, { rebuild: false })
   const authState = useAuthState()
   const readOnly = authState !== AuthState.success
   const { login } = useOsmAuth()

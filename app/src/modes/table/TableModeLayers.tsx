@@ -19,6 +19,7 @@ export function TableModeLayers(_props: ModeMapProps) {
   const chain = useTableChain()
 
   const centerWayId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
+  // Single rebuild owner for table mode (panel uses rebuild: false for actions only).
   useWayChainBuilder({
     centerWayId,
     maxPerSide: CHAIN_MAX_PER_SIDE,

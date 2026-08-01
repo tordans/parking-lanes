@@ -55,7 +55,7 @@ function dualSiblingForSegment(
 export function useRoadSpaceChain(): RoadSpaceChainView {
   const selectedOsmRef = useSelectedOsmRef()
   const centerWayId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
-  useLanesChainBuilder(centerWayId)
+  useLanesChainBuilder(centerWayId, { rebuild: false })
   const chain = useLanesChain()
   const visibleSegments = useVisibleChainSegments(centerWayId)
   const mapViewport = useMapViewport()

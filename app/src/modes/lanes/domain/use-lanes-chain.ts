@@ -5,12 +5,16 @@ import { useLanesChain, useLanesMapActions } from '../map/lanes-map-store'
 
 const CHAIN_MAX_PER_SIDE = 3
 
-export function useLanesChainBuilder(centerWayId: number | undefined) {
+export function useLanesChainBuilder(
+  centerWayId: number | undefined,
+  options?: { rebuild?: boolean },
+) {
   const { setChainResult } = useLanesMapActions()
   return useWayChainBuilder({
     centerWayId,
     maxPerSide: CHAIN_MAX_PER_SIDE,
     setChainResult,
+    rebuild: options?.rebuild,
   })
 }
 
