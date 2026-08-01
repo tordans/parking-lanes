@@ -4,6 +4,7 @@ import type {
   RoadSpaceSlotKind,
   RoadSpaceZone,
   ScenePolyline,
+  SceneRibbon,
   SceneSlotRect,
   SceneSlotRectKind,
   SeparatelyMappedSidepath,
@@ -21,7 +22,7 @@ const COLORS = {
   both_ways: '#fda4af', // rose-300
   sidewalk: '#f5f5f4', // stone-100 — warm, lighter than carriageway
   shared_path: '#a7f3d0', // emerald-200 — between cycle and sidewalk
-  median: '#d6d3d1', // stone-300 — island, distinct from travel slots
+  median: 'transparent', // gap — icon only (verge / crossing)
   sibling: '#e4e4e7', // zinc-200 — opposite carriageway placeholder
   motorUntagged: '#c4c4c8',
   busUntagged: '#fef3c7',
@@ -33,16 +34,20 @@ const COLORS = {
   outer_edge: '#a8a29e', // stone-400 — lighter than kerb
   separator: '#71717a', // zinc-500
   centreline: '#3f3f46', // zinc-700
+  placement_guide: '#8b5cf6', // violet-500
   segment_boundary: '#d4d4d8', // zinc-300 hairline
   highlight: '#2563eb', // blue-600
   highlightStroke: '#1d4ed8', // blue-700
   untaggedEdge: '#a1a1aa',
-  bandTint: '#f4f4f5', // zinc-100
-  bandTintCurrent: '#ffffff',
   arrow: '#3f3f46',
   turn: '#18181b',
   widthLabel: '#27272a',
+  /** Default / inferred clear widths (not OSM-tagged). */
+  calculatedWidthLabel: '#7c3aed', // violet-600
   siblingLabel: '#52525b',
+  medianIcon: '#65a30d', // lime-600 — grass verge
+  crossingIcon: '#57534e', // stone-600
+  carriagewayPlate: '#e7e5e4', // stone-200 — subtle asphalt behind motor/bus
 } as const
 
 function kindFill(kind: SceneSlotRectKind, tagged: boolean): string {
@@ -74,6 +79,8 @@ function polylineStroke(line: ScenePolyline): string {
       return COLORS.outer_edge
     case 'centreline':
       return COLORS.centreline
+    case 'placement_guide':
+      return COLORS.placement_guide
     case 'segment_boundary':
       return COLORS.segment_boundary
     default:
@@ -91,6 +98,8 @@ function polylineStrokeWidth(line: ScenePolyline): number {
       return 0.75
     case 'centreline':
       return 1.25
+    case 'placement_guide':
+      return 4
     default:
       return 1.5
   }
@@ -106,8 +115,8 @@ function formatWidthLabel(widthM: number): string {
 }
 
 /**
- * OSM way direction points **up** the page (same as /audit-width), so
- * diagram-left = `*:left`. forward → ↑, backward → ↓, both_ways → ↕.
+ * OSM way direction points **down** the page (↓). Diagram-left = `*:left`.
+ * forward → ↓, backward → ↑, both_ways → ↕.
  */
 function DirectionHint({
   direction,
@@ -155,10 +164,10 @@ function DirectionHint({
     )
   }
 
-  // forward = up-page (↑); backward = down-page (↓)
-  const tipY = direction === 'forward' ? cy - half : cy + half
-  const baseY = direction === 'forward' ? cy + half * 0.35 : cy - half * 0.35
-  const headSign = direction === 'forward' ? 1 : -1
+  // forward = down-page (↓); backward = up-page (↑)
+  const tipY = direction === 'forward' ? cy + half : cy - half
+  const baseY = direction === 'forward' ? cy - half * 0.35 : cy + half * 0.35
+  const headSign = direction === 'forward' ? -1 : 1
   return (
     <g opacity={0.75} pointerEvents="none">
       <polyline
@@ -187,10 +196,14 @@ function turnGlyphFlipTransform(
   cy: number,
 ): string | undefined {
   if (direction !== 'backward') return undefined
-  // Mirror forward-oriented glyphs so through/right match backward travel (↓ on the page).
+  // Glyphs are drawn for forward=↓; mirror for backward travel (↑ on the page).
   return `translate(${cx} ${cy}) scale(1 -1) translate(${-cx} ${-cy})`
 }
 
+/**
+ * Turn glyphs assume OSM forward = **down** the page (stem from top, tip toward bottom).
+ * left/right bend toward diagram-left / diagram-right.
+ */
 function turnGlyphPaths(
   turn: string,
   direction: RoadSpaceDirection,
@@ -218,7 +231,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx},${cy + half} ${cx},${cy - half}`}
+          points={`${cx},${cy - half} ${cx},${cy + half}`}
         />,
       )
       elements.push(
@@ -229,12 +242,13 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx - half * 0.45},${cy - half * 0.35} ${cx},${cy - half} ${cx + half * 0.45},${cy - half * 0.35}`}
+          points={`${cx - half * 0.45},${cy + half * 0.35} ${cx},${cy + half} ${cx + half * 0.45},${cy + half * 0.35}`}
         />,
       )
       continue
     }
     if (token === 'left' || token === 'sharp_left' || token === 'slight_left') {
+      // Stem from top → down, then bend diagram-left (driver's left when facing down-page).
       const bend = token === 'slight_left' ? 0.55 : 0.85
       elements.push(
         <path
@@ -244,7 +258,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          d={`M ${cx} ${cy + half} L ${cx} ${cy} Q ${cx} ${cy - half * bend} ${cx - half} ${cy - half * bend}`}
+          d={`M ${cx} ${cy - half} L ${cx} ${cy} Q ${cx} ${cy + half * bend} ${cx - half} ${cy + half * bend}`}
         />,
       )
       elements.push(
@@ -255,7 +269,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx - half + half * 0.35},${cy - half * bend - half * 0.35} ${cx - half},${cy - half * bend} ${cx - half + half * 0.35},${cy - half * bend + half * 0.35}`}
+          points={`${cx - half + half * 0.35},${cy + half * bend - half * 0.35} ${cx - half},${cy + half * bend} ${cx - half + half * 0.35},${cy + half * bend + half * 0.35}`}
         />,
       )
       continue
@@ -270,7 +284,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          d={`M ${cx} ${cy + half} L ${cx} ${cy} Q ${cx} ${cy - half * bend} ${cx + half} ${cy - half * bend}`}
+          d={`M ${cx} ${cy - half} L ${cx} ${cy} Q ${cx} ${cy + half * bend} ${cx + half} ${cy + half * bend}`}
         />,
       )
       elements.push(
@@ -281,7 +295,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx + half - half * 0.35},${cy - half * bend - half * 0.35} ${cx + half},${cy - half * bend} ${cx + half - half * 0.35},${cy - half * bend + half * 0.35}`}
+          points={`${cx + half - half * 0.35},${cy + half * bend - half * 0.35} ${cx + half},${cy + half * bend} ${cx + half - half * 0.35},${cy + half * bend + half * 0.35}`}
         />,
       )
       continue
@@ -297,7 +311,7 @@ function turnGlyphPaths(
           fill={stroke}
           fontFamily="ui-sans-serif, system-ui, sans-serif"
         >
-          {token === 'reverse' ? '↩' : token.startsWith('merge_to_left') ? '↖' : '↗'}
+          {token === 'reverse' ? '↩' : token.startsWith('merge_to_left') ? '↙' : '↘'}
         </text>,
       )
     }
@@ -344,7 +358,60 @@ function SiblingPlaceholderLabel({
   )
 }
 
-function MedianLabel({
+/** Simple tuft-of-grass glyph for dual median verge. */
+function MedianVergeIcon({ cx, cy, size }: { cx: number; cy: number; size: number }): ReactElement {
+  const s = Math.max(8, Math.min(18, size))
+  const x = cx - s / 2
+  const y = cy - s / 2
+  return (
+    <g transform={`translate(${x} ${y})`} aria-hidden>
+      <path
+        d={`M ${s * 0.5} ${s * 0.9} L ${s * 0.22} ${s * 0.2} M ${s * 0.5} ${s * 0.9} L ${s * 0.5} ${s * 0.12} M ${s * 0.5} ${s * 0.9} L ${s * 0.78} ${s * 0.2}`}
+        fill="none"
+        stroke={COLORS.medianIcon}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </g>
+  )
+}
+
+/** Zebra-crossing bars for a median with a crossing node on the way. */
+function MedianCrossingIcon({
+  cx,
+  cy,
+  size,
+}: {
+  cx: number
+  cy: number
+  size: number
+}): ReactElement {
+  const s = Math.max(10, Math.min(20, size))
+  const x = cx - s / 2
+  const y = cy - s / 2
+  const barH = s * 0.14
+  const gap = s * 0.1
+  const bars = [0, 1, 2, 3].map((i) => y + s * 0.18 + i * (barH + gap))
+  return (
+    <g aria-hidden>
+      {bars.map((by, i) => (
+        <rect
+          key={i}
+          x={x + s * 0.15}
+          y={by}
+          width={s * 0.7}
+          height={barH}
+          rx={0.5}
+          fill={COLORS.crossingIcon}
+          opacity={0.85}
+        />
+      ))}
+    </g>
+  )
+}
+
+function MedianMark({
   rect,
   cx,
   cy,
@@ -353,24 +420,64 @@ function MedianLabel({
   cx: number
   cy: number
 }): ReactElement | null {
-  if (rect.width < 10 || rect.height < 28) return null
-  const maxGlyphRun = Math.max(20, rect.height - 14)
-  const fontSize = Math.min(7.5, Math.max(5, rect.width * 0.28))
+  if (rect.width < 8 || rect.height < 16) return null
+  const size = Math.min(rect.width * 0.85, rect.height * 0.35, 20)
+  if (rect.medianHint === 'crossing') {
+    return <MedianCrossingIcon cx={cx} cy={cy} size={size} />
+  }
+  return <MedianVergeIcon cx={cx} cy={cy} size={size} />
+}
+
+function isRibbonHighlighted(ribbon: SceneRibbon, highlightedSlotId?: string | null): boolean {
+  if (highlightedSlotId == null || highlightedSlotId === '') return false
+  if (ribbon.slotId === highlightedSlotId) return true
+  return ribbon.bandSlices.some((s) => s.slotId === highlightedSlotId)
+}
+
+function ribbonForSlot(
+  ribbons: SceneRibbon[],
+  slotId: string,
+  role: string,
+): SceneRibbon | undefined {
+  return ribbons.find(
+    (r) =>
+      r.glyphBandRole === role &&
+      (r.slotId === slotId || r.bandSlices.some((s) => s.slotId === slotId)),
+  )
+}
+
+function CorridorRibbon({
+  ribbon,
+  highlightedSlotId,
+}: {
+  ribbon: SceneRibbon
+  highlightedSlotId?: string | null
+}): ReactElement {
+  const hasHighlight = highlightedSlotId != null && highlightedSlotId !== ''
+  const isHighlighted = isRibbonHighlighted(ribbon, highlightedSlotId)
+  const isSiblingDimmed = hasHighlight && !isHighlighted
+  const isSibling = ribbon.label === 'sibling'
+  const isTagged = ribbon.widthProvenance === 'tagged'
+  const isInferred = ribbon.widthProvenance === 'inferred'
+  const fill = isSibling ? COLORS.sibling : kindFill(ribbon.kind, isTagged || isInferred)
+  const opacity = isSibling
+    ? ribbon.dimmed || isSiblingDimmed
+      ? 0.7
+      : 1
+    : ribbon.dimmed || isSiblingDimmed
+      ? 0.4
+      : 1
+
   return (
-    <text
-      x={cx}
-      y={cy}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      fontSize={fontSize}
-      fill={COLORS.siblingLabel}
-      fontFamily="ui-sans-serif, system-ui, sans-serif"
-      transform={`rotate(-90 ${cx} ${cy})`}
-      textLength={maxGlyphRun}
-      lengthAdjust="spacingAndGlyphs"
-    >
-      Median
-    </text>
+    <g opacity={opacity} pointerEvents="none">
+      <polygon
+        points={pointsAttr(ribbon.points)}
+        fill={fill}
+        stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+        strokeWidth={isHighlighted ? 2.5 : 0}
+        shapeRendering="geometricPrecision"
+      />
+    </g>
   )
 }
 
@@ -379,11 +486,15 @@ function SlotRect({
   highlightedSlotId,
   metersToPx,
   siblingLabel,
+  ribbons,
+  ribbonsCoverTravel,
 }: {
   rect: SceneSlotRect
   highlightedSlotId?: string | null
   metersToPx: number
   siblingLabel: string
+  ribbons: SceneRibbon[]
+  ribbonsCoverTravel: boolean
 }): ReactElement {
   const hasHighlight = highlightedSlotId != null && highlightedSlotId !== ''
   const isHighlighted = hasHighlight && rect.slotId === highlightedSlotId
@@ -392,13 +503,34 @@ function SlotRect({
   const isSibling = rect.label === 'sibling'
   const isStepFill = rect.label === 'step_fill'
   const isTagged = rect.widthProvenance === 'tagged'
+  const isInferred = rect.widthProvenance === 'inferred'
+  const showWidthLabel = isTagged || isInferred
   const zone: RoadSpaceZone = rect.zone
-  const fill = isSibling ? COLORS.sibling : kindFill(rect.kind, isTagged)
-  const cx = rect.x + rect.width / 2
-  const cy = rect.y + rect.height / 2
+  const skipTravelFill =
+    ribbonsCoverTravel &&
+    !isMedian &&
+    !isStepFill &&
+    rect.kind !== 'median' &&
+    (!isSibling ||
+      ribbons.some(
+        (r) =>
+          r.label === 'sibling' &&
+          (r.slotId === rect.slotId || r.bandSlices.some((s) => s.slotId === rect.slotId)),
+      ))
+  const fill = isMedian
+    ? 'none'
+    : isSibling
+      ? COLORS.sibling
+      : skipTravelFill
+        ? 'none'
+        : kindFill(rect.kind, isTagged || isInferred)
+  const ribbon = ribbonForSlot(ribbons, rect.slotId, rect.role)
+  const cx = ribbon?.glyphCx ?? rect.x + rect.width / 2
+  const cy = ribbon?.glyphCy ?? rect.y + rect.height / 2
   const glyphSize = Math.min(rect.width, rect.height) * 0.42
-  const opacity =
-    isSibling || isMedian
+  const opacity = isMedian
+    ? 1
+    : isSibling
       ? rect.dimmed || isSiblingDimmed
         ? 0.7
         : 1
@@ -411,6 +543,7 @@ function SlotRect({
     !isMedian &&
     !isSibling &&
     !isStepFill &&
+    rect.role === 'current' &&
     (rect.kind === 'motor' ||
       rect.kind === 'bus' ||
       rect.kind === 'cycle' ||
@@ -418,29 +551,34 @@ function SlotRect({
 
   return (
     <g opacity={opacity} pointerEvents="none">
-      {rect.points && rect.points.length >= 3 ? (
-        <polygon
-          points={pointsAttr(rect.points)}
-          fill={fill}
-          stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
-          strokeWidth={isHighlighted ? 2.5 : 0}
-          shapeRendering="crispEdges"
-        />
-      ) : (
-        <rect
-          x={rect.x}
-          y={rect.y}
-          width={rect.width}
-          height={rect.height}
-          fill={fill}
-          stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
-          strokeWidth={isHighlighted ? 2.5 : 0}
-          opacity={zone === 'sidepath' && isTagged ? 0.95 : 1}
-          shapeRendering="crispEdges"
-        />
+      {!skipTravelFill && (
+        <>
+          {isMedian ? null : rect.points && rect.points.length >= 3 ? (
+            <polygon
+              points={pointsAttr(rect.points)}
+              fill={fill}
+              stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+              strokeWidth={isHighlighted ? 2.5 : 0}
+              shapeRendering="geometricPrecision"
+            />
+          ) : (
+            <rect
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
+              fill={fill}
+              stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+              strokeWidth={isHighlighted ? 2.5 : 0}
+              opacity={zone === 'sidepath' && (isTagged || isInferred) ? 0.95 : 1}
+              shapeRendering="geometricPrecision"
+            />
+          )}
+        </>
       )}
-      {/* Untagged width: vertical dotted edges only — no full rectangle (avoids per-band boxes). */}
+      {/* Untagged width: vertical dotted edges only — signals “missing, must be set”. */}
       {!isTagged &&
+      !isInferred &&
       !isMedian &&
       !isSibling &&
       !isStepFill &&
@@ -470,8 +608,8 @@ function SlotRect({
       {isSibling ? (
         <SiblingPlaceholderLabel rect={rect} siblingLabel={siblingLabel} cx={cx} cy={cy} />
       ) : null}
-      {isMedian ? <MedianLabel rect={rect} cx={cx} cy={cy} /> : null}
-      {isTagged &&
+      {isMedian ? <MedianMark rect={rect} cx={cx} cy={cy} /> : null}
+      {showWidthLabel &&
       !isMedian &&
       !isSibling &&
       !isStepFill &&
@@ -484,26 +622,28 @@ function SlotRect({
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={Math.min(10, Math.max(7, rect.width * 0.22))}
-          fill={COLORS.widthLabel}
-          opacity={0.8}
+          fill={isTagged ? COLORS.widthLabel : COLORS.calculatedWidthLabel}
+          opacity={isTagged ? 0.8 : 0.9}
           fontFamily="ui-sans-serif, system-ui, sans-serif"
         >
           {formatWidthLabel(widthM)}
         </text>
       ) : null}
-      {rect.turn && !isMedian && !isSibling ? (
+      {rect.turn && !isMedian && !isSibling && rect.role === 'current' ? (
         turnGlyphPaths(
           rect.turn,
           rect.direction,
           cx,
-          cy - (isTagged ? 4 : 0),
+          cy - (showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0),
           Math.max(10, glyphSize),
         )
       ) : hasTravelGlyph ? (
         <DirectionHint
           direction={rect.direction}
           cx={cx}
-          cy={cy - (isTagged ? 4 : 0)}
+          cy={
+            cy - (showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0)
+          }
           size={Math.max(8, glyphSize * 0.85)}
         />
       ) : null}
@@ -532,6 +672,9 @@ export function RoadSpaceDiagram({
   /** Label drawn inside `label: 'sibling'` placeholder rects. */
   siblingLabel?: string
 }): ReactElement {
+  const ribbons = scene.ribbons ?? []
+  const ribbonsCoverTravel = ribbons.length > 0
+
   return (
     <svg
       role="img"
@@ -547,19 +690,18 @@ export function RoadSpaceDiagram({
         maxWidth: '100%',
         height: 'auto',
         display: 'block',
+        marginInline: 'auto',
       }}
     >
-      {scene.bands.map((band) => (
-        <rect
-          key={`band-${band.role}-${band.wayId}`}
-          x={0}
-          y={band.y}
-          width={scene.widthPx}
-          height={band.height}
-          fill={band.role === 'current' ? COLORS.bandTintCurrent : COLORS.bandTint}
-          opacity={band.dimmed ? 0.45 : 0.85}
+      {scene.carriagewayPlate ? (
+        <polygon
+          points={pointsAttr(scene.carriagewayPlate.points)}
+          fill={COLORS.carriagewayPlate}
+          opacity={0.5}
+          pointerEvents="none"
+          shapeRendering="geometricPrecision"
         />
-      ))}
+      ) : null}
 
       {scene.polylines
         .filter((line) => line.kind === 'segment_boundary')
@@ -573,18 +715,24 @@ export function RoadSpaceDiagram({
           />
         ))}
 
+      {ribbons.map((ribbon) => (
+        <CorridorRibbon key={ribbon.id} ribbon={ribbon} highlightedSlotId={highlightedSlotId} />
+      ))}
+
       {scene.slotRects.map((rect) => (
         <SlotRect
-          key={rect.slotId}
+          key={`${rect.role}-${rect.slotId}`}
           rect={rect}
           highlightedSlotId={highlightedSlotId}
           metersToPx={scene.metersToPx}
           siblingLabel={siblingLabel}
+          ribbons={ribbons}
+          ribbonsCoverTravel={ribbonsCoverTravel}
         />
       ))}
 
       {scene.polylines
-        .filter((line) => line.kind !== 'segment_boundary')
+        .filter((line) => line.kind !== 'segment_boundary' && line.kind !== 'placement_guide')
         .map((line) => (
           <polyline
             key={line.id}
@@ -595,6 +743,43 @@ export function RoadSpaceDiagram({
             points={pointsAttr(line.points)}
           />
         ))}
+
+      {/* Placement centreline + way-direction arrow drawn last so they stay visible. */}
+      {scene.polylines
+        .filter((line) => line.kind === 'placement_guide')
+        .map((line) => {
+          const x = line.points[0]?.x ?? scene.centrelineX ?? 0
+          const y0 = Math.min(...line.points.map((p) => p.y))
+          const y1 = Math.max(...line.points.map((p) => p.y))
+          const midY = (y0 + y1) / 2
+          const head = 7
+          return (
+            <g key={line.id} pointerEvents="none" opacity={0.55}>
+              <polyline
+                fill="none"
+                stroke={COLORS.placement_guide}
+                strokeWidth={4}
+                points={pointsAttr(line.points)}
+              />
+              {/* Way direction = down the page (OSM forward). */}
+              <polyline
+                fill="none"
+                stroke={COLORS.placement_guide}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={`${x - head},${midY - head * 0.2} ${x},${midY + head} ${x + head},${midY - head * 0.2}`}
+              />
+              <polyline
+                fill="none"
+                stroke={COLORS.placement_guide}
+                strokeWidth={2}
+                strokeLinecap="round"
+                points={`${x},${y0 + 4} ${x},${y1 - 4}`}
+              />
+            </g>
+          )
+        })}
     </svg>
   )
 }
@@ -609,8 +794,49 @@ export const ROAD_SPACE_KIND_SWATCH: Record<RoadSpaceSlotKind, string> = {
   shared_path: COLORS.shared_path,
 }
 
-export const ROAD_SPACE_MEDIAN_SWATCH = COLORS.median
+export const ROAD_SPACE_MEDIAN_SWATCH = COLORS.medianIcon
+export const ROAD_SPACE_CROSSING_SWATCH = COLORS.crossingIcon
 export const ROAD_SPACE_SIBLING_SWATCH = COLORS.sibling
+/** Diagram + legend + form colour for calculated (untagged) metre labels. */
+export const ROAD_SPACE_CALCULATED_WIDTH_COLOR = COLORS.calculatedWidthLabel
+export const ROAD_SPACE_TAGGED_WIDTH_COLOR = COLORS.widthLabel
+
+export function formatRoadSpaceWidthLabel(widthM: number): string {
+  return formatWidthLabel(widthM)
+}
+/** Tiny grass tuft for legend rows (matches median verge icon). */
+export function RoadSpaceMedianVergeLegendIcon({
+  className,
+}: {
+  className?: string
+}): ReactElement {
+  return (
+    <svg className={className} width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+      <path
+        d="M5 9 L2.2 2 M5 9 L5 1.2 M5 9 L7.8 2"
+        fill="none"
+        stroke={COLORS.medianIcon}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/** Tiny zebra bars for legend rows (matches median crossing icon). */
+export function RoadSpaceMedianCrossingLegendIcon({
+  className,
+}: {
+  className?: string
+}): ReactElement {
+  return (
+    <svg className={className} width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+      {[1.5, 3.5, 5.5, 7.5].map((y) => (
+        <rect key={y} x="1.5" y={y} width="7" height="1.2" rx="0.3" fill={COLORS.crossingIcon} />
+      ))}
+    </svg>
+  )
+}
 
 /** English notes for `/audit-lanes` (no paraglide). Dedupes across chain segments. */
 export function separatelyMappedNotesEn(hints: SeparatelyMappedSidepath[] | undefined): string[] {

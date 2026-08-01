@@ -9,13 +9,20 @@ export type SegmentTagsInput = {
   role: RoadSpaceSegmentRole
   wayId: number
   tags: Record<string, string>
+  dualSibling?: { wayId: number; tags: Record<string, string> }
+  medianHint?: 'verge' | 'crossing'
 }
 
 /** Build a layout scene from oriented prev/current/next tag maps. */
 export function sceneFromSegmentTags(segments: readonly SegmentTagsInput[]): RoadSpaceScene {
   return layoutRoadSpace({
     segments: segments.map((seg) =>
-      buildRoadSpaceSegment(seg.tags, { wayId: seg.wayId, role: seg.role }),
+      buildRoadSpaceSegment(seg.tags, {
+        wayId: seg.wayId,
+        role: seg.role,
+        dualSibling: seg.dualSibling,
+        medianHint: seg.medianHint,
+      }),
     ),
   })
 }

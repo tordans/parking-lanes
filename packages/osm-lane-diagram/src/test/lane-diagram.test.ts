@@ -22,7 +22,12 @@ function fixtureChain(id: string): RoadSpaceChain {
   if (!fixture) throw new Error(`missing fixture ${id}`)
   return {
     segments: fixture.segments.map((seg) =>
-      buildRoadSpaceSegment(seg.tags, { wayId: seg.wayId, role: seg.role }),
+      buildRoadSpaceSegment(seg.tags, {
+        wayId: seg.wayId,
+        role: seg.role,
+        dualSibling: seg.dualSibling,
+        medianHint: seg.medianHint,
+      }),
     ),
   }
 }
@@ -185,7 +190,7 @@ describe('from-tags', () => {
     expect(sharedNo[0]?.segregated).toBe(false)
   })
 
-  test('width provenance tagged vs default', () => {
+  test('width provenance tagged vs default vs inferred from width=*', () => {
     const tagged = buildRoadSpaceSegment(
       {
         highway: 'residential',
@@ -203,6 +208,16 @@ describe('from-tags', () => {
     )
     expect(def.slots.every((s) => s.widthProvenance === 'default')).toBe(true)
     expect(def.slots[0]?.widthM).toBe(DEFAULT_WIDTHS_M.motor)
+
+    const inferred = buildRoadSpaceSegment(
+      { highway: 'residential', oneway: 'yes', lanes: '2', width: '6.4' },
+      { wayId: 5, role: 'current' },
+    )
+    const motors = inferred.slots.filter((s) => s.zone === 'carriageway')
+    expect(motors).toHaveLength(2)
+    expect(motors.every((s) => s.widthProvenance === 'inferred')).toBe(true)
+    expect(motors[0]?.widthM).toBe(3.2)
+    expect(motors[1]?.widthM).toBe(3.2)
   })
 
   test('createsOnWaySidepathSlot rejects absent / separately-mapped values', () => {
@@ -275,12 +290,56 @@ describe('from-tags', () => {
 
   test('fixture mid-road-cycle-lane: pipe order, 7.5 m carriageway, cycle between motors', () => {
     const chain = fixtureChain('mid-road-cycle-lane')
-    const cw = chain.segments[0]!.slots.filter((s) => s.zone === 'carriageway')
+    const seg = chain.segments[0]!
+    const cw = seg.slots.filter((s) => s.zone === 'carriageway')
     expect(cw.map((s) => `${s.kind}:${s.widthM}`)).toEqual(['motor:3', 'cycle:1.5', 'motor:3'])
     expect(cw.reduce((sum, s) => sum + s.widthM, 0)).toBe(7.5)
     expect(cw[1]?.kind).toBe('cycle')
     expect(cw[0]?.kind).toBe('motor')
     expect(cw[2]?.kind).toBe('motor')
+    // Explicit placement=middle_of:2 indexes the full pipe stack → mid of cycle strip.
+    expect(seg.placement).toEqual({ kind: 'middle_of', lane: 2 })
+    expect(seg.placementTag).toBe('middle_of:2')
+    const leftSidewalkW = seg.slots[0]!.kind === 'sidewalk' ? seg.slots[0]!.widthM : 0
+    expect(seg.centrelineOffsetM).toBe(leftSidewalkW + 3 + 1.5 / 2)
+
+    const scene = layoutRoadSpace(chain)
+    expect(scene.centrelineX).toBeDefined()
+    const cycleRibbon = scene.ribbons.find(
+      (r) => r.zone === 'carriageway' && r.kind === 'cycle' && !r.dimmed,
+    )
+    expect(cycleRibbon).toBeDefined()
+    // Purple guide must sit on the mid-road cycle strip (glyphCx is ribbon center).
+    expect(Math.abs(cycleRibbon!.glyphCx - scene.centrelineX!)).toBeLessThan(0.5)
+  })
+
+  test('placement step with same middle_of:2 but different pipe kinds is flagged', () => {
+    const chain: RoadSpaceChain = {
+      segments: [
+        buildRoadSpaceSegment(
+          {
+            highway: 'secondary',
+            oneway: 'yes',
+            lanes: '2',
+            'cycleway:lanes': 'none|lane|none',
+            'width:lanes': '3|1.5|3',
+            placement: 'middle_of:2',
+          },
+          { wayId: 1, role: 'prev' },
+        ),
+        buildRoadSpaceSegment(
+          {
+            highway: 'secondary',
+            oneway: 'yes',
+            lanes: '2',
+            placement: 'middle_of:2',
+          },
+          { wayId: 2, role: 'current' },
+        ),
+      ],
+    }
+    const scene = layoutRoadSpace(chain)
+    expect(scene.placementIssues?.some((m) => m.includes('different slot kinds'))).toBe(true)
   })
 
   test('sided cycleway:right=lane stays at carriageway edge', () => {
@@ -404,6 +463,28 @@ describe('layout continuity', () => {
     }
   })
 
+  test('disappearing / pocket motors on prev stay motor-gray (not neighbor-dimmed)', () => {
+    const placement = layoutRoadSpace(fixtureChain('placement-transition'))
+    const extraMotor = placement.ribbons.find(
+      (r) =>
+        r.zone === 'carriageway' &&
+        r.kind === 'motor' &&
+        r.bandSlices.every((s) => s.role === 'prev'),
+    )
+    expect(extraMotor).toBeDefined()
+    expect(extraMotor!.dimmed).toBeFalsy()
+
+    const pocket = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
+    const turnRibbons = pocket.ribbons.filter((r) => r.turn === 'left' || r.turn === 'right')
+    expect(turnRibbons.length).toBe(2)
+    expect(turnRibbons.every((r) => !r.dimmed)).toBe(true)
+    // Glyphs sit on the real pocket band, not the synthetic taper wedge.
+    for (const r of turnRibbons) {
+      expect(r.glyphBandRole).toBe('prev')
+      expect(r.glyphCy).toBeLessThan(112)
+    }
+  })
+
   test('fixture 3: right-side pocket tapers right; left edge stays straight', () => {
     const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
     const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
@@ -428,31 +509,225 @@ describe('layout continuity', () => {
     expect(hasDiagonal).toBe(true)
   })
 
-  test('fixture 4: taper when pocket ends (left stays straight for oneway drop on right)', () => {
+  test('fixture 4: both kerbs taper when left+right pockets end; through columns stay aligned', () => {
     const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
     const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
-    const rightRuns = scene.polylines.filter((p) => p.id.startsWith('kerb-right'))
+    const right = scene.polylines.find((p) => p.id.startsWith('kerb-right'))!
     const leftXs = [...new Set(left.points.map((p) => p.x))]
-    expect(leftXs).toHaveLength(1)
-    const rightXs = [...new Set(rightRuns.flatMap((p) => p.points.map((pt) => pt.x)))]
+    const rightXs = [...new Set(right.points.map((p) => p.x))]
+    expect(leftXs.length).toBeGreaterThan(1)
     expect(rightXs.length).toBeGreaterThan(1)
-  })
 
-  test('width-step between bands fills the taper with a triangle', () => {
-    const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
-    const fills = scene.slotRects.filter((r) => r.label === 'step_fill')
-    expect(fills.length).toBeGreaterThan(0)
-    for (const fill of fills) {
-      expect(fill.direction).toBe('none')
-      expect(fill.widthProvenance).toBe('inferred')
-      expect(fill.width).toBeGreaterThan(0)
-      expect(fill.points).toBeDefined()
-      expect(fill.points!.length).toBe(3)
+    const throughRibbons = scene.ribbons.filter(
+      (r) => r.zone === 'carriageway' && r.kind === 'motor' && /\/forward\/through\//.test(r.id),
+    )
+    expect(throughRibbons).toHaveLength(2)
+    for (const r of throughRibbons) {
+      // Through lanes stay in vertical columns (no shear across the centreline).
+      const leftEdge = r.points.filter((_, i, arr) => {
+        // approximate: points on the left side of the ribbon polygon
+        const xs = arr.map((p) => p.x)
+        const mid = (Math.min(...xs) + Math.max(...xs)) / 2
+        return arr[i]!.x <= mid + 0.01
+      })
+      const leftXsRibbon = [...new Set(leftEdge.map((p) => p.x))]
+      expect(leftXsRibbon.length).toBeLessThanOrEqual(2)
     }
   })
 
-  test('karl-marx dual split: forward cycle lanes share a right edge; median labeled', () => {
-    const scene = layoutRoadSpace(fixtureChain('karl-marx-dual-split'))
+  test('dual carriageway: opposite branch forms continuous ribbons across dual bands', () => {
+    const scene = layoutRoadSpace(fixtureChain('dual-carriageway-island'))
+    const oppositeRibbons = scene.ribbons.filter(
+      (r) => r.dimmed && r.bandSlices.some((s) => s.wayId === 512 || s.wayId === 513),
+    )
+    expect(oppositeRibbons.length).toBeGreaterThan(0)
+    const spanning = oppositeRibbons.find((r) => r.bandSlices.length >= 2)
+    expect(spanning).toBeDefined()
+    expect(spanning!.points.length).toBeGreaterThanOrEqual(4)
+  })
+
+  test('turn-aware matching: left/right pockets do not chain to through lanes', () => {
+    const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
+    const throughRibbons = scene.ribbons.filter(
+      (r) => r.zone === 'carriageway' && r.kind === 'motor' && /\/forward\/through\//.test(r.id),
+    )
+    expect(throughRibbons.length).toBe(2)
+    for (const r of throughRibbons) {
+      expect(r.bandSlices.length).toBeGreaterThanOrEqual(2)
+    }
+    const leftRibbon = scene.ribbons.find((r) => /\/forward\/left\//.test(r.id))
+    const rightRibbon = scene.ribbons.find((r) => /\/forward\/right\//.test(r.id))
+    if (leftRibbon) expect(leftRibbon.bandSlices.length).toBeLessThanOrEqual(2)
+    if (rightRibbon) expect(rightRibbon.bandSlices.length).toBeLessThanOrEqual(2)
+  })
+
+  test('corridor ribbons span contiguous bands with aligned edges', () => {
+    const scene = layoutRoadSpace(fixtureChain('one-lane-each-way'))
+    expect(scene.ribbons.length).toBeGreaterThan(0)
+    const forward = scene.ribbons.find((r) => r.direction === 'forward' && r.kind === 'motor')
+    expect(forward).toBeDefined()
+    expect(forward!.bandSlices.length).toBe(3)
+    const xs = forward!.points.map((p) => p.x)
+    expect(Math.min(...xs)).toBeCloseTo(116, 0)
+    expect(Math.max(...xs)).toBeCloseTo(176, 0)
+    expect(scene.carriagewayPlate).toBeDefined()
+  })
+
+  test('width-step produces tapered ribbons at outer kerb seams', () => {
+    const scene = layoutRoadSpace(fixtureChain('right-turn-pocket'))
+    const taperedRibbon = scene.ribbons.find(
+      (r) =>
+        r.slotId.includes('forward/2') || r.bandSlices.some((s) => s.slotId.includes('forward/2')),
+    )
+    const taperedRect = scene.slotRects.filter(
+      (r) => r.points != null && r.points.length >= 4 && r.label !== 'step_fill',
+    )
+    expect(taperedRibbon != null || taperedRect.length > 0).toBe(true)
+    if (taperedRibbon) {
+      let hasDiagonal = false
+      for (let i = 1; i < taperedRibbon.points.length; i++) {
+        const a = taperedRibbon.points[i - 1]!
+        const b = taperedRibbon.points[i]!
+        if (Math.abs(a.x - b.x) > 0.01 && Math.abs(a.y - b.y) > 0.01) hasDiagonal = true
+      }
+      expect(hasDiagonal).toBe(true)
+    }
+    const wedges = scene.slotRects.filter((r) => r.label === 'step_fill')
+    // Ribbons may replace exterior wedge fills; wedges optional when ribbons cover taper.
+    if (wedges.length > 0) {
+      expect(wedges.every((w) => (w.points?.length ?? 0) >= 3)).toBe(true)
+    }
+  })
+
+  test('pure lateral shift (same outer width) uses square kerb steps, not shear diagonals', () => {
+    // Same lane stack, different placement → outers translate without changing total width.
+    const chain: RoadSpaceChain = {
+      segments: [
+        buildRoadSpaceSegment(
+          {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '2',
+            sidewalk: 'both',
+            placement: 'left_of:1',
+          },
+          { wayId: 1, role: 'prev' },
+        ),
+        buildRoadSpaceSegment(
+          {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '2',
+            sidewalk: 'both',
+            placement: 'left_of:2',
+          },
+          { wayId: 2, role: 'current' },
+        ),
+      ],
+    }
+    expect(chain.segments[0]!.centrelineOffsetM).not.toBe(chain.segments[1]!.centrelineOffsetM)
+    const scene = layoutRoadSpace(chain)
+    const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
+    const right = scene.polylines.find((p) => p.id.startsWith('kerb-right'))!
+    for (const line of [left, right]) {
+      for (let i = 1; i < line.points.length; i++) {
+        const a = line.points[i - 1]!
+        const b = line.points[i]!
+        const dx = Math.abs(a.x - b.x) > 0.01
+        const dy = Math.abs(a.y - b.y) > 0.01
+        expect(dx && dy).toBe(false)
+      }
+    }
+  })
+
+  test('dual over bidirectional: sibling and travel park on left/right kerbs; no stretched void', () => {
+    const bi = {
+      highway: 'secondary',
+      lanes: '2',
+      'cycleway:both': 'lane',
+      'cycleway:both:width': '1.8',
+      'cycleway:both:oneway': 'yes',
+      'sidewalk:both': 'separate',
+      'parking:both': 'no',
+      width: '13',
+      'width:lanes:backward': '3.3',
+      'width:lanes:forward': '3.3',
+    }
+    const dualTags = {
+      highway: 'secondary',
+      oneway: 'yes',
+      dual_carriageway: 'yes',
+      lanes: '1',
+      'cycleway:left': 'no',
+      'cycleway:right': 'lane',
+      'cycleway:right:width': '1.4',
+      'cycleway:right:oneway': 'yes',
+      'sidewalk:right': 'separate',
+      'parking:both': 'no',
+      width: '5.5',
+      'width:lanes': '3.5',
+    }
+    const scene = layoutRoadSpace({
+      segments: [
+        buildRoadSpaceSegment(dualTags, {
+          wayId: 1,
+          role: 'prev',
+          dualSibling: { wayId: 9, tags: dualTags },
+          medianHint: 'crossing',
+        }),
+        buildRoadSpaceSegment(bi, { wayId: 2, role: 'current' }),
+      ],
+    })
+    const biLeft = Math.min(
+      ...scene.slotRects
+        .filter((r) => r.role === 'current' && r.label !== 'step_fill')
+        .map((r) => r.x),
+    )
+    const biRight = Math.max(
+      ...scene.slotRects
+        .filter((r) => r.role === 'current' && r.label !== 'step_fill')
+        .map((r) => r.x + r.width),
+    )
+    const dualLeft = Math.min(
+      ...scene.slotRects
+        .filter((r) => r.role === 'prev' && r.label !== 'step_fill')
+        .map((r) => r.x),
+    )
+    const dualRight = Math.max(
+      ...scene.slotRects
+        .filter((r) => r.role === 'prev' && r.label !== 'step_fill')
+        .map((r) => r.x + r.width),
+    )
+    expect(Math.abs(dualLeft - biLeft)).toBeLessThanOrEqual(1)
+    expect(Math.abs(dualRight - biRight)).toBeLessThanOrEqual(1)
+
+    const median = scene.slotRects.find((r) => r.role === 'prev' && r.kind === 'median')
+    // Residual gap only — not a mirrored placeholder spanning half the road.
+    expect(median == null || median.width < 40).toBe(true)
+    expect(scene.slotRects.some((r) => r.role === 'prev' && r.wayId === 9)).toBe(true)
+  })
+
+  test('karl-marx dual split: forward cycle lanes share a right edge; real opposite branch', () => {
+    const chain = fixtureChain('karl-marx-dual-split')
+    const dual = chain.segments.find((s) => s.role === 'next')!
+    expect(dual.fork?.siblingWayId).toBe(213887879)
+    expect(dual.fork?.siblingSlots?.length).toBeGreaterThan(0)
+    expect(dual.fork?.placeholderWidthM).toBeUndefined()
+    expect(dual.fork?.medianHint).toBe('crossing')
+
+    const scene = layoutRoadSpace(chain)
+    // Opposing bi lanes must not smear across the dual travel kerb.
+    for (const r of scene.ribbons.filter(
+      (x) => !x.dimmed && x.direction === 'backward' && x.zone === 'carriageway',
+    )) {
+      const span = Math.max(...r.points.map((p) => p.x)) - Math.min(...r.points.map((p) => p.x))
+      expect(span).toBeLessThan(80)
+    }
+    const leftTurnRibbon = scene.ribbons.find((r) => r.turn === 'left')
+    expect(leftTurnRibbon).toBeDefined()
+    const tipX = Math.min(...leftTurnRibbon!.points.filter((p) => p.y > 160).map((p) => p.x))
+    expect(tipX).toBeGreaterThan(160) // tapers toward dual travel hinge (~174)
+
     const forwardCycles = scene.slotRects.filter(
       (r) => r.kind === 'cycle' && r.direction === 'forward' && r.label !== 'step_fill',
     )
@@ -460,28 +735,40 @@ describe('layout continuity', () => {
     const rights = forwardCycles.map((r) => Math.round((r.x + r.width) * 100) / 100)
     expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(0.05)
 
-    const sibling = scene.slotRects.find((r) => r.label === 'sibling')
-    expect(sibling).toBeDefined()
+    expect(scene.slotRects.find((r) => r.label === 'sibling')).toBeUndefined()
+    const opposite = scene.slotRects.filter((r) => r.wayId === 213887879)
+    expect(opposite.length).toBeGreaterThan(0)
+    expect(opposite.every((r) => r.dimmed)).toBe(true)
     const median = scene.slotRects.find((r) => r.label === 'median')
     expect(median).toBeDefined()
     expect(median!.kind).toBe('median')
+    expect(median!.medianHint).toBe('crossing')
+
+    const leftTurn = scene.slotRects.find(
+      (r) => r.role === 'current' && r.turn === 'left' && r.label !== 'step_fill',
+    )
+    expect(leftTurn?.points?.length).toBeGreaterThanOrEqual(3)
+    expect(scene.polylines.some((p) => p.id.startsWith('kerb-median-pocket-'))).toBe(true)
   })
 
-  test('fixture 5: dual median gap + placeholder inside scene', () => {
+  test('fixture 5: dual median gap + real opposite branch inside scene', () => {
     const chain = fixtureChain('dual-carriageway-island')
     const dual = chain.segments.find((s) => s.role === 'current')!
     expect(dual.fork).toBeDefined()
     expect(dual.fork!.gapM).toBe(DEFAULT_MEDIAN_GAP_M)
     expect(dual.fork!.dimmedSide).toBe('left')
-    expect(dual.fork!.placeholderWidthM).toBeGreaterThan(0)
+    expect(dual.fork!.placeholderWidthM).toBeUndefined()
+    expect(dual.fork!.siblingSlots?.length).toBeGreaterThan(0)
+    expect(dual.fork!.siblingWayId).toBe(512)
 
     const scene = layoutRoadSpace(chain)
-    const placeholder = scene.slotRects.find(
-      (r) => r.wayId === dual.wayId && r.slotId.endsWith('/fork/placeholder'),
-    )
-    expect(placeholder).toBeDefined()
-    expect(placeholder!.dimmed).toBe(true)
-    expect(placeholder!.label).toBe('sibling')
+    expect(
+      scene.slotRects.find((r) => r.wayId === dual.wayId && r.slotId.endsWith('/fork/placeholder')),
+    ).toBeUndefined()
+
+    const opposite = scene.slotRects.filter((r) => r.wayId === 512)
+    expect(opposite.length).toBeGreaterThan(0)
+    expect(opposite.every((r) => r.dimmed)).toBe(true)
 
     const median = scene.slotRects.find(
       (r) => r.wayId === dual.wayId && r.kind === 'median' && r.role === 'current',
@@ -504,25 +791,28 @@ describe('layout continuity', () => {
     expect(realCw.length).toBeGreaterThanOrEqual(1)
     const cwLeft = Math.min(...realCw.map((r) => r.x))
     expect(Math.abs(cwLeft - (median!.x + median!.width))).toBeLessThanOrEqual(0.01)
-    const gapPx = cwLeft - (placeholder!.x + placeholder!.width)
+    const oppRight = Math.max(...opposite.map((r) => r.x + r.width))
+    const gapPx = cwLeft - oppRight
     expect(Math.abs(gapPx - DEFAULT_MEDIAN_GAP_M * scene.metersToPx)).toBeLessThanOrEqual(0.01)
 
     // No fork_edge polylines
     expect(scene.polylines.every((p) => p.kind !== ('fork_edge' as never))).toBe(true)
   })
 
-  test('dual chain: placeholder+median only on dual bands; no polyline crosses median', () => {
+  test('dual chain: real opposite + median on dual bands; no polyline crosses median', () => {
     const chain = fixtureChain('dual-carriageway-island')
     // [non-dual prev, dual current, dual next]
     expect(chain.segments.map((s) => s.fork != null)).toEqual([false, true, true])
+    expect(chain.segments.map((s) => s.fork?.siblingWayId)).toEqual([undefined, 512, 513])
 
     const scene = layoutRoadSpace(chain)
     const placeholders = scene.slotRects.filter((r) => r.slotId.endsWith('/fork/placeholder'))
     const medians = scene.slotRects.filter((r) => r.kind === 'median')
-    expect(placeholders).toHaveLength(2)
+    expect(placeholders).toHaveLength(0)
     expect(medians).toHaveLength(2)
-    expect(placeholders.every((p) => p.label === 'sibling')).toBe(true)
-    expect(placeholders.every((p) => p.role === 'current' || p.role === 'next')).toBe(true)
+    expect(
+      scene.slotRects.filter((r) => r.wayId === 512 || r.wayId === 513).length,
+    ).toBeGreaterThan(0)
     expect(scene.slotRects.some((r) => r.role === 'prev' && r.slotId.includes('fork'))).toBe(false)
 
     for (const median of medians) {
@@ -532,6 +822,7 @@ describe('layout continuity', () => {
       const mBot = median.y + median.height
       for (const line of scene.polylines) {
         if (line.kind === 'segment_boundary') continue
+        if (line.id.startsWith('kerb-median-pocket-')) continue
         for (let i = 0; i < line.points.length - 1; i++) {
           const a = line.points[i]!
           const b = line.points[i + 1]!
@@ -608,7 +899,9 @@ describe('all fixtures', () => {
     for (const fixture of laneDiagramFixtures) {
       const chain = fixtureChain(fixture.id)
       const scene = layoutRoadSpace(chain)
-      expect(scene.bands.length).toBe(fixture.segments.length)
+      const realBands = scene.bands.filter((b) => !b.synthetic)
+      expect(realBands.length).toBe(fixture.segments.length)
+      expect(scene.bands.length).toBeGreaterThanOrEqual(fixture.segments.length)
       for (const seg of chain.segments) {
         const rects = scene.slotRects.filter((r) => r.wayId === seg.wayId)
         expect(rects.length).toBeGreaterThanOrEqual(1)

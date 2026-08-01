@@ -6,7 +6,13 @@ import {
   type SidepathSide,
 } from '@osm-editor-kit/osm-sidepath-tags'
 import { DEFAULT_MEDIAN_GAP_M, DEFAULT_WIDTHS_M } from './defaults'
-import { centrelineOffsetMDriving, drivingLaneCount, resolvePlacement } from './placement'
+import {
+  centrelineOffsetM,
+  centrelineOffsetMDriving,
+  drivingLaneCount,
+  parsePlacement,
+  resolvePlacement,
+} from './placement'
 import { formatEdgeSlotId, formatLaneSlotId } from './slot-ids'
 import type {
   RoadSpaceDirection,
@@ -37,6 +43,8 @@ const EDGE_CYCLE = new Set(['track', 'opposite_track', 'sidepath', 'crossing'])
  * - `use_sidepath` — routing hint on foot=/bicycle=, not geometry here
  */
 const ABSENT_OR_SEPARATELY_MAPPED = new Set(['no', 'none', 'separate', 'use_sidepath'])
+
+const EPS = 0.01
 
 /**
  * True when a sidewalk:/cycleway: value should produce an on-way sidepath slot.
@@ -497,21 +505,99 @@ function carriagewayWidthM(slots: RoadSpaceSlot[]): number {
   return slots.filter((s) => s.zone === 'carriageway').reduce((sum, s) => sum + s.widthM, 0)
 }
 
+/**
+ * When `width=*` / `est_width` is present but slots lack per-lane widths, split the
+ * remaining metres across default carriageway slots and mark them `inferred`
+ * (purple labels). Explicit `width:lanes` / `:width` stay `tagged` (black).
+ * Pure fallback defaults stay `default` (no metre label).
+ */
+function applyCarriagewayWidthInference(
+  tags: Record<string, string>,
+  slots: RoadSpaceSlot[],
+): RoadSpaceSlot[] {
+  const wayWidth = parseWidthToken(tags.width) ?? parseWidthToken(tags.est_width)
+  if (wayWidth == null || wayWidth <= 0) return slots
+
+  const needsInfer = slots.filter(
+    (s) => s.zone === 'carriageway' && s.widthProvenance === 'default',
+  )
+  if (needsInfer.length === 0) return slots
+
+  const taggedSum = slots
+    .filter((s) => s.zone === 'carriageway' && s.widthProvenance === 'tagged')
+    .reduce((sum, s) => sum + s.widthM, 0)
+  const remainder = wayWidth - taggedSum
+  if (remainder <= EPS) return slots
+
+  const each = Math.round((remainder / needsInfer.length) * 100) / 100
+  if (each <= 0) return slots
+
+  return slots.map((s) => {
+    if (s.zone !== 'carriageway' || s.widthProvenance !== 'default') return s
+    return { ...s, widthM: each, widthProvenance: 'inferred' }
+  })
+}
+
+function isOnewayTag(tags: Record<string, string>): boolean {
+  const v = tags.oneway?.toLowerCase()
+  return v === 'yes' || v === 'true' || v === '1'
+}
+
+function flipDirection(direction: RoadSpaceSlot['direction']): RoadSpaceSlot['direction'] {
+  if (direction === 'forward') return 'backward'
+  if (direction === 'backward') return 'forward'
+  return direction
+}
+
+/**
+ * Prepare the opposite dual branch for the dimmed side of a fork: mirror LTR so
+ * its outer edge faces outward, and flip travel directions to oppose the selected
+ * oneway (diagram down = selected forward).
+ */
+export function prepareDualSiblingSlots(slots: RoadSpaceSlot[]): RoadSpaceSlot[] {
+  return [...slots].reverse().map((slot) => ({
+    ...slot,
+    direction: flipDirection(slot.direction),
+  }))
+}
+
+function siblingStackWidthM(fork: NonNullable<RoadSpaceSegment['fork']>): number {
+  if (fork.siblingSlots && fork.siblingSlots.length > 0) {
+    return fork.siblingSlots.reduce((sum, s) => sum + s.widthM, 0)
+  }
+  return fork.placeholderWidthM != null && fork.placeholderWidthM > 0 ? fork.placeholderWidthM : 0
+}
+
 function buildDualCarriagewayFork(
   tags: Record<string, string>,
   carriageway: RoadSpaceSlot[],
+  dualSibling?: { wayId: number; slots: RoadSpaceSlot[] },
+  medianHint: 'verge' | 'crossing' = 'verge',
 ): RoadSpaceSegment['fork'] | undefined {
   if (tags.dual_carriageway?.toLowerCase() !== 'yes') return undefined
 
   const selectedWidth = carriagewayWidthM(carriageway)
 
-  if (tags.oneway === 'yes' || tags.oneway === 'true' || tags.oneway === '1') {
+  if (isOnewayTag(tags)) {
+    if (dualSibling && dualSibling.slots.length > 0) {
+      const siblingSlots = prepareDualSiblingSlots(dualSibling.slots)
+      return {
+        gapM: DEFAULT_MEDIAN_GAP_M,
+        leftSlotIds: siblingSlots.map((s) => s.id),
+        rightSlotIds: carriageway.map((s) => s.id),
+        dimmedSide: 'left',
+        siblingSlots,
+        siblingWayId: dualSibling.wayId,
+        medianHint,
+      }
+    }
     return {
       gapM: DEFAULT_MEDIAN_GAP_M,
       leftSlotIds: [],
       rightSlotIds: carriageway.map((s) => s.id),
       dimmedSide: 'left',
       placeholderWidthM: selectedWidth > 0 ? selectedWidth : DEFAULT_WIDTHS_M.motor * 2,
+      medianHint,
     }
   }
 
@@ -525,33 +611,65 @@ function buildDualCarriagewayFork(
     gapM: DEFAULT_MEDIAN_GAP_M,
     leftSlotIds: leftSlotIds.length > 0 ? leftSlotIds : carriageway.slice(0, mid).map((s) => s.id),
     rightSlotIds: rightSlotIds.length > 0 ? rightSlotIds : carriageway.slice(mid).map((s) => s.id),
+    medianHint,
   }
 }
 
 export function buildRoadSpaceSegment(
   tags: Record<string, string>,
-  options: { wayId: number; role: RoadSpaceSegmentRole },
+  options: {
+    wayId: number
+    role: RoadSpaceSegmentRole
+    /** Opposite dual-carriageway branch (parallel oneway) when known. */
+    dualSibling?: { wayId: number; tags: Record<string, string> }
+    /** Median gap meaning when this way is dual (default verge). */
+    medianHint?: 'verge' | 'crossing'
+  },
 ): RoadSpaceSegment {
-  const { wayId, role } = options
+  const { wayId, role, dualSibling, medianHint = 'verge' } = options
   const model = parseWayLanes(tags)
 
   let carriageway = model.slots.map((slot) => carriagewaySlotFromLane(wayId, slot))
   const expanded = expandOnCarriagewayCycleSlots(wayId, tags, carriageway)
   // Pipe positions are LTR truth; only sided cycle lanes need edge sorting.
   carriageway = expanded.fromPipe ? expanded.slots : orderCarriagewayLtr(expanded.slots)
+  carriageway = applyCarriagewayWidthInference(tags, carriageway)
 
   const edges = buildEdgeSlots(wayId, tags)
   const slots = [...edges.left, ...carriageway, ...edges.right]
   const separatelyMapped = collectSeparatelyMapped(tags)
 
-  const placement = resolvePlacement(tags, drivingLaneCount(carriageway))
-  const carriagewayOffset = centrelineOffsetMDriving(carriageway, placement)
+  // Explicit placement=* on an expanded pipe stack (cycleway:lanes / extra width:lanes
+  // pipes) indexes the full LTR carriageway — so middle_of:2 with motor|cycle|motor
+  // lands on the cycle strip. Defaults and motor-only stacks still use driving-lane
+  // indices (SRK: lanes=* / lanes:forward|backward), ignoring on-carriageway cycle edges.
+  const explicitPlacement = parsePlacement(tags.placement)
+  const driveN = drivingLaneCount(carriageway)
+  const placement = resolvePlacement(tags, driveN)
+  const expandedPipes = carriageway.length > driveN
+  const usePipePlacement =
+    explicitPlacement != null && explicitPlacement.kind !== 'transition' && expandedPipes
+  const carriagewayOffset = usePipePlacement
+    ? centrelineOffsetM(carriageway, placement)
+    : centrelineOffsetMDriving(carriageway, placement)
   const leftEdgeWidth = edges.left.reduce((sum, s) => sum + s.widthM, 0)
-  const fork = buildDualCarriagewayFork(tags, carriageway)
+
+  let siblingForFork: { wayId: number; slots: RoadSpaceSlot[] } | undefined
+  if (dualSibling && isOnewayTag(tags) && tags.dual_carriageway?.toLowerCase() === 'yes') {
+    // Build sibling slots without recursing into *its* dual sibling.
+    const siblingSeg = buildRoadSpaceSegment(dualSibling.tags, {
+      wayId: dualSibling.wayId,
+      role,
+    })
+    siblingForFork = { wayId: dualSibling.wayId, slots: siblingSeg.slots }
+  }
+
+  const fork = buildDualCarriagewayFork(tags, carriageway, siblingForFork, medianHint)
 
   let centrelineOffset = leftEdgeWidth + carriagewayOffset
-  if (fork?.dimmedSide === 'left' && fork.placeholderWidthM != null && fork.placeholderWidthM > 0) {
-    centrelineOffset += fork.placeholderWidthM + fork.gapM
+  if (fork?.dimmedSide === 'left') {
+    const leftExtra = siblingStackWidthM(fork)
+    if (leftExtra > 0) centrelineOffset += leftExtra + fork.gapM
   }
 
   return {
@@ -559,6 +677,8 @@ export function buildRoadSpaceSegment(
     role,
     slots,
     centrelineOffsetM: centrelineOffset,
+    placement,
+    ...(tags.placement != null && tags.placement !== '' ? { placementTag: tags.placement } : {}),
     laneMarkings: model.laneMarkings !== 'no',
     ...(separatelyMapped.length > 0 ? { separatelyMapped } : {}),
     fork,

@@ -6,12 +6,16 @@ export type {
   RoadSpaceSlot,
   RoadSpaceSegmentRole,
   RoadSpaceSegment,
+  RoadSpaceMedianHint,
   SeparatelyMappedSidepath,
   RoadSpaceChain,
   SceneSlotRectKind,
   SceneSlotRect,
   ScenePolyline,
   SceneSegmentBand,
+  SceneRibbon,
+  SceneRibbonBandSlice,
+  SceneCarriagewayPlate,
   RoadSpaceScene,
 } from './types'
 
@@ -32,7 +36,11 @@ export {
   type ParsedEdgeSlotId,
 } from './slot-ids'
 
-export { buildRoadSpaceSegment, createsOnWaySidepathSlot } from './from-tags'
+export {
+  buildRoadSpaceSegment,
+  createsOnWaySidepathSlot,
+  prepareDualSiblingSlots,
+} from './from-tags'
 
 export {
   parsePlacement,
@@ -40,6 +48,7 @@ export {
   centrelineOffsetM,
   centrelineOffsetMDriving,
   drivingLaneCount,
+  collectPlacementIssues,
   type Placement,
   type PlacementKind,
 } from './placement'

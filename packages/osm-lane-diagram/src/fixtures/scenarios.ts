@@ -13,6 +13,10 @@ export type DiagramFixture = {
     role: RoadSpaceSegmentRole
     wayId: number
     tags: Record<string, string>
+    /** Opposite dual-carriageway branch when this segment is a dual oneway. */
+    dualSibling?: { wayId: number; tags: Record<string, string> }
+    /** Median gap meaning when dual (default verge). */
+    medianHint?: 'verge' | 'crossing'
   }>
   note?: string
 }
@@ -30,7 +34,6 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           highway: 'residential',
           lanes: '2',
           sidewalk: 'both',
-          name: 'Teststraße',
         },
       },
       {
@@ -40,7 +43,6 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           highway: 'residential',
           lanes: '2',
           sidewalk: 'both',
-          name: 'Teststraße',
         },
       },
       {
@@ -50,7 +52,6 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           highway: 'residential',
           lanes: '2',
           sidewalk: 'both',
-          name: 'Teststraße',
         },
       },
     ],
@@ -101,7 +102,8 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
   {
     id: 'right-turn-pocket',
     title: 'Right turn pocket',
-    description: 'Last segment gains turn:lanes=…|right; taper on the right only.',
+    description:
+      '2-lane prev/current; next (downstream, bottom) gains through|through|right — pocket ahead on the approach; left kerb fixed (left_of:2).',
     segments: [
       {
         role: 'prev',
@@ -111,7 +113,6 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           oneway: 'yes',
           lanes: '2',
           'turn:lanes': 'through|through',
-          // Keep left kerb fixed when the right pocket appears (left_of:2 on both).
           placement: 'left_of:2',
           sidewalk: 'both',
         },
@@ -135,6 +136,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           highway: 'tertiary',
           oneway: 'yes',
           lanes: '3',
+          // Pocket on approach to junction ahead (traffic flows down the page).
           'turn:lanes': 'through|through|right',
           placement: 'left_of:2',
           sidewalk: 'both',
@@ -145,7 +147,8 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
   {
     id: 'turn-pocket-then-continue',
     title: 'Turn pocket then continue',
-    description: '4 lanes then back to 2; taper direction asserted.',
+    description:
+      '4-lane pocket (left|through|through|right) then 2-lane continue. placement=left_of:3 → left_of:2 names the same through-lane axis (driving lanes only), so the purple guide stays straight.',
     segments: [
       {
         role: 'prev',
@@ -155,8 +158,11 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           oneway: 'yes',
           lanes: '4',
           'turn:lanes': 'left|through|through|right',
-          // Same carriageway offset as the 2-lane continue → left kerb fixed, right tapers.
-          placement: 'left_of:2',
+          // OSM placement indexes driving lanes (lanes=*), LTR — not cycleway pipes.
+          // 4 equal lanes → default is left_of:3 (centre of carriageway = between the
+          // two throughs). Continue's left_of:2 names the *same* physical axis after the
+          // pockets drop — so the purple guide stays straight (correct, not a bug).
+          placement: 'left_of:3',
           sidewalk: 'both',
         },
       },
@@ -189,7 +195,8 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
   {
     id: 'dual-carriageway-island',
     title: 'Dual carriageway island',
-    description: 'dual_carriageway=yes meeting a non-dual neighbour; spread + median gap.',
+    description:
+      'Bidirectional approach meeting a dual_carriageway=yes pair (selected + opposite branches) that continues; real opposite slots + median gap (no grey placeholder).',
     segments: [
       {
         role: 'prev',
@@ -204,6 +211,18 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
       {
         role: 'current',
         wayId: 502,
+        medianHint: 'verge',
+        dualSibling: {
+          wayId: 512,
+          tags: {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '2',
+            dual_carriageway: 'yes',
+            sidewalk: 'right',
+            name: 'Ringstraße',
+          },
+        },
         tags: {
           highway: 'primary',
           oneway: 'yes',
@@ -216,6 +235,18 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
       {
         role: 'next',
         wayId: 503,
+        medianHint: 'verge',
+        dualSibling: {
+          wayId: 513,
+          tags: {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '2',
+            dual_carriageway: 'yes',
+            sidewalk: 'right',
+            name: 'Ringstraße',
+          },
+        },
         tags: {
           highway: 'primary',
           oneway: 'yes',
@@ -226,12 +257,13 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
         },
       },
     ],
+    note: 'Five ways: prev approach, selected current/next (502→503), opposite current/next (512→513).',
   },
   {
     id: 'karl-marx-dual-split',
     title: 'Karl-Marx-Straße dual split',
     description:
-      'OSM way/37184618: bidirectional secondary with advisory cycle lanes meeting a dual_carriageway=yes oneway (way/964589555).',
+      'Bidirectional Karl-Marx-Straße (way/37184618) with advisory cycle lanes meeting dual_carriageway oneways (selected way/964589555 + opposite way/213887879, crossing median).',
     segments: [
       {
         role: 'prev',
@@ -278,6 +310,25 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
       {
         role: 'next',
         wayId: 964589555,
+        medianHint: 'crossing',
+        dualSibling: {
+          wayId: 213887879,
+          tags: {
+            highway: 'secondary',
+            name: 'Karl-Marx-Straße',
+            oneway: 'yes',
+            dual_carriageway: 'yes',
+            lanes: '1',
+            'cycleway:left': 'no',
+            'cycleway:right': 'lane',
+            'cycleway:right:width': '1.4',
+            'cycleway:right:oneway': 'yes',
+            'sidewalk:right': 'separate',
+            'parking:both': 'no',
+            width: '5.5',
+            'width:lanes': '3.5',
+          },
+        },
         tags: {
           highway: 'secondary',
           name: 'Karl-Marx-Straße',

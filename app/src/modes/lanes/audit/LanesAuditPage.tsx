@@ -5,8 +5,9 @@ import { useState, type ReactElement, type ReactNode } from 'react'
 import { APP_REPO_URL } from '../../../lib/app-identity'
 import {
   RoadSpaceDiagram,
+  RoadSpaceMedianCrossingLegendIcon,
+  RoadSpaceMedianVergeLegendIcon,
   ROAD_SPACE_KIND_SWATCH,
-  ROAD_SPACE_MEDIAN_SWATCH,
   ROAD_SPACE_SIBLING_SWATCH,
   separatelyMappedNotesEn,
 } from '../components/RoadSpaceDiagram'
@@ -109,8 +110,11 @@ function TagList({ tags }: { tags: Record<string, string> }): ReactElement {
 
 function SegmentTags({ fixture }: { fixture: DiagramFixture }): ReactElement {
   const byRole = new Map(fixture.segments.map((s) => [s.role, s] as const))
+  const hasSibling = fixture.segments.some((s) => s.dualSibling != null)
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div
+      className={`grid gap-4 ${hasSibling ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-3'}`}
+    >
       {ROLE_ORDER.map((role) => {
         const seg = byRole.get(role)
         return (
@@ -120,6 +124,14 @@ function SegmentTags({ fixture }: { fixture: DiagramFixture }): ReactElement {
               {seg ? ` · way ${seg.wayId}` : ''}
             </p>
             {seg ? <TagList tags={seg.tags} /> : <p className="m-0 text-xs text-zinc-400">—</p>}
+            {seg?.dualSibling ? (
+              <div className="mt-3 border-t border-zinc-100 pt-3">
+                <p className="m-0 mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  Opposite · way {seg.dualSibling.wayId}
+                </p>
+                <TagList tags={seg.dualSibling.tags} />
+              </div>
+            ) : null}
           </div>
         )
       })}
@@ -148,6 +160,13 @@ function FixtureArticle({ fixture }: { fixture: DiagramFixture }): ReactElement 
             ))}
           </ul>
         ) : null}
+        {scene.placementIssues && scene.placementIssues.length > 0 ? (
+          <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-amber-800">
+            {scene.placementIssues.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
       <SegmentTags fixture={fixture} />
       {fixture.note ? <p className="mt-3 mb-0 text-xs text-zinc-500">{fixture.note}</p> : null}
@@ -163,7 +182,6 @@ function Legend(): ReactElement {
     { label: 'Both-ways', color: ROAD_SPACE_KIND_SWATCH.both_ways },
     { label: 'Sidewalk', color: ROAD_SPACE_KIND_SWATCH.sidewalk },
     { label: 'Shared path', color: ROAD_SPACE_KIND_SWATCH.shared_path },
-    { label: 'Median island', color: ROAD_SPACE_MEDIAN_SWATCH },
     { label: 'Opposite carriageway', color: ROAD_SPACE_SIBLING_SWATCH },
   ]
   return (
@@ -175,11 +193,11 @@ function Legend(): ReactElement {
         Legend
       </h2>
       <p className="mt-0 mb-3 max-w-3xl text-sm leading-relaxed text-zinc-600">
-        ↑ = OSM way direction points <strong className="font-semibold text-zinc-800">up</strong> the
-        page, so diagram-left = <code className="font-mono text-[0.9em]">*:left</code> and
-        diagram-right = <code className="font-mono text-[0.9em]">*:right</code> (same convention as
-        the width audit). Forward travel draws ↑; backward draws ↓; both-ways is a double-headed
-        vertical glyph.
+        ↓ = OSM way direction points <strong className="font-semibold text-zinc-800">down</strong>{' '}
+        the page, so diagram-left = <code className="font-mono text-[0.9em]">*:left</code> and
+        diagram-right = <code className="font-mono text-[0.9em]">*:right</code>. Forward travel
+        draws ↓; backward draws ↑; both-ways is a double-headed vertical glyph. Bands stack prev →
+        current → next top to bottom — that order is travel.
       </p>
       <ul className="m-0 mb-3 flex list-none flex-wrap gap-3 pl-0 text-sm text-zinc-700">
         {swatches.map((s) => (
@@ -192,19 +210,32 @@ function Legend(): ReactElement {
             {s.label}
           </li>
         ))}
+        <li className="flex items-center gap-2">
+          <RoadSpaceMedianVergeLegendIcon className="size-3.5 shrink-0" />
+          Grass verge / median
+        </li>
+        <li className="flex items-center gap-2">
+          <RoadSpaceMedianCrossingLegendIcon className="size-3.5 shrink-0" />
+          Crossing island
+        </li>
       </ul>
       <ul className="m-0 list-disc space-y-1 pl-5 text-sm leading-relaxed text-zinc-600">
         <li>Previous / next bands are dimmed relative to the current segment.</li>
         <li>
-          Tagged widths show a small metre label inside the slot. Untagged (default) widths use a
-          slightly desaturated fill and <strong>dotted vertical edges only</strong> — no full
-          rectangle outline — so the sketch still reads as a plan, not a construction drawing.
+          Explicit widths (<code className="font-mono text-[0.9em]">width:lanes</code>,{' '}
+          <code className="font-mono text-[0.9em]">*:width</code>) show a dark metre label. When
+          only <code className="font-mono text-[0.9em]">width=*</code> is present, lane metres are
+          derived and shown in <strong className="text-violet-700">purple</strong>. Fallback
+          defaults never get a number — missing width keeps dotted edges so it is clear values still
+          need tagging.
         </li>
         <li>
           Kerbs are heavy strokes between sidewalk and carriageway; outer sidepath edges are
           lighter; dashed hairlines mark segment boundaries and unmarked separators. Dual
-          carriageways draw an explicit median island with kerbs on both faces; the sibling
-          placeholder is labelled “Opposite carriageway”.
+          carriageways leave the median as empty space with a grass (verge) or zebra (crossing)
+          icon; the opposite dual branch uses real lane slots when resolved (else a grey “Opposite
+          carriageway” placeholder). Turn pockets that grow into the median taper with an angled
+          kerb from the dual travel hinge.
         </li>
         <li>
           <code className="font-mono text-[0.9em]">sidewalk:*=separate</code> /{' '}
@@ -214,7 +245,7 @@ function Legend(): ReactElement {
           <code className="font-mono text-[0.9em]">none</code> produce no geometry at all.
         </li>
         <li>
-          Arrows hint travel direction (forward = up); turn glyphs come from{' '}
+          Arrows hint travel direction (forward = down); turn glyphs come from{' '}
           <code className="font-mono text-[0.9em]">turn:lanes</code>.
         </li>
         <li>

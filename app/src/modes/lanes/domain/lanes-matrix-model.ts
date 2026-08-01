@@ -161,17 +161,19 @@ function columnFromRect(rect: SceneSlotRect, tags: Record<string, string>): Matr
 
 /**
  * Matrix columns follow the scene’s current-segment travel/sidepath slots
- * (excludes median island + sibling placeholder). Left→right by layout x.
+ * (excludes median island, opposite dual branch, sibling placeholder). Left→right by layout x.
  */
 export function buildMatrixColumns(
   scene: RoadSpaceScene | null,
   tags: Record<string, string> = {},
 ): MatrixColumn[] {
   if (!scene) return []
+  const currentWayId = scene.bands.find((b) => b.role === 'current')?.wayId
   return scene.slotRects
     .filter(
       (rect) =>
         rect.role === 'current' &&
+        (currentWayId == null || rect.wayId === currentWayId) &&
         rect.kind !== 'median' &&
         rect.label !== 'sibling' &&
         rect.label !== 'step_fill',

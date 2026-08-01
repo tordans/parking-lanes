@@ -1,3 +1,4 @@
+import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   buildRoadSpaceSegment,
   layoutRoadSpace,
@@ -9,6 +10,9 @@ import type { Segment } from '@osm-editor-kit/osm-way-chain'
 import { useSelectedOsmRef } from '../../../shell/map/feature-selection-store'
 import { useMapViewport } from '../../../shell/map/map-viewport'
 import { useLanesChain } from '../map/lanes-map-store'
+import { useLanesOsmQuery } from '../map/lanes-osm-query'
+import { findDualCarriagewaySibling } from './find-dual-carriageway-sibling'
+import { medianHintForWay } from './median-hint'
 import { orientNeighborForCenter } from './orient-neighbor-tags'
 import { screenOrderedChainNeighbors } from './screen-ordered-neighbors'
 import { useLanesChainBuilder, useVisibleChainSegments } from './use-lanes-chain'
@@ -29,9 +33,24 @@ export type RoadSpaceChainView = {
   centerSegment: Segment | null
 }
 
+function dualSiblingForSegment(
+  graph: ParsedOsmData | undefined,
+  segment: { id: number; tags: Record<string, string> },
+  excludeWayIds: ReadonlySet<number>,
+): { wayId: number; tags: Record<string, string> } | undefined {
+  if (!graph) return undefined
+  const match = findDualCarriagewaySibling(graph, segment.id, { excludeWayIds })
+  if (!match) return undefined
+  const tags = graph.ways[match.wayId]?.tags
+  if (!tags) return undefined
+  return { wayId: match.wayId, tags: { ...tags } }
+}
+
 /**
  * Selection → oriented prev/current/next → scene + current slots.
  * Neighbour tags are normalised into the current way's direction before parse.
+ * Dual oneway bands resolve the opposite carriageway branch when present in the
+ * loaded OSM graph (real slots instead of a mirrored placeholder).
  */
 export function useRoadSpaceChain(): RoadSpaceChainView {
   const selectedOsmRef = useSelectedOsmRef()
@@ -40,6 +59,7 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
   const chain = useLanesChain()
   const visibleSegments = useVisibleChainSegments(centerWayId)
   const mapViewport = useMapViewport()
+  const { data: graph } = useLanesOsmQuery({ select: (data) => data.graph })
 
   const empty: RoadSpaceChainView = {
     scene: null,
@@ -76,14 +96,29 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
   const orientedBottom =
     bottomNeighbor != null ? orientNeighborForCenter(centerSegment, bottomNeighbor) : null
 
+  const excludeWayIds = new Set(
+    [orientedTop?.id, centerSegment.id, orientedBottom?.id].filter(
+      (id): id is number => id != null,
+    ),
+  )
+
   // Diagram stacks top → bottom: screen-up neighbour, current, screen-down neighbour.
   const segments: RoadSpaceSegment[] = []
   if (orientedTop) {
-    segments.push(buildRoadSpaceSegment(orientedTop.tags, { wayId: orientedTop.id, role: 'prev' }))
+    segments.push(
+      buildRoadSpaceSegment(orientedTop.tags, {
+        wayId: orientedTop.id,
+        role: 'prev',
+        dualSibling: dualSiblingForSegment(graph, orientedTop, excludeWayIds),
+        medianHint: medianHintForWay(graph, orientedTop.id),
+      }),
+    )
   }
   const currentBuilt = buildRoadSpaceSegment(centerSegment.tags, {
     wayId: centerSegment.id,
     role: 'current',
+    dualSibling: dualSiblingForSegment(graph, centerSegment, excludeWayIds),
+    medianHint: medianHintForWay(graph, centerSegment.id),
   })
   segments.push(currentBuilt)
   if (orientedBottom) {
@@ -91,6 +126,8 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
       buildRoadSpaceSegment(orientedBottom.tags, {
         wayId: orientedBottom.id,
         role: 'next',
+        dualSibling: dualSiblingForSegment(graph, orientedBottom, excludeWayIds),
+        medianHint: medianHintForWay(graph, orientedBottom.id),
       }),
     )
   }

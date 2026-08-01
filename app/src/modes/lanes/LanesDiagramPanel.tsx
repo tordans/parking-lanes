@@ -1,15 +1,19 @@
 import * as m from '@app/paraglide/messages'
-import type {
-  RoadSpaceSlot,
-  RoadSpaceSlotKind,
-  SeparatelyMappedSidepath,
+import {
+  type RoadSpaceSlot,
+  type RoadSpaceSlotKind,
+  type SeparatelyMappedSidepath,
 } from '@osm-editor-kit/osm-lane-diagram'
 import { useFeatureSelectionActions } from '../../shell/map/feature-selection-store'
 import {
+  formatRoadSpaceWidthLabel,
   RoadSpaceDiagram,
+  RoadSpaceMedianCrossingLegendIcon,
+  RoadSpaceMedianVergeLegendIcon,
+  ROAD_SPACE_CALCULATED_WIDTH_COLOR,
   ROAD_SPACE_KIND_SWATCH,
-  ROAD_SPACE_MEDIAN_SWATCH,
   ROAD_SPACE_SIBLING_SWATCH,
+  ROAD_SPACE_TAGGED_WIDTH_COLOR,
 } from './components/RoadSpaceDiagram'
 import { useRoadSpaceChain } from './domain/use-road-space-chain'
 import {
@@ -98,6 +102,19 @@ function segmentTitle(tags: Record<string, string> | undefined, wayId: number | 
   return `way/${wayId}`
 }
 
+function firstWidthLabel(
+  slots: RoadSpaceSlot[],
+  provenance: 'tagged' | 'inferred',
+  fallback: string,
+): string {
+  for (const slot of slots) {
+    if (slot.widthProvenance === provenance && slot.widthM > 0) {
+      return formatRoadSpaceWidthLabel(slot.widthM)
+    }
+  }
+  return fallback
+}
+
 export function LanesDiagramPanel() {
   const { scene, currentSlots, centerWayId, centerSegment } = useRoadSpaceChain()
   const highlightedSlotId = useHighlightedLaneSlotId()
@@ -107,6 +124,8 @@ export function LanesDiagramPanel() {
   const ariaLabel = scene ? summarizeSlots(currentSlots) : m.lanes_diagram_no_selection()
   const separateHints = uniqueSeparatelyMapped(scene?.separatelyMapped)
   const sidepathTargets = useSeparatelyMappedSidepathTargets(centerWayId, separateHints)
+  const taggedLegendSample = firstWidthLabel(currentSlots, 'tagged', '3.2')
+  const calculatedLegendSample = firstWidthLabel(currentSlots, 'inferred', '3.0')
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-3">
@@ -117,14 +136,16 @@ export function LanesDiagramPanel() {
 
       <div className="min-h-0 w-full flex-1 overflow-y-auto">
         {scene ? (
-          <div className="flex flex-col gap-2">
-            <RoadSpaceDiagram
-              scene={scene}
-              ariaLabel={ariaLabel}
-              highlightedSlotId={highlightedSlotId}
-              className="mx-auto max-w-full"
-              siblingLabel={m.lanes_diagram_sibling()}
-            />
+          <div className="flex w-full flex-col gap-2">
+            <div className="flex w-full justify-center">
+              <RoadSpaceDiagram
+                scene={scene}
+                ariaLabel={ariaLabel}
+                highlightedSlotId={highlightedSlotId}
+                className="max-w-full"
+                siblingLabel={m.lanes_diagram_sibling()}
+              />
+            </div>
             {separateHints.length > 0 ? (
               <ul className="m-0 list-none space-y-0.5 pl-0 text-[11px] leading-snug text-zinc-500">
                 {separateHints.map((hint) => {
@@ -138,6 +159,13 @@ export function LanesDiagramPanel() {
                     />
                   )
                 })}
+              </ul>
+            ) : null}
+            {scene.placementIssues && scene.placementIssues.length > 0 ? (
+              <ul className="m-0 list-none space-y-0.5 pl-0 text-[11px] leading-snug text-amber-800">
+                {scene.placementIssues.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
               </ul>
             ) : null}
           </div>
@@ -159,12 +187,12 @@ export function LanesDiagramPanel() {
             </span>
           ))}
           <span className="inline-flex items-center gap-1">
-            <span
-              className="size-2.5 rounded-sm border border-zinc-300/80"
-              style={{ backgroundColor: ROAD_SPACE_MEDIAN_SWATCH }}
-              aria-hidden
-            />
+            <RoadSpaceMedianVergeLegendIcon className="size-2.5 shrink-0" />
             {m.lanes_legend_median()}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <RoadSpaceMedianCrossingLegendIcon className="size-2.5 shrink-0" />
+            {m.lanes_legend_crossing_median()}
           </span>
           <span className="inline-flex items-center gap-1">
             <span
@@ -178,13 +206,17 @@ export function LanesDiagramPanel() {
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-zinc-500">
           <span className="inline-flex items-center gap-1">
             <span
-              className="inline-block h-2.5 w-2 border-x border-dotted border-zinc-400 bg-zinc-100"
-              aria-hidden
-            />
+              className="font-mono text-[9px]"
+              style={{ color: ROAD_SPACE_CALCULATED_WIDTH_COLOR }}
+            >
+              {calculatedLegendSample}
+            </span>
             {m.lanes_legend_default_width()}
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="font-mono text-[9px] text-zinc-700">3.0</span>
+            <span className="font-mono text-[9px]" style={{ color: ROAD_SPACE_TAGGED_WIDTH_COLOR }}>
+              {taggedLegendSample}
+            </span>
             {m.lanes_legend_tagged_width()}
           </span>
         </div>

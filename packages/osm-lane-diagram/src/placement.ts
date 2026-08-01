@@ -79,8 +79,10 @@ function isDrivingSlot(slot: RoadSpaceSlot): boolean {
 
 /**
  * Like `centrelineOffsetM`, but placement lane indices refer to driving lanes only
- * (motor/bus/both_ways). On-carriageway cycle lanes are skipped when counting lanes,
- * then re-added to the metre offset so the centreline stays correct in the full stack.
+ * (motor/bus/both_ways). Used for SRK defaults and motor-only stacks. When `placement=*`
+ * is explicit on an expanded pipe list (`cycleway:lanes` / extra `width:lanes` pipes),
+ * `from-tags` uses `centrelineOffsetM` on the full carriageway instead so the purple
+ * guide hits the referenced pipe (e.g. mid-road cycle = `middle_of:2`).
  */
 export function centrelineOffsetMDriving(slots: RoadSpaceSlot[], placement: Placement): number {
   const driving = slots.filter(isDrivingSlot)
@@ -110,4 +112,80 @@ export function centrelineOffsetMDriving(slots: RoadSpaceSlot[], placement: Plac
 export function drivingLaneCount(slots: RoadSpaceSlot[]): number {
   const n = slots.filter(isDrivingSlot).length
   return n > 0 ? n : slots.length
+}
+
+function carriagewaySlots(slots: RoadSpaceSlot[]): RoadSpaceSlot[] {
+  return slots.filter((s) => s.zone === 'carriageway')
+}
+
+function slotKindAtLane(carriageway: RoadSpaceSlot[], lane: number): string | null {
+  if (carriageway.length === 0) return null
+  const idx = Math.min(Math.max(1, lane), carriageway.length) - 1
+  return carriageway[idx]?.kind ?? null
+}
+
+/**
+ * Validate that consecutive segments' `placement=*` steps are compatible with a
+ * shared purple centreline. Same index on different pipe stacks (e.g. both
+ * `middle_of:2` but lane 2 is cycle vs motor) cannot align without shear.
+ */
+export function collectPlacementIssues(
+  segments: Array<{
+    wayId: number
+    slots: RoadSpaceSlot[]
+    placement: Placement
+    placementTag?: string
+    synthetic?: boolean
+  }>,
+): string[] {
+  const issues: string[] = []
+  const real = segments.filter((s) => !s.synthetic)
+
+  for (const seg of real) {
+    const cw = carriagewaySlots(seg.slots)
+    const parsed = parsePlacement(seg.placementTag)
+    if (parsed && parsed.kind !== 'transition' && parsed.lane > cw.length) {
+      issues.push(
+        `way ${seg.wayId}: placement=${seg.placementTag} indexes lane ${parsed.lane} but carriageway has only ${cw.length} pipe(s)`,
+      )
+    }
+    if (parsed?.kind === 'transition') {
+      issues.push(
+        `way ${seg.wayId}: placement=transition falls back to a default anchor (neighbour lerp not modelled) — corridor shear may be wrong`,
+      )
+    }
+  }
+
+  for (let i = 0; i < real.length - 1; i++) {
+    const a = real[i]!
+    const b = real[i + 1]!
+    const aParsed = parsePlacement(a.placementTag)
+    const bParsed = parsePlacement(b.placementTag)
+    if (
+      aParsed == null ||
+      bParsed == null ||
+      aParsed.kind === 'transition' ||
+      bParsed.kind === 'transition'
+    ) {
+      continue
+    }
+
+    const aCw = carriagewaySlots(a.slots)
+    const bCw = carriagewaySlots(b.slots)
+    const aKind = slotKindAtLane(aCw, aParsed.lane)
+    const bKind = slotKindAtLane(bCw, bParsed.lane)
+    const sameTag = a.placementTag?.trim().toLowerCase() === b.placementTag?.trim().toLowerCase()
+
+    if (aKind != null && bKind != null && aKind !== bKind) {
+      issues.push(
+        `ways ${a.wayId}→${b.wayId}: placement steps ${a.placementTag} → ${b.placementTag} put different slot kinds on the shared centreline (${aKind} vs ${bKind}) — ribbons must shear`,
+      )
+    } else if (sameTag && aCw.length !== bCw.length) {
+      issues.push(
+        `ways ${a.wayId}→${b.wayId}: same placement=${a.placementTag} but carriageway pipe counts differ (${aCw.length} vs ${bCw.length}) — lane ${aParsed.lane} is not the same column`,
+      )
+    }
+  }
+
+  return issues
 }

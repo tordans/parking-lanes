@@ -12,6 +12,7 @@ import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { MetersInput } from '../../components/MetersInput'
 import { YesNoOrTextField } from '../../components/tag-editor'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import {
@@ -37,10 +38,7 @@ import {
   type MatrixColumn,
   type MatrixRowId,
 } from './domain/lanes-matrix-model'
-import {
-  resolveImpliedOneway,
-  resolveImpliedOnewayBicycle,
-} from './domain/oneway-defaults'
+import { resolveImpliedOneway, resolveImpliedOnewayBicycle } from './domain/oneway-defaults'
 import {
   CYCLEWAY_PRESENCE_VALUES,
   resolveSidepathPresence,
@@ -163,6 +161,15 @@ function rowLabel(id: MatrixRowId): string {
   }
 }
 
+type CarriagewayWidthKey = 'width' | 'est_width'
+
+function initialCarriagewayWidthKey(tags: Record<string, string>): CarriagewayWidthKey {
+  const hasWidth = tags.width != null && tags.width !== ''
+  const hasEst = tags.est_width != null && tags.est_width !== ''
+  if (!hasWidth && hasEst) return 'est_width'
+  return 'width'
+}
+
 function MatrixCellFlyout(props: {
   column: MatrixColumn
   row: MatrixRowId
@@ -254,18 +261,31 @@ function MatrixCellFlyout(props: {
               >
                 <label className="flex flex-col gap-1 text-xs">
                   <span className="font-medium text-zinc-700">{rowLabel(row)}</span>
-                  <input
-                    type="text"
-                    value={draft}
-                    placeholder={inputPlaceholder}
-                    onChange={(event) => setDraft(event.target.value)}
-                    onFocus={() => {
-                      setDraft(initial)
-                      setFocusWins(true)
-                      onHighlight(column.slotId)
-                    }}
-                    className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                  />
+                  {row === 'width' ? (
+                    <MetersInput
+                      value={draft}
+                      placeholder={inputPlaceholder}
+                      onChange={setDraft}
+                      onFocus={() => {
+                        setDraft(initial)
+                        setFocusWins(true)
+                        onHighlight(column.slotId)
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={draft}
+                      placeholder={inputPlaceholder}
+                      onChange={(event) => setDraft(event.target.value)}
+                      onFocus={() => {
+                        setDraft(initial)
+                        setFocusWins(true)
+                        onHighlight(column.slotId)
+                      }}
+                      className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  )}
                 </label>
                 <div className="flex justify-end gap-1">
                   <button
@@ -310,6 +330,15 @@ function WayLevelFields(props: {
   const impliedOneway = resolveImpliedOneway(tags)
   const impliedOnewayBicycle = resolveImpliedOnewayBicycle(effectiveOnewayTags)
 
+  const [widthKey, setWidthKey] = useState<CarriagewayWidthKey>(() =>
+    initialCarriagewayWidthKey(tags),
+  )
+  const [syncedWayId, setSyncedWayId] = useState(way.id)
+  if (syncedWayId !== way.id) {
+    setSyncedWayId(way.id)
+    setWidthKey(initialCarriagewayWidthKey(way.tags))
+  }
+
   function setModelField<K extends keyof WayLaneModel>(key: K, value: WayLaneModel[K]) {
     if (readOnly) return
     props.onCommitModel({ ...model, [key]: value })
@@ -324,6 +353,17 @@ function WayLevelFields(props: {
   function setTag(key: string, value: string) {
     if (readOnly) return
     props.onPatchTags({ [key]: value.trim() === '' ? undefined : value.trim() })
+  }
+
+  function toggleCarriagewayWidthKey() {
+    if (readOnly) return
+    const next: CarriagewayWidthKey = widthKey === 'width' ? 'est_width' : 'width'
+    const value = tags[widthKey]
+    props.onPatchTags({
+      [widthKey]: undefined,
+      [next]: value != null && value !== '' ? value : undefined,
+    })
+    setWidthKey(next)
   }
 
   const sidewalkPresence = resolveSidepathPresence(tags, 'sidewalk')
@@ -431,30 +471,32 @@ function WayLevelFields(props: {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">
-            width{' '}
+          <span className="flex items-center justify-between gap-1 text-zinc-600">
+            <span className="flex items-center gap-1">
+              <span className="font-mono">{widthKey}</span>
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={toggleCarriagewayWidthKey}
+                aria-label={m.lanes_width_key_toggle_aria()}
+                title={m.lanes_width_key_toggle_aria()}
+                className="rounded border border-zinc-300 px-1 py-0 font-mono text-[10px] leading-4 text-zinc-600 hover:bg-zinc-50 disabled:cursor-default disabled:opacity-40"
+              >
+                {widthKey === 'width' ? 'est' : 'width'}
+              </button>
+            </span>
             <Link
               to="/audit-width"
               hash="road_kerb"
-              className="font-normal text-blue-700 hover:underline"
+              className="shrink-0 font-normal text-blue-700 hover:underline"
             >
               {m.lanes_width_help_kerb()}
             </Link>
           </span>
-          <input
+          <MetersInput
             disabled={readOnly}
-            value={tags.width ?? ''}
-            onChange={(e) => setTag('width', e.target.value)}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
-          />
-        </label>
-        <label className="flex flex-col gap-0.5 text-xs">
-          <span className="text-zinc-600">est_width</span>
-          <input
-            disabled={readOnly}
-            value={tags.est_width ?? ''}
-            onChange={(e) => setTag('est_width', e.target.value)}
-            className="rounded border border-zinc-300 px-1.5 py-1 text-sm disabled:bg-zinc-50"
+            value={tags[widthKey] ?? ''}
+            onChange={(value) => setTag(widthKey, value)}
           />
         </label>
         <label className="flex flex-col gap-0.5 text-xs">

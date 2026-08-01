@@ -19,3 +19,12 @@ export const SEGMENT_GAP_PX = 0
 
 /** Median gap used when spreading a dual carriageway fork. */
 export const DEFAULT_MEDIAN_GAP_M = 3.0
+
+/**
+ * Fraction of band height used for width-change tapers (kerbs, outer edges, ribbons).
+ * Shared so fills and strokes meet on the same diagonal.
+ */
+export const TAPER_FRAC = 0.45
+
+/** Height fraction for synthetic transition wedges between width-changing segments. */
+export const TRANSITION_BAND_HEIGHT_FRAC = 0.6

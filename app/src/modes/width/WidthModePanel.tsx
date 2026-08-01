@@ -2,6 +2,7 @@ import * as m from '@app/paraglide/messages'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { expandSidepaths } from '@osm-editor-kit/osm-sidepath-tags'
 import { ColoredEditorSection } from '../../components/ColoredEditorSection'
+import { MetersInput } from '../../components/MetersInput'
 import { useDebouncedCommit } from '../../components/tag-editor'
 import { AuthState, useAuthState } from '../../shell/app-store'
 import { AllTagsBlock } from '../../shell/controls/AllTagsBlock'
@@ -169,16 +170,15 @@ export function WidthModePanel() {
         <label htmlFor="width-input" className="text-sm font-medium text-zinc-900">
           {m.panel_width_m()}
         </label>
-        <input
+        <MetersInput
           id="width-input"
-          type="number"
-          min={1}
-          step={0.1}
-          value={displayWidth}
+          inputMode="decimal"
+          value={String(displayWidth)}
           disabled={readOnly}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-50"
-          onChange={(event) => {
-            const next = Number.parseFloat(event.target.value)
+          className="rounded-md"
+          valueClassName="px-3 py-2"
+          onChange={(raw) => {
+            const next = Number.parseFloat(raw)
             if (!Number.isFinite(next)) return
             applyWidth(next)
           }}
