@@ -30,22 +30,29 @@ function isTypingTarget(target: EventTarget | null): boolean {
 type Axis = 'horizontal' | 'vertical'
 
 /**
- * Chain-order prev/next walk + optional ←/→ or ↑/↓ keyboard binding on a focusable container.
+ * Prev/next walk + optional ←/→ or ↑/↓ keyboard binding on a focusable container.
+ * Pass `prevWayId`/`nextWayId` to override chain order (e.g. lanes screen-ordered neighbours).
  */
 export function useChainWalk({
-  chain,
+  chain = null,
   centerWayId,
   walkToWay,
+  prevWayId: prevWayIdProp,
+  nextWayId: nextWayIdProp,
   axis = 'horizontal',
   containerRef,
 }: {
-  chain: SegmentChain | null
-  centerWayId: number | undefined
+  chain?: SegmentChain | null
+  centerWayId?: number
   walkToWay: (wayId: number) => void
+  prevWayId?: number | null
+  nextWayId?: number | null
   axis?: Axis | false
   containerRef?: RefObject<HTMLElement | null>
 }) {
-  const { prevWayId, nextWayId } = chainNeighborIds(chain, centerWayId)
+  const fromChain = chainNeighborIds(chain, centerWayId)
+  const prevWayId = prevWayIdProp !== undefined ? prevWayIdProp : fromChain.prevWayId
+  const nextWayId = nextWayIdProp !== undefined ? nextWayIdProp : fromChain.nextWayId
 
   const walkPrev = useEffectEvent(() => {
     if (prevWayId != null) walkToWay(prevWayId)

@@ -4,7 +4,6 @@ export type PropagateSuggestion = {
   key: string
   value: string
   affectedWayIds: number[]
-  description: string
 }
 
 type SegmentLike = {
@@ -41,7 +40,6 @@ export function suggestPropagateFromCenter(
         key: row.key,
         value: centerCell.value,
         affectedWayIds: affected,
-        description: `Set "${row.key}" to "${centerCell.value}" on ${affected.length} segment(s)`,
       })
     }
   }

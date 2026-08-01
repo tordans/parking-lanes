@@ -148,7 +148,8 @@ export function mergeWayEdit(base: OsmWay, incoming: OsmWay, source: ChangeSourc
   }
 
   if (source === 'table') {
-    // Full tag snapshot so clears/deletes stick (unlike patch-merge modes).
+    // Full tag snapshot so clears/deletes stick. Handlers must build incoming from
+    // getPendingWay ?? session so other modes' pending tags are included.
     return {
       ...base,
       ...incoming,

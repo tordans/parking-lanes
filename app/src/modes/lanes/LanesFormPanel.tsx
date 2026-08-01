@@ -21,6 +21,7 @@ import {
   MapFeaturePromptEmptyState,
 } from '../../shell/controls/MapFeatureEmptyState'
 import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
+import { useChainWalk } from '../../shell/controls/use-chain-walk'
 import {
   useFeatureSelectionActions,
   useSelectedOsmRef,
@@ -132,12 +133,6 @@ function PresenceFields(props: {
       }}
     />
   )
-}
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
 }
 
 function rowLabel(id: MatrixRowId): string {
@@ -662,29 +657,29 @@ export function LanesFormPanel() {
     [selectFeature],
   )
 
+  // Screen-ordered neighbours (not chain digitisation order) drive ↑/↓ walk.
+  const { walkPrev, walkNext } = useChainWalk({
+    walkToWay,
+    prevWayId: topNeighbor?.id ?? null,
+    nextWayId: bottomNeighbor?.id ?? null,
+    axis: 'vertical',
+    containerRef: panelRef,
+  })
+
   useEffect(
-    function keyboardWalkAlongStreet() {
+    function clearHighlightOnEscape() {
       const panel = panelRef.current
       if (!panel) return
 
       function onKeyDown(event: KeyboardEvent) {
-        if (isTypingTarget(event.target)) return
-
-        if (event.key === 'ArrowUp') {
-          event.preventDefault()
-          if (topNeighbor) walkToWay(topNeighbor.id)
-        } else if (event.key === 'ArrowDown') {
-          event.preventDefault()
-          if (bottomNeighbor) walkToWay(bottomNeighbor.id)
-        } else if (event.key === 'Escape') {
-          setHighlightedSlot(null)
-        }
+        if (event.key !== 'Escape') return
+        setHighlightedSlot(null)
       }
 
       panel.addEventListener('keydown', onKeyDown)
       return () => panel.removeEventListener('keydown', onKeyDown)
     },
-    [bottomNeighbor, setHighlightedSlot, topNeighbor, walkToWay],
+    [setHighlightedSlot],
   )
 
   if (!centerWayId) {
@@ -746,7 +741,7 @@ export function LanesFormPanel() {
                 disabled={!topNeighbor}
                 aria-label={m.chain_prev_segment()}
                 title={m.chain_prev_segment()}
-                onClick={() => topNeighbor && walkToWay(topNeighbor.id)}
+                onClick={walkPrev}
                 className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
               >
                 <ChevronUp className="size-4" aria-hidden />
@@ -756,7 +751,7 @@ export function LanesFormPanel() {
                 disabled={!bottomNeighbor}
                 aria-label={m.chain_next_segment()}
                 title={m.chain_next_segment()}
-                onClick={() => bottomNeighbor && walkToWay(bottomNeighbor.id)}
+                onClick={walkNext}
                 className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
               >
                 <ChevronDown className="size-4" aria-hidden />

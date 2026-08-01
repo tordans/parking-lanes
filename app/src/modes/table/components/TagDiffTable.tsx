@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import { useState } from 'react'
 import type { TagDiffCell, TagDiffStatus, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
@@ -51,7 +52,7 @@ function EditableCell({
           className="mt-0.5 text-xs text-zinc-500 hover:text-red-600"
           onClick={onClear}
         >
-          clear
+          {m.table_clear_cell()}
         </button>
       ) : null}
     </td>
@@ -173,7 +174,7 @@ export function TagDiffTable({
           <thead>
             <tr>
               <th className="sticky left-0 z-20 border border-zinc-200 bg-zinc-200 px-2 py-2 text-left text-xs font-semibold tracking-wide text-zinc-700 uppercase">
-                Tag
+                {m.table_column_tag()}
               </th>
               {segments.map((segment, index) => {
                 const isCenter = index === centerIndex
@@ -195,14 +196,17 @@ export function TagDiffTable({
                       >
                         way/{segment.id}
                         {segment.reversed ? (
-                          <span className="ml-1 text-amber-600" title="Direction normalized">
+                          <span
+                            className="ml-1 text-amber-600"
+                            title={m.table_direction_normalized()}
+                          >
                             ↺
                           </span>
                         ) : null}
                       </button>
                       {isCenter ? (
                         <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
-                          center
+                          {m.table_center_badge()}
                         </span>
                       ) : null}
                       {segment.tags.name || segment.tags.ref || segment.tags.highway ? (
@@ -235,15 +239,15 @@ export function TagDiffTable({
       <div className="flex flex-wrap gap-3 text-xs text-zinc-600">
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-amber-100 ring-1 ring-zinc-200" />
-          changed
+          {m.table_legend_changed()}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-green-100 ring-1 ring-zinc-200" />
-          added
+          {m.table_legend_added()}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-red-100 ring-1 ring-zinc-200" />
-          removed
+          {m.table_legend_removed()}
         </span>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import * as m from '@app/paraglide/messages'
-import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRef } from 'react'
 import { AuthState, useAuthState } from '../../shell/app-store'
@@ -20,18 +19,12 @@ import { useOsmAuth } from '../parking/map/use-osm-auth'
 import { PropagateSuggestions } from './components/PropagateSuggestions'
 import { TagDiffTable } from './components/TagDiffTable'
 import { suggestPropagateFromCenter, type PropagateSuggestion } from './domain/suggestions'
+import { applyTableTagToWay, resolveTableEditBaseWay } from './domain/table-edits'
 import { buildTagRows } from './domain/tag-diff'
 import { useTableChain, useTableMapActions, useTablePendingJunctions } from './map/table-map-store'
 import { useTableOsmChangeHandler } from './use-table-mode-handlers'
 
 const CHAIN_MAX_PER_SIDE = 5
-
-function applyTagToWay(way: OsmWay, key: string, value: string | undefined): OsmWay {
-  const tags = { ...way.tags }
-  if (value === undefined || value === '') delete tags[key]
-  else tags[key] = value
-  return { ...way, tags }
-}
 
 export function TableBottomPanel() {
   const selectedOsmRef = useSelectedOsmRef()
@@ -91,34 +84,42 @@ export function TableBottomPanel() {
   if (!chain) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm text-zinc-500">Building chain…</p>
+        <p className="text-sm text-zinc-500">{m.table_building_chain()}</p>
       </div>
     )
   }
 
-  const rows = buildTagRows(chain)
-  const suggestions = suggestPropagateFromCenter(chain.segments, chain.centerIndex, rows)
+  const activeChain = chain
+  const rows = buildTagRows(activeChain)
+  const suggestions = suggestPropagateFromCenter(
+    activeChain.segments,
+    activeChain.centerIndex,
+    rows,
+  )
+
+  function commitDisplayKey(segmentId: number, displayKey: string, value: string | undefined) {
+    if (readOnly || !graph) return
+    const base = resolveTableEditBaseWay(segmentId, graph.ways[segmentId])
+    if (!base) return
+    const segment = activeChain.segments.find((s) => s.id === segmentId)
+    handleOsmChange(applyTableTagToWay(base, displayKey, value, segment?.reversed))
+  }
 
   function commitCell(segmentId: number, key: string, value: string) {
-    if (readOnly || !graph) return
-    const way = graph.ways[segmentId]
-    if (!way) return
-    handleOsmChange(applyTagToWay(way, key, value === '' ? undefined : value))
+    commitDisplayKey(segmentId, key, value === '' ? undefined : value)
   }
 
   function clearCell(segmentId: number, key: string) {
-    if (readOnly || !graph) return
-    const way = graph.ways[segmentId]
-    if (!way) return
-    handleOsmChange(applyTagToWay(way, key, undefined))
+    commitDisplayKey(segmentId, key, undefined)
   }
 
   function applySuggestion(suggestion: PropagateSuggestion) {
     if (readOnly || !graph) return
     for (const wayId of suggestion.affectedWayIds) {
-      const way = graph.ways[wayId]
-      if (!way) continue
-      handleOsmChange(applyTagToWay(way, suggestion.key, suggestion.value))
+      const base = resolveTableEditBaseWay(wayId, graph.ways[wayId])
+      if (!base) continue
+      const segment = activeChain.segments.find((s) => s.id === wayId)
+      handleOsmChange(applyTableTagToWay(base, suggestion.key, suggestion.value, segment?.reversed))
     }
   }
 
@@ -163,7 +164,7 @@ export function TableBottomPanel() {
           <ChainNavigator
             pendingJunctions={pendingJunctions}
             onJunctionPick={(choice, wayId) => {
-              void extendAtJunction(choice, wayId, chain).then(() => walkToWay(wayId))
+              void extendAtJunction(choice, wayId, activeChain).then(() => walkToWay(wayId))
             }}
           />
         </div>
@@ -172,8 +173,8 @@ export function TableBottomPanel() {
       </div>
 
       <TagDiffTable
-        segments={chain.segments}
-        centerIndex={chain.centerIndex}
+        segments={activeChain.segments}
+        centerIndex={activeChain.centerIndex}
         rows={rows}
         editable={!readOnly}
         selectedSegmentId={centerWayId}
