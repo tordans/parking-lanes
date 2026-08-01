@@ -212,15 +212,18 @@ describe('mergeWayEdit', () => {
       surface: 'asphalt',
       width: '5',
     })
+    // Omit surface (true delete) — do not rename or overwrite it.
     const incoming = way(1, {
       highway: 'residential',
       width: '5',
     })
 
-    expect(mergeWayEdit(base, incoming, 'table').tags).toEqual({
+    const merged = mergeWayEdit(base, incoming, 'table')
+    expect(merged.tags).toEqual({
       highway: 'residential',
       width: '5',
     })
+    expect(Object.hasOwn(merged.tags, 'surface')).toBe(false)
   })
 })
 

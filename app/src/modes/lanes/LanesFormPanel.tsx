@@ -135,6 +135,12 @@ function PresenceFields(props: {
   )
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
+}
+
 function rowLabel(id: MatrixRowId): string {
   switch (id) {
     case 'turn':
@@ -673,6 +679,7 @@ export function LanesFormPanel() {
 
       function onKeyDown(event: KeyboardEvent) {
         if (event.key !== 'Escape') return
+        if (isTypingTarget(event.target)) return
         setHighlightedSlot(null)
       }
 

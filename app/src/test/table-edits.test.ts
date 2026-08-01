@@ -114,21 +114,22 @@ describe('resolveTableEditBaseWay + mergeWayEdit table', () => {
     clearChanges()
   })
 
-  test('mergeWayEdit table full snapshot still deletes when incoming omits a key', () => {
+  test('mergeWayEdit table full snapshot deletes an omitted key (not overwrite)', () => {
     const base = way(1, {
       highway: 'residential',
       surface: 'asphalt',
       'parking:both': 'lane',
     })
+    // Incoming keeps parking, omits surface entirely — must not leave asphalt behind.
     const incoming = way(1, {
       highway: 'residential',
       'parking:both': 'lane',
-      surface: 'concrete',
     })
-    expect(mergeWayEdit(base, incoming, 'table').tags).toEqual({
+    const merged = mergeWayEdit(base, incoming, 'table')
+    expect(merged.tags).toEqual({
       highway: 'residential',
       'parking:both': 'lane',
-      surface: 'concrete',
     })
+    expect(merged.tags.surface).toBeUndefined()
   })
 })
