@@ -88,7 +88,7 @@
   "lanes_legend_cycle": "Cycle",
   "lanes_legend_sidewalk": "Sidewalk",
   "lanes_legend_shared": "Shared path",
-  "lanes_legend_default_width": "Derived from width=* (metres)",
+  "lanes_legend_default_width": "Fallback / from width=* (metres)",
   "lanes_legend_tagged_width": "Explicit width (metres)",
   "lanes_width_key_toggle_aria": "Toggle between width and est_width",
   "lanes_legend_median": "Grass verge / median",

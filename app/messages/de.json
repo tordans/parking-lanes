@@ -88,7 +88,7 @@
   "lanes_legend_cycle": "Rad",
   "lanes_legend_sidewalk": "Gehweg",
   "lanes_legend_shared": "Gemeinsamer Weg",
-  "lanes_legend_default_width": "Aus width=* abgeleitet (Meter)",
+  "lanes_legend_default_width": "Fallback / aus width=* (Meter)",
   "lanes_legend_tagged_width": "Explizite Breite (Meter)",
   "lanes_width_key_toggle_aria": "Zwischen width und est_width wechseln",
   "lanes_legend_median": "Grünstreifen / Mittelstreifen",

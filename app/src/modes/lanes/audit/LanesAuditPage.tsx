@@ -226,8 +226,8 @@ function Legend(): ReactElement {
           <code className="font-mono text-[0.9em]">*:width</code>) show a dark metre label. When
           only <code className="font-mono text-[0.9em]">width=*</code> is present, lane metres are
           derived and shown in <strong className="text-violet-700">purple</strong>. Fallback
-          defaults never get a number — missing width keeps dotted edges so it is clear values still
-          need tagging.
+          defaults show a muted metre label plus dotted edges so it is clear values still need
+          tagging. Direction / turn arrows and width labels repeat on every segment band.
         </li>
         <li>
           Kerbs are heavy strokes between sidewalk and carriageway; outer sidepath edges are

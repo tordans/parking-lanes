@@ -104,7 +104,7 @@ function segmentTitle(tags: Record<string, string> | undefined, wayId: number | 
 
 function firstWidthLabel(
   slots: RoadSpaceSlot[],
-  provenance: 'tagged' | 'inferred',
+  provenance: 'tagged' | 'inferred' | 'default',
   fallback: string,
 ): string {
   for (const slot of slots) {
@@ -125,7 +125,8 @@ export function LanesDiagramPanel() {
   const separateHints = uniqueSeparatelyMapped(scene?.separatelyMapped)
   const sidepathTargets = useSeparatelyMappedSidepathTargets(centerWayId, separateHints)
   const taggedLegendSample = firstWidthLabel(currentSlots, 'tagged', '3.2')
-  const calculatedLegendSample = firstWidthLabel(currentSlots, 'inferred', '3.0')
+  const calculatedLegendSample =
+    firstWidthLabel(currentSlots, 'inferred', '') || firstWidthLabel(currentSlots, 'default', '3.0')
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-3">

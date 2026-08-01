@@ -434,18 +434,6 @@ function isRibbonHighlighted(ribbon: SceneRibbon, highlightedSlotId?: string | n
   return ribbon.bandSlices.some((s) => s.slotId === highlightedSlotId)
 }
 
-function ribbonForSlot(
-  ribbons: SceneRibbon[],
-  slotId: string,
-  role: string,
-): SceneRibbon | undefined {
-  return ribbons.find(
-    (r) =>
-      r.glyphBandRole === role &&
-      (r.slotId === slotId || r.bandSlices.some((s) => s.slotId === slotId)),
-  )
-}
-
 function CorridorRibbon({
   ribbon,
   highlightedSlotId,
@@ -504,7 +492,9 @@ function SlotRect({
   const isStepFill = rect.label === 'step_fill'
   const isTagged = rect.widthProvenance === 'tagged'
   const isInferred = rect.widthProvenance === 'inferred'
-  const showWidthLabel = isTagged || isInferred
+  const isDefaultWidth = rect.widthProvenance === 'default'
+  // Metre label on every real band (tagged / inferred / fallback defaults).
+  const showWidthLabel = isTagged || isInferred || isDefaultWidth
   const zone: RoadSpaceZone = rect.zone
   const skipTravelFill =
     ribbonsCoverTravel &&
@@ -524,11 +514,12 @@ function SlotRect({
       : skipTravelFill
         ? 'none'
         : kindFill(rect.kind, isTagged || isInferred)
-  const ribbon = ribbonForSlot(ribbons, rect.slotId, rect.role)
-  const cx = ribbon?.glyphCx ?? rect.x + rect.width / 2
-  const cy = ribbon?.glyphCy ?? rect.y + rect.height / 2
+  // Per-band overlays use this rect's centre — not the ribbon's single glyph
+  // anchor (that collapsed prev/next labels onto the current band).
+  const cx = rect.x + rect.width / 2
+  const cy = rect.y + rect.height / 2
   const glyphSize = Math.min(rect.width, rect.height) * 0.42
-  const opacity = isMedian
+  const fillOpacity = isMedian
     ? 1
     : isSibling
       ? rect.dimmed || isSiblingDimmed
@@ -539,72 +530,79 @@ function SlotRect({
         : 1
   const widthM = metersToPx > 0 ? rect.width / metersToPx : undefined
   const inset = 2
-  const hasTravelGlyph =
+  const hasLaneGlyph =
     !isMedian &&
     !isSibling &&
     !isStepFill &&
-    rect.role === 'current' &&
     (rect.kind === 'motor' ||
       rect.kind === 'bus' ||
       rect.kind === 'cycle' ||
       rect.kind === 'both_ways')
+  const widthLabelColor = isTagged
+    ? COLORS.widthLabel
+    : isInferred
+      ? COLORS.calculatedWidthLabel
+      : COLORS.untaggedEdge
+  const glyphNudge =
+    showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0
 
   return (
-    <g opacity={opacity} pointerEvents="none">
-      {!skipTravelFill && (
-        <>
-          {isMedian ? null : rect.points && rect.points.length >= 3 ? (
-            <polygon
-              points={pointsAttr(rect.points)}
-              fill={fill}
-              stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
-              strokeWidth={isHighlighted ? 2.5 : 0}
-              shapeRendering="geometricPrecision"
+    <g pointerEvents="none">
+      <g opacity={fillOpacity}>
+        {!skipTravelFill && (
+          <>
+            {isMedian ? null : rect.points && rect.points.length >= 3 ? (
+              <polygon
+                points={pointsAttr(rect.points)}
+                fill={fill}
+                stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+                strokeWidth={isHighlighted ? 2.5 : 0}
+                shapeRendering="geometricPrecision"
+              />
+            ) : (
+              <rect
+                x={rect.x}
+                y={rect.y}
+                width={rect.width}
+                height={rect.height}
+                fill={fill}
+                stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
+                strokeWidth={isHighlighted ? 2.5 : 0}
+                opacity={zone === 'sidepath' && (isTagged || isInferred) ? 0.95 : 1}
+                shapeRendering="geometricPrecision"
+              />
+            )}
+          </>
+        )}
+        {/* Fallback width: dotted edges — still needs an explicit tag. */}
+        {isDefaultWidth &&
+        !isMedian &&
+        !isSibling &&
+        !isStepFill &&
+        rect.width > inset * 2 &&
+        rect.height > inset * 2 ? (
+          <g
+            fill="none"
+            stroke={COLORS.untaggedEdge}
+            strokeWidth={1}
+            strokeDasharray="1.25 2.25"
+            opacity={0.85}
+          >
+            <line
+              x1={rect.x + inset}
+              y1={rect.y + inset}
+              x2={rect.x + inset}
+              y2={rect.y + rect.height - inset}
             />
-          ) : (
-            <rect
-              x={rect.x}
-              y={rect.y}
-              width={rect.width}
-              height={rect.height}
-              fill={fill}
-              stroke={isHighlighted ? COLORS.highlightStroke : 'none'}
-              strokeWidth={isHighlighted ? 2.5 : 0}
-              opacity={zone === 'sidepath' && (isTagged || isInferred) ? 0.95 : 1}
-              shapeRendering="geometricPrecision"
+            <line
+              x1={rect.x + rect.width - inset}
+              y1={rect.y + inset}
+              x2={rect.x + rect.width - inset}
+              y2={rect.y + rect.height - inset}
             />
-          )}
-        </>
-      )}
-      {/* Untagged width: vertical dotted edges only — signals “missing, must be set”. */}
-      {!isTagged &&
-      !isInferred &&
-      !isMedian &&
-      !isSibling &&
-      !isStepFill &&
-      rect.width > inset * 2 &&
-      rect.height > inset * 2 ? (
-        <g
-          fill="none"
-          stroke={COLORS.untaggedEdge}
-          strokeWidth={1}
-          strokeDasharray="1.25 2.25"
-          opacity={0.85}
-        >
-          <line
-            x1={rect.x + inset}
-            y1={rect.y + inset}
-            x2={rect.x + inset}
-            y2={rect.y + rect.height - inset}
-          />
-          <line
-            x1={rect.x + rect.width - inset}
-            y1={rect.y + inset}
-            x2={rect.x + rect.width - inset}
-            y2={rect.y + rect.height - inset}
-          />
-        </g>
-      ) : null}
+          </g>
+        ) : null}
+      </g>
       {isSibling ? (
         <SiblingPlaceholderLabel rect={rect} siblingLabel={siblingLabel} cx={cx} cy={cy} />
       ) : null}
@@ -618,32 +616,24 @@ function SlotRect({
       rect.height >= 14 ? (
         <text
           x={cx}
-          y={cy + (rect.turn || hasTravelGlyph ? glyphSize * 0.55 : 0)}
+          y={cy + (hasLaneGlyph ? glyphSize * 0.55 : 0)}
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={Math.min(10, Math.max(7, rect.width * 0.22))}
-          fill={isTagged ? COLORS.widthLabel : COLORS.calculatedWidthLabel}
+          fill={widthLabelColor}
           opacity={isTagged ? 0.8 : 0.9}
           fontFamily="ui-sans-serif, system-ui, sans-serif"
         >
           {formatWidthLabel(widthM)}
         </text>
       ) : null}
-      {rect.turn && !isMedian && !isSibling && rect.role === 'current' ? (
-        turnGlyphPaths(
-          rect.turn,
-          rect.direction,
-          cx,
-          cy - (showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0),
-          Math.max(10, glyphSize),
-        )
-      ) : hasTravelGlyph ? (
+      {hasLaneGlyph && rect.turn ? (
+        turnGlyphPaths(rect.turn, rect.direction, cx, cy - glyphNudge, Math.max(10, glyphSize))
+      ) : hasLaneGlyph ? (
         <DirectionHint
           direction={rect.direction}
           cx={cx}
-          cy={
-            cy - (showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0)
-          }
+          cy={cy - glyphNudge}
           size={Math.max(8, glyphSize * 0.85)}
         />
       ) : null}
