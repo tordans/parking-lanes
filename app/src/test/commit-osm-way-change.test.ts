@@ -175,6 +175,53 @@ describe('mergeWayEdit', () => {
       'footway:left:sett:length': '0.07',
     })
   })
+
+  test('table edit replaces full tag snapshot (set)', () => {
+    const base = way(1, {
+      highway: 'residential',
+      surface: 'asphalt',
+      width: '5',
+    })
+    const incoming = way(1, {
+      highway: 'residential',
+      surface: 'concrete',
+      width: '5',
+      name: 'Main St',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'table').tags).toEqual({
+      highway: 'residential',
+      surface: 'concrete',
+      width: '5',
+      name: 'Main St',
+    })
+  })
+
+  test('table edit overwrites an existing key', () => {
+    const base = way(1, { highway: 'primary', lanes: '2' })
+    const incoming = way(1, { highway: 'primary', lanes: '3' })
+    expect(mergeWayEdit(base, incoming, 'table').tags).toEqual({
+      highway: 'primary',
+      lanes: '3',
+    })
+  })
+
+  test('table edit deletes keys missing from the snapshot', () => {
+    const base = way(1, {
+      highway: 'residential',
+      surface: 'asphalt',
+      width: '5',
+    })
+    const incoming = way(1, {
+      highway: 'residential',
+      width: '5',
+    })
+
+    expect(mergeWayEdit(base, incoming, 'table').tags).toEqual({
+      highway: 'residential',
+      width: '5',
+    })
+  })
 })
 
 describe('commitOsmWayChange', () => {

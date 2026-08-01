@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   Route,
   Ruler,
+  Table2,
 } from 'lucide-react'
 import type { StreetSpaceModeId } from './types'
 
@@ -14,6 +15,7 @@ export const modeIcons: Record<StreetSpaceModeId, LucideIcon> = {
   width: Ruler,
   bicycle: Bike,
   lanes: Route,
+  table: Table2,
   surface: Layers,
   sidewalks: Footprints,
 }

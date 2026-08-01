@@ -11,7 +11,7 @@ function segmentLabel(tags: Record<string, string>): string {
   return tags.highway ?? 'road'
 }
 
-/** Junction candidate chips when the chain forks — prev/next lives on neighbor cross-sections. */
+/** Junction candidate chips when the chain forks — prev/next lives with the mode UI. */
 export function ChainNavigator({ pendingJunctions, onJunctionPick }: Props) {
   if (pendingJunctions.length === 0) return null
 

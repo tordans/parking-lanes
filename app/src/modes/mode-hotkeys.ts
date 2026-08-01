@@ -7,6 +7,7 @@ export const MODE_HOTKEYS: Record<StreetSpaceModeId, RegisterableHotkey> = {
   width: 'W',
   bicycle: 'E',
   lanes: 'R',
+  table: 'U',
   surface: 'T',
   sidewalks: 'Y',
 }

@@ -13,6 +13,7 @@ import { LanesFormPanel } from '../../modes/lanes/LanesFormPanel'
 import { useLanesMapActions } from '../../modes/lanes/map/lanes-map-store'
 import { useLanesCorridorCamera } from '../../modes/lanes/use-lanes-fly-to-way'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
+import { useTableMapActions } from '../../modes/table'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthMapActions } from '../../modes/width/map/width-map-store'
 import { ControlPanel } from '../controls/ControlPanel'
@@ -29,6 +30,7 @@ import { useMapActions } from './map-store'
 import { MapBackgroundLayerSource } from './MapBackgroundLayerSource'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
+import { useFlyToWay } from './use-fly-to-way'
 import { useMapCoverageLifecycle } from './use-map-coverage-lifecycle'
 import { useMapPageInteractions } from './use-map-page-interactions'
 import { useSelectionBacklights } from './use-selection-backlights'
@@ -62,6 +64,7 @@ function MapPageContent({
   const selectionEpoch = useSelectionEpoch()
   const { clearDraft: clearWidthDraft } = useWidthMapActions()
   const { clearLanesState } = useLanesMapActions()
+  const { clearTableState } = useTableMapActions()
   const { cancelCut } = useWayCutActions()
   const { resetMapChrome } = useMapActions()
   const prevModeRef = useRef(resolvedModeId)
@@ -70,16 +73,22 @@ function MapPageContent({
   const maps = useMap()
   const map = maps[MAIN_MAP_ID]
   const isLanesMode = resolvedModeId === 'lanes'
+  const isTableMode = resolvedModeId === 'table'
   const hasWaySelection = selectedOsmRef?.type === 'way'
   const showLanesThreeColumn = isLanesMode && hasWaySelection
+  const BottomPanel = mode.BottomPanel
+  const showBottomEditor = BottomPanel != null && hasWaySelection
   /** Lanes mode lifts pitch for corridor camera; every other mode stays flat 2D. */
   const allowPitch = isLanesMode
   const prevAllowPitchRef = useRef(allowPitch)
   const bearingBeforeLanesRef = useRef<number | null>(null)
   const corridorWayId =
     isLanesMode && selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
+  const tableFlyWayId =
+    isTableMode && selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
 
   useLanesCorridorCamera(corridorWayId, isLanesMode)
+  useFlyToWay(tableFlyWayId, isTableMode)
 
   useEffect(() => {
     document.documentElement.lang = uiLocale
@@ -133,7 +142,6 @@ function MapPageContent({
   } = useMapPageInteractions()
 
   const ModeMapLayers = mode.MapLayers
-  const BottomPanel = mode.BottomPanel
 
   useEffect(
     function resetModeLocalStateOnModeSwitch() {
@@ -143,10 +151,11 @@ function MapPageContent({
       // that effect does not re-run (selection/graph unchanged).
       if (prevModeRef.current === 'width') clearWidthDraft()
       if (prevModeRef.current === 'lanes') clearLanesState()
+      if (prevModeRef.current === 'table') clearTableState()
       cancelCut()
       prevModeRef.current = resolvedModeId
     },
-    [cancelCut, clearLanesState, clearWidthDraft, resolvedModeId],
+    [cancelCut, clearLanesState, clearTableState, clearWidthDraft, resolvedModeId],
   )
 
   useEffect(
@@ -233,7 +242,7 @@ function MapPageContent({
         </div>
       }
       middle={showLanesThreeColumn ? <LanesDiagramPanel /> : undefined}
-      bottom={!isLanesMode && BottomPanel ? <BottomPanel /> : undefined}
+      bottom={showBottomEditor && BottomPanel ? <BottomPanel /> : undefined}
       panel={
         showLanesThreeColumn ? (
           <LanesFormPanel

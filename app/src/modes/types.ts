@@ -1,6 +1,13 @@
 import type { ComponentType } from 'react'
 
-export type StreetSpaceModeId = 'parking' | 'width' | 'bicycle' | 'lanes' | 'surface' | 'sidewalks'
+export type StreetSpaceModeId =
+  | 'parking'
+  | 'width'
+  | 'bicycle'
+  | 'lanes'
+  | 'table'
+  | 'surface'
+  | 'sidewalks'
 
 export type ModeMaturity = 'alpha' | 'beta' | 'experimental'
 

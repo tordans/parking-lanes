@@ -29,7 +29,7 @@ import { ModeSwitcher } from './ModeSwitcher'
 import { panelModesForMode } from './PanelModeSwitcher'
 import { SaveChangesControl } from './SaveChangesControl'
 
-type MobilePanel = 'info' | 'inspector' | 'settings' | 'lanes-editor' | null
+type MobilePanel = 'info' | 'inspector' | 'settings' | 'mode-editor' | null
 
 export function MapMobileToolbar() {
   const { mode: modeSlug } = useParams({ from: '/$mode' })
@@ -40,22 +40,24 @@ export function MapMobileToolbar() {
   const selectionEpoch = useSelectionEpoch()
   const { clearSelection } = useFeatureSelectionActions()
   const showDebug = canShowDebugToggle(osmDisplayName)
-  const { Panel, Legend } = mode
+  const { Panel, Legend, BottomPanel } = mode
   const isLanesMode = mode.id === 'lanes'
   const hasWaySelection = selectedOsmRef?.type === 'way'
   const showLanesEditor = isLanesMode && hasWaySelection
+  const showBottomEditor = BottomPanel != null && hasWaySelection
+  const showModeEditor = showLanesEditor || showBottomEditor
   const toolbarPanelModes = panelModesForMode(mode.id)
   const [inspectorOpenedForEpoch, setInspectorOpenedForEpoch] = useState(0)
-  const [lanesEditorOpenedForEpoch, setLanesEditorOpenedForEpoch] = useState(0)
+  const [modeEditorOpenedForEpoch, setModeEditorOpenedForEpoch] = useState(0)
 
-  if (!isLanesMode && selectedOsmRef && selectionEpoch !== inspectorOpenedForEpoch) {
+  if (!showModeEditor && selectedOsmRef && selectionEpoch !== inspectorOpenedForEpoch) {
     setInspectorOpenedForEpoch(selectionEpoch)
     if (openPanel !== 'inspector') setOpenPanel('inspector')
   }
 
-  if (showLanesEditor && selectionEpoch !== lanesEditorOpenedForEpoch) {
-    setLanesEditorOpenedForEpoch(selectionEpoch)
-    if (openPanel !== 'lanes-editor') setOpenPanel('lanes-editor')
+  if (showModeEditor && selectionEpoch !== modeEditorOpenedForEpoch) {
+    setModeEditorOpenedForEpoch(selectionEpoch)
+    if (openPanel !== 'mode-editor') setOpenPanel('mode-editor')
   }
 
   const togglePanel = (panel: Exclude<MobilePanel, null>) => {
@@ -67,7 +69,7 @@ export function MapMobileToolbar() {
     setOpenPanel(null)
   }
 
-  const handleLanesEditorClose = () => {
+  const handleModeEditorClose = () => {
     clearSelection()
     setOpenPanel(null)
   }
@@ -77,7 +79,7 @@ export function MapMobileToolbar() {
       <div className={mobileMapHeaderClassName}>
         <div className="flex min-w-0 items-center gap-2">
           <ModeSwitcher />
-          {showLanesEditor ? null : (
+          {showModeEditor ? null : (
             <div className={mapToolbarButtonGroupClassName}>
               {toolbarPanelModes.includes('info') ? (
                 <MapToolbarIconButton
@@ -118,7 +120,7 @@ export function MapMobileToolbar() {
 
       <MobileBottomSheet
         title={m.shell_panel_info()}
-        open={!showLanesEditor && openPanel === 'info'}
+        open={!showModeEditor && openPanel === 'info'}
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
@@ -134,7 +136,7 @@ export function MapMobileToolbar() {
 
       <MobileBottomSheet
         title={m.shell_panel_inspector()}
-        open={!showLanesEditor && openPanel === 'inspector'}
+        open={!showModeEditor && openPanel === 'inspector'}
         onClose={handleInspectorClose}
       >
         <div className="pb-4" key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}>
@@ -144,7 +146,7 @@ export function MapMobileToolbar() {
 
       <MobileBottomSheet
         title={m.shell_panel_settings()}
-        open={!showLanesEditor && openPanel === 'settings'}
+        open={!showModeEditor && openPanel === 'settings'}
         onClose={() => setOpenPanel(null)}
       >
         <div className="pb-4">
@@ -153,19 +155,25 @@ export function MapMobileToolbar() {
       </MobileBottomSheet>
 
       <MobileBottomSheet
-        title={getModeLabel('lanes')}
-        open={showLanesEditor && openPanel === 'lanes-editor'}
-        onClose={handleLanesEditorClose}
+        title={getModeLabel(mode.id)}
+        open={showModeEditor && openPanel === 'mode-editor'}
+        onClose={handleModeEditorClose}
         mapPeek="10%"
       >
         <div
           className="flex flex-col gap-3 pb-4"
           key={selectedOsmRef ? serializeFeatureParam(selectedOsmRef) : 'none'}
         >
-          <div className="max-h-48 overflow-hidden rounded-md border border-zinc-200 bg-white">
-            <LanesDiagramPanel />
-          </div>
-          <LanesFormPanel />
+          {showLanesEditor ? (
+            <>
+              <div className="max-h-48 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                <LanesDiagramPanel />
+              </div>
+              <LanesFormPanel />
+            </>
+          ) : BottomPanel ? (
+            <BottomPanel />
+          ) : null}
         </div>
       </MobileBottomSheet>
     </>

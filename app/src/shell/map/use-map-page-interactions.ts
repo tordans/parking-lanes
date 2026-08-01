@@ -9,6 +9,7 @@ import {
 } from '../../modes/parking/use-parking-mode-handlers'
 import { useActiveStreetSpaceMode } from '../../modes/registry'
 import { useSurfaceModeHandlers } from '../../modes/surface/use-surface-mode-handlers'
+import { useTableModeHandlers } from '../../modes/table/use-table-mode-handlers'
 import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthModeHandlers } from '../../modes/width/use-width-mode-handlers'
 import { coverageDebugFetchFillLayerId } from './CoverageDebugLayers'
@@ -29,6 +30,7 @@ export function useMapPageInteractions() {
   const isBicycleMode = resolvedModeId === 'bicycle'
   const isSurfaceMode = resolvedModeId === 'surface'
   const isLanesMode = resolvedModeId === 'lanes'
+  const isTableMode = resolvedModeId === 'table'
 
   const [cursorStyle, setCursorStyle] = useState('grab')
   const coverageDebug = useCoverageDebugHover()
@@ -40,6 +42,7 @@ export function useMapPageInteractions() {
   const bicycleHandlers = useBicycleModeHandlers()
   const surfaceHandlers = useSurfaceModeHandlers()
   const lanesHandlers = useLanesModeHandlers()
+  const tableHandlers = useTableModeHandlers()
 
   const interactiveLayerIds = [
     ...mode.interactiveLayerIds,
@@ -66,6 +69,10 @@ export function useMapPageInteractions() {
       lanesHandlers.handleLayerClick(event)
       return
     }
+    if (isTableMode) {
+      tableHandlers.handleLayerClick(event)
+      return
+    }
     parkingLayerClick(event)
   }
 
@@ -85,6 +92,10 @@ export function useMapPageInteractions() {
     }
     if (isLanesMode) {
       lanesHandlers.handleMapClick()
+      return
+    }
+    if (isTableMode) {
+      tableHandlers.handleMapClick()
       return
     }
     parkingMapClick()

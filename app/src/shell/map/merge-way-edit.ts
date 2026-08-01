@@ -147,6 +147,16 @@ export function mergeWayEdit(base: OsmWay, incoming: OsmWay, source: ChangeSourc
     }
   }
 
+  if (source === 'table') {
+    // Full tag snapshot so clears/deletes stick (unlike patch-merge modes).
+    return {
+      ...base,
+      ...incoming,
+      nodes: incoming.nodes ?? base.nodes,
+      tags: { ...incoming.tags },
+    }
+  }
+
   if (source === 'parking') {
     return {
       ...base,

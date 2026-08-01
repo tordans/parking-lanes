@@ -5,6 +5,7 @@ export const streetSpaceModeIds = [
   'width',
   'bicycle',
   'lanes',
+  'table',
   'surface',
   'sidewalks',
 ] as const satisfies readonly StreetSpaceModeId[]

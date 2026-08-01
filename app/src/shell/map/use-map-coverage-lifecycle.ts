@@ -16,15 +16,18 @@ export function useMapCoverageLifecycle() {
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const isWidthMode = resolvedModeId === 'width'
   const isLanesMode = resolvedModeId === 'lanes'
-  const usesHighwayCoverage = isWidthMode || isLanesMode
+  const isTableMode = resolvedModeId === 'table'
+  const usesHighwayCoverage = isWidthMode || isLanesMode || isTableMode
 
   const { setMapBounds } = useAppActions()
   const { markMapLoaded, setMapTilesLoading } = useMapActions()
   const parkingCoverage = useParkingCoveragePace(!usesHighwayCoverage)
   const widthCoverage = useWidthCoveragePace(isWidthMode)
-  const lanesCoverage = useLanesCoveragePace(isLanesMode)
-  const activeCoverage = isLanesMode ? lanesCoverage : isWidthMode ? widthCoverage : parkingCoverage
-  const minZoom = isLanesMode ? lanesViewMinZoom : isWidthMode ? widthViewMinZoom : viewMinZoom
+  const lanesCoverage = useLanesCoveragePace(isLanesMode || isTableMode)
+  const activeCoverage =
+    isLanesMode || isTableMode ? lanesCoverage : isWidthMode ? widthCoverage : parkingCoverage
+  const minZoom =
+    isLanesMode || isTableMode ? lanesViewMinZoom : isWidthMode ? widthViewMinZoom : viewMinZoom
 
   const { scheduleCoverageCheck, loadCoverageNow } = activeCoverage
 

@@ -6,6 +6,7 @@ const modeLabelById = {
   width: m.mode_width_label,
   bicycle: m.mode_bicycle_label,
   lanes: m.mode_lanes_label,
+  table: m.mode_table_label,
   surface: m.mode_surface_label,
   sidewalks: m.mode_sidewalks_label,
 } as const satisfies Record<StreetSpaceModeId, () => string>
@@ -15,6 +16,7 @@ const modeAboutDescriptionById = {
   width: m.mode_width_about,
   bicycle: m.mode_bicycle_about,
   lanes: m.mode_lanes_about,
+  table: m.mode_table_about,
   surface: m.mode_surface_about,
   sidewalks: m.mode_sidewalks_about,
 } as const satisfies Record<StreetSpaceModeId, () => string>

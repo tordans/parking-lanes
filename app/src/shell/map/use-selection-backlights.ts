@@ -34,7 +34,7 @@ export function useSelectionBacklights() {
       }
 
       const lineFeature =
-        mode === 'lanes'
+        mode === 'lanes' || mode === 'table'
           ? lanesHighways.features.find((f) => f.properties.osmId === selectedOsmRef.id)
           : getLaneFeatureByOsmId(selectedOsmRef.id, lanes)
 

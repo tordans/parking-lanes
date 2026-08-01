@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useMap } from 'react-map-gl/maplibre'
 import { MAIN_MAP_ID } from '../../shell/map/map-ids'
 import { useMapLoaded } from '../../shell/map/map-store'
+import { useOsmCoverageQuery } from '../../shell/map/osm-coverage-query'
 import { dominantWayBearing } from '../parking/domain/way-side-order'
-import { useLanesOsmQuery } from './map/lanes-osm-query'
 
 const CORRIDOR_PITCH = 45
 const CORRIDOR_MAX_ZOOM = 18
@@ -97,7 +97,7 @@ export function useLanesCorridorCamera(wayId: number | undefined, enabled = true
   const maps = useMap()
   const map = maps[MAIN_MAP_ID]
   const mapLoaded = useMapLoaded()
-  const { data: graph } = useLanesOsmQuery({ select: (data) => data.graph })
+  const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
   const orientedForWayId = useRef<number | null>(null)
   const userSuppressed = useRef(false)
   const prevWayId = useRef(wayId)

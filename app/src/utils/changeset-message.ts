@@ -9,6 +9,7 @@ const MODE_ORDER: StreetSpaceModeId[] = [
   'width',
   'bicycle',
   'lanes',
+  'table',
   'surface',
   'sidewalks',
 ]
@@ -18,6 +19,7 @@ const MODE_LABELS: Record<StreetSpaceModeId, string> = {
   width: 'width',
   bicycle: 'bicycle',
   lanes: 'lanes',
+  table: 'table',
   surface: 'surface',
   sidewalks: 'sidewalks',
 }

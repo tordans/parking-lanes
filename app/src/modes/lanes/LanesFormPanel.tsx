@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from 'rea
 import { MetersInput } from '../../components/MetersInput'
 import { YesNoOrTextField } from '../../components/tag-editor'
 import { AuthState, useAuthState } from '../../shell/app-store'
+import { ChainNavigator } from '../../shell/controls/ChainNavigator'
 import {
   MapFeatureLoadEmptyState,
   MapFeaturePromptEmptyState,
@@ -27,7 +28,6 @@ import {
 import { useMapViewport } from '../../shell/map/map-viewport'
 import { LoginCallout } from '../parking/controls/LoginCallout'
 import { useOsmAuth } from '../parking/map/use-osm-auth'
-import { ChainNavigator } from './components/ChainNavigator'
 import { applyOnewayLaneCount } from './domain/lanes-edits'
 import {
   applyLaneFieldUpdate,
