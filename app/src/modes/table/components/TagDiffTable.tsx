@@ -7,8 +7,8 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
-import { ChevronRight, CornerDownLeft, CornerDownRight, Plus, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Input } from '../../../components/catalyst/input'
 import { isYesNoCompatibleValue, YesNoRadioInput } from '../../../components/tag-editor'
 import {
@@ -52,8 +52,38 @@ function groupTitle(groupId: TableTagGroupId): string {
   }
 }
 
+function centerColumnHighlightClass(isCenter: boolean | undefined): string | false {
+  return Boolean(isCenter) && 'bg-blue-50'
+}
+
+function DiffDirectionMark({
+  direction,
+  tone,
+}: {
+  direction: 'left' | 'right'
+  tone: 'header' | 'row'
+}) {
+  const Icon = direction === 'left' ? ChevronLeft : ChevronRight
+  const label =
+    direction === 'left' ? m.table_diff_from_center_left() : m.table_diff_from_center_right()
+
+  return (
+    <span
+      title={label}
+      aria-hidden
+      className={clsx(
+        'pointer-events-none absolute top-1/2 left-0 z-10 flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200',
+        tone === 'header' && 'opacity-90',
+        tone === 'row' && 'opacity-0 transition-opacity group-hover/row:opacity-100',
+      )}
+    >
+      <Icon className="size-3" strokeWidth={2.5} />
+    </span>
+  )
+}
+
 function NeighborImportGlyph({ side }: { side: 'left' | 'right' }) {
-  const Icon = side === 'left' ? CornerDownLeft : CornerDownRight
+  const Icon = side === 'left' ? ArrowLeft : ArrowRight
   return (
     <span className="relative inline-flex size-3.5 items-center justify-center">
       <Icon className="size-3" strokeWidth={2.25} aria-hidden />
@@ -183,8 +213,9 @@ function EditableCell({
     <div
       className={clsx(
         'group relative flex h-full items-center gap-0.5 border-r border-b border-zinc-200 px-1 py-0.5',
-        getDiffStatusClass(status),
-        isCenter && 'ring-2 ring-inset ring-blue-400',
+        isCenter
+          ? clsx(centerColumnHighlightClass(true), status === 'missing' && 'text-zinc-400')
+          : getDiffStatusClass(status),
       )}
     >
       <NeighborImportButtons
@@ -289,8 +320,9 @@ function ValueCell({
       className={clsx(
         'h-full border-r border-b border-zinc-200 px-1 py-0.5 font-mono',
         panelTextClassName,
-        getDiffStatusClass(status),
-        isCenter && 'ring-2 ring-inset ring-blue-400',
+        isCenter
+          ? clsx(centerColumnHighlightClass(true), status === 'missing' && 'text-zinc-400')
+          : getDiffStatusClass(status),
       )}
     >
       {value ?? <span className="text-zinc-400">—</span>}
@@ -391,15 +423,22 @@ export function TagDiffTable({
         header: () => {
           const isCenter = segmentIndex === centerIndex
           const isSelected = segment.id === selectedSegmentId
+          const directionMark =
+            segmentIndex === 0
+              ? null
+              : segmentIndex <= centerIndex
+                ? ('left' as const)
+                : ('right' as const)
           return (
             <div
               className={clsx(
-                'flex h-full flex-col items-center justify-center gap-0.5 px-1.5 py-1 text-center',
+                'relative flex h-full flex-col items-center justify-center gap-0.5 px-1.5 py-1 text-center',
                 panelTextClassName,
                 isCenter && 'bg-blue-100',
-                isSelected && !isCenter && 'ring-2 ring-inset ring-blue-500',
+                isSelected && !isCenter && 'bg-blue-50',
               )}
             >
+              {directionMark ? <DiffDirectionMark direction={directionMark} tone="header" /> : null}
               <button
                 type="button"
                 className={clsx('font-mono text-blue-700 hover:underline', panelMetaClassName)}
@@ -427,28 +466,37 @@ export function TagDiffTable({
           const leftCell = segmentIndex > 0 ? cells[segmentIndex - 1] : undefined
           const rightCell = segmentIndex < cells.length - 1 ? cells[segmentIndex + 1] : undefined
           const meta = table.options.meta as TableMeta
+          const directionMark =
+            segmentIndex === 0
+              ? null
+              : segmentIndex <= centerIndex
+                ? ('left' as const)
+                : ('right' as const)
           return (
-            <ValueCell
-              tagKey={row.original.key}
-              value={cell.value}
-              status={cell.status}
-              isCenter={cell.segmentId === meta.centerSegmentId}
-              editable={meta.editable}
-              leftValue={leftCell?.value}
-              rightValue={rightCell?.value}
-              hasLeft={leftCell != null}
-              hasRight={rightCell != null}
-              onCommit={
-                meta.onCellChange
-                  ? (next) => meta.onCellChange?.(cell.segmentId, row.original.key, next)
-                  : undefined
-              }
-              onClear={
-                meta.onCellClear
-                  ? () => meta.onCellClear?.(cell.segmentId, row.original.key)
-                  : undefined
-              }
-            />
+            <div className="relative h-full">
+              {directionMark ? <DiffDirectionMark direction={directionMark} tone="row" /> : null}
+              <ValueCell
+                tagKey={row.original.key}
+                value={cell.value}
+                status={cell.status}
+                isCenter={cell.segmentId === meta.centerSegmentId}
+                editable={meta.editable}
+                leftValue={leftCell?.value}
+                rightValue={rightCell?.value}
+                hasLeft={leftCell != null}
+                hasRight={rightCell != null}
+                onCommit={
+                  meta.onCellChange
+                    ? (next) => meta.onCellChange?.(cell.segmentId, row.original.key, next)
+                    : undefined
+                }
+                onClear={
+                  meta.onCellClear
+                    ? () => meta.onCellClear?.(cell.segmentId, row.original.key)
+                    : undefined
+                }
+              />
+            </div>
           )
         },
       }),
@@ -489,6 +537,24 @@ export function TagDiffTable({
 
   const virtualItems = rowVirtualizer.getVirtualItems()
 
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller || centerIndex < 0 || !centerSegment) return
+
+    const centerLeft = TAG_COL_WIDTH + centerIndex * SEGMENT_COL_WIDTH
+    const centerMid = centerLeft + SEGMENT_COL_WIDTH / 2
+    const stickyGutter = TAG_COL_WIDTH
+    const visibleContentWidth = Math.max(0, scroller.clientWidth - stickyGutter)
+    const targetScrollLeft = centerMid - stickyGutter - visibleContentWidth / 2
+    scroller.scrollLeft = Math.max(0, targetScrollLeft)
+  }, [
+	centerIndex,
+	centerSegment?.id,
+	segments.length,
+	totalWidth,
+	centerSegment
+])
+
   return (
     <div className={clsx('flex flex-col gap-2', panelTextClassName)}>
       <div
@@ -505,10 +571,11 @@ export function TagDiffTable({
                 <div
                   key={header.id}
                   className={clsx(
-                    'shrink-0 border-r border-zinc-200 font-medium tracking-wide text-zinc-700 uppercase',
+                    'relative shrink-0 border-r border-zinc-200 font-medium tracking-wide text-zinc-700 uppercase',
                     panelMetaClassName,
                     headerIndex === 0 &&
                       'sticky left-0 z-30 flex items-center bg-zinc-200 px-1.5 py-1 text-left',
+                    headerIndex === centerIndex + 1 && 'bg-blue-100',
                   )}
                   style={{ width: header.getSize() }}
                 >
@@ -521,7 +588,7 @@ export function TagDiffTable({
           </div>
 
           <div
-            className="relative"
+            className="group/table relative"
             style={{ height: rowVirtualizer.getTotalSize(), width: totalWidth, minWidth: '100%' }}
           >
             {virtualItems.map((virtualItem) => {
@@ -579,7 +646,10 @@ export function TagDiffTable({
                   key={tableRow.id}
                   data-index={virtualItem.index}
                   ref={rowVirtualizer.measureElement}
-                  className="absolute top-0 left-0 flex hover:bg-zinc-50"
+                  className={clsx(
+                    'group/row absolute top-0 left-0 flex transition-opacity',
+                    'hover:bg-zinc-50 group-hover/table:opacity-40 hover:!opacity-100',
+                  )}
                   style={{
                     width: totalWidth,
                     minWidth: '100%',
@@ -590,12 +660,13 @@ export function TagDiffTable({
                     <div
                       key={cell.id}
                       className={clsx(
-                        'shrink-0',
+                        'relative shrink-0',
                         cellIndex === 0 &&
                           clsx(
                             'sticky left-0 z-10 border-r border-b border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-left font-mono font-medium text-zinc-700',
                             panelTextClassName,
                           ),
+                        cellIndex === centerIndex + 1 && 'bg-blue-50',
                       )}
                       style={{ width: cell.column.getSize() }}
                     >
