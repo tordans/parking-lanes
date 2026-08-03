@@ -91,6 +91,7 @@
   "table_diff_from_center_left": "Diff left of center",
   "table_diff_from_center_right": "Diff right of center",
   "table_direction_normalized": "Direction normalized",
+  "table_direction_flip_hint": "Shown as {display} to match chain direction. OSM tag on this way is {original}.",
   "table_legend_changed": "changed",
   "table_legend_added": "added",
   "table_legend_removed": "removed",

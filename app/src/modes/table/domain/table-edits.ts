@@ -8,6 +8,19 @@ export function osmKeyFromDisplayKey(displayKey: string, reversed: boolean | und
 }
 
 /**
+ * When a reversed neighbour shows a left/right display key, the OSM tag on the way
+ * is the opposite side — or null when the key has no left/right part.
+ */
+export function originalOsmKeyIfDirectionFlipped(
+  displayKey: string,
+  reversed: boolean | undefined,
+): string | null {
+  if (!reversed) return null
+  const original = swapLeftRightKey(displayKey)
+  return original === displayKey ? null : original
+}
+
+/**
  * Latest way to mutate for a table edit: pending changeset wins over session graph
  * so other modes' pending tags are not dropped from a full tag snapshot.
  */

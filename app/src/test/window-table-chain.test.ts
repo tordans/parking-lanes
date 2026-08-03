@@ -2,8 +2,13 @@ import { describe, expect, test } from 'bun:test'
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import type { Segment } from '@osm-editor-kit/osm-way-chain'
 import {
+  originalOsmKeyIfDirectionFlipped,
+  osmKeyFromDisplayKey,
+} from '../modes/table/domain/table-edits'
+import {
   buildTableDisplayChain,
   insertDualCarriagewaySiblings,
+  reorientChainAroundCenter,
   windowChainAroundCenter,
 } from '../modes/table/domain/window-table-chain'
 
@@ -45,6 +50,49 @@ describe('windowChainAroundCenter', () => {
     const windowed = windowChainAroundCenter(segments, 6, 5)
     expect(windowed.segments.map((s) => s.id)).toEqual([2, 3, 4, 5, 6, 7, 8])
     expect(windowed.centerIndex).toBe(5)
+  })
+})
+
+describe('reorientChainAroundCenter', () => {
+  test('swaps left/right on a neighbour digitised opposite the chain', () => {
+    // Center 1→2, neighbour shares node 2 but is digitised 3→2 (meets at end/end → reversed).
+    const graph = {
+      ways: {
+        1: {
+          id: 1,
+          version: 1,
+          nodes: [1, 2],
+          tags: { highway: 'residential', 'cycleway:left': 'lane' },
+        },
+        2: {
+          id: 2,
+          version: 1,
+          nodes: [3, 2],
+          tags: { highway: 'residential', 'cycleway:left': 'track' },
+        },
+      },
+      nodeCoords: {
+        1: [52, 13],
+        2: [52, 13.001],
+        3: [52, 13.002],
+      },
+    } as unknown as ParsedOsmData
+
+    const reoriented = reorientChainAroundCenter([1, 2], 0, graph)
+    expect(reoriented.segments[0]?.reversed).toBe(false)
+    expect(reoriented.segments[0]?.tags['cycleway:left']).toBe('lane')
+    expect(reoriented.segments[1]?.reversed).toBe(true)
+    expect(reoriented.segments[1]?.tags['cycleway:right']).toBe('track')
+    expect(reoriented.segments[1]?.tags['cycleway:left']).toBeUndefined()
+  })
+})
+
+describe('originalOsmKeyIfDirectionFlipped', () => {
+  test('returns the raw OSM key when display left/right was flipped', () => {
+    expect(originalOsmKeyIfDirectionFlipped('cycleway:left', true)).toBe('cycleway:right')
+    expect(originalOsmKeyIfDirectionFlipped('highway', true)).toBeNull()
+    expect(originalOsmKeyIfDirectionFlipped('cycleway:left', false)).toBeNull()
+    expect(osmKeyFromDisplayKey('cycleway:left', true)).toBe('cycleway:right')
   })
 })
 

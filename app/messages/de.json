@@ -91,6 +91,7 @@
   "table_diff_from_center_left": "Diff links der Mitte",
   "table_diff_from_center_right": "Diff rechts der Mitte",
   "table_direction_normalized": "Richtung normalisiert",
+  "table_direction_flip_hint": "Als {display} angezeigt, passend zur Kettenrichtung. OSM-Tag auf diesem Way ist {original}.",
   "table_legend_changed": "geändert",
   "table_legend_added": "hinzugefügt",
   "table_legend_removed": "entfernt",

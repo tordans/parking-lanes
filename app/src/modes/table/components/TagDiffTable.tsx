@@ -7,13 +7,14 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Info, Plus, Trash2 } from 'lucide-react'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '../../../components/catalyst/input'
 import { isYesNoCompatibleValue, YesNoRadioInput } from '../../../components/tag-editor'
 import { tagEditorFieldClassName } from '../../../components/tag-editor/tag-editor-controls'
 import { Tooltip } from '../../../components/Tooltip/Tooltip'
 import { useBreakpoint } from '../../../hooks/useBreakpoint'
+import { originalOsmKeyIfDirectionFlipped } from '../domain/table-edits'
 import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
 import type { TableTagGroupId } from '../domain/tag-groups'
@@ -43,6 +44,30 @@ function TruncatedTagKeyLabel({ osmKey, label }: { osmKey: string; label: string
     </span>
   )
 }
+
+function DirectionFlipHint({
+  displayKey,
+  originalKey,
+}: {
+  displayKey: string
+  originalKey: string
+}) {
+  return (
+    <Tooltip
+      content={m.table_direction_flip_hint({ display: displayKey, original: originalKey })}
+      placement="top"
+      wrapperClassName="absolute top-0.5 right-0.5 z-10"
+    >
+      <span
+        className="inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-sky-700 hover:bg-sky-50"
+        aria-label={m.table_direction_flip_hint({ display: displayKey, original: originalKey })}
+      >
+        <Info className="size-2.5" strokeWidth={2.5} aria-hidden />
+      </span>
+    </Tooltip>
+  )
+}
+
 /** Vertical panel scrollport (skip the matrix’s own overflow-x scroller). */
 function findNearestVerticalScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node = el?.parentElement ?? null
@@ -295,6 +320,7 @@ function ValueCell({
   rightValue,
   hasLeft,
   hasRight,
+  originalOsmKey,
   onCommit,
   onClear,
 }: {
@@ -307,6 +333,8 @@ function ValueCell({
   rightValue?: string
   hasLeft?: boolean
   hasRight?: boolean
+  /** Raw OSM key when display left/right was flipped for chain direction. */
+  originalOsmKey?: string | null
   onCommit?: (value: string) => void
   onClear?: () => void
 }) {
@@ -331,13 +359,17 @@ function ValueCell({
   return (
     <div
       className={clsx(
-        'h-full border-r border-b border-zinc-200 px-1 py-0.5 font-mono',
+        'relative h-full border-r border-b border-zinc-200 py-0.5 font-mono',
         panelTextClassName,
+        originalOsmKey ? 'pr-4 pl-1' : 'px-1',
         isCenter
           ? clsx(centerColumnHighlightClass(true), status === 'missing' && 'text-zinc-400')
           : getDiffStatusClass(status),
       )}
     >
+      {originalOsmKey ? (
+        <DirectionFlipHint displayKey={tagKey} originalKey={originalOsmKey} />
+      ) : null}
       {value ?? <span className="text-zinc-400">—</span>}
     </div>
   )
@@ -449,6 +481,10 @@ function buildSegmentColumns(segments: SegmentColumnDef[], tagColWidth: number) 
           if (!cell) return null
           const meta = table.options.meta as TableMeta
           const isCenter = cell.segmentId === meta.centerSegmentId
+          const originalOsmKey = originalOsmKeyIfDirectionFlipped(
+            row.original.key,
+            segment.reversed,
+          )
 
           if (!isCenter || !meta.editable) {
             return (
@@ -457,6 +493,7 @@ function buildSegmentColumns(segments: SegmentColumnDef[], tagColWidth: number) 
                 value={cell.value}
                 status={cell.status}
                 isCenter={isCenter}
+                originalOsmKey={originalOsmKey}
               />
             )
           }

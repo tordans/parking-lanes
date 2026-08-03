@@ -1,4 +1,4 @@
-import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
+import type { OsmWay, ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   getSharedNodeBetween,
   normalizeTagsForDirection,
@@ -7,6 +7,7 @@ import {
   type Segment,
   type SegmentChain,
 } from '@osm-editor-kit/osm-way-chain'
+import { getPendingWay } from '../../../utils/changes-store'
 import { findDualCarriagewaySibling } from '../../lanes/domain/find-dual-carriageway-sibling'
 
 export const TABLE_CHAIN_MAX_PER_SIDE = 5
@@ -36,6 +37,66 @@ export function windowChainAroundCenter(
     segments: segments.slice(start, end),
     centerIndex: centerIndex - start,
   }
+}
+
+function loadRawSegment(graph: ParsedOsmData, wayId: number): Segment | null {
+  const way: OsmWay | undefined = getPendingWay(wayId) ?? graph.ways[wayId]
+  if (!way) return null
+  return osmWayToSegment(way, graph.nodeCoords)
+}
+
+/**
+ * Rebuild left/right orientation for the windowed chain order around the live centre.
+ *
+ * Needed because walking updates the centre before async `buildChain` finishes — stored
+ * neighbour tags may still be oriented to the previous centre.
+ */
+export function reorientChainAroundCenter(
+  orderedWayIds: readonly number[],
+  centerIndex: number,
+  graph: ParsedOsmData,
+): SegmentChain {
+  if (orderedWayIds.length === 0 || centerIndex < 0 || centerIndex >= orderedWayIds.length) {
+    return { segments: [], centerIndex: 0 }
+  }
+
+  const centerRaw = loadRawSegment(graph, orderedWayIds[centerIndex]!)
+  if (!centerRaw) return { segments: [], centerIndex: 0 }
+
+  const segments: Segment[] = Array.from({ length: orderedWayIds.length })
+  segments[centerIndex] = { ...centerRaw, reversed: false }
+
+  let current = segments[centerIndex]!
+  for (let i = centerIndex + 1; i < orderedWayIds.length; i++) {
+    const raw = loadRawSegment(graph, orderedWayIds[i]!)
+    if (!raw) break
+    const shared = getSharedNodeBetween(current, raw)
+    segments[i] =
+      shared == null ? { ...raw, reversed: false } : orientNeighbor(raw, shared, current)
+    current = segments[i]!
+  }
+
+  current = segments[centerIndex]!
+  for (let i = centerIndex - 1; i >= 0; i--) {
+    const raw = loadRawSegment(graph, orderedWayIds[i]!)
+    if (!raw) break
+    const shared = getSharedNodeBetween(current, raw)
+    segments[i] =
+      shared == null ? { ...raw, reversed: false } : orientNeighbor(raw, shared, current)
+    current = segments[i]!
+  }
+
+  // Drop any holes if a way disappeared mid-walk (should be rare).
+  const compact: Segment[] = []
+  let newCenter = 0
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i]
+    if (!segment) continue
+    if (i === centerIndex) newCenter = compact.length
+    compact.push(segment)
+  }
+
+  return { segments: compact, centerIndex: newCenter }
 }
 
 function orientSiblingBeside(anchor: Segment, sibling: Segment): Segment {
@@ -68,10 +129,9 @@ export function insertDualCarriagewaySiblings(
 
     const match = findDualCarriagewaySibling(graph, segment.id, { excludeWayIds: presentIds })
     if (!match) continue
-    const way = graph.ways[match.wayId]
-    if (!way || presentIds.has(match.wayId)) continue
+    const raw = loadRawSegment(graph, match.wayId)
+    if (!raw || presentIds.has(match.wayId)) continue
 
-    const raw = osmWayToSegment(way, graph.nodeCoords)
     const oriented = orientSiblingBeside(segment, raw)
     segments.push({ ...oriented, dualSiblingOf: segment.id })
     presentIds.add(match.wayId)
@@ -80,7 +140,7 @@ export function insertDualCarriagewaySiblings(
   return { segments, centerIndex }
 }
 
-/** Window ±maxPerSide around centre, then attach dual-carriageway siblings. */
+/** Window ±maxPerSide, reorient left/right to the live centre, then attach dual siblings. */
 export function buildTableDisplayChain(
   segments: readonly Segment[],
   centerIndex: number,
@@ -89,5 +149,14 @@ export function buildTableDisplayChain(
 ): TableDisplayChain {
   const windowed = windowChainAroundCenter(segments, centerIndex, maxPerSide)
   if (!graph) return { segments: [...windowed.segments], centerIndex: windowed.centerIndex }
-  return insertDualCarriagewaySiblings(windowed, graph)
+
+  const reoriented = reorientChainAroundCenter(
+    windowed.segments.map((segment) => segment.id),
+    windowed.centerIndex,
+    graph,
+  )
+  if (reoriented.segments.length === 0) {
+    return { segments: [...windowed.segments], centerIndex: windowed.centerIndex }
+  }
+  return insertDualCarriagewaySiblings(reoriented, graph)
 }
