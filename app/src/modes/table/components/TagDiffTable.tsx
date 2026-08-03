@@ -572,13 +572,7 @@ export function TagDiffTable({
       0,
       centerMidFromScrollerLeft - stickyGutter - visibleContentWidth / 2,
     )
-  }, [
-	centerIndex,
-	centerSegment?.id,
-	segments.length,
-	totalWidth,
-	centerSegment
-])
+  }, [centerIndex, centerSegment?.id, segments.length, totalWidth, centerSegment])
 
   return (
     <div className={clsx('flex flex-col gap-2', panelTextClassName)}>

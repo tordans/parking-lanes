@@ -22,6 +22,7 @@ import { ModeSwitcher } from '../controls/ModeSwitcher'
 import { SaveChangesControl } from '../controls/SaveChangesControl'
 import { useModeHotkeys } from '../controls/use-mode-hotkeys'
 import { AtlasBoundariesSource } from './AtlasBoundariesSource'
+import { CollapseMapAttribution } from './CollapseMapAttribution'
 import { CoverageDebugMapLayers, CoverageDebugTooltip } from './CoverageDebugOverlay'
 import { useSelectedOsmRef, useSelectionEpoch } from './feature-selection-store'
 import { MapGL, MapProvider } from './map-gl'
@@ -212,6 +213,7 @@ function MapPageContent({
               >
                 <MapResizeHandler containerRef={mapContainerRef} />
                 <AttributionControl compact position="bottom-left" />
+                <CollapseMapAttribution />
                 {/* Above default style, below mode/debug layers (react-map-gl child order). */}
                 <MapBackgroundLayerSource />
                 <AtlasBoundariesSource />

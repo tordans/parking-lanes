@@ -39,6 +39,12 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   border: 2px solid darkgreen;
 }
 
+/* Match TILDA: softer compact attribution chip (info-i starts collapsed in JS). */
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: rgb(255 255 255 / 0.2);
+  line-height: 1.25;
+}
+
 button:not(:disabled) {
   cursor: pointer;
 }
