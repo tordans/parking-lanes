@@ -1,6 +1,6 @@
 # `@osm-editor-kit/osm-lane-diagram`
 
-Pure TypeScript layout engine: OSM way tags → extended LTR slot stack → JSON scene → SVG string.
+Pure TypeScript layout engine: OSM way tags → extended LTR slot stack → JSON scene → SVG string. Conceptual overview: [docs/lanes-road-space-approach.md](../../docs/lanes-road-space-approach.md).
 
 ```text
 tags (+ oriented neighbours)
