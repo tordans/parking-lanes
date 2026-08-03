@@ -33,15 +33,12 @@ const ESTIMATED_ROW_HEIGHT = 28
 const panelTextClassName = 'text-xs leading-tight'
 const panelMetaClassName = 'text-[11px] leading-tight'
 
-/** Prefer the mode panel scrollport so the matrix can grow and the panel scrolls. */
-function findNearestScrollParent(el: HTMLElement | null): HTMLElement | null {
+/** Vertical panel scrollport (skip the matrix’s own overflow-x scroller). */
+function findNearestVerticalScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node = el?.parentElement ?? null
   while (node && node !== document.body) {
     const style = getComputedStyle(node)
-    if (
-      /(auto|scroll|overlay)/.test(style.overflowX) ||
-      /(auto|scroll|overlay)/.test(style.overflowY)
-    ) {
+    if (/(auto|scroll|overlay)/.test(style.overflowY)) {
       return node
     }
     node = node.parentElement
@@ -582,7 +579,7 @@ export function TagDiffTable({
 
   const rowVirtualizer = useVirtualizer({
     count: flatItems.length,
-    getScrollElement: () => findNearestScrollParent(scrollRef.current),
+    getScrollElement: () => findNearestVerticalScrollParent(scrollRef.current),
     estimateSize: (index) =>
       flatItems[index]?.type === 'group' ? GROUP_HEADER_HEIGHT : ESTIMATED_ROW_HEIGHT,
     overscan: 12,
@@ -596,31 +593,23 @@ export function TagDiffTable({
 
   useLayoutEffect(
     function centerTableOnCenterColumn() {
-      const tableRoot = scrollRef.current
-      if (!tableRoot || centerIndex < 0 || centerSegmentId < 0) return
-      const scroller = findNearestScrollParent(tableRoot)
-      if (!scroller) return
+      const scroller = scrollRef.current
+      if (!scroller || centerIndex < 0 || centerSegmentId < 0) return
 
-      const centerMidFromScrollerLeft =
-        tableRoot.getBoundingClientRect().left -
-        scroller.getBoundingClientRect().left +
-        scroller.scrollLeft +
-        TAG_COL_WIDTH +
-        centerIndex * SEGMENT_COL_WIDTH +
-        SEGMENT_COL_WIDTH / 2
       const stickyGutter = TAG_COL_WIDTH
+      const centerMid = TAG_COL_WIDTH + centerIndex * SEGMENT_COL_WIDTH + SEGMENT_COL_WIDTH / 2
       const visibleContentWidth = Math.max(0, scroller.clientWidth - stickyGutter)
-      scroller.scrollLeft = Math.max(
-        0,
-        centerMidFromScrollerLeft - stickyGutter - visibleContentWidth / 2,
-      )
+      scroller.scrollLeft = Math.max(0, centerMid - stickyGutter - visibleContentWidth / 2)
     },
     [centerIndex, centerSegmentId, segments.length, totalWidth],
   )
 
   return (
-    <div className={clsx('flex flex-col gap-2', panelTextClassName)}>
-      <div ref={scrollRef} className="rounded-md border border-zinc-200">
+    <div className={clsx('flex min-w-0 flex-col gap-2', panelTextClassName)}>
+      <div
+        ref={scrollRef}
+        className="w-full max-w-full overflow-x-auto overflow-y-clip rounded-md border border-zinc-200"
+      >
         <div style={{ width: totalWidth, minWidth: '100%' }}>
           <div
             className="sticky top-0 z-20 flex border-b border-zinc-200 bg-zinc-200"

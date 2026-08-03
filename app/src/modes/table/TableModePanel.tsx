@@ -137,7 +137,7 @@ export function TableModePanel() {
     <div
       ref={panelRef}
       tabIndex={0}
-      className="flex flex-col gap-2 text-xs leading-tight outline-none"
+      className="flex min-w-0 flex-col gap-2 text-xs leading-tight outline-none"
     >
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center justify-between gap-1.5">

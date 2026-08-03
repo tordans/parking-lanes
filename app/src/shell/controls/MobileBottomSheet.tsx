@@ -77,7 +77,7 @@ export function MobileBottomSheet({ open, onClose, title, children, mapPeek = 'm
                   <div className="mx-auto h-1.5 w-10 rounded-full bg-zinc-300" />
                   <DialogTitle className="sr-only">{title}</DialogTitle>
                 </header>
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[env(safe-area-inset-bottom)] [--panel-section-bleed:1.25rem]">
+                <div className="min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain px-4 pb-[env(safe-area-inset-bottom)] [--panel-section-bleed:1.25rem]">
                   {children}
                 </div>
               </DialogPanel>

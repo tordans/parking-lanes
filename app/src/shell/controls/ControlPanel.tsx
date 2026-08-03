@@ -92,14 +92,14 @@ export function ControlPanel() {
   const activePanelMode = availablePanelModes.includes(panelMode) ? panelMode : 'info'
 
   return (
-    <div className="flex h-full flex-col overflow-hidden text-sm">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden text-sm">
       <PanelModeSwitcher
         className="shrink-0"
         mode={activePanelMode}
         modes={availablePanelModes}
         onChange={setPanelMode}
       />
-      <div className="min-h-0 flex-1 overflow-auto p-2 [--panel-section-bleed:0.75rem]">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto p-2 [--panel-section-bleed:0.75rem]">
         {activePanelMode === 'info' ? (
           <InfoPanelContent
             modeId={mode.id}
