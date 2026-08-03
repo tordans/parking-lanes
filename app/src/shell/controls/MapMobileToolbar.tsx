@@ -75,7 +75,7 @@ export function MapMobileToolbar() {
   return (
     <>
       <div className={mobileMapHeaderClassName}>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="pointer-events-auto flex min-w-0 items-center gap-2">
           <ModeSwitcher />
           {showLanesEditor ? null : (
             <div className={mapToolbarButtonGroupClassName}>
@@ -113,7 +113,9 @@ export function MapMobileToolbar() {
             </div>
           )}
         </div>
-        <SaveChangesControl />
+        <div className="pointer-events-auto">
+          <SaveChangesControl />
+        </div>
       </div>
 
       <MobileBottomSheet

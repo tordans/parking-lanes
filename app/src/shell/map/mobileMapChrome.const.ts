@@ -1,6 +1,6 @@
 /** Floating map chrome on mobile — safe-area aware, map stays pannable in the gap. */
 export const mobileMapHeaderClassName =
-  'pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] pr-[calc(env(safe-area-inset-right)+0.5rem)] pl-[calc(env(safe-area-inset-left)+0.5rem)] sm:hidden [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto'
+  'pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] pr-[calc(env(safe-area-inset-right)+0.5rem)] pl-[calc(env(safe-area-inset-left)+0.5rem)] sm:hidden'
 
 /** Low, crisp elevation for panel and map floating controls. */
 export const floatingChromeShadowClassName =

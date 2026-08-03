@@ -226,9 +226,14 @@ function MapPageContent({
           </div>
 
           {isDesktop ? (
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2.5 [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
-              <ModeSwitcher />
-              <SaveChangesControl />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2.5">
+              {/* Whole control clusters need auto hits — not only `button`/`a` — so Headless menus work. */}
+              <div className="pointer-events-auto">
+                <ModeSwitcher />
+              </div>
+              <div className="pointer-events-auto">
+                <SaveChangesControl />
+              </div>
             </div>
           ) : (
             <MapMobileToolbar />
