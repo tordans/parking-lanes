@@ -50,10 +50,14 @@ function groupTitle(groupId: TableTagGroupId): string {
   switch (groupId) {
     case 'centerline':
       return m.table_group_centerline()
+    case 'bikelane':
+      return m.table_group_bikelane()
     case 'bikelane_left':
       return m.table_group_bikelane_left()
     case 'bikelane_right':
       return m.table_group_bikelane_right()
+    case 'sidewalk':
+      return m.table_group_sidewalk()
     case 'sidewalk_left':
       return m.table_group_sidewalk_left()
     case 'sidewalk_right':
@@ -508,8 +512,10 @@ export function TagDiffTable({
 
   const openByGroup = {
     centerline: useTableGroupOpen('centerline'),
+    bikelane: useTableGroupOpen('bikelane'),
     bikelane_left: useTableGroupOpen('bikelane_left'),
     bikelane_right: useTableGroupOpen('bikelane_right'),
+    sidewalk: useTableGroupOpen('sidewalk'),
     sidewalk_left: useTableGroupOpen('sidewalk_left'),
     sidewalk_right: useTableGroupOpen('sidewalk_right'),
   }

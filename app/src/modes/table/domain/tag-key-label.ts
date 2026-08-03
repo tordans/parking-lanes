@@ -24,10 +24,14 @@ export function formatTableTagKeyLabel(key: string, groupId: TableTagGroupId): s
 
 function stripContextualPrefix(key: string, groupId: TableTagGroupId): string {
   switch (groupId) {
+    case 'bikelane':
+      return stripSharedSidepathNest(key, 'cycleway') ?? stripAccessNest(key, 'bicycle') ?? key
     case 'bikelane_left':
       return stripSidepathNest(key, 'cycleway', 'left')
     case 'bikelane_right':
       return stripSidepathNest(key, 'cycleway', 'right')
+    case 'sidewalk':
+      return stripSharedSidepathNest(key, 'sidewalk') ?? stripAccessNest(key, 'foot') ?? key
     case 'sidewalk_left':
       return stripSidepathNest(key, 'sidewalk', 'left')
     case 'sidewalk_right':
@@ -38,6 +42,32 @@ function stripContextualPrefix(key: string, groupId: TableTagGroupId): string {
       return key
     }
   }
+}
+
+function stripAccessNest(key: string, access: 'bicycle' | 'foot'): string | null {
+  if (key === access) return access
+  if (key.startsWith(`${access}:`)) return key.slice(access.length + 1)
+  return null
+}
+
+/** Bare / :both sidepath keys shown under the shared (non-left/right) group. */
+function stripSharedSidepathNest(key: string, prefix: 'cycleway' | 'sidewalk'): string | null {
+  const note = new RegExp(`^note:${prefix}(?::both)?$`).exec(key)
+  if (note) return key.endsWith(':both') ? 'note:both' : 'note'
+
+  const sourcedBoth = new RegExp(`^source:${prefix}:both(?::(.*))?$`).exec(key)
+  if (sourcedBoth) return sourcedBoth[1] ? `source:both:${sourcedBoth[1]}` : 'source:both'
+
+  const sourcedBare = new RegExp(`^source:${prefix}(?::(.*))?$`).exec(key)
+  if (sourcedBare) return sourcedBare[1] ? `source:${sourcedBare[1]}` : 'source'
+
+  const both = new RegExp(`^${prefix}:both(?::(.*))?$`).exec(key)
+  if (both) return both[1] ? `both:${both[1]}` : 'both'
+
+  const bare = new RegExp(`^${prefix}(?::(.*))?$`).exec(key)
+  if (bare) return bare[1] || prefix
+
+  return null
 }
 
 function stripSidepathNest(
