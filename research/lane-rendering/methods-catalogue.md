@@ -271,6 +271,7 @@ Implementation notes:
 | Map Machine | https://github.com/enzet/map-machine |
 | A/B Street osm_viewer | https://play.abstreet.org/0.3.49/osm_viewer.html |
 | osm2streets lane editor | https://a-b-street.github.io/osm2streets/lane_editor.html#1/0/0 |
+| OSMPIE editor | https://osmpie.org/app/ |
 | Straßenraumkarte Neukölln | https://strassenraumkarte.osm-berlin.org/ |
 | SRK preprocess | https://github.com/osmberlin/strassenraumkarte-neukoelln/blob/main/mapstyle/post_processing.py |
 | Imagico maze pt.2 | https://blog.imagico.de/navigating-the-maze-part-2/ |

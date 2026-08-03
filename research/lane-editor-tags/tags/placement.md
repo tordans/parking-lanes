@@ -80,6 +80,7 @@ OsmLaneVisualizer: experimental support for `placement` and transition detail ([
 | Straßenraumkarte | Required for precise cross-section |
 | JOSM Lane and Road Attributes | Visualizes placement |
 | osm2streets | Shifts `reference_line` → `center_line` via `Placement::parse` / `left_edge_offset_of`; `transition` and varying start/end still incomplete (see [osm2streets.md § Lane editor & lane drawing](../projects/osm2streets.md#lane-editor--lane-drawing)) |
+| OSMPIE | Documents wiki `placement` / `transition` and extension `placement=dist:±N` ([public placement examples](https://github.com/kuzinmv/osmpie-doc/blob/master/en/examples/placement.md)) |
 | Maperitive lane rules | Listed on Key:lanes as consumer |
 | Default routers | Usually ignore — geometry for render/nav detail only |
 

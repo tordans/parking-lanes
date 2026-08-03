@@ -25,6 +25,7 @@ Filenames prefixed with `_` are **peripheral** for this research package (adjace
 | [josm-lane-and-road-attributes.md](projects/josm-lane-and-road-attributes.md) | JOSM Lane and Road Attributes | Active MapCSS lane QA style + preset | **High** — de facto JOSM lane QA |
 | [josm-turnlanes-tagging.md](projects/josm-turnlanes-tagging.md) | JOSM turnlanes-tagging | Maintained `turn:lanes` editor plugin | **High** — focused turn-lane editor |
 | [strassenraumkarte.md](projects/strassenraumkarte.md) | Straßenraumkarte Neukölln | Berlin micromap; placement/width/`cycleway:lanes` consumer | **Medium** — real-world DE tagging patterns |
+| — | [OSMPIE](https://osmpie.org/) (AveGeo) | Web lane/intersection editor + server render; public tag docs | **Medium** — field editor; see [osmpie-doc](https://github.com/kuzinmv/osmpie-doc), [placement](https://github.com/kuzinmv/osmpie-doc/blob/master/en/examples/placement.md), [taginfo](https://github.com/kuzinmv/osmpie-doc/blob/master/taginfo.json) |
 | [osm-lane-visualizer.md](projects/osm-lane-visualizer.md) | OsmLaneVisualizer | QA tool covering 105+ lane-related keys | **Medium** — tag coverage checklist |
 | [map-machine.md](projects/map-machine.md) | Map Machine | Experimental road-lanes static map renderer | **Medium** — width/placement rendering reference |
 | [id-editor-discussions.md](projects/id-editor-discussions.md) | iD #387 | Editor UX history and open design questions | **Medium** — UX precedent |
