@@ -767,8 +767,9 @@ export function LanesFormPanel() {
             <ModePanelIntro
               wayId={centerWay.id}
               highway={centerWay.tags.highway}
+              streetName={centerWay.tags.name}
               identityStart
-              className="flex min-w-0 items-center gap-2"
+              className="flex min-w-0 flex-1 items-center gap-2"
             />
           </div>
           <ChainNavigator

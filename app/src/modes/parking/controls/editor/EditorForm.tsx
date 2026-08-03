@@ -54,7 +54,8 @@ export function LaneEditForm(props: {
       <ModePanelIntro
         wayId={props.osm.id}
         highway={draftWay.tags.highway}
-        className="flex items-center gap-2"
+        streetName={draftWay.tags.name}
+        className="flex min-w-0 items-center gap-2"
         leading={
           <SideModeSwitcher
             bothBlockShown={bothBlockShown}

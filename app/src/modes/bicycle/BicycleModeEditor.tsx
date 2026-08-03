@@ -209,10 +209,11 @@ function BicycleModeEditor(props: {
       <ModePanelIntro
         wayId={selectedWay.id}
         highway={selectedWay.tags.highway}
+        streetName={selectedWay.tags.name}
         sidepath={
           sidepath ? { prefix: selectedOsmRef.prefix, side: selectedOsmRef.side } : undefined
         }
-        className="flex items-center gap-2"
+        className="flex min-w-0 items-center gap-2"
         leading={
           showCenterlineSection ? (
             <SideModeSwitcher

@@ -27,7 +27,7 @@ import { useTableGroupOpen, useTableGroupUiActions } from '../map/table-group-ui
 
 const TAG_COL_WIDTH = 132
 const SEGMENT_COL_WIDTH = 200
-const HEADER_ROW_HEIGHT = 44
+const HEADER_ROW_HEIGHT = 36
 const GROUP_HEADER_HEIGHT = 24
 const ESTIMATED_ROW_HEIGHT = 28
 
@@ -405,16 +405,6 @@ export function TagDiffTable({
               {isCenter ? (
                 <span className="rounded bg-blue-600 px-1 py-px font-medium text-white">
                   {m.table_center_badge()}
-                </span>
-              ) : null}
-              {segment.tags.name || segment.tags.ref || segment.tags.highway ? (
-                <span
-                  className={clsx(
-                    'max-w-36 truncate font-medium text-zinc-900',
-                    panelTextClassName,
-                  )}
-                >
-                  {segment.tags.name ?? segment.tags.ref ?? segment.tags.highway}
                 </span>
               ) : null}
             </div>

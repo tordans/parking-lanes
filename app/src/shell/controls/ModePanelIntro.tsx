@@ -1,5 +1,6 @@
 import * as m from '@app/paraglide/messages'
 import { serializeFeatureParam, type OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
+import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import { highwayCategoryLabel } from '../../i18n/highway-labels'
 
@@ -30,6 +31,8 @@ function categoryLabelFor(highway: string | undefined, sidepath?: SidepathRef): 
 export function ModePanelIntro(props: {
   wayId: number
   highway?: string
+  /** OSM `name` — shown after the category when the intro container is wide enough. */
+  streetName?: string
   /** Sidepath selection derived from a centerline way (`cycleway`/`sidewalk` + side). */
   sidepath?: SidepathRef
   leading?: ReactNode
@@ -39,6 +42,7 @@ export function ModePanelIntro(props: {
   identityStart?: boolean
 }) {
   const categoryLabel = categoryLabelFor(props.highway, props.sidepath)
+  const streetName = props.streetName?.trim() || undefined
   const idLine = serializeFeatureParam({
     type: 'way',
     id: props.wayId,
@@ -48,23 +52,30 @@ export function ModePanelIntro(props: {
   const identityOnStart = props.identityStart === true
 
   return (
-    <div className={props.className ?? 'mb-1.5 flex items-center gap-2'}>
+    <div
+      className={clsx('@container/mode-intro', props.className ?? 'mb-1.5 flex items-center gap-2')}
+    >
       {props.leading}
       <div
         className={
           identityOnStart
-            ? 'flex shrink-0 items-center gap-2'
-            : 'ml-auto flex shrink-0 items-center gap-2'
+            ? 'flex min-w-0 flex-1 items-center gap-2'
+            : 'ml-auto flex min-w-0 shrink-0 items-center gap-2'
         }
       >
         <div
           className={
             identityOnStart
-              ? 'text-left text-xs leading-tight text-zinc-700'
-              : 'text-right text-xs leading-tight text-zinc-700'
+              ? 'min-w-0 text-left text-xs leading-tight text-zinc-700'
+              : 'min-w-0 text-right text-xs leading-tight text-zinc-700'
           }
         >
-          <div className="font-medium text-zinc-900">{categoryLabel}</div>
+          <div className="truncate font-medium text-zinc-900">
+            {categoryLabel}
+            {streetName ? (
+              <span className="hidden @[12rem]/mode-intro:inline"> &ldquo;{streetName}&rdquo;</span>
+            ) : null}
+          </div>
           <div className="font-mono text-[11px] text-zinc-500">{idLine}</div>
         </div>
         {props.trailing}
