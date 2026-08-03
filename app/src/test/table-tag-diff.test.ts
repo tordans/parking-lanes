@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { suggestPropagateFromCenter } from '../modes/table/domain/suggestions'
-import { buildTagGroups, buildTagRows } from '../modes/table/domain/tag-diff'
+import { buildTagGroups, buildTagRows, partitionTagRows } from '../modes/table/domain/tag-diff'
 import { classifyTagKey } from '../modes/table/domain/tag-groups'
 import { formatTableTagKeyLabel } from '../modes/table/domain/tag-key-label'
 
@@ -101,6 +101,21 @@ describe('buildTagGroups', () => {
     expect(groups.find((g) => g.id === 'sidewalk_right')?.rows.map((r) => r.key)).toEqual([
       'sidewalk:right:surface',
     ])
+  })
+
+  test('partitionTagRows matches buildTagGroups without rebuilding rows', () => {
+    const chain = {
+      segments: [
+        makeSegment(1, {
+          highway: 'residential',
+          'cycleway:left': 'lane',
+          'sidewalk:right:surface': 'paving_stones',
+        }),
+      ],
+      centerIndex: 0,
+    }
+    const rows = buildTagRows(chain)
+    expect(partitionTagRows(rows)).toEqual(buildTagGroups(chain))
   })
 })
 

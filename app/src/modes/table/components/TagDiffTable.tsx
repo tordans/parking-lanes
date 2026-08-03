@@ -8,7 +8,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '../../../components/catalyst/input'
 import { isYesNoCompatibleValue, YesNoRadioInput } from '../../../components/tag-editor'
 import {
@@ -365,8 +365,11 @@ type Props = {
 }
 
 type TableMeta = {
+  centerIndex: number
   centerSegmentId: number
+  selectedSegmentId?: number
   editable?: boolean
+  onSelectSegment?: (wayId: number) => void
   onCellChange?: (segmentId: number, key: string, value: string) => void
   onCellClear?: (segmentId: number, key: string) => void
 }
@@ -377,48 +380,13 @@ type FlatItem =
 
 const columnHelper = createColumnHelper<TagRow>()
 
-export function TagDiffTable({
-  segments,
-  centerIndex,
-  groups,
-  editable,
-  selectedSegmentId,
-  onSelectSegment,
-  onCellChange,
-  onCellClear,
-}: Props) {
-  'use no memo'
+type SegmentColumnDef = {
+  id: number
+  reversed?: boolean
+}
 
-  const centerSegment = segments[centerIndex]
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const { toggleGroup } = useTableGroupUiActions()
-
-  const openByGroup = {
-    centerline: useTableGroupOpen('centerline'),
-    bikelane_left: useTableGroupOpen('bikelane_left'),
-    bikelane_right: useTableGroupOpen('bikelane_right'),
-    sidewalk_left: useTableGroupOpen('sidewalk_left'),
-    sidewalk_right: useTableGroupOpen('sidewalk_right'),
-  }
-
-  const flatItems: FlatItem[] = []
-  for (const section of groups) {
-    const open = openByGroup[section.id]
-    flatItems.push({
-      type: 'group',
-      groupId: section.id,
-      title: groupTitle(section.id),
-      open,
-      rowCount: section.rows.length,
-    })
-    if (open) {
-      for (const row of section.rows) {
-        flatItems.push({ type: 'row', groupId: section.id, row })
-      }
-    }
-  }
-
-  const columns = [
+function buildSegmentColumns(segments: SegmentColumnDef[]) {
+  return [
     columnHelper.accessor('key', {
       id: 'tag',
       size: TAG_COL_WIDTH,
@@ -437,13 +405,14 @@ export function TagDiffTable({
       columnHelper.display({
         id: `way-${segment.id}`,
         size: SEGMENT_COL_WIDTH,
-        header: () => {
-          const isCenter = segmentIndex === centerIndex
-          const isSelected = segment.id === selectedSegmentId
+        header: ({ table }) => {
+          const meta = table.options.meta as TableMeta
+          const isCenter = segmentIndex === meta.centerIndex
+          const isSelected = segment.id === meta.selectedSegmentId
           const directionMark =
             segmentIndex === 0
               ? null
-              : segmentIndex <= centerIndex
+              : segmentIndex <= meta.centerIndex
                 ? ('left' as const)
                 : ('right' as const)
           return (
@@ -459,7 +428,7 @@ export function TagDiffTable({
               <button
                 type="button"
                 className={clsx('font-mono text-blue-700 hover:underline', panelMetaClassName)}
-                onClick={() => onSelectSegment?.(segment.id)}
+                onClick={() => meta.onSelectSegment?.(segment.id)}
               >
                 way/{segment.id}
                 {segment.reversed ? (
@@ -485,7 +454,7 @@ export function TagDiffTable({
           const directionMark =
             segmentIndex === 0
               ? null
-              : segmentIndex <= centerIndex
+              : segmentIndex <= meta.centerIndex
                 ? ('left' as const)
                 : ('right' as const)
 
@@ -535,6 +504,67 @@ export function TagDiffTable({
       }),
     ),
   ]
+}
+
+export function TagDiffTable({
+  segments,
+  centerIndex,
+  groups,
+  editable,
+  selectedSegmentId,
+  onSelectSegment,
+  onCellChange,
+  onCellClear,
+}: Props) {
+  'use no memo'
+
+  const centerSegmentId = segments[centerIndex]?.id ?? -1
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const { toggleGroup } = useTableGroupUiActions()
+
+  const openByGroup = {
+    centerline: useTableGroupOpen('centerline'),
+    bikelane_left: useTableGroupOpen('bikelane_left'),
+    bikelane_right: useTableGroupOpen('bikelane_right'),
+    sidewalk_left: useTableGroupOpen('sidewalk_left'),
+    sidewalk_right: useTableGroupOpen('sidewalk_right'),
+  }
+
+  const flatItems: FlatItem[] = []
+  for (const section of groups) {
+    const open = openByGroup[section.id]
+    flatItems.push({
+      type: 'group',
+      groupId: section.id,
+      title: groupTitle(section.id),
+      open,
+      rowCount: section.rows.length,
+    })
+    if (open) {
+      for (const row of section.rows) {
+        flatItems.push({ type: 'row', groupId: section.id, row })
+      }
+    }
+  }
+
+  // Column defs only depend on segment identity/orientation — tag edits update `data`, not columns.
+  // Explicit useMemo: this file opts out of React Compiler (`use no memo`) for TanStack Table.
+  const segmentColumnKey = segments
+    .map((segment) => `${segment.id}:${segment.reversed ? 1 : 0}`)
+    .join('|')
+  const columns = useMemo(
+    function memoizeSegmentColumns() {
+      const defs: SegmentColumnDef[] = segmentColumnKey
+        .split('|')
+        .filter(Boolean)
+        .map((entry) => {
+          const [id, reversed] = entry.split(':')
+          return { id: Number(id), reversed: reversed === '1' }
+        })
+      return buildSegmentColumns(defs)
+    },
+    [segmentColumnKey],
+  )
 
   const flatRows = flatItems
     .filter((item): item is Extract<FlatItem, { type: 'row' }> => item.type === 'row')
@@ -546,8 +576,11 @@ export function TagDiffTable({
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.key,
     meta: {
-      centerSegmentId: centerSegment?.id ?? -1,
+      centerIndex,
+      centerSegmentId,
+      selectedSegmentId,
       editable,
+      onSelectSegment,
       onCellChange,
       onCellClear,
     } satisfies TableMeta,
@@ -570,26 +603,29 @@ export function TagDiffTable({
 
   const virtualItems = rowVirtualizer.getVirtualItems()
 
-  useLayoutEffect(() => {
-    const tableRoot = scrollRef.current
-    if (!tableRoot || centerIndex < 0 || !centerSegment) return
-    const scroller = findNearestScrollParent(tableRoot)
-    if (!scroller) return
+  useLayoutEffect(
+    function centerTableOnCenterColumn() {
+      const tableRoot = scrollRef.current
+      if (!tableRoot || centerIndex < 0 || centerSegmentId < 0) return
+      const scroller = findNearestScrollParent(tableRoot)
+      if (!scroller) return
 
-    const centerMidFromScrollerLeft =
-      tableRoot.getBoundingClientRect().left -
-      scroller.getBoundingClientRect().left +
-      scroller.scrollLeft +
-      TAG_COL_WIDTH +
-      centerIndex * SEGMENT_COL_WIDTH +
-      SEGMENT_COL_WIDTH / 2
-    const stickyGutter = TAG_COL_WIDTH
-    const visibleContentWidth = Math.max(0, scroller.clientWidth - stickyGutter)
-    scroller.scrollLeft = Math.max(
-      0,
-      centerMidFromScrollerLeft - stickyGutter - visibleContentWidth / 2,
-    )
-  }, [centerIndex, centerSegment?.id, segments.length, totalWidth, centerSegment])
+      const centerMidFromScrollerLeft =
+        tableRoot.getBoundingClientRect().left -
+        scroller.getBoundingClientRect().left +
+        scroller.scrollLeft +
+        TAG_COL_WIDTH +
+        centerIndex * SEGMENT_COL_WIDTH +
+        SEGMENT_COL_WIDTH / 2
+      const stickyGutter = TAG_COL_WIDTH
+      const visibleContentWidth = Math.max(0, scroller.clientWidth - stickyGutter)
+      scroller.scrollLeft = Math.max(
+        0,
+        centerMidFromScrollerLeft - stickyGutter - visibleContentWidth / 2,
+      )
+    },
+    [centerIndex, centerSegmentId, segments.length, totalWidth],
+  )
 
   return (
     <div className={clsx('flex flex-col gap-2', panelTextClassName)}>
@@ -636,9 +672,9 @@ export function TagDiffTable({
                     ref={rowVirtualizer.measureElement}
                     className="absolute top-0 left-0"
                     style={{
+                      top: virtualItem.start,
                       width: totalWidth,
                       minWidth: '100%',
-                      transform: `translateY(${virtualItem.start}px)`,
                     }}
                   >
                     <button
@@ -684,9 +720,9 @@ export function TagDiffTable({
                     'hover:bg-zinc-50 group-hover/table:opacity-40 hover:!opacity-100',
                   )}
                   style={{
+                    top: virtualItem.start,
                     width: totalWidth,
                     minWidth: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
                   }}
                 >
                   {tableRow.getVisibleCells().map((cell, cellIndex) => (

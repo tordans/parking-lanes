@@ -71,9 +71,8 @@ export function buildTagRows(chain: ChainLike): TagRow[] {
   })
 }
 
-/** Partition tag rows into centerline / bikelane / sidewalk disclosure groups. */
-export function buildTagGroups(chain: ChainLike): TagGroupSection[] {
-  const rows = buildTagRows(chain)
+/** Partition precomputed tag rows into centerline / bikelane / sidewalk disclosure groups. */
+export function partitionTagRows(rows: TagRow[]): TagGroupSection[] {
   const buckets = new Map<TableTagGroupId, TagRow[]>()
   for (const id of TABLE_TAG_GROUP_ORDER) buckets.set(id, [])
 
@@ -86,6 +85,11 @@ export function buildTagGroups(chain: ChainLike): TagGroupSection[] {
     id,
     rows: buckets.get(id) ?? [],
   })).filter((section) => section.rows.length > 0)
+}
+
+/** Partition tag rows into centerline / bikelane / sidewalk disclosure groups. */
+export function buildTagGroups(chain: ChainLike): TagGroupSection[] {
+  return partitionTagRows(buildTagRows(chain))
 }
 
 export function getDiffStatusClass(status: TagDiffStatus): string {
