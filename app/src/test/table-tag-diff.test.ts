@@ -1,10 +1,28 @@
 import { describe, expect, test } from 'bun:test'
 import { suggestPropagateFromCenter } from '../modes/table/domain/suggestions'
-import { buildTagRows } from '../modes/table/domain/tag-diff'
+import { buildTagGroups, buildTagRows } from '../modes/table/domain/tag-diff'
+import { classifyTagKey } from '../modes/table/domain/tag-groups'
 
 function makeSegment(id: number, tags: Record<string, string>) {
   return { id, tags }
 }
+
+describe('classifyTagKey', () => {
+  test('maps cycleway and sidewalk sided keys', () => {
+    expect(classifyTagKey('cycleway:left')).toBe('bikelane_left')
+    expect(classifyTagKey('cycleway:right:width')).toBe('bikelane_right')
+    expect(classifyTagKey('source:cycleway:left:width')).toBe('bikelane_left')
+    expect(classifyTagKey('sidewalk:left:surface')).toBe('sidewalk_left')
+    expect(classifyTagKey('note:sidewalk:right')).toBe('sidewalk_right')
+  })
+
+  test('keeps bare and :both keys on centerline', () => {
+    expect(classifyTagKey('highway')).toBe('centerline')
+    expect(classifyTagKey('cycleway')).toBe('centerline')
+    expect(classifyTagKey('cycleway:both')).toBe('centerline')
+    expect(classifyTagKey('surface')).toBe('centerline')
+  })
+})
 
 describe('buildTagRows', () => {
   const chain = {
@@ -36,6 +54,30 @@ describe('buildTagRows', () => {
     const rows = buildTagRows(chain)
     const keys = rows.map((r) => r.key)
     expect(keys).toEqual([...keys].sort((a, b) => a.localeCompare(b)))
+  })
+})
+
+describe('buildTagGroups', () => {
+  test('partitions keys into disclosure groups in order', () => {
+    const groups = buildTagGroups({
+      segments: [
+        makeSegment(1, {
+          highway: 'residential',
+          'cycleway:left': 'lane',
+          'sidewalk:right:surface': 'paving_stones',
+        }),
+      ],
+      centerIndex: 0,
+    })
+
+    expect(groups.map((g) => g.id)).toEqual(['centerline', 'bikelane_left', 'sidewalk_right'])
+    expect(groups.find((g) => g.id === 'centerline')?.rows.map((r) => r.key)).toEqual(['highway'])
+    expect(groups.find((g) => g.id === 'bikelane_left')?.rows.map((r) => r.key)).toEqual([
+      'cycleway:left',
+    ])
+    expect(groups.find((g) => g.id === 'sidewalk_right')?.rows.map((r) => r.key)).toEqual([
+      'sidewalk:right:surface',
+    ])
   })
 })
 

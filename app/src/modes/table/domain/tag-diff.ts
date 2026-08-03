@@ -1,3 +1,5 @@
+import { classifyTagKey, TABLE_TAG_GROUP_ORDER, type TableTagGroupId } from './tag-groups'
+
 export type TagDiffStatus = 'unchanged' | 'changed' | 'added' | 'removed' | 'missing'
 
 export type TagDiffCell = {
@@ -10,6 +12,11 @@ export type TagDiffCell = {
 export type TagRow = {
   key: string
   cells: TagDiffCell[]
+}
+
+export type TagGroupSection = {
+  id: TableTagGroupId
+  rows: TagRow[]
 }
 
 type SegmentLike = {
@@ -62,6 +69,23 @@ export function buildTagRows(chain: ChainLike): TagRow[] {
     })
     return { key, cells }
   })
+}
+
+/** Partition tag rows into centerline / bikelane / sidewalk disclosure groups. */
+export function buildTagGroups(chain: ChainLike): TagGroupSection[] {
+  const rows = buildTagRows(chain)
+  const buckets = new Map<TableTagGroupId, TagRow[]>()
+  for (const id of TABLE_TAG_GROUP_ORDER) buckets.set(id, [])
+
+  for (const row of rows) {
+    const groupId = classifyTagKey(row.key)
+    buckets.get(groupId)!.push(row)
+  }
+
+  return TABLE_TAG_GROUP_ORDER.map((id) => ({
+    id,
+    rows: buckets.get(id) ?? [],
+  })).filter((section) => section.rows.length > 0)
 }
 
 export function getDiffStatusClass(status: TagDiffStatus): string {

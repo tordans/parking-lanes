@@ -23,7 +23,7 @@ import { PropagateSuggestions } from './components/PropagateSuggestions'
 import { TagDiffTable } from './components/TagDiffTable'
 import { suggestPropagateFromCenter, type PropagateSuggestion } from './domain/suggestions'
 import { applyTableTagToWay, resolveTableEditBaseWay } from './domain/table-edits'
-import { buildTagRows } from './domain/tag-diff'
+import { buildTagGroups, buildTagRows } from './domain/tag-diff'
 import { useTableChain, useTableMapActions, useTablePendingJunctions } from './map/table-map-store'
 import { useTableOsmChangeHandler } from './use-table-mode-handlers'
 
@@ -97,6 +97,7 @@ export function TableModePanel() {
   }
 
   const activeChain = { segments: chain.segments, centerIndex: liveCenterIndex }
+  const groups = buildTagGroups(activeChain)
   const rows = buildTagRows(activeChain)
   const suggestions = suggestPropagateFromCenter(
     activeChain.segments,
@@ -178,7 +179,7 @@ export function TableModePanel() {
       <TagDiffTable
         segments={activeChain.segments}
         centerIndex={activeChain.centerIndex}
-        rows={rows}
+        groups={groups}
         editable={!readOnly}
         selectedSegmentId={centerWayId}
         onSelectSegment={walkToWay}

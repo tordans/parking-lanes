@@ -7,9 +7,12 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import clsx from 'clsx'
+import { ChevronRight } from 'lucide-react'
 import { useRef, useState } from 'react'
-import type { TagDiffCell, TagDiffStatus, TagRow } from '../domain/tag-diff'
+import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
+import type { TableTagGroupId } from '../domain/tag-groups'
+import { useTableGroupOpen, useTableGroupUiActions } from '../map/table-group-ui-store'
 
 /* TanStack Table uses a mutable stable instance — incompatible with React Compiler memoization. */
 /* oxlint-disable react/react-compiler, react-hooks-js/incompatible-library */
@@ -17,7 +20,23 @@ import { getDiffStatusClass } from '../domain/tag-diff'
 const TAG_COL_WIDTH = 160
 const SEGMENT_COL_WIDTH = 144
 const HEADER_ROW_HEIGHT = 64
+const GROUP_HEADER_HEIGHT = 32
 const ESTIMATED_ROW_HEIGHT = 40
+
+function groupTitle(groupId: TableTagGroupId): string {
+  switch (groupId) {
+    case 'centerline':
+      return m.table_group_centerline()
+    case 'bikelane_left':
+      return m.table_group_bikelane_left()
+    case 'bikelane_right':
+      return m.table_group_bikelane_right()
+    case 'sidewalk_left':
+      return m.table_group_sidewalk_left()
+    case 'sidewalk_right':
+      return m.table_group_sidewalk_right()
+  }
+}
 
 function EditableCell({
   value,
@@ -121,7 +140,7 @@ type SegmentColumn = {
 type Props = {
   segments: SegmentColumn[]
   centerIndex: number
-  rows: TagRow[]
+  groups: TagGroupSection[]
   editable?: boolean
   selectedSegmentId?: number
   onSelectSegment?: (wayId: number) => void
@@ -136,12 +155,16 @@ type TableMeta = {
   onCellClear?: (segmentId: number, key: string) => void
 }
 
+type FlatItem =
+  | { type: 'group'; groupId: TableTagGroupId; title: string; open: boolean; rowCount: number }
+  | { type: 'row'; groupId: TableTagGroupId; row: TagRow }
+
 const columnHelper = createColumnHelper<TagRow>()
 
 export function TagDiffTable({
   segments,
   centerIndex,
-  rows,
+  groups,
   editable,
   selectedSegmentId,
   onSelectSegment,
@@ -152,6 +175,32 @@ export function TagDiffTable({
 
   const centerSegment = segments[centerIndex]
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { toggleGroup } = useTableGroupUiActions()
+
+  const openByGroup = {
+    centerline: useTableGroupOpen('centerline'),
+    bikelane_left: useTableGroupOpen('bikelane_left'),
+    bikelane_right: useTableGroupOpen('bikelane_right'),
+    sidewalk_left: useTableGroupOpen('sidewalk_left'),
+    sidewalk_right: useTableGroupOpen('sidewalk_right'),
+  }
+
+  const flatItems: FlatItem[] = []
+  for (const section of groups) {
+    const open = openByGroup[section.id]
+    flatItems.push({
+      type: 'group',
+      groupId: section.id,
+      title: groupTitle(section.id),
+      open,
+      rowCount: section.rows.length,
+    })
+    if (open) {
+      for (const row of section.rows) {
+        flatItems.push({ type: 'row', groupId: section.id, row })
+      }
+    }
+  }
 
   const columns = [
     columnHelper.accessor('key', {
@@ -227,8 +276,12 @@ export function TagDiffTable({
     ),
   ]
 
+  const flatRows = flatItems
+    .filter((item): item is Extract<FlatItem, { type: 'row' }> => item.type === 'row')
+    .map((item) => item.row)
+
   const table = useReactTable({
-    data: rows,
+    data: flatRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.key,
@@ -240,11 +293,14 @@ export function TagDiffTable({
     } satisfies TableMeta,
   })
 
-  const { rows: tableRows } = table.getRowModel()
+  const rowByKey = new Map(table.getRowModel().rows.map((row) => [row.id, row]))
+  const totalWidth = table.getTotalSize()
+
   const rowVirtualizer = useVirtualizer({
-    count: tableRows.length,
+    count: flatItems.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    estimateSize: (index) =>
+      flatItems[index]?.type === 'group' ? GROUP_HEADER_HEIGHT : ESTIMATED_ROW_HEIGHT,
     overscan: 12,
     measureElement:
       typeof window !== 'undefined' && !navigator.userAgent.includes('Firefox')
@@ -252,8 +308,7 @@ export function TagDiffTable({
         : undefined,
   })
 
-  const virtualRows = rowVirtualizer.getVirtualItems()
-  const totalWidth = table.getTotalSize()
+  const virtualItems = rowVirtualizer.getVirtualItems()
 
   return (
     <div className="flex flex-col gap-3">
@@ -289,22 +344,64 @@ export function TagDiffTable({
             className="relative"
             style={{ height: rowVirtualizer.getTotalSize(), width: totalWidth, minWidth: '100%' }}
           >
-            {virtualRows.map((virtualRow) => {
-              const row = tableRows[virtualRow.index]
-              if (!row) return null
+            {virtualItems.map((virtualItem) => {
+              const item = flatItems[virtualItem.index]
+              if (!item) return null
+
+              if (item.type === 'group') {
+                return (
+                  <div
+                    key={`group-${item.groupId}`}
+                    data-index={virtualItem.index}
+                    ref={rowVirtualizer.measureElement}
+                    className="absolute top-0 left-0"
+                    style={{
+                      width: totalWidth,
+                      minWidth: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={item.open}
+                      onClick={() => toggleGroup(item.groupId)}
+                      className="flex w-full items-center gap-1.5 border-b border-zinc-200 bg-zinc-100 px-2 py-1.5 text-left text-xs font-semibold tracking-wide text-zinc-700 uppercase hover:bg-zinc-50"
+                      style={{ width: totalWidth, minWidth: '100%' }}
+                    >
+                      <ChevronRight
+                        aria-hidden
+                        className={clsx(
+                          'size-3.5 shrink-0 text-zinc-500 transition-transform',
+                          item.open && 'rotate-90',
+                        )}
+                      />
+                      <span>
+                        {item.title}
+                        <span className="ml-1.5 font-normal text-zinc-500 normal-case">
+                          ({item.rowCount})
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                )
+              }
+
+              const tableRow = rowByKey.get(item.row.key)
+              if (!tableRow) return null
+
               return (
                 <div
-                  key={row.id}
-                  data-index={virtualRow.index}
+                  key={tableRow.id}
+                  data-index={virtualItem.index}
                   ref={rowVirtualizer.measureElement}
                   className="absolute top-0 left-0 flex hover:bg-zinc-50"
                   style={{
                     width: totalWidth,
                     minWidth: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
+                    transform: `translateY(${virtualItem.start}px)`,
                   }}
                 >
-                  {row.getVisibleCells().map((cell, cellIndex) => (
+                  {tableRow.getVisibleCells().map((cell, cellIndex) => (
                     <div
                       key={cell.id}
                       className={clsx(
