@@ -132,20 +132,24 @@ export function TableModePanel() {
   }
 
   return (
-    <div ref={panelRef} tabIndex={0} className="flex flex-col gap-3 outline-none">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex shrink-0 items-center gap-1">
+    <div
+      ref={panelRef}
+      tabIndex={0}
+      className="flex flex-col gap-2 text-xs leading-tight outline-none"
+    >
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
                 disabled={prevWayId == null}
                 aria-label={m.chain_prev_segment()}
                 title={m.chain_prev_segment()}
                 onClick={walkPrev}
-                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+                className="rounded border border-zinc-300 p-0.5 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
               >
-                <ChevronLeft className="size-4" aria-hidden />
+                <ChevronLeft className="size-3.5" aria-hidden />
               </button>
               <button
                 type="button"
@@ -153,16 +157,16 @@ export function TableModePanel() {
                 aria-label={m.chain_next_segment()}
                 title={m.chain_next_segment()}
                 onClick={walkNext}
-                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+                className="rounded border border-zinc-300 p-0.5 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
               >
-                <ChevronRight className="size-4" aria-hidden />
+                <ChevronRight className="size-3.5" aria-hidden />
               </button>
             </div>
             <ModePanelIntro
               wayId={centerWay.id}
               highway={centerWay.tags.highway}
               identityStart
-              className="flex min-w-0 items-center gap-2"
+              className="flex min-w-0 items-center gap-1.5"
             />
           </div>
           <ChainNavigator

@@ -11,15 +11,13 @@ export function PropagateSuggestions({ suggestions, disabled, onApply }: Props) 
   if (suggestions.length === 0) return null
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-semibold tracking-wide text-zinc-600 uppercase">
-        {m.table_propagate_heading()}
-      </h3>
-      <ul className="flex flex-col gap-1.5">
+    <div className="space-y-1.5 text-xs leading-tight">
+      <h3 className="font-medium text-zinc-600">{m.table_propagate_heading()}</h3>
+      <ul className="flex flex-col gap-1">
         {suggestions.map((suggestion) => (
           <li
             key={`${suggestion.key}:${suggestion.value}:${suggestion.affectedWayIds.join(',')}`}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs"
+            className="flex flex-wrap items-center justify-between gap-1.5 rounded-sm border border-zinc-200 bg-white px-2 py-1"
           >
             <span className="min-w-0 text-zinc-700">
               {m.table_propagate_description({
@@ -32,7 +30,7 @@ export function PropagateSuggestions({ suggestions, disabled, onApply }: Props) 
               type="button"
               disabled={disabled}
               onClick={() => onApply(suggestion)}
-              className="shrink-0 rounded-md border border-zinc-300 px-2 py-0.5 font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-5 shrink-0 rounded-sm border border-zinc-300 px-1.5 font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {m.table_propagate_apply()}
             </button>

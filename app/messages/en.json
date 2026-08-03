@@ -99,6 +99,8 @@
   "table_group_bikelane_right": "Bikelane right",
   "table_group_sidewalk_left": "Sidewalk left",
   "table_group_sidewalk_right": "Sidewalk right",
+  "table_use_from_left": "Use value from left road segment",
+  "table_use_from_right": "Use value from right road segment",
   "lanes_diagram_render_only": "Plan sketch — render only (edit in the form)",
   "lanes_diagram_no_selection": "Select a road to show the cross-section",
   "lanes_diagram_aria": "{motor} motor lanes, {bus} bus, {cycle} cycle, {sidewalk} sidewalk/shared. OSM way direction points down; diagram-left is *:left.",
