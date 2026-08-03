@@ -99,7 +99,8 @@ function DiffDirectionMark({
 }
 
 function NeighborImportGlyph({ side }: { side: 'left' | 'right' }) {
-  const Icon = side === 'left' ? ArrowLeft : ArrowRight
+  // Point toward this cell: value flows in from the named neighbour.
+  const Icon = side === 'left' ? ArrowRight : ArrowLeft
   return (
     <span className="relative inline-flex size-3.5 items-center justify-center">
       <Icon className="size-3" strokeWidth={2.25} aria-hidden />
@@ -306,10 +307,10 @@ function ValueCell({
   status: TagDiffStatus
   editable?: boolean
   isCenter?: boolean
-  leftValue: string | undefined
-  rightValue: string | undefined
-  hasLeft: boolean
-  hasRight: boolean
+  leftValue?: string
+  rightValue?: string
+  hasLeft?: boolean
+  hasRight?: boolean
   onCommit?: (value: string) => void
   onClear?: () => void
 }) {
@@ -323,8 +324,8 @@ function ValueCell({
         isCenter={isCenter}
         leftValue={leftValue}
         rightValue={rightValue}
-        hasLeft={hasLeft}
-        hasRight={hasRight}
+        hasLeft={Boolean(hasLeft)}
+        hasRight={Boolean(hasRight)}
         onCommit={onCommit}
         onClear={onClear}
       />
@@ -479,15 +480,31 @@ export function TagDiffTable({
           const cells = row.original.cells
           const cell = cells[segmentIndex] as TagDiffCell | undefined
           if (!cell) return null
-          const leftCell = segmentIndex > 0 ? cells[segmentIndex - 1] : undefined
-          const rightCell = segmentIndex < cells.length - 1 ? cells[segmentIndex + 1] : undefined
           const meta = table.options.meta as TableMeta
+          const isCenter = cell.segmentId === meta.centerSegmentId
           const directionMark =
             segmentIndex === 0
               ? null
               : segmentIndex <= centerIndex
                 ? ('left' as const)
                 : ('right' as const)
+
+          if (!isCenter || !meta.editable) {
+            return (
+              <div className="relative h-full">
+                {directionMark ? <DiffDirectionMark direction={directionMark} tone="row" /> : null}
+                <ValueCell
+                  tagKey={row.original.key}
+                  value={cell.value}
+                  status={cell.status}
+                  isCenter={isCenter}
+                />
+              </div>
+            )
+          }
+
+          const leftCell = segmentIndex > 0 ? cells[segmentIndex - 1] : undefined
+          const rightCell = segmentIndex < cells.length - 1 ? cells[segmentIndex + 1] : undefined
           return (
             <div className="relative h-full">
               {directionMark ? <DiffDirectionMark direction={directionMark} tone="row" /> : null}
@@ -495,8 +512,8 @@ export function TagDiffTable({
                 tagKey={row.original.key}
                 value={cell.value}
                 status={cell.status}
-                isCenter={cell.segmentId === meta.centerSegmentId}
-                editable={meta.editable}
+                isCenter
+                editable
                 leftValue={leftCell?.value}
                 rightValue={rightCell?.value}
                 hasLeft={leftCell != null}

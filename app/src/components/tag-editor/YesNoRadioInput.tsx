@@ -43,7 +43,7 @@ export function YesNoRadioInput(props: {
             disabled={props.disabled}
             className={clsx(
               baseButtonClassName,
-              isImplied ? 'px-1.5' : 'w-8',
+              isImplied ? 'px-1.5' : 'min-w-8',
               index > 0 && tagEditorValueButtonDividerClassName,
               isSelected
                 ? tagEditorValueButtonSelectedClassName
