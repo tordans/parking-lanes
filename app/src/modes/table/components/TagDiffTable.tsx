@@ -17,8 +17,7 @@ import { useBreakpoint } from '../../../hooks/useBreakpoint'
 import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
 import type { TableTagGroupId } from '../domain/tag-groups'
-import { classifyTagKey } from '../domain/tag-groups'
-import { formatTableTagKeyLabel } from '../domain/tag-key-label'
+import { approxTagColumnCharBudget, formatTableTagKeyLabel } from '../domain/tag-key-label'
 import { useTableGroupOpen, useTableGroupUiActions } from '../map/table-group-ui-store'
 
 /* TanStack Table uses a mutable stable instance — incompatible with React Compiler memoization. */
@@ -36,25 +35,10 @@ const ESTIMATED_ROW_HEIGHT = 28
 const panelTextClassName = 'text-xs leading-tight'
 const panelMetaClassName = 'text-[11px] leading-tight'
 
-/** Rough mono `text-xs` fit — used only to decide whether to attach a full-key title. */
-function isApproxTagLabelTruncated(label: string, colWidthPx: number): boolean {
-  const paddingPx = 14
-  const charPx = 7
-  return label.length * charPx > colWidthPx - paddingPx
-}
-
-function TruncatedTagKeyLabel({
-  osmKey,
-  label,
-  colWidthPx,
-}: {
-  osmKey: string
-  label: string
-  colWidthPx: number
-}) {
-  const truncated = isApproxTagLabelTruncated(label, colWidthPx)
+function TruncatedTagKeyLabel({ osmKey, label }: { osmKey: string; label: string }) {
+  const showTitle = label !== osmKey || label.includes('…')
   return (
-    <span className="block truncate" title={truncated ? osmKey : undefined}>
+    <span className="block truncate" title={showTitle ? osmKey : undefined}>
       {label}
     </span>
   )
@@ -78,16 +62,8 @@ function groupTitle(groupId: TableTagGroupId): string {
       return m.table_group_centerline()
     case 'bikelane':
       return m.table_group_bikelane()
-    case 'bikelane_left':
-      return m.table_group_bikelane_left()
-    case 'bikelane_right':
-      return m.table_group_bikelane_right()
     case 'sidewalk':
       return m.table_group_sidewalk()
-    case 'sidewalk_left':
-      return m.table_group_sidewalk_left()
-    case 'sidewalk_right':
-      return m.table_group_sidewalk_right()
   }
 }
 
@@ -415,8 +391,8 @@ function buildSegmentColumns(segments: SegmentColumnDef[], tagColWidth: number) 
       header: () => m.table_column_tag(),
       cell: (info) => {
         const key = info.getValue()
-        const label = formatTableTagKeyLabel(key, classifyTagKey(key))
-        return <TruncatedTagKeyLabel osmKey={key} label={label} colWidthPx={tagColWidth} />
+        const label = formatTableTagKeyLabel(key, approxTagColumnCharBudget(tagColWidth))
+        return <TruncatedTagKeyLabel osmKey={key} label={label} />
       },
     }),
     ...segments.map((segment, segmentIndex) =>
@@ -537,11 +513,7 @@ export function TagDiffTable({
   const openByGroup = {
     centerline: useTableGroupOpen('centerline'),
     bikelane: useTableGroupOpen('bikelane'),
-    bikelane_left: useTableGroupOpen('bikelane_left'),
-    bikelane_right: useTableGroupOpen('bikelane_right'),
     sidewalk: useTableGroupOpen('sidewalk'),
-    sidewalk_left: useTableGroupOpen('sidewalk_left'),
-    sidewalk_right: useTableGroupOpen('sidewalk_right'),
   }
 
   const flatItems: FlatItem[] = []
@@ -692,24 +664,26 @@ export function TagDiffTable({
                       aria-expanded={item.open}
                       onClick={() => toggleGroup(item.groupId)}
                       className={clsx(
-                        'flex w-full items-center gap-1 border-b border-zinc-200 bg-zinc-100 px-1.5 py-1 text-left font-medium text-zinc-800 hover:bg-zinc-50',
+                        'flex w-full border-b border-zinc-200 bg-zinc-100 text-left font-medium text-zinc-800 hover:bg-zinc-50',
                         panelTextClassName,
                       )}
                       style={{ width: totalWidth, minWidth: '100%' }}
                     >
-                      <ChevronRight
-                        aria-hidden
-                        className={clsx(
-                          'size-3 shrink-0 text-zinc-500 transition-transform',
-                          item.open && 'rotate-90',
-                        )}
-                      />
-                      <span>
-                        {item.title}
-                        <span
-                          className={clsx('ml-1 font-normal text-zinc-500', panelMetaClassName)}
-                        >
-                          ({item.rowCount})
+                      <span className="sticky left-0 z-10 flex items-center gap-1 bg-zinc-100 px-1.5 py-1">
+                        <ChevronRight
+                          aria-hidden
+                          className={clsx(
+                            'size-3 shrink-0 text-zinc-500 transition-transform',
+                            item.open && 'rotate-90',
+                          )}
+                        />
+                        <span className="whitespace-nowrap">
+                          {item.title}
+                          <span
+                            className={clsx('ml-1 font-normal text-zinc-500', panelMetaClassName)}
+                          >
+                            ({item.rowCount})
+                          </span>
                         </span>
                       </span>
                     </button>

@@ -2,34 +2,28 @@ import { describe, expect, test } from 'bun:test'
 import { suggestPropagateFromCenter } from '../modes/table/domain/suggestions'
 import { buildTagGroups, buildTagRows, partitionTagRows } from '../modes/table/domain/tag-diff'
 import { classifyTagKey } from '../modes/table/domain/tag-groups'
-import { formatTableTagKeyLabel } from '../modes/table/domain/tag-key-label'
+import { compactTagKeyLabel, formatTableTagKeyLabel } from '../modes/table/domain/tag-key-label'
 
 function makeSegment(id: number, tags: Record<string, string>) {
   return { id, tags }
 }
 
 describe('classifyTagKey', () => {
-  test('maps cycleway and sidewalk sided keys', () => {
-    expect(classifyTagKey('cycleway:left')).toBe('bikelane_left')
-    expect(classifyTagKey('cycleway:right:width')).toBe('bikelane_right')
-    expect(classifyTagKey('source:cycleway:left:width')).toBe('bikelane_left')
-    expect(classifyTagKey('sidewalk:left:surface')).toBe('sidewalk_left')
-    expect(classifyTagKey('note:sidewalk:right')).toBe('sidewalk_right')
-  })
-
-  test('puts bare/:both cycleway and bicycle access in the cycleway group', () => {
+  test('puts all cycleway sides and bicycle access in one cycleway group', () => {
+    expect(classifyTagKey('cycleway:left')).toBe('bikelane')
+    expect(classifyTagKey('cycleway:right:width')).toBe('bikelane')
+    expect(classifyTagKey('source:cycleway:left:width')).toBe('bikelane')
     expect(classifyTagKey('cycleway')).toBe('bikelane')
     expect(classifyTagKey('cycleway:both')).toBe('bikelane')
-    expect(classifyTagKey('cycleway:both:width')).toBe('bikelane')
-    expect(classifyTagKey('source:cycleway:both:width')).toBe('bikelane')
     expect(classifyTagKey('bicycle')).toBe('bikelane')
     expect(classifyTagKey('bicycle:forward')).toBe('bikelane')
   })
 
-  test('puts bare/:both sidewalk and foot access in the footway group', () => {
+  test('puts all sidewalk sides and foot access in one footway group', () => {
+    expect(classifyTagKey('sidewalk:left:surface')).toBe('sidewalk')
+    expect(classifyTagKey('note:sidewalk:right')).toBe('sidewalk')
     expect(classifyTagKey('sidewalk')).toBe('sidewalk')
     expect(classifyTagKey('sidewalk:both')).toBe('sidewalk')
-    expect(classifyTagKey('sidewalk:both:surface')).toBe('sidewalk')
     expect(classifyTagKey('foot')).toBe('sidewalk')
     expect(classifyTagKey('foot:conditional')).toBe('sidewalk')
   })
@@ -43,28 +37,18 @@ describe('classifyTagKey', () => {
 })
 
 describe('formatTableTagKeyLabel', () => {
-  test('strips parking side nesting like the parking editor', () => {
-    expect(formatTableTagKeyLabel('parking:both', 'centerline')).toBe('both')
-    expect(formatTableTagKeyLabel('parking:both:fee', 'centerline')).toBe('fee')
-    expect(formatTableTagKeyLabel('parking:both:fee:conditional', 'centerline')).toBe(
-      'fee:conditional',
-    )
-    expect(formatTableTagKeyLabel('parking:right:restriction:conditional', 'centerline')).toBe(
-      'restri…:conditional',
-    )
+  test('keeps readable OSM keys and shortens the head when narrow', () => {
+    expect(formatTableTagKeyLabel('cycleway:left')).toBe('cycleway:left')
+    expect(formatTableTagKeyLabel('cycleway:left:width')).toBe('cycleway:left:width')
+    expect(formatTableTagKeyLabel('bicycle:forward')).toBe('bicycle:forward')
+    expect(formatTableTagKeyLabel('cycleway:left', 10)).toBe('cy…:left')
+    expect(compactTagKeyLabel('cycleway:left:width', 14)).toBe('cy…:left:width')
   })
 
-  test('strips sidepath prefixes already shown by the group heading', () => {
-    expect(formatTableTagKeyLabel('cycleway:left', 'bikelane_left')).toBe('left')
-    expect(formatTableTagKeyLabel('cycleway:left:width', 'bikelane_left')).toBe('width')
-    expect(formatTableTagKeyLabel('source:cycleway:right:width', 'bikelane_right')).toBe(
-      'source:width',
+  test('still compacts very long :conditional labels', () => {
+    expect(formatTableTagKeyLabel('parking:right:restriction:conditional')).toBe(
+      'parkin…:conditional',
     )
-    expect(formatTableTagKeyLabel('sidewalk:right:surface', 'sidewalk_right')).toBe('surface')
-    expect(formatTableTagKeyLabel('cycleway:both', 'bikelane')).toBe('both')
-    expect(formatTableTagKeyLabel('bicycle:forward', 'bikelane')).toBe('forward')
-    expect(formatTableTagKeyLabel('foot', 'sidewalk')).toBe('foot')
-    expect(formatTableTagKeyLabel('sidewalk:both:surface', 'sidewalk')).toBe('both:surface')
   })
 })
 
@@ -119,13 +103,7 @@ describe('buildTagGroups', () => {
       centerIndex: 0,
     })
 
-    expect(groups.map((g) => g.id)).toEqual([
-      'centerline',
-      'bikelane',
-      'bikelane_left',
-      'sidewalk',
-      'sidewalk_right',
-    ])
+    expect(groups.map((g) => g.id)).toEqual(['centerline', 'bikelane', 'sidewalk'])
     expect(groups.find((g) => g.id === 'centerline')?.rows.map((r) => r.key)).toEqual([
       'highway',
       'oneway',
@@ -134,12 +112,10 @@ describe('buildTagGroups', () => {
     expect(groups.find((g) => g.id === 'bikelane')?.rows.map((r) => r.key)).toEqual([
       'bicycle',
       'cycleway:both',
-    ])
-    expect(groups.find((g) => g.id === 'bikelane_left')?.rows.map((r) => r.key)).toEqual([
       'cycleway:left',
     ])
-    expect(groups.find((g) => g.id === 'sidewalk')?.rows.map((r) => r.key)).toEqual(['foot'])
-    expect(groups.find((g) => g.id === 'sidewalk_right')?.rows.map((r) => r.key)).toEqual([
+    expect(groups.find((g) => g.id === 'sidewalk')?.rows.map((r) => r.key)).toEqual([
+      'foot',
       'sidewalk:right:surface',
     ])
   })
