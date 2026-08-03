@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { suggestPropagateFromCenter } from '../modes/table/domain/suggestions'
 import { buildTagGroups, buildTagRows } from '../modes/table/domain/tag-diff'
 import { classifyTagKey } from '../modes/table/domain/tag-groups'
+import { formatTableTagKeyLabel } from '../modes/table/domain/tag-key-label'
 
 function makeSegment(id: number, tags: Record<string, string>) {
   return { id, tags }
@@ -21,6 +22,28 @@ describe('classifyTagKey', () => {
     expect(classifyTagKey('cycleway')).toBe('centerline')
     expect(classifyTagKey('cycleway:both')).toBe('centerline')
     expect(classifyTagKey('surface')).toBe('centerline')
+  })
+})
+
+describe('formatTableTagKeyLabel', () => {
+  test('strips parking side nesting like the parking editor', () => {
+    expect(formatTableTagKeyLabel('parking:both', 'centerline')).toBe('both')
+    expect(formatTableTagKeyLabel('parking:both:fee', 'centerline')).toBe('fee')
+    expect(formatTableTagKeyLabel('parking:both:fee:conditional', 'centerline')).toBe(
+      'fee:conditional',
+    )
+    expect(formatTableTagKeyLabel('parking:right:restriction:conditional', 'centerline')).toBe(
+      'restri…:conditional',
+    )
+  })
+
+  test('strips sidepath prefixes already shown by the group heading', () => {
+    expect(formatTableTagKeyLabel('cycleway:left', 'bikelane_left')).toBe('left')
+    expect(formatTableTagKeyLabel('cycleway:left:width', 'bikelane_left')).toBe('width')
+    expect(formatTableTagKeyLabel('source:cycleway:right:width', 'bikelane_right')).toBe(
+      'source:width',
+    )
+    expect(formatTableTagKeyLabel('sidewalk:right:surface', 'sidewalk_right')).toBe('surface')
   })
 })
 

@@ -20,6 +20,8 @@ import { Tooltip } from '../../../components/Tooltip/Tooltip'
 import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
 import type { TableTagGroupId } from '../domain/tag-groups'
+import { classifyTagKey } from '../domain/tag-groups'
+import { formatTableTagKeyLabel } from '../domain/tag-key-label'
 import { useTableGroupOpen, useTableGroupUiActions } from '../map/table-group-ui-store'
 
 /* TanStack Table uses a mutable stable instance — incompatible with React Compiler memoization. */
@@ -372,7 +374,15 @@ export function TagDiffTable({
       id: 'tag',
       size: TAG_COL_WIDTH,
       header: () => m.table_column_tag(),
-      cell: (info) => info.getValue(),
+      cell: (info) => {
+        const key = info.getValue()
+        const label = formatTableTagKeyLabel(key, classifyTagKey(key))
+        return (
+          <span className="block truncate" title={key}>
+            {label}
+          </span>
+        )
+      },
     }),
     ...segments.map((segment, segmentIndex) =>
       columnHelper.display({
