@@ -32,8 +32,6 @@ export type StreetSpaceMode = {
   about: ModeAboutContent
   MapLayers: ComponentType<ModeMapProps>
   Panel: ComponentType<ModePanelProps>
-  /** Optional bottom cross-section / timeline panel (desktop map column). */
-  BottomPanel?: ComponentType<ModePanelProps>
   Legend?: ComponentType<{ variant?: 'floating' | 'inline' }>
   /** Optional extra section at the end of the Info panel (e.g. photo credits). */
   InfoExtras?: ComponentType

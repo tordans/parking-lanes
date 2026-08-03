@@ -256,10 +256,10 @@ export function TagDiffTable({
   const totalWidth = table.getTotalSize()
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-auto rounded-lg border border-zinc-200"
+        className="max-h-[min(28rem,calc(var(--app-height,100dvh)-14rem))] overflow-auto rounded-lg border border-zinc-200"
       >
         <div style={{ width: totalWidth, minWidth: '100%' }}>
           <div
@@ -324,7 +324,7 @@ export function TagDiffTable({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap gap-3 text-xs text-zinc-600">
+      <div className="flex flex-wrap gap-3 text-xs text-zinc-600">
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded bg-amber-100 ring-1 ring-zinc-200" />
           {m.table_legend_changed()}

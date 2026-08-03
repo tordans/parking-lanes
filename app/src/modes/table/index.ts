@@ -1,5 +1,4 @@
 import type { StreetSpaceMode } from '../types'
-import { TableBottomPanel } from './TableBottomPanel'
 import { TableModeLayers } from './TableModeLayers'
 import { TableModePanel } from './TableModePanel'
 import { interactiveLayerIds } from './use-table-mode-handlers'
@@ -19,7 +18,6 @@ export const tableMode: StreetSpaceMode = {
   },
   MapLayers: TableModeLayers,
   Panel: TableModePanel,
-  BottomPanel: TableBottomPanel,
   interactiveLayerIds,
 }
 

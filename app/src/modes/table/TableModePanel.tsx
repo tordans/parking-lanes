@@ -1,7 +1,196 @@
 import * as m from '@app/paraglide/messages'
-import { MapFeaturePromptEmptyState } from '../../shell/controls/MapFeatureEmptyState'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRef } from 'react'
+import { AuthState, useAuthState } from '../../shell/app-store'
+import { ChainNavigator } from '../../shell/controls/ChainNavigator'
+import {
+  MapFeatureLoadEmptyState,
+  MapFeaturePromptEmptyState,
+} from '../../shell/controls/MapFeatureEmptyState'
+import { ModePanelIntro } from '../../shell/controls/ModePanelIntro'
+import { useChainWalk } from '../../shell/controls/use-chain-walk'
+import {
+  useFeatureSelectionActions,
+  useSelectedOsmRef,
+} from '../../shell/map/feature-selection-store'
+import { useMapViewport } from '../../shell/map/map-viewport'
+import { useIsOsmCoverageFetching, useOsmCoverageQuery } from '../../shell/map/osm-coverage-query'
+import { useWayChainBuilder } from '../../shell/map/use-way-chain-builder'
+import { viewMinZoom } from '../lanes/map/constants'
+import { LoginCallout } from '../parking/controls/LoginCallout'
+import { useOsmAuth } from '../parking/map/use-osm-auth'
+import { PropagateSuggestions } from './components/PropagateSuggestions'
+import { TagDiffTable } from './components/TagDiffTable'
+import { suggestPropagateFromCenter, type PropagateSuggestion } from './domain/suggestions'
+import { applyTableTagToWay, resolveTableEditBaseWay } from './domain/table-edits'
+import { buildTagRows } from './domain/tag-diff'
+import { useTableChain, useTableMapActions, useTablePendingJunctions } from './map/table-map-store'
+import { useTableOsmChangeHandler } from './use-table-mode-handlers'
 
-/** Table editing lives in the bottom panel; the inspector tab is not used on desktop. */
+const CHAIN_MAX_PER_SIDE = 5
+
 export function TableModePanel() {
-  return <MapFeaturePromptEmptyState message={m.empty_click_table()} />
+  const selectedOsmRef = useSelectedOsmRef()
+  const centerWayId = selectedOsmRef?.type === 'way' ? selectedOsmRef.id : undefined
+  const { selectFeature } = useFeatureSelectionActions()
+  const chain = useTableChain()
+  const pendingJunctions = useTablePendingJunctions()
+  const { setChainResult } = useTableMapActions()
+  // Rebuild runs only in TableModeLayers — avoid racing two buildChain calls.
+  const { extendAtJunction, recenterOnWay } = useWayChainBuilder({
+    centerWayId,
+    maxPerSide: CHAIN_MAX_PER_SIDE,
+    setChainResult,
+    rebuild: false,
+  })
+  const { data: graph } = useOsmCoverageQuery({ select: (data) => data.graph })
+  const isFetching = useIsOsmCoverageFetching()
+  const mapViewport = useMapViewport()
+  const authState = useAuthState()
+  const readOnly = authState !== AuthState.success
+  const { login } = useOsmAuth()
+  const handleOsmChange = useTableOsmChangeHandler()
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  function walkToWay(wayId: number) {
+    if (chain?.segments.some((segment) => segment.id === wayId)) {
+      recenterOnWay(chain, wayId)
+    }
+    selectFeature({ type: 'way', id: wayId })
+  }
+
+  const { prevWayId, nextWayId, walkPrev, walkNext } = useChainWalk({
+    chain,
+    centerWayId,
+    walkToWay,
+    axis: 'horizontal',
+    containerRef: panelRef,
+  })
+
+  if (!centerWayId) {
+    return <MapFeaturePromptEmptyState message={m.empty_click_table()} />
+  }
+
+  const centerWay = graph?.ways[centerWayId] ?? null
+  if (!centerWay) {
+    return (
+      <MapFeatureLoadEmptyState
+        zoom={mapViewport.zoom}
+        minZoom={viewMinZoom}
+        isFetching={isFetching}
+        featureLabel={`way/${centerWayId}`}
+      />
+    )
+  }
+
+  // Prefer live selection over store.centerIndex so the matrix/propagate baseline
+  // updates immediately on walk, before async rebuild finishes.
+  const liveCenterIndex =
+    chain != null ? chain.segments.findIndex((segment) => segment.id === centerWayId) : -1
+
+  if (!chain || liveCenterIndex === -1) {
+    return (
+      <div className="flex items-center justify-center px-2 py-8">
+        <p className="text-sm text-zinc-500">{m.table_building_chain()}</p>
+      </div>
+    )
+  }
+
+  const activeChain = { segments: chain.segments, centerIndex: liveCenterIndex }
+  const rows = buildTagRows(activeChain)
+  const suggestions = suggestPropagateFromCenter(
+    activeChain.segments,
+    activeChain.centerIndex,
+    rows,
+  )
+
+  function commitDisplayKey(segmentId: number, displayKey: string, value: string | undefined) {
+    if (readOnly || !graph) return
+    const base = resolveTableEditBaseWay(segmentId, graph.ways[segmentId])
+    if (!base) return
+    const segment = activeChain.segments.find((s) => s.id === segmentId)
+    handleOsmChange(applyTableTagToWay(base, displayKey, value, segment?.reversed))
+  }
+
+  function commitCell(segmentId: number, key: string, value: string) {
+    commitDisplayKey(segmentId, key, value === '' ? undefined : value)
+  }
+
+  function clearCell(segmentId: number, key: string) {
+    commitDisplayKey(segmentId, key, undefined)
+  }
+
+  function applySuggestion(suggestion: PropagateSuggestion) {
+    if (readOnly || !graph) return
+    for (const wayId of suggestion.affectedWayIds) {
+      const base = resolveTableEditBaseWay(wayId, graph.ways[wayId])
+      if (!base) continue
+      const segment = activeChain.segments.find((s) => s.id === wayId)
+      handleOsmChange(applyTableTagToWay(base, suggestion.key, suggestion.value, segment?.reversed))
+    }
+  }
+
+  return (
+    <div ref={panelRef} tabIndex={0} className="flex flex-col gap-3 outline-none">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                disabled={prevWayId == null}
+                aria-label={m.chain_prev_segment()}
+                title={m.chain_prev_segment()}
+                onClick={walkPrev}
+                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+              >
+                <ChevronLeft className="size-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={nextWayId == null}
+                aria-label={m.chain_next_segment()}
+                title={m.chain_next_segment()}
+                onClick={walkNext}
+                className="rounded border border-zinc-300 p-1 text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+              >
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            </div>
+            <ModePanelIntro
+              wayId={centerWay.id}
+              highway={centerWay.tags.highway}
+              identityStart
+              className="flex min-w-0 items-center gap-2"
+            />
+          </div>
+          <ChainNavigator
+            pendingJunctions={pendingJunctions}
+            onJunctionPick={(choice, wayId) => {
+              void extendAtJunction(choice, wayId, activeChain).then(() => walkToWay(wayId))
+            }}
+          />
+        </div>
+
+        {readOnly ? <LoginCallout onLogin={() => void login()} /> : null}
+      </div>
+
+      <TagDiffTable
+        segments={activeChain.segments}
+        centerIndex={activeChain.centerIndex}
+        rows={rows}
+        editable={!readOnly}
+        selectedSegmentId={centerWayId}
+        onSelectSegment={walkToWay}
+        onCellChange={commitCell}
+        onCellClear={clearCell}
+      />
+
+      <PropagateSuggestions
+        suggestions={suggestions}
+        disabled={readOnly}
+        onApply={applySuggestion}
+      />
+    </div>
+  )
 }

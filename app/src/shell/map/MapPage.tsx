@@ -76,8 +76,6 @@ function MapPageContent({
   const isTableMode = resolvedModeId === 'table'
   const hasWaySelection = selectedOsmRef?.type === 'way'
   const showLanesThreeColumn = isLanesMode && hasWaySelection
-  const BottomPanel = mode.BottomPanel
-  const showBottomEditor = BottomPanel != null && hasWaySelection
   /** Lanes mode lifts pitch for corridor camera; every other mode stays flat 2D. */
   const allowPitch = isLanesMode
   const prevAllowPitchRef = useRef(allowPitch)
@@ -242,7 +240,6 @@ function MapPageContent({
         </div>
       }
       middle={showLanesThreeColumn ? <LanesDiagramPanel /> : undefined}
-      bottom={showBottomEditor && BottomPanel ? <BottomPanel /> : undefined}
       panel={
         showLanesThreeColumn ? (
           <LanesFormPanel

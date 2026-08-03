@@ -70,7 +70,7 @@ export function useFlyToWay(wayId: number | undefined, enabled = true) {
       if (!bounds || coordinates.length < 2) return
 
       map.fitBounds(bounds, {
-        padding: { top: 80, bottom: 200, left: 60, right: 60 },
+        padding: { top: 80, bottom: 80, left: 60, right: 120 },
         maxZoom: 18,
         duration: 600,
       })

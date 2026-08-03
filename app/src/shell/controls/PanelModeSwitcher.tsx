@@ -12,7 +12,7 @@ const panelModes: { id: MapPanelMode; label: () => string; Icon: typeof Info }[]
 ]
 
 export function panelModesForMode(modeId: string): MapPanelMode[] {
-  if (modeId === 'lanes' || modeId === 'table') return ['info', 'settings']
+  if (modeId === 'lanes') return ['info', 'settings']
   return ['info', 'inspector', 'settings']
 }
 
