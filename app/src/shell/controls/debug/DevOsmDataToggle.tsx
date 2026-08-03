@@ -26,15 +26,9 @@ export function DevOsmDataToggle() {
           checked={liveViewportOsmFetch}
           onChange={(checked) => {
             setLiveViewportOsmFetch(checked)
-            if (checked) {
-              clearDevOsmFixtureSession(queryClient)
-              if (mapBounds && mapZoom >= viewMinZoom) {
-                void loadOsmData(mapBounds, mapZoom, { force: true })
-              }
-            } else {
-              void import('../../map/dev-osm-fixture-seed').then(({ seedDevOsmFixture }) =>
-                seedDevOsmFixture(queryClient),
-              )
+            clearDevOsmFixtureSession(queryClient)
+            if (mapBounds && mapZoom >= viewMinZoom) {
+              void loadOsmData(mapBounds, mapZoom, { force: true })
             }
           }}
         />
@@ -43,7 +37,7 @@ export function DevOsmDataToggle() {
       <p className="text-xs text-zinc-600">
         {liveViewportOsmFetch
           ? 'OSM map API loads for the current viewport (fixture off). Shared by all modes.'
-          : 'Local Berlin fixture — no OSM map API on startup. Shared by all modes.'}
+          : 'Local Berlin fixture — Map API slices from dev-map-bbox.json. Shared by all modes.'}
       </p>
     </section>
   )

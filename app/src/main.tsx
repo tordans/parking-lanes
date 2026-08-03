@@ -10,6 +10,7 @@ import { routeTree } from './routeTree.gen'
 import { appRouterSearch } from './shell/map/app-router-search'
 import './styles/tailwind.css'
 import './styles/main.scss'
+
 redirectLegacyMapHash()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
@@ -30,20 +31,11 @@ declare module '@tanstack/react-router' {
 
 const queryClient = createAppQueryClient()
 
-async function start() {
-  if (import.meta.env.DEV === true) {
-    const { seedDevOsmFixture } = await import('./shell/map/dev-osm-fixture-seed')
-    await seedDevOsmFixture(queryClient)
-  }
-
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Toaster position="top-center" richColors closeButton />
-      </QueryClientProvider>
-    </StrictMode>,
-  )
-}
-
-void start()
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" richColors closeButton />
+    </QueryClientProvider>
+  </StrictMode>,
+)

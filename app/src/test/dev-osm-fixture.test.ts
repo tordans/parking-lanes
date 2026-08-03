@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { devOsmMapFixtureMapUrl } from '@osm-editor-kit/osm-coverage'
 import {
   DEV_OSM_FIXTURE_TEST_STREET_WAY_ID,
   sanitizeDevOsmFixtureTestStreet,
@@ -10,6 +11,19 @@ describe('dev OSM fixture gate', () => {
     // Bun test does not set Vite's import.meta.env.DEV to true.
     expect(import.meta.env.DEV === true).toBe(false)
     expect(isDevOsmFixtureActive()).toBe(false)
+  })
+})
+
+describe('devOsmMapFixtureMapUrl', () => {
+  test('builds a local Map API slice URL under the app base path', () => {
+    expect(
+      devOsmMapFixtureMapUrl('/street-space-editor/', {
+        west: 13.4,
+        south: 52.45,
+        east: 13.45,
+        north: 52.48,
+      }),
+    ).toBe('/street-space-editor/dev-osm-map-fixture/api/0.6/map?bbox=13.4,52.45,13.45,52.48')
   })
 })
 

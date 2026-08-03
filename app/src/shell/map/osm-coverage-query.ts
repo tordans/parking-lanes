@@ -1,4 +1,4 @@
-import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
+import { createOsmCoverageApi, devOsmMapFixtureMapUrl } from '@osm-editor-kit/osm-coverage'
 import type { MapBounds, OsmWay } from '@osm-editor-kit/osm-data'
 import { getUrl } from '@osm-editor-kit/osm-editor-links'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,8 +21,13 @@ function osmServerFromSettings(): OsmServerSession {
 const osmCoverageApi = createOsmCoverageApi<OsmSessionParams>({
   getSessionKey: ({ osmServer }) => ['street-space-osm', osmServer] as const,
   minZoom: viewMinZoom,
-  getDownloadUrl: (bounds, { osmServer }) => getUrl(bounds, osmServer === 'dev'),
-  isNetworkEnabled: () => !isDevOsmFixtureActive(),
+  getDownloadUrl: (bounds, { osmServer }) => {
+    if (isDevOsmFixtureActive()) {
+      return devOsmMapFixtureMapUrl(import.meta.env.BASE_URL, bounds)
+    }
+    return getUrl(bounds, osmServer === 'dev')
+  },
+  isNetworkEnabled: () => true,
 })
 
 export type OsmCoverageQueryData = ReturnType<typeof osmCoverageApi.emptyData>
@@ -81,9 +86,6 @@ export function useOsmCoverageFetch() {
 
   const refetchAfterSave = useCallback(
     async (bounds: MapBounds, zoom: number, mapSizePx?: { width: number; height: number }) => {
-      // Fixture mode blocks network; keep the seeded graph instead of wiping then no-op.
-      if (isDevOsmFixtureActive()) return
-
       queryClient.setQueryData<OsmCoverageQueryData>(
         osmCoverageSessionKey(sessionParams),
         emptyOsmCoverageData(),

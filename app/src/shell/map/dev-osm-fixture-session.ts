@@ -6,7 +6,7 @@ import {
   osmCoverageSessionKey,
 } from './osm-coverage-query'
 
-/** Drops seeded fixture data so live viewport fetches can repopulate the session. */
+/** Clears the OSM session so the next viewport fetch (fixture or live) repopulates it. */
 export function clearDevOsmFixtureSession(queryClient: QueryClient): void {
   const params = currentOsmSessionParams()
   queryClient.setQueryData(osmCoverageSessionKey(params), emptyOsmCoverageData())

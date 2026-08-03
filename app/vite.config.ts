@@ -9,6 +9,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import browserslistToEsbuild from 'browserslist-to-esbuild'
 import { defineConfig } from 'vite'
+import { devOsmMapFixturePlugin } from './vite-plugins/dev-osm-map-fixture'
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 const monorepoRoot = path.resolve(projectRoot, '..')
@@ -43,6 +44,7 @@ export default defineConfig({
     __APP_BUILD_DATE__: JSON.stringify(appBuildDate),
   },
   plugins: [
+    devOsmMapFixturePlugin(),
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './paraglide',

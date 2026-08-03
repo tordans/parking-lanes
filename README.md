@@ -51,6 +51,8 @@ bun run dev
 
 The Vite app lives in `app/` (`@osm-editor-kit/street-space-editor`). Run `bun run check` from the root before pushing.
 
+**Dev OSM data:** In development, the app defaults to a local Berlin fixture served as OSM Map API bbox slices (`dev-osm-map-fixture`). Use the debug panel’s “Live OSM viewport fetch” toggle to hit the real OSM Map API instead. The fixture file is downloaded on `bun run dev` via `predev` if missing.
+
 ### Audit — how the app understands OSM data
 
 Flat audit pages (no mode chrome) for reviewing interpretation rules and fixtures:
