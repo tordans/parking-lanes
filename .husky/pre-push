@@ -1,4 +1,9 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env sh
+set -e
 
-bun run check-ci
+. "$(dirname -- "$0")/ensure-bun.sh"
+
+# Same check areas as CI (`check-ci`); lint/format may auto-fix. @see package-json-scripts
+bun run check-pre-push
+
+# Use `git push --no-verify` to skip (sparingly).

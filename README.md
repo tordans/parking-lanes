@@ -69,4 +69,4 @@ Flat audit pages (no mode chrome) for reviewing interpretation rules and fixture
 
 ## Install git hook
 
-[Husky](https://github.com/typicode/husky) runs `bun run check-ci` on pre-push (see `.husky/pre-push`).
+[Husky](https://github.com/typicode/husky) runs `bun run check-pre-push` on pre-push (type-check, lint, format, test-run — same areas as CI). See `.husky/pre-push`.
