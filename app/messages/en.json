@@ -40,6 +40,7 @@
   "shell_mode_editor_suffix": "Editor",
   "shell_mode_coming_soon": "(coming soon)",
   "shell_mode_switcher_aria": "Street space mode",
+  "shell_mode_menu_aria": "Change mode",
   "shell_maturity_alpha": "Alpha",
   "shell_maturity_beta": "Beta",
   "shell_maturity_experimental": "Experimental",

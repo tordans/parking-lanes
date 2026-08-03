@@ -179,7 +179,7 @@ function MapPageContent({
     <AppShell
       key={uiLocale}
       map={
-        <div ref={mapContainerRef} className="relative h-full w-full">
+        <div ref={mapContainerRef} className="@container/map relative h-full w-full">
           <div className="fixed inset-0 z-0 sm:static sm:inset-auto sm:z-auto sm:h-full sm:w-full">
             <div className="relative h-full w-full">
               <MapGL

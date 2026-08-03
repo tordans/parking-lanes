@@ -40,6 +40,7 @@
   "shell_mode_editor_suffix": "Editor",
   "shell_mode_coming_soon": "(demnächst)",
   "shell_mode_switcher_aria": "Straßenraum-Modus",
+  "shell_mode_menu_aria": "Modus wechseln",
   "shell_maturity_alpha": "Alpha",
   "shell_maturity_beta": "Beta",
   "shell_maturity_feedback_alpha": "Dieser Modus ist in der Alpha-Phase",
