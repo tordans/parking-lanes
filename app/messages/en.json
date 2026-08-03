@@ -87,6 +87,7 @@
   "table_clear_cell": "clear",
   "table_column_tag": "Tag",
   "table_center_badge": "center",
+  "table_dual_badge": "opposite",
   "table_diff_from_center_left": "Diff left of center",
   "table_diff_from_center_right": "Diff right of center",
   "table_direction_normalized": "Direction normalized",

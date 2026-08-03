@@ -6,10 +6,9 @@ import { useLanesMapFeatures } from '../lanes/map/use-lanes-map-features'
 import { useBacklightFeatures } from '../parking/map/parking-map-store'
 import { ParkingBacklightsSource } from '../parking/map/ParkingBacklightsSource'
 import type { ModeMapProps } from '../types'
+import { TABLE_CHAIN_MAX_PER_SIDE } from './domain/window-table-chain'
 import { useTableChain, useTableMapActions } from './map/table-map-store'
 import { TableHighwaysSource } from './map/TableHighwaysSource'
-
-const CHAIN_MAX_PER_SIDE = 5
 
 export function TableModeLayers(_props: ModeMapProps) {
   const mapBounds = useMapBounds()
@@ -22,7 +21,7 @@ export function TableModeLayers(_props: ModeMapProps) {
   // Single rebuild owner for table mode (panel uses rebuild: false for actions only).
   useWayChainBuilder({
     centerWayId,
-    maxPerSide: CHAIN_MAX_PER_SIDE,
+    maxPerSide: TABLE_CHAIN_MAX_PER_SIDE,
     setChainResult,
   })
   const { prevWayId, nextWayId } = chainNeighborIds(chain, centerWayId)

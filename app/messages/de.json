@@ -87,6 +87,7 @@
   "table_clear_cell": "löschen",
   "table_column_tag": "Tag",
   "table_center_badge": "Mitte",
+  "table_dual_badge": "Gegenfahrbahn",
   "table_diff_from_center_left": "Diff links der Mitte",
   "table_diff_from_center_right": "Diff rechts der Mitte",
   "table_direction_normalized": "Richtung normalisiert",

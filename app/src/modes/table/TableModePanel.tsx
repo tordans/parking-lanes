@@ -24,10 +24,9 @@ import { TagDiffTable } from './components/TagDiffTable'
 import { suggestPropagateFromCenter, type PropagateSuggestion } from './domain/suggestions'
 import { applyTableTagToWay, resolveTableEditBaseWay } from './domain/table-edits'
 import { buildTagRows, partitionTagRows } from './domain/tag-diff'
+import { buildTableDisplayChain, TABLE_CHAIN_MAX_PER_SIDE } from './domain/window-table-chain'
 import { useTableChain, useTableMapActions, useTablePendingJunctions } from './map/table-map-store'
 import { useTableOsmChangeHandler } from './use-table-mode-handlers'
-
-const CHAIN_MAX_PER_SIDE = 5
 
 export function TableModePanel() {
   const selectedOsmRef = useSelectedOsmRef()
@@ -39,7 +38,7 @@ export function TableModePanel() {
   // Rebuild runs only in TableModeLayers — avoid racing two buildChain calls.
   const { extendAtJunction, recenterOnWay } = useWayChainBuilder({
     centerWayId,
-    maxPerSide: CHAIN_MAX_PER_SIDE,
+    maxPerSide: TABLE_CHAIN_MAX_PER_SIDE,
     setChainResult,
     rebuild: false,
   })
@@ -96,7 +95,10 @@ export function TableModePanel() {
     )
   }
 
-  const activeChain = { segments: chain.segments, centerIndex: liveCenterIndex }
+  // Walk/junction actions keep the full stored chain; the matrix only shows ±5
+  // around the live centre (plus dual-carriageway siblings beside their pairs).
+  const actionChain = { segments: chain.segments, centerIndex: liveCenterIndex }
+  const activeChain = buildTableDisplayChain(chain.segments, liveCenterIndex, graph)
   const rows = buildTagRows(activeChain)
   const groups = partitionTagRows(rows)
   const suggestions = suggestPropagateFromCenter(
@@ -173,7 +175,7 @@ export function TableModePanel() {
           <ChainNavigator
             pendingJunctions={pendingJunctions}
             onJunctionPick={(choice, wayId) => {
-              void extendAtJunction(choice, wayId, activeChain).then(() => walkToWay(wayId))
+              void extendAtJunction(choice, wayId, actionChain).then(() => walkToWay(wayId))
             }}
           />
         </div>

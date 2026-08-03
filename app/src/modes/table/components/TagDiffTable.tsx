@@ -344,6 +344,7 @@ type SegmentColumn = {
   id: number
   tags: Record<string, string>
   reversed?: boolean
+  dualSiblingOf?: number
 }
 
 type Props = {
@@ -376,6 +377,7 @@ const columnHelper = createColumnHelper<TagRow>()
 type SegmentColumnDef = {
   id: number
   reversed?: boolean
+  dualSiblingOf?: number
 }
 
 function buildSegmentColumns(segments: SegmentColumnDef[]) {
@@ -433,6 +435,10 @@ function buildSegmentColumns(segments: SegmentColumnDef[]) {
               {isCenter ? (
                 <span className="rounded bg-blue-600 px-1 py-px font-medium text-white">
                   {m.table_center_badge()}
+                </span>
+              ) : segment.dualSiblingOf != null ? (
+                <span className="rounded bg-zinc-500 px-1 py-px font-medium text-white">
+                  {m.table_dual_badge()}
                 </span>
               ) : null}
             </div>
@@ -531,7 +537,7 @@ export function TagDiffTable({
   // Column defs only depend on segment identity/orientation — tag edits update `data`, not columns.
   // Explicit useMemo: this file opts out of React Compiler (`use no memo`) for TanStack Table.
   const segmentColumnKey = segments
-    .map((segment) => `${segment.id}:${segment.reversed ? 1 : 0}`)
+    .map((segment) => `${segment.id}:${segment.reversed ? 1 : 0}:${segment.dualSiblingOf ?? ''}`)
     .join('|')
   const columns = useMemo(
     function memoizeSegmentColumns() {
@@ -539,8 +545,12 @@ export function TagDiffTable({
         .split('|')
         .filter(Boolean)
         .map((entry) => {
-          const [id, reversed] = entry.split(':')
-          return { id: Number(id), reversed: reversed === '1' }
+          const [id, reversed, dualSiblingOf] = entry.split(':')
+          return {
+            id: Number(id),
+            reversed: reversed === '1',
+            dualSiblingOf: dualSiblingOf ? Number(dualSiblingOf) : undefined,
+          }
         })
       return buildSegmentColumns(defs)
     },
