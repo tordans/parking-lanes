@@ -11,11 +11,7 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Plus, Trash2 } from '
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '../../../components/catalyst/input'
 import { isYesNoCompatibleValue, YesNoRadioInput } from '../../../components/tag-editor'
-import {
-  tagEditorFieldClassName,
-  tagEditorValueButtonDividerClassName,
-  tagEditorValueButtonGroupCompactClassName,
-} from '../../../components/tag-editor/tag-editor-controls'
+import { tagEditorFieldClassName } from '../../../components/tag-editor/tag-editor-controls'
 import { Tooltip } from '../../../components/Tooltip/Tooltip'
 import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
@@ -72,13 +68,7 @@ function centerColumnHighlightClass(isCenter: boolean | undefined): string | fal
   return Boolean(isCenter) && 'bg-blue-50'
 }
 
-function DiffDirectionMark({
-  direction,
-  tone,
-}: {
-  direction: 'left' | 'right'
-  tone: 'header' | 'row'
-}) {
+function DiffDirectionMark({ direction }: { direction: 'left' | 'right' }) {
   const Icon = direction === 'left' ? ChevronLeft : ChevronRight
   const label =
     direction === 'left' ? m.table_diff_from_center_left() : m.table_diff_from_center_right()
@@ -87,11 +77,7 @@ function DiffDirectionMark({
     <span
       title={label}
       aria-hidden
-      className={clsx(
-        'pointer-events-none absolute top-1/2 left-0 z-10 flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200',
-        tone === 'header' && 'opacity-90',
-        tone === 'row' && 'opacity-0 transition-opacity group-hover/row:opacity-100',
-      )}
+      className="pointer-events-none absolute top-1/2 left-0 z-10 flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 opacity-90 ring-1 ring-zinc-200"
     >
       <Icon className="size-3" strokeWidth={2.5} />
     </span>
@@ -116,53 +102,49 @@ function NeighborImportGlyph({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-function NeighborImportButtons({
-  leftValue,
-  rightValue,
-  hasLeft,
-  hasRight,
-  disabled,
+function NeighborImportButton({
+  side,
+  neighborValue,
+  currentValue,
+  hasNeighbor,
   onApply,
 }: {
-  leftValue: string | undefined
-  rightValue: string | undefined
-  hasLeft: boolean
-  hasRight: boolean
-  disabled?: boolean
+  side: 'left' | 'right'
+  neighborValue: string | undefined
+  currentValue: string | undefined
+  hasNeighbor: boolean
   onApply: (value: string | undefined) => void
 }) {
+  const sameAsCurrent = hasNeighbor && neighborValue === currentValue
+  const disabled = !hasNeighbor || sameAsCurrent
+  const label = sameAsCurrent
+    ? side === 'left'
+      ? m.table_use_from_left_same()
+      : m.table_use_from_right_same()
+    : side === 'left'
+      ? m.table_use_from_left()
+      : m.table_use_from_right()
+
   return (
-    <div className={clsx(tagEditorValueButtonGroupCompactClassName, 'shrink-0')}>
-      <Tooltip content={m.table_use_from_left()} placement="top">
-        <span className="inline-flex">
-          <button
-            type="button"
-            disabled={disabled || !hasLeft}
-            aria-label={m.table_use_from_left()}
-            className="flex h-5 w-5 cursor-pointer items-center justify-center bg-white text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={() => onApply(leftValue)}
-          >
-            <NeighborImportGlyph side="left" />
-          </button>
-        </span>
-      </Tooltip>
-      <Tooltip content={m.table_use_from_right()} placement="top">
-        <span className="inline-flex">
-          <button
-            type="button"
-            disabled={disabled || !hasRight}
-            aria-label={m.table_use_from_right()}
-            className={clsx(
-              'flex h-5 w-5 cursor-pointer items-center justify-center bg-white text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40',
-              tagEditorValueButtonDividerClassName,
-            )}
-            onClick={() => onApply(rightValue)}
-          >
-            <NeighborImportGlyph side="right" />
-          </button>
-        </span>
-      </Tooltip>
-    </div>
+    <Tooltip content={label} placement="top">
+      <span className="inline-flex h-full shrink-0">
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={label}
+          className={clsx(
+            'flex h-full w-5 cursor-pointer items-center justify-center bg-white/80 text-zinc-700',
+            'hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40',
+            // Square against the column line; soft radius only toward the editor.
+            side === 'left' && 'rounded-r-sm border-r border-zinc-200',
+            side === 'right' && 'rounded-l-sm border-l border-zinc-200',
+          )}
+          onClick={() => onApply(neighborValue)}
+        >
+          <NeighborImportGlyph side={side} />
+        </button>
+      </span>
+    </Tooltip>
   )
 }
 
@@ -226,65 +208,76 @@ function EditableCell({
   const displayValue = value ?? ''
   const useYesNo = isYesNoCompatibleValue(displayValue)
 
+  function applyNeighbor(next: string | undefined) {
+    if (next === undefined || next === '') {
+      onClear?.()
+      return
+    }
+    onCommit(next)
+  }
+
   return (
     <div
       className={clsx(
-        'group relative flex h-full items-center gap-0.5 border-r border-b border-zinc-200 px-1 py-0.5',
+        'group relative flex h-full items-stretch border-r border-b border-zinc-200',
         isCenter
           ? clsx(centerColumnHighlightClass(true), status === 'missing' && 'text-zinc-400')
           : getDiffStatusClass(status),
       )}
     >
-      <NeighborImportButtons
-        leftValue={leftValue}
-        rightValue={rightValue}
-        hasLeft={hasLeft}
-        hasRight={hasRight}
-        onApply={(next) => {
-          if (next === undefined || next === '') {
-            onClear?.()
-            return
-          }
-          onCommit(next)
-        }}
+      <NeighborImportButton
+        side="left"
+        neighborValue={leftValue}
+        currentValue={value}
+        hasNeighbor={hasLeft}
+        onApply={applyNeighbor}
       />
-      <div className="min-w-0 flex-1">
-        {useYesNo ? (
-          <YesNoRadioInput
-            name={tagKey}
-            value={displayValue}
-            onChange={(next) => {
-              if (next === '') {
-                onClear?.()
-                return
-              }
-              onCommit(next)
+      <div className="relative flex min-w-0 flex-1 items-center gap-0.5 px-1 py-0.5">
+        <div className="min-w-0 flex-1">
+          {useYesNo ? (
+            <YesNoRadioInput
+              name={tagKey}
+              value={displayValue}
+              onChange={(next) => {
+                if (next === '') {
+                  onClear?.()
+                  return
+                }
+                onCommit(next)
+              }}
+            />
+          ) : (
+            <TableTextInput
+              key={displayValue}
+              tagKey={tagKey}
+              value={displayValue}
+              onCommit={onCommit}
+            />
+          )}
+        </div>
+        {value !== undefined && onClear ? (
+          <button
+            type="button"
+            aria-label={m.editor_clear_value()}
+            title={m.editor_clear_value()}
+            className="absolute top-0.5 right-0.5 inline-flex size-3.5 items-center justify-center rounded-sm text-zinc-400 opacity-0 hover:bg-zinc-950/5 hover:text-red-600 group-hover:opacity-100"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onClear()
             }}
-          />
-        ) : (
-          <TableTextInput
-            key={displayValue}
-            tagKey={tagKey}
-            value={displayValue}
-            onCommit={onCommit}
-          />
-        )}
+          >
+            <Trash2 className="size-2.5" strokeWidth={2.25} aria-hidden />
+          </button>
+        ) : null}
       </div>
-      {value !== undefined && onClear ? (
-        <button
-          type="button"
-          aria-label={m.editor_clear_value()}
-          title={m.editor_clear_value()}
-          className="absolute top-0.5 right-0.5 inline-flex size-3.5 items-center justify-center rounded-sm text-zinc-400 opacity-0 hover:bg-zinc-950/5 hover:text-red-600 group-hover:opacity-100"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onClear()
-          }}
-        >
-          <Trash2 className="size-2.5" strokeWidth={2.25} aria-hidden />
-        </button>
-      ) : null}
+      <NeighborImportButton
+        side="right"
+        neighborValue={rightValue}
+        currentValue={value}
+        hasNeighbor={hasRight}
+        onApply={applyNeighbor}
+      />
     </div>
   )
 }
@@ -424,7 +417,7 @@ function buildSegmentColumns(segments: SegmentColumnDef[]) {
                 isSelected && !isCenter && 'bg-blue-50',
               )}
             >
-              {directionMark ? <DiffDirectionMark direction={directionMark} tone="header" /> : null}
+              {directionMark ? <DiffDirectionMark direction={directionMark} /> : null}
               <button
                 type="button"
                 className={clsx('font-mono text-blue-700 hover:underline', panelMetaClassName)}
@@ -451,54 +444,42 @@ function buildSegmentColumns(segments: SegmentColumnDef[]) {
           if (!cell) return null
           const meta = table.options.meta as TableMeta
           const isCenter = cell.segmentId === meta.centerSegmentId
-          const directionMark =
-            segmentIndex === 0
-              ? null
-              : segmentIndex <= meta.centerIndex
-                ? ('left' as const)
-                : ('right' as const)
 
           if (!isCenter || !meta.editable) {
             return (
-              <div className="relative h-full">
-                {directionMark ? <DiffDirectionMark direction={directionMark} tone="row" /> : null}
-                <ValueCell
-                  tagKey={row.original.key}
-                  value={cell.value}
-                  status={cell.status}
-                  isCenter={isCenter}
-                />
-              </div>
+              <ValueCell
+                tagKey={row.original.key}
+                value={cell.value}
+                status={cell.status}
+                isCenter={isCenter}
+              />
             )
           }
 
           const leftCell = segmentIndex > 0 ? cells[segmentIndex - 1] : undefined
           const rightCell = segmentIndex < cells.length - 1 ? cells[segmentIndex + 1] : undefined
           return (
-            <div className="relative h-full">
-              {directionMark ? <DiffDirectionMark direction={directionMark} tone="row" /> : null}
-              <ValueCell
-                tagKey={row.original.key}
-                value={cell.value}
-                status={cell.status}
-                isCenter
-                editable
-                leftValue={leftCell?.value}
-                rightValue={rightCell?.value}
-                hasLeft={leftCell != null}
-                hasRight={rightCell != null}
-                onCommit={
-                  meta.onCellChange
-                    ? (next) => meta.onCellChange?.(cell.segmentId, row.original.key, next)
-                    : undefined
-                }
-                onClear={
-                  meta.onCellClear
-                    ? () => meta.onCellClear?.(cell.segmentId, row.original.key)
-                    : undefined
-                }
-              />
-            </div>
+            <ValueCell
+              tagKey={row.original.key}
+              value={cell.value}
+              status={cell.status}
+              isCenter
+              editable
+              leftValue={leftCell?.value}
+              rightValue={rightCell?.value}
+              hasLeft={leftCell != null}
+              hasRight={rightCell != null}
+              onCommit={
+                meta.onCellChange
+                  ? (next) => meta.onCellChange?.(cell.segmentId, row.original.key, next)
+                  : undefined
+              }
+              onClear={
+                meta.onCellClear
+                  ? () => meta.onCellClear?.(cell.segmentId, row.original.key)
+                  : undefined
+              }
+            />
           )
         },
       }),
@@ -657,7 +638,7 @@ export function TagDiffTable({
           </div>
 
           <div
-            className="group/table relative"
+            className="relative"
             style={{ height: rowVirtualizer.getTotalSize(), width: totalWidth, minWidth: '100%' }}
           >
             {virtualItems.map((virtualItem) => {
@@ -715,10 +696,7 @@ export function TagDiffTable({
                   key={tableRow.id}
                   data-index={virtualItem.index}
                   ref={rowVirtualizer.measureElement}
-                  className={clsx(
-                    'group/row absolute top-0 left-0 flex transition-opacity',
-                    'hover:bg-zinc-50 group-hover/table:opacity-40 hover:!opacity-100',
-                  )}
+                  className="absolute top-0 left-0 flex"
                   style={{
                     top: virtualItem.start,
                     width: totalWidth,
