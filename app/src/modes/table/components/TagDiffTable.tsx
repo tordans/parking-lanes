@@ -13,6 +13,7 @@ import { Input } from '../../../components/catalyst/input'
 import { isYesNoCompatibleValue, YesNoRadioInput } from '../../../components/tag-editor'
 import { tagEditorFieldClassName } from '../../../components/tag-editor/tag-editor-controls'
 import { Tooltip } from '../../../components/Tooltip/Tooltip'
+import { useBreakpoint } from '../../../hooks/useBreakpoint'
 import type { TagDiffCell, TagDiffStatus, TagGroupSection, TagRow } from '../domain/tag-diff'
 import { getDiffStatusClass } from '../domain/tag-diff'
 import type { TableTagGroupId } from '../domain/tag-groups'
@@ -23,7 +24,9 @@ import { useTableGroupOpen, useTableGroupUiActions } from '../map/table-group-ui
 /* TanStack Table uses a mutable stable instance — incompatible with React Compiler memoization. */
 /* oxlint-disable react/react-compiler, react-hooks-js/incompatible-library */
 
-const TAG_COL_WIDTH = 132
+/** Compact default; widen on very large viewports so long keys need less hover. */
+const TAG_COL_WIDTH_COMPACT = 100
+const TAG_COL_WIDTH_WIDE = 148
 const SEGMENT_COL_WIDTH = 200
 const HEADER_ROW_HEIGHT = 36
 const GROUP_HEADER_HEIGHT = 24
@@ -33,6 +36,29 @@ const ESTIMATED_ROW_HEIGHT = 28
 const panelTextClassName = 'text-xs leading-tight'
 const panelMetaClassName = 'text-[11px] leading-tight'
 
+/** Rough mono `text-xs` fit — used only to decide whether to attach a full-key title. */
+function isApproxTagLabelTruncated(label: string, colWidthPx: number): boolean {
+  const paddingPx = 14
+  const charPx = 7
+  return label.length * charPx > colWidthPx - paddingPx
+}
+
+function TruncatedTagKeyLabel({
+  osmKey,
+  label,
+  colWidthPx,
+}: {
+  osmKey: string
+  label: string
+  colWidthPx: number
+}) {
+  const truncated = isApproxTagLabelTruncated(label, colWidthPx)
+  return (
+    <span className="block truncate" title={truncated ? osmKey : undefined}>
+      {label}
+    </span>
+  )
+}
 /** Vertical panel scrollport (skip the matrix’s own overflow-x scroller). */
 function findNearestVerticalScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node = el?.parentElement ?? null
@@ -381,20 +407,16 @@ type SegmentColumnDef = {
   dualSiblingOf?: number
 }
 
-function buildSegmentColumns(segments: SegmentColumnDef[]) {
+function buildSegmentColumns(segments: SegmentColumnDef[], tagColWidth: number) {
   return [
     columnHelper.accessor('key', {
       id: 'tag',
-      size: TAG_COL_WIDTH,
+      size: tagColWidth,
       header: () => m.table_column_tag(),
       cell: (info) => {
         const key = info.getValue()
         const label = formatTableTagKeyLabel(key, classifyTagKey(key))
-        return (
-          <span className="block truncate" title={key}>
-            {label}
-          </span>
-        )
+        return <TruncatedTagKeyLabel osmKey={key} label={label} colWidthPx={tagColWidth} />
       },
     }),
     ...segments.map((segment, segmentIndex) =>
@@ -509,6 +531,8 @@ export function TagDiffTable({
   const centerSegmentId = segments[centerIndex]?.id ?? -1
   const scrollRef = useRef<HTMLDivElement>(null)
   const { toggleGroup } = useTableGroupUiActions()
+  const wideTagCol = useBreakpoint('2xl')
+  const tagColWidth = wideTagCol ? TAG_COL_WIDTH_WIDE : TAG_COL_WIDTH_COMPACT
 
   const openByGroup = {
     centerline: useTableGroupOpen('centerline'),
@@ -555,9 +579,9 @@ export function TagDiffTable({
             dualSiblingOf: dualSiblingOf ? Number(dualSiblingOf) : undefined,
           }
         })
-      return buildSegmentColumns(defs)
+      return buildSegmentColumns(defs, tagColWidth)
     },
-    [segmentColumnKey],
+    [segmentColumnKey, tagColWidth],
   )
 
   const flatRows = flatItems
@@ -602,12 +626,12 @@ export function TagDiffTable({
       const scroller = scrollRef.current
       if (!scroller || centerIndex < 0 || centerSegmentId < 0) return
 
-      const stickyGutter = TAG_COL_WIDTH
-      const centerMid = TAG_COL_WIDTH + centerIndex * SEGMENT_COL_WIDTH + SEGMENT_COL_WIDTH / 2
+      const stickyGutter = tagColWidth
+      const centerMid = tagColWidth + centerIndex * SEGMENT_COL_WIDTH + SEGMENT_COL_WIDTH / 2
       const visibleContentWidth = Math.max(0, scroller.clientWidth - stickyGutter)
       scroller.scrollLeft = Math.max(0, centerMid - stickyGutter - visibleContentWidth / 2)
     },
-    [centerIndex, centerSegmentId, segments.length, totalWidth],
+    [centerIndex, centerSegmentId, segments.length, totalWidth, tagColWidth],
   )
 
   return (
