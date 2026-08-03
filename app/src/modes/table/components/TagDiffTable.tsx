@@ -127,13 +127,13 @@ function NeighborImportButton({
 
   return (
     <Tooltip content={label} placement="top">
-      <span className="inline-flex h-full shrink-0">
+      <span className="inline-flex h-5 shrink-0 self-center">
         <button
           type="button"
           disabled={disabled}
           aria-label={label}
           className={clsx(
-            'flex h-full w-5 cursor-pointer items-center justify-center bg-white/80 text-zinc-700',
+            'flex h-5 w-5 cursor-pointer items-center justify-center bg-white/80 text-zinc-700',
             'hover:bg-zinc-50 active:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40',
             // Square against the column line; soft radius only toward the editor.
             side === 'left' && 'rounded-r-sm border-r border-zinc-200',
@@ -219,7 +219,7 @@ function EditableCell({
   return (
     <div
       className={clsx(
-        'group relative flex h-full items-stretch border-r border-b border-zinc-200',
+        'group relative flex h-full items-center border-r border-b border-zinc-200',
         isCenter
           ? clsx(centerColumnHighlightClass(true), status === 'missing' && 'text-zinc-400')
           : getDiffStatusClass(status),
