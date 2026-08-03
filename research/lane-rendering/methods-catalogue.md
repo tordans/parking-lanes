@@ -185,7 +185,7 @@ Do **not** force one renderer to do both jobs.
 |-------|------------------|-----|
 | **muv-osm `lanes()` / osm2streets `get_lane_specs_ltr`** | **Yes — as parse gold standard** (compare or call) | Active shared semantics; StreetExplorer parity; already recommended in [muv-osm.md](../lane-editor-tags/projects/muv-osm.md) |
 | **osm2streets-js full network + GeoJSON map render** | **No for panel v1** | Built for map/network transforms (zip sidepaths, collapse dual cw, intersection polygons). Heavy WASM, graph model, and UX assumptions don’t match “edit this OSM way’s tags in a React panel.” |
-| **osm2streets `lane_markings.rs` drawing** | **Steal ideas, don’t embed** | Marking style logic is useful; wiring it means adopting their `StreetNetwork` lifecycle |
+| **osm2streets `lane_markings.rs` drawing** | **Steal ideas, don’t embed** | Marking style + LTR `shift_from_center` thickening are useful; wiring them means adopting their `StreetNetwork` / map-GeoJSON lifecycle. Deep dive: [osm2streets.md § Lane editor](../lane-editor-tags/projects/osm2streets.md#lane-editor--lane-drawing); demo: [lane_editor.html](https://a-b-street.github.io/osm2streets/lane_editor.html#1/0/0) |
 | **osm2lanes-js `getLaneSpecs` only** | **Optional bridge** | Smallest WASM surface if TS `@osm-editor-kit/osm-lanes` drifts from muv |
 
 **Recommendation:** keep **parsing in the TypeScript package** (`@osm-editor-kit/osm-lanes`) as the editor’s source of truth for round-trip tagging; add **fixture/parity tests against muv** (or a thin WASM `getLaneSpecs` in CI / optional “compare with muv” mode). Do **not** drive the React panel off osm2streets GeoJSON rendering.
@@ -270,7 +270,7 @@ Implementation notes:
 |----------|-----|
 | Map Machine | https://github.com/enzet/map-machine |
 | A/B Street osm_viewer | https://play.abstreet.org/0.3.49/osm_viewer.html |
-| osm2streets lane editor | https://a-b-street.github.io/osm2streets/lane_editor.html |
+| osm2streets lane editor | https://a-b-street.github.io/osm2streets/lane_editor.html#1/0/0 |
 | Straßenraumkarte Neukölln | https://strassenraumkarte.osm-berlin.org/ |
 | SRK preprocess | https://github.com/osmberlin/strassenraumkarte-neukoelln/blob/main/mapstyle/post_processing.py |
 | Imagico maze pt.2 | https://blog.imagico.de/navigating-the-maze-part-2/ |

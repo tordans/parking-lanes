@@ -2,7 +2,9 @@
 
 **See also:** [muv-osm.md](./muv-osm.md) — external `muv-osm` crate that performs per-way lane parsing (since [PR #233](https://github.com/a-b-street/osm2streets/pull/233)); osm2streets `osm2lanes/src/algorithm.rs` is the translation layer.
 
-Research snapshot for [a-b-street/osm2streets](https://github.com/a-b-street/osm2streets). Sources: README, `CHANGES.md`, `CONTRIBUTING.md`, `docs/how_it_works.md`, `osm2lanes/src/algorithm.rs`, `osm2streets/src/transform/mod.rs`, `tests/README.md`.
+Research snapshot for [a-b-street/osm2streets](https://github.com/a-b-street/osm2streets). Sources: README, `CHANGES.md`, `CONTRIBUTING.md`, `docs/how_it_works.md`, `osm2lanes/src/algorithm.rs`, `osm2streets/src/transform/mod.rs`, `tests/README.md`, plus primary lane-editor / render source cited below.
+
+**Fetch date (lane editor & drawing):** 2026-08-03 (`main` branch).
 
 ## Overview and features
 
@@ -17,10 +19,18 @@ Research snapshot for [a-b-street/osm2streets](https://github.com/a-b-street/osm
 
 **Planned** (README): turning movements, crosswalks, bike boxes, pedestrian islands, modal filters, lane width changes.
 
-### Rendering
+### Rendering (summary)
 
-- GeoJSON: lane and intersection polygons
-- Lane markings: lines between lanes, schematic turn arrows and access restrictions (`osm2streets/src/render/lane_markings.rs`)
+The library emits **map-space GeoJSON** for a full `StreetNetwork`, not a schematic cross-section panel:
+
+| Output | API | Source |
+|--------|-----|--------|
+| Road + intersection fill polygons | `to_geojson` / `toGeojsonPlain` | [`render/mod.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/mod.rs) — road = `center_line.make_polygons(total_width())` |
+| One polygon per lane | `to_lane_polygons_geojson` / `toLanePolygonsGeojson` | same file — lane centreline × `lane.width` |
+| Painted markings (web UI path) | `to_lane_markings_geojson` / `toLaneMarkingsGeojson` | [`lane_markings.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/lane_markings.rs) |
+| Newer semantic markings + paint | `calculate_markings` / `calculate_paint_areas` | [`output.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/output.rs) + [`paint.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/paint.rs) — **not** wired through `osm2streets-js` / lane editor as of 2026-08-03 |
+
+Lane editor drawing mechanics: see **[Lane editor & lane drawing](#lane-editor--lane-drawing)** below.
 
 ### Network-level transformations
 
@@ -135,8 +145,163 @@ API explicitly **not stable** — README asks contributors to get in touch befor
 | [route_snapper](https://github.com/dabreegster/route_snapper/) | MapLibre line snapping |
 | [osm2streets-vector-tileserver](https://github.com/jakecoppinger/osm2streets-vector-tileserver) | Dynamic vector tiles |
 | [safe-cycling-map](https://github.com/jakecoppinger/safe-cycling-map) | Mapbox example |
-| [Lane editor](https://a-b-street.github.io/osm2streets/lane_editor.html) | Edit OSM tags → visual lane result |
+| [Lane editor](https://a-b-street.github.io/osm2streets/lane_editor.html) | Edit OSM tags → visual lane result on the **map** (GeoJSON polygons) |
 | **Planned** | iD and JOSM plugins for detailed street display/edit |
+
+## Lane editor & lane drawing
+
+**Live demo:** [lane_editor.html](https://a-b-street.github.io/osm2streets/lane_editor.html#1/0/0)  
+**Web app:** Svelte + MapLibre + `osm2streets-js` WASM ([`web/README.md`](https://github.com/a-b-street/osm2streets/blob/main/web/README.md), [`web/src/lane-editor/`](https://github.com/a-b-street/osm2streets/tree/main/web/src/lane-editor))  
+**Investigated:** 2026-08-03 against `main`.
+
+### What the UI actually shows
+
+The lane editor is **not** a Streetmix-style schematic cross-section. It is a **map view** of the full imported `StreetNetwork`:
+
+| Layer (Svelte) | WASM call | Geometry |
+|----------------|-----------|----------|
+| [`RenderLanePolygons.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/common/layers/RenderLanePolygons.svelte) | `toLanePolygonsGeojson()` | One filled polygon per lane |
+| [`RenderLaneMarkings.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/common/layers/RenderLaneMarkings.svelte) | `toLaneMarkingsGeojson()` | Separators, arrows, parking hatches, sidewalk ticks, … |
+| Intersection polygon / marking layers | matching `toIntersection*` APIs | Junction fills + markings |
+| Selection highlight | `getGeometryForWay(wayId)` | Wide buffer around the way’s **original** OSM polyline + direction chevrons |
+
+Edit UX ([`App.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/lane-editor/App.svelte), [`Tags.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/lane-editor/Tags.svelte)):
+
+1. Click a lane polygon → resolve `osm_way_ids` (alert if ≠ 1 way after transforms).
+2. Sidebar lists that way’s OSM tags (key/value rows).
+3. **Recalculate** → `overwriteOsmTagsForWay` → MapLibre layers re-read GeoJSON from the mutated network.
+4. Export edited ways as `.osc` (change file) via [`AllEdits.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/lane-editor/AllEdits.svelte).
+
+There is **no** drag-to-reorder lane strip in this app. Tag text → re-parse → redraw. Warnings in the UI explicitly caution about sidepaths, dual carriageways, and clipped ways.
+
+### Edit → draw pipeline (runtime)
+
+```text
+OSM XML (Overpass / fixture)
+        │
+        ▼
+JsStreetNetwork::new  ──► streets_reader::osm_to_street_network
+        │                   (split ways, clip, fill lane_specs_ltr via get_lane_specs_ltr / muv)
+        │
+        ▼
+apply_transformations(standard_for_clipped_areas [+ optional experiments])
+        │
+        ▼
+update geometry (trim centres to intersection polygons)
+        │
+        ▼
+MapLibre fills from toLanePolygonsGeojson / toLaneMarkingsGeojson
+        │
+user edits tags ──► overwriteOsmTagsForWay(way, tags)
+        │              • get_lane_specs_ltr again on affected Road(s)
+        │              • Placement::parse → reference_line_placement
+        │              • update_center_line(driving_side)
+        │              • update_i on endpoint intersections
+        ▼
+same GeoJSON render path (no full re-import)
+```
+
+Source: [`osm2streets-js/src/lib.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets-js/src/lib.rs) (`overwrite_osm_tags_for_way`, import options).
+
+### Default transforms in the lane editor
+
+Import settings ([`Osm2streetsSettings.svelte`](https://github.com/a-b-street/osm2streets/blob/main/web/src/common/import/Osm2streetsSettings.svelte)) default to:
+
+| Option | Default | Effect on drawing |
+|--------|---------|-------------------|
+| Dual carriageway experiment | **off** | No `MergeDualCarriageways` |
+| Sidepath zipping experiment | **off** | No `ZipSidepaths` |
+| Infer sidewalks on roads | **off** (`inferred_sidewalks: false`) | Uses mapped footways / tagged sidewalks only |
+| Infer kerbs | **on** | Curb `Buffer` lanes from muv kerb indices |
+
+So a typical lane-editor session draws **close-to-OSM** roads (plus `standard_for_clipped_areas` collapses), not the experimental dual/sidepath merges — those are opt-in checkboxes.
+
+### How LTR specs become map polygons
+
+Core data on each `Road` ([`road.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/road.rs)):
+
+| Field | Role |
+|-------|------|
+| `reference_line` | Original (smoothed) OSM centreline; may sit anywhere in the stack per placement |
+| `reference_line_placement` | Parsed `placement*` (`Consistent` / `Varying` / `Transition`) |
+| `center_line` | Physical centre of the **full** lane stack (`RoadPosition::FullWidthCenter`), after placement shift + later trim |
+| `lane_specs_ltr` | Ordered lanes: type, direction, width (metres) |
+| `trim_start` / `trim_end` | How much to shorten/extend at each intersection |
+
+**Step A — place the road centre relative to the OSM way**
+
+`get_untrimmed_center_line`:
+
+1. Resolve placement → a `RoadPosition` (default `Center` = midpoint of the *roadway* bands, excluding outer sidewalks/buffers; `FullWidthCenter` = half of `total_width()`).
+2. `left_edge_offset_of(position)` = metres from the left edge of the LTR stack to that anchor.
+3. Shift `reference_line` by `(FullWidthCenter offset − placement offset)` so the drawn stack sits correctly around the tagged OSM line.
+
+Limitations encoded in the same function: **`placement=transition` falls back to `Center`**; **`Varying(start,end)` uses only the start** (“varying placement not yet supported”).
+
+**Step B — one centreline per lane**
+
+`get_lane_center_lines`:
+
+```text
+total_width = Σ lane.width
+width_so_far = 0
+for each lane in lane_specs_ltr:
+  width_so_far += lane.width / 2
+  lane_centre = center_line.shift_from_center(total_width, width_so_far)
+  width_so_far += lane.width / 2
+```
+
+So each lane is a parallel offset of the road `center_line`, not an independent buffer of the OSM way.
+
+**Step C — thicken to polygons**
+
+[`to_lane_polygons_geojson`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/mod.rs): for each `(lane, lane_centre)`, emit `lane_centre.make_polygons(lane.width)` as GeoJSON (GPS via `gps_bounds`). Road-level fill uses `center_line.make_polygons(total_width())`.
+
+**Step D — intersection trim**
+
+After import (and after tag overwrite via `update_i`), road centres are trimmed so thickened roads meet intersection polygons at (approximately) right angles. Algorithm overview: [A/B Street geometry deep dive](https://a-b-street.github.io/docs/tech/map/geometry/index.html) (article marked outdated in `docs/how_it_works.md`, but still the conceptual reference); implementation under [`osm2streets/src/geometry/`](https://github.com/a-b-street/osm2streets/tree/main/osm2streets/src/geometry) + [`operations/update_geometry.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/operations/update_geometry.rs).
+
+### How markings are drawn
+
+[`lane_markings.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2streets/src/render/lane_markings.rs) walks adjacent LTR pairs and each lane’s centreline (reversed when `Direction::Backward` for travel-oriented glyphs):
+
+| Marking | Rule (simplified) |
+|---------|-------------------|
+| Centre line | Between opposite-direction neighbours → dashed polygons on the shared edge |
+| Lane separator | Between two `Driving` lanes same direction → different dash pattern |
+| Lane arrows | Travel lanes only; stepped along centre (~20 m), triangle arrow outlines |
+| Stop lines | From `road.stop_line_start/end` distances when tagged/set |
+| Buffer stripes | Non-curb `Buffer_*` → edge lines + diagonal hatch |
+| Parking hatch | Parallel / diagonal / perpendicular spot ticks from config lengths |
+| Sidewalk lines | Perpendicular ticks along sidewalk centres |
+| Path outlines | Dashed edges for `SharedUse` / `Footway` |
+
+This is the path the **web UI** uses. A newer `calculate_markings` / `paint` stack exists in-tree but is **not** exposed on `JsStreetNetwork` yet.
+
+### Placement tags (drawing-relevant)
+
+Parsed in [`osm2lanes/src/placement.rs`](https://github.com/a-b-street/osm2streets/blob/main/osm2lanes/src/placement.rs) (`placement`, `placement:forward/backward`, `*:start`/`*:end`, `left_of:` / `middle_of:` / `right_of:` / `separation`). Drawing consumes the result only as a lateral shift of `reference_line` → `center_line` (see Step A). Fixture: `tests/src/fremantle_placement/`.
+
+### Comparison to our road-space sketch
+
+| Concern | osm2streets lane editor | Our panel (`docs/lanes-road-space-approach.md`) |
+|---------|-------------------------|--------------------------------------------------|
+| Canvas | Geographic MapLibre polygons | Abstract SVG corridor in a panel |
+| Scope | Whole clipped network | Selected way (+ optional prev/next stubs) |
+| Edit surface | Raw OSM tag rows → recalculate | Matrix form; sketch is read-only |
+| Parse | muv via `get_lane_specs_ltr` at runtime | TS `@osm-editor-kit/osm-lanes` (+ muv parity tests) |
+| Sidewalks | Optional inference; can zip sidepaths | Never invent; `*=separate` = text hint only |
+| Dual carriageways | Optional merge experiment | Local spread, no graph merge |
+| Placement | Shifts geo centreline; transition/varying incomplete | Drives schematic offsets; transition still limited |
+| Parking | Drawn as lane polygons + hatches | Not in lane diagram (own mode) |
+
+**Takeaways for us:** steal the **LTR width accumulation + placement offset** mental model and marking taxonomy; do **not** adopt the WASM `StreetNetwork` lifecycle or map-space thickening for the edit panel. Their editor confirms the product split we already chose: map-faithful network render ≠ tag-editing sketch.
+
+### Still thin / unverified
+
+- Exact `PolyLine::shift_from_center` / `make_polygons` math lives in the external `geom` crate (A/B Street), not re-derived here.
+- Whether every post-edit `update_i` fully re-runs intersection polygon logic vs partial refresh — read as “updates endpoints”; edge cases around multi-way roads after collapse not exercised in this pass.
+- `output.rs` / `paint.rs` semantic marking model: present in Rust, unused by the published lane editor.
 
 ## Source index
 
@@ -156,7 +321,7 @@ API explicitly **not stable** — README asks contributors to get in touch befor
 | osm2streets-java | https://github.com/a-b-street/osm2streets/tree/main/osm2streets-java |
 | Regression tests | https://github.com/a-b-street/osm2streets/tree/main/tests |
 | StreetExplorer | https://a-b-street.github.io/osm2streets/ |
-| Lane editor demo | https://a-b-street.github.io/osm2streets/lane_editor.html |
+| Lane editor demo | https://a-b-street.github.io/osm2streets/lane_editor.html#1/0/0 |
 | Intersection geometry article | https://a-b-street.github.io/docs/tech/map/geometry/index.html |
 | FOSSGIS talk | https://dabreegster.github.io/talks/map_model_v2/slides.html |
 | SOTM 2022 talk | https://dabreegster.github.io/talks/sotm_2022/slides.html |
