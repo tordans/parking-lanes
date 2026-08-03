@@ -137,9 +137,9 @@ export function TableBottomPanel() {
     <div
       ref={panelRef}
       tabIndex={0}
-      className="flex h-full flex-col gap-3 overflow-y-auto p-3 outline-none"
+      className="flex h-full flex-col gap-3 overflow-hidden p-3 outline-none"
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex shrink-0 flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <div className="flex shrink-0 items-center gap-1">
@@ -193,11 +193,13 @@ export function TableBottomPanel() {
         onCellClear={clearCell}
       />
 
-      <PropagateSuggestions
-        suggestions={suggestions}
-        disabled={readOnly}
-        onApply={applySuggestion}
-      />
+      <div className="max-h-28 shrink-0 overflow-y-auto">
+        <PropagateSuggestions
+          suggestions={suggestions}
+          disabled={readOnly}
+          onApply={applySuggestion}
+        />
+      </div>
     </div>
   )
 }
