@@ -21,9 +21,6 @@ import { FocusFilterButton } from './FocusFilterButton'
 import { MapToolbarLoadingIndicator } from './MapToolbarLoadingIndicator'
 import { SplitWayButton } from './SplitWayButton'
 
-/** Expand full mode tabs when the map chrome container is at least this wide. */
-const MODE_SWITCHER_EXPANDED = '@[40rem]/map'
-
 export function ModeSwitcher() {
   const navigate = useNavigate({ from: '/$mode' })
   const { mode: currentMode } = useParams({ from: '/$mode' })
@@ -40,8 +37,13 @@ export function ModeSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
+      {/*
+        Full class strings required — Tailwind only emits container queries it can
+        see as complete unbroken names. Expands when `@container/map` ≥ 40rem so a
+        wide sidebar on a narrow viewport still collapses modes.
+      */}
       <div
-        className={clsx(mapToolbarButtonGroupClassName, 'hidden', `${MODE_SWITCHER_EXPANDED}:flex`)}
+        className={clsx(mapToolbarButtonGroupClassName, 'hidden @[40rem]/map:flex')}
         role="tablist"
         aria-label={m.shell_mode_switcher_aria()}
       >
@@ -94,7 +96,7 @@ export function ModeSwitcher() {
         })}
       </div>
 
-      <div className={clsx('flex', `${MODE_SWITCHER_EXPANDED}:hidden`)}>
+      <div className="flex @[40rem]/map:hidden">
         <ModeSwitcherCompact currentMode={currentMode} onSelect={selectMode} />
       </div>
 
