@@ -118,18 +118,25 @@ flowchart TD
 
 `cycleway:left/right/both=lane` (and related) **expands into the stack** beside car lanes — they are not assumed to already be counted in `lanes=` unless tagged that way.
 
-### Separate cycleways
+### Separate cycleways / sidewalks (tag vs geometry)
 
-A parallel `highway=cycleway` is a **hint** for the sketch (dashed sibling band), not invented geometry on the main way. Double-modelling (cycleway tags *and* a separate way) triggers a soft warning.
+Two different “separate” situations:
+
+| Situation | Sketch behaviour |
+|-----------|------------------|
+| `cycleway:*=separate` / `sidewalk=separate` (or `use_sidepath`) on the main way | **Text hint only** under the sketch — **no metre bands**. Optionally jump to a nearby separately mapped way when the app finds one. |
+| Parallel `highway=cycleway` / `highway=footway` + `footway=sidewalk` as its own OSM way | Hint / dashed sibling when linked; not invented metres on the main way’s stack. |
+
+Double-modelling (side tags *and* a separate way) triggers a soft warning. We do **not** zip sidepaths onto the main carriageway the way osm2streets sometimes does.
 
 ### Sidewalks — strict existence rules
 
 | Tag situation | Sketch behaviour |
 |---------------|------------------|
 | Untagged | **Absent** — we never invent sidewalks |
-| `sidewalk=left/right/both` | Existence hint → kerb-adjacent band on that side |
+| `sidewalk=left/right/both` (on-way values) | Existence → kerb-adjacent **metre** band on that side |
 | `sidewalk=none` / `no` | Explicitly absent |
-| Separate `highway=footway` + `footway=sidewalk` | Parallel layer hint when relation to main way is known |
+| `sidewalk=separate` | Text hint only — see above |
 
 We do **not** run osm2streets-style sidewalk inference as OSM truth.
 
@@ -191,7 +198,8 @@ Getting left/right and forward/backward wrong silently flips the whole sketch. W
 | WASM muv at runtime | No — TS parse + fixture parity | Shared Rust binary in the browser |
 | osm2streets network | No for panel | Full intersection polygons in-editor |
 | Chip strip UI | Removed | HTML chip cross-section as primary edit |
-| Separate footway geometry | Hint band, not merge | ZipSidepaths / graph merge |
+| `*=separate` on main way | Text hint only, no metre bands | Draw invented sidepath metres |
+| Separate footway/cycleway way | Hint / link, not merge | ZipSidepaths / graph merge |
 | Incomplete dual tagging | Placeholder + warning | Heuristic dual merge |
 
 ---
@@ -247,7 +255,7 @@ When adding behaviour, prefer a **fixture + audit entry** over ad-hoc screenshot
 | **Scene** | JSON-serializable layout output (rects, polylines, metadata) before SVG. |
 | **Clear width** | Metre width of the lane band; excludes paint-only separator stroke. |
 | **Dual spread** | Local vertex/spacing adjustment so dual carriageways draw parallel past a median. |
-| **Separate (cycleway/sidewalk)** | Mapped on another way; shown as hint, not merged topology. |
+| **Separate (cycleway/sidewalk)** | Either a main-way tag (`*=separate`) → text hint, no metres; or infrastructure on another way → hint/link, not merged topology. |
 
 ---
 
