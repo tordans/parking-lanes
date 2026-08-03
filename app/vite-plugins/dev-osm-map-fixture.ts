@@ -1,9 +1,10 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+// Relative path so Vite's config bundler inlines the TS (package subpath is Node-externalized).
 import {
   createDevOsmMapFixtureHandler,
   DEV_OSM_MAP_FIXTURE_ROUTE,
-} from '@osm-editor-kit/osm-coverage/dev-osm-map-fixture'
+} from '../../packages/osm-coverage/src/dev-osm-map-fixture/index'
 import type { Plugin } from 'vite'
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
