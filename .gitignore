@@ -12,3 +12,6 @@ node_modules
 
 # Local dev OSM map fixture (downloaded by app predev)
 app/src/modes/parking/fixtures/dev-map-bbox.json
+
+# Transient lock for concurrent paraglide compiles
+app/.paraglide-compile.lock

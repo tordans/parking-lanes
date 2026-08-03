@@ -11,7 +11,7 @@
     "predev": "bun run --filter @osm-editor-kit/osm-maplibre fetch-openfreemap-style && bun run scripts/ensure-dev-osm-fixture.ts && bun run build:paraglide",
     "dev": "vite",
     "build": "bun run build:paraglide && vite build",
-    "build:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./paraglide --strategy localStorage baseLocale",
+    "build:paraglide": "bun run scripts/build-paraglide.ts",
     "preview": "vite preview",
     "pretype-check": "bun run build:paraglide",
     "type-check": "tsc --noEmit",
