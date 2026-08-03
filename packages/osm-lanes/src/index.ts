@@ -28,7 +28,7 @@ export {
   syncModelCountsFromSlots,
 } from './edit-slots'
 
-export { parseWayLanes } from './parse'
+export { effectiveTagsForParse, parseWayLanes } from './parse'
 export { serializeWayLanes } from './serialize'
 export { validateWayLanes } from './validate'
 

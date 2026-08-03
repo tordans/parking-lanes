@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModeRouteImport } from './routes/$mode'
-import { Route as AuditLanesRouteImport } from './routes/audit-lanes'
+import { Route as AuditLanesRouteRouteImport } from './routes/audit-lanes/route'
 import { Route as AuditWidthRouteImport } from './routes/audit-width'
+import { Route as AuditLanesIndexRouteImport } from './routes/audit-lanes/index'
+import { Route as AuditLanesDemoIdRouteImport } from './routes/audit-lanes/$demoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,7 +26,7 @@ const ModeRoute = ModeRouteImport.update({
   path: '/$mode',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuditLanesRoute = AuditLanesRouteImport.update({
+const AuditLanesRouteRoute = AuditLanesRouteRouteImport.update({
   id: '/audit-lanes',
   path: '/audit-lanes',
   getParentRoute: () => rootRouteImport,
@@ -34,38 +36,66 @@ const AuditWidthRoute = AuditWidthRouteImport.update({
   path: '/audit-width',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditLanesIndexRoute = AuditLanesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuditLanesRouteRoute,
+} as any)
+const AuditLanesDemoIdRoute = AuditLanesDemoIdRouteImport.update({
+  id: '/$demoId',
+  path: '/$demoId',
+  getParentRoute: () => AuditLanesRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit-lanes': typeof AuditLanesRouteRouteWithChildren
   '/$mode': typeof ModeRoute
-  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
+  '/audit-lanes/$demoId': typeof AuditLanesDemoIdRoute
+  '/audit-lanes/': typeof AuditLanesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$mode': typeof ModeRoute
-  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
+  '/audit-lanes/$demoId': typeof AuditLanesDemoIdRoute
+  '/audit-lanes': typeof AuditLanesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit-lanes': typeof AuditLanesRouteRouteWithChildren
   '/$mode': typeof ModeRoute
-  '/audit-lanes': typeof AuditLanesRoute
   '/audit-width': typeof AuditWidthRoute
+  '/audit-lanes/$demoId': typeof AuditLanesDemoIdRoute
+  '/audit-lanes/': typeof AuditLanesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$mode' | '/audit-lanes' | '/audit-width'
+  fullPaths:
+    | '/'
+    | '/audit-lanes'
+    | '/$mode'
+    | '/audit-width'
+    | '/audit-lanes/$demoId'
+    | '/audit-lanes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$mode' | '/audit-lanes' | '/audit-width'
-  id: '__root__' | '/' | '/$mode' | '/audit-lanes' | '/audit-width'
+  to: '/' | '/$mode' | '/audit-width' | '/audit-lanes/$demoId' | '/audit-lanes'
+  id:
+    | '__root__'
+    | '/'
+    | '/audit-lanes'
+    | '/$mode'
+    | '/audit-width'
+    | '/audit-lanes/$demoId'
+    | '/audit-lanes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditLanesRouteRoute: typeof AuditLanesRouteRouteWithChildren
   ModeRoute: typeof ModeRoute
-  AuditLanesRoute: typeof AuditLanesRoute
   AuditWidthRoute: typeof AuditWidthRoute
 }
 
@@ -89,7 +119,7 @@ declare module '@tanstack/react-router' {
       id: '/audit-lanes'
       path: '/audit-lanes'
       fullPath: '/audit-lanes'
-      preLoaderRoute: typeof AuditLanesRouteImport
+      preLoaderRoute: typeof AuditLanesRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit-width': {
@@ -99,13 +129,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditWidthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit-lanes/': {
+      id: '/audit-lanes/'
+      path: '/'
+      fullPath: '/audit-lanes/'
+      preLoaderRoute: typeof AuditLanesIndexRouteImport
+      parentRoute: typeof AuditLanesRouteRoute
+    }
+    '/audit-lanes/$demoId': {
+      id: '/audit-lanes/$demoId'
+      path: '/$demoId'
+      fullPath: '/audit-lanes/$demoId'
+      preLoaderRoute: typeof AuditLanesDemoIdRouteImport
+      parentRoute: typeof AuditLanesRouteRoute
+    }
   }
 }
 
+interface AuditLanesRouteRouteChildren {
+  AuditLanesDemoIdRoute: typeof AuditLanesDemoIdRoute
+  AuditLanesIndexRoute: typeof AuditLanesIndexRoute
+}
+
+const AuditLanesRouteRouteChildren: AuditLanesRouteRouteChildren = {
+  AuditLanesDemoIdRoute: AuditLanesDemoIdRoute,
+  AuditLanesIndexRoute: AuditLanesIndexRoute,
+}
+
+const AuditLanesRouteRouteWithChildren = AuditLanesRouteRoute._addFileChildren(
+  AuditLanesRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditLanesRouteRoute: AuditLanesRouteRouteWithChildren,
   ModeRoute: ModeRoute,
-  AuditLanesRoute: AuditLanesRoute,
   AuditWidthRoute: AuditWidthRoute,
 }
 export const routeTree = rootRouteImport

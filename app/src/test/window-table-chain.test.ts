@@ -98,7 +98,7 @@ describe('originalOsmKeyIfDirectionFlipped', () => {
 
 describe('insertDualCarriagewaySiblings', () => {
   test('inserts opposite dual branch beside its pair without shifting centre when after centre', () => {
-    // Shared node 99: center dual and sibling meet at an endpoint.
+    // Antiparallel dual branches ~15 m apart (lon offset ≈ 0.00022° at lat 52).
     const center = makeSegment(100, {
       nodeIds: [1, 99],
       tags: {
@@ -111,7 +111,7 @@ describe('insertDualCarriagewaySiblings', () => {
     const siblingWay = {
       id: 200,
       version: 1,
-      nodes: [99, 2],
+      nodes: [20, 21],
       tags: {
         highway: 'primary',
         oneway: 'yes',
@@ -134,8 +134,9 @@ describe('insertDualCarriagewaySiblings', () => {
       nodeCoords: {
         0: [52, 13],
         1: [52, 13.001],
-        99: [52, 13.002],
-        2: [52.001, 13.002],
+        99: [52.001, 13.001],
+        20: [52.001, 13.00122],
+        21: [52, 13.00122],
       },
     } as unknown as ParsedOsmData
 

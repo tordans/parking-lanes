@@ -16,6 +16,8 @@ export type RoadSpaceSlot = {
   direction: RoadSpaceDirection
   widthM: number
   widthProvenance: RoadSpaceProvenance
+  /** Cross-section side for on-carriageway cycle lanes from sided tags. */
+  side?: 'left' | 'right'
   turn?: string
   access?: { vehicle?: string; bicycle?: string; bus?: string }
   segregated?: boolean
@@ -51,21 +53,20 @@ export type RoadSpaceSegment = {
   laneMarkings: boolean
   /** Sidepaths tagged `separate` — text hint only, no geometry / metres. */
   separatelyMapped?: SeparatelyMappedSidepath[]
+  /** Opposite dual branch not resolved in loaded OSM data — text hint only. */
+  unresolvedSiblingHint?: boolean
   fork?: {
     gapM: number
     leftSlotIds: string[]
     rightSlotIds: string[]
     dimmedSide?: 'left' | 'right'
-    /**
-     * Fallback sibling footprint when the opposite dual branch is unknown.
-     * Prefer `siblingSlots` when the parallel way was resolved.
-     */
-    placeholderWidthM?: number
     /** Real opposite-branch slots (already LTR for the dimmed side). */
     siblingSlots?: RoadSpaceSlot[]
     siblingWayId?: number
     /** What the median gap represents (default verge). */
     medianHint?: RoadSpaceMedianHint
+    /** Opposite branch unknown — median edge line only, no placeholder width. */
+    unresolvedSibling?: boolean
   }
 }
 
@@ -148,6 +149,40 @@ export type SceneCarriagewayPlate = {
   points: Array<{ x: number; y: number }>
 }
 
+export type SceneDebugCorrespondenceLink = {
+  /** Index into the segment-pair correspondence list (segments[i] ↔ segments[i+1]). */
+  segmentPairIndex: number
+  indexA: number
+  indexB: number
+  branchA: 'travel' | 'sibling'
+  branchB: 'travel' | 'sibling'
+  xAbove: number
+  yAbove: number
+  xBelow: number
+  yBelow: number
+}
+
+export type SceneDebugBandOffset = {
+  bandIndex: number
+  wayId: number
+  role: RoadSpaceSegmentRole
+  /** Solved LTR stack left edge (metres, anchor-relative chain). */
+  stackLeftM: number
+  /** Solved LTR stack left edge (px, after layout crop). */
+  stackLeftX: number
+  provenance: 'anchor' | 'chained'
+  /** Tagged placement-only stack left (px) when `placement=*` is present. */
+  taggedStackLeftX?: number
+  /** Solved minus tagged stack offset (metres); large values trigger placement warnings. */
+  placementDeltaM?: number
+}
+
+/** Optional layout debug metadata for audit overlays — omitted in default editor scenes. */
+export type RoadSpaceSceneDebug = {
+  correspondenceLinks: SceneDebugCorrespondenceLink[]
+  bandOffsets: SceneDebugBandOffset[]
+}
+
 export type RoadSpaceScene = {
   widthPx: number
   heightPx: number
@@ -163,9 +198,13 @@ export type RoadSpaceScene = {
   polylines: ScenePolyline[]
   /** Union of segment `separatelyMapped` hints (text only; no geometry). */
   separatelyMapped?: SeparatelyMappedSidepath[]
+  /** Segments where the opposite dual branch was not resolved (text only). */
+  unresolvedSibling?: boolean
   /**
    * Placement tagging problems that make a shared centreline guide geometrically
    * inconsistent across the corridor (by definition the ribbons will shear).
    */
   placementIssues?: string[]
+  /** Correspondence / offset provenance for audit overlays. */
+  debug?: RoadSpaceSceneDebug
 }

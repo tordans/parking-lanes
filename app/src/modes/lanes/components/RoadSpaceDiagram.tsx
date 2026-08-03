@@ -48,6 +48,10 @@ const COLORS = {
   medianIcon: '#65a30d', // lime-600 — grass verge
   crossingIcon: '#57534e', // stone-600
   carriagewayPlate: '#e7e5e4', // stone-200 — subtle asphalt behind motor/bus
+  debugLink: '#0891b2', // cyan-600
+  debugAnchor: '#16a34a', // green-600
+  debugChained: '#64748b', // slate-500
+  debugPlacementDelta: '#d97706', // amber-600
 } as const
 
 function kindFill(kind: SceneSlotRectKind, tagged: boolean): string {
@@ -641,6 +645,99 @@ function SlotRect({
   )
 }
 
+const PLACEMENT_DELTA_WARN_M = 0.35
+
+function DebugOverlay({ scene }: { scene: RoadSpaceScene }): ReactElement | null {
+  const debug = scene.debug
+  if (!debug) return null
+
+  return (
+    <g pointerEvents="none" aria-hidden data-overlay="lane-debug">
+      {debug.correspondenceLinks.map((link, i) => (
+        <line
+          key={`corr-${link.segmentPairIndex}-${link.indexA}-${link.indexB}-${i}`}
+          x1={link.xAbove}
+          y1={link.yAbove}
+          x2={link.xBelow}
+          y2={link.yBelow}
+          stroke={COLORS.debugLink}
+          strokeWidth={1}
+          strokeDasharray="3 2"
+          opacity={0.75}
+        />
+      ))}
+
+      {debug.bandOffsets.map((offset) => {
+        const band = scene.bands[offset.bandIndex]
+        if (!band) return null
+        const midY = band.y + band.height / 2
+        const labelX = 4
+        const provenanceColor =
+          offset.provenance === 'anchor' ? COLORS.debugAnchor : COLORS.debugChained
+        const hasPlacementWarn =
+          offset.placementDeltaM != null &&
+          Math.abs(offset.placementDeltaM) > PLACEMENT_DELTA_WARN_M
+
+        return (
+          <g key={`offset-${offset.bandIndex}`}>
+            <line
+              x1={offset.stackLeftX}
+              y1={band.y + 2}
+              x2={offset.stackLeftX}
+              y2={band.y + band.height - 2}
+              stroke={provenanceColor}
+              strokeWidth={1.5}
+              opacity={0.85}
+            />
+            <text
+              x={labelX}
+              y={midY - 3}
+              fontSize={9}
+              fill={provenanceColor}
+              fontFamily="ui-monospace, monospace"
+            >
+              {offset.provenance === 'anchor' ? '⚓' : '⇢'} {offset.stackLeftM.toFixed(2)} m
+            </text>
+            <text
+              x={labelX}
+              y={midY + 9}
+              fontSize={8}
+              fill={provenanceColor}
+              fontFamily="ui-monospace, monospace"
+              opacity={0.85}
+            >
+              way {offset.wayId} · {offset.role}
+            </text>
+            {hasPlacementWarn && offset.taggedStackLeftX != null ? (
+              <>
+                <line
+                  x1={offset.taggedStackLeftX}
+                  y1={midY - 6}
+                  x2={offset.stackLeftX}
+                  y2={midY - 6}
+                  stroke={COLORS.debugPlacementDelta}
+                  strokeWidth={1.25}
+                  strokeDasharray="2 2"
+                  opacity={0.9}
+                />
+                <text
+                  x={Math.min(offset.taggedStackLeftX, offset.stackLeftX) + 2}
+                  y={midY - 8}
+                  fontSize={8}
+                  fill={COLORS.debugPlacementDelta}
+                  fontFamily="ui-monospace, monospace"
+                >
+                  Δ{offset.placementDeltaM!.toFixed(2)} m
+                </text>
+              </>
+            ) : null}
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
 /**
  * Render-only plan-sketch diagram. No hit-testing, no focusable children,
  * no stores — callers drive `highlightedSlotId` from the form.
@@ -654,6 +751,7 @@ export function RoadSpaceDiagram({
   highlightedSlotId,
   className,
   siblingLabel = 'Opposite carriageway',
+  debug = false,
 }: {
   scene: RoadSpaceScene
   ariaLabel: string
@@ -661,6 +759,8 @@ export function RoadSpaceDiagram({
   className?: string
   /** Label drawn inside `label: 'sibling'` placeholder rects. */
   siblingLabel?: string
+  /** Audit overlay: correspondence links, solved offsets, placement deltas. */
+  debug?: boolean
 }): ReactElement {
   const ribbons = scene.ribbons ?? []
   const ribbonsCoverTravel = ribbons.length > 0
@@ -770,6 +870,8 @@ export function RoadSpaceDiagram({
             </g>
           )
         })}
+
+      {debug ? <DebugOverlay scene={scene} /> : null}
     </svg>
   )
 }

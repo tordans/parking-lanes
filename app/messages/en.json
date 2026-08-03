@@ -125,6 +125,7 @@
   "lanes_separately_mapped_sidewalk_right": "Right sidewalk is mapped as its own way",
   "lanes_separately_mapped_cycleway_left": "Left cycleway is mapped as its own way",
   "lanes_separately_mapped_cycleway_right": "Right cycleway is mapped as its own way",
+  "lanes_unresolved_dual_sibling": "Opposite carriageway is not in the loaded map data",
   "lanes_way_level_title": "Way-level tags",
   "lanes_sidewalk_unknown": "Sidewalk unknown — no edge slots until sidewalk or sidewalk:left/right/both is tagged.",
   "lanes_presence_left": "left",

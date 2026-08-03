@@ -1,6 +1,8 @@
+import { slicesCorrespond, turnSignature, type StackCorrespondence } from './correspondence'
+
+export { turnSignature } from './correspondence'
 import { TAPER_FRAC } from './defaults'
 import type {
-  RoadSpaceProvenance,
   RoadSpaceSegment,
   RoadSpaceSlot,
   SceneRibbon,
@@ -45,6 +47,9 @@ type BandGeometry = {
 type SlotSlice = {
   bandIndex: number
   slotIndex: number
+  /** Upper-segment index for glue-band slices (correspondence indexA). */
+  corrIndexA?: number
+  corrBranchA?: 'travel' | 'sibling'
   slot: RoadSpaceSlot
   wayId: number
   leftX: number
@@ -56,26 +61,6 @@ type SlotSlice = {
   isSibling: boolean
   isPlaceholder: boolean
   turnKey: string
-}
-
-/** Normalized turn role for correspondence — keeps pockets separate from through lanes. */
-export function turnSignature(slot: RoadSpaceSlot): string {
-  if (slot == null) return 'none'
-  if (!slot.turn) {
-    if (slot.direction === 'none') return 'none'
-    return 'through'
-  }
-  const tokens = slot.turn
-    .split(';')
-    .map((t) => t.trim())
-    .filter(Boolean)
-  if (tokens.length === 0) return 'through'
-  if (tokens.some((t) => t === 'left' || t === 'sharp_left' || t === 'slight_left')) return 'left'
-  if (tokens.some((t) => t === 'right' || t === 'sharp_right' || t === 'slight_right')) {
-    return 'right'
-  }
-  if (tokens.includes('through') || tokens.includes('none')) return 'through'
-  return tokens.slice().sort().join('+')
 }
 
 function ordinalInTurnGroup(slots: RoadSpaceSlot[], index: number): number {
@@ -145,10 +130,31 @@ function isDualPlainSeam(a: BandGeometry, b: BandGeometry): boolean {
   return hasFork(a) !== hasFork(b)
 }
 
+function sliceGeometry(
+  band: BandGeometry,
+  index: number,
+  isSibling: boolean,
+  metersToPx: number,
+): { slot: RoadSpaceSlot; leftX: number; rightX: number; wayId: number } | null {
+  if (isSibling) {
+    const slot = band.segment.fork?.siblingSlots?.[index]
+    const leftX = band.siblingSlotLeftX?.[index]
+    if (!slot || leftX == null) return null
+    const rightX = round2(leftX + slot.widthM * metersToPx)
+    return { slot, leftX, rightX, wayId: band.segment.fork?.siblingWayId ?? band.segment.wayId }
+  }
+  const slot = band.segment.slots[index]
+  const leftX = band.slotLeftX[index]
+  if (!slot || leftX == null) return null
+  const rightX = round2(leftX + slot.widthM * metersToPx)
+  return { slot, leftX, rightX, wayId: band.segment.wayId }
+}
+
 function collectBandSlices(
   bands: BandGeometry[],
   metersToPx: number,
   extentForBand: (i: number) => { y: number; height: number },
+  corrBetweenBands: StackCorrespondence[],
 ): SlotSlice[] {
   const slices: SlotSlice[] = []
 
@@ -200,38 +206,14 @@ function collectBandSlices(
           turnKey: turnSignature(slot),
         })
       }
-    } else if (fork && band.placeholder && fork.placeholderWidthM != null) {
-      const widthM = fork.placeholderWidthM
-      slices.push({
-        bandIndex: bi,
-        slotIndex: 0,
-        slot: {
-          id: `way/${band.segment.wayId}/fork/placeholder`,
-          kind: 'motor',
-          zone: 'carriageway',
-          direction: 'none',
-          widthM,
-          widthProvenance: 'inferred' as RoadSpaceProvenance,
-          label: 'sibling',
-        },
-        wayId: band.segment.wayId,
-        leftX: band.placeholder.x,
-        rightX: round2(band.placeholder.x + band.placeholder.width),
-        centerX: round2(band.placeholder.x + band.placeholder.width / 2),
-        y: extent.y,
-        height: extent.height,
-        dimmed: true,
-        isSibling: true,
-        isPlaceholder: true,
-        turnKey: 'none',
-      })
     }
   }
 
   for (let bi = 0; bi < bands.length; bi++) {
     const band = bands[bi]!
     if (!band.segment.synthetic) continue
-    slices.push(...collectSyntheticSlices(bands, bi, metersToPx, extentForBand))
+    const corr = corrBetweenBands[bi - 1] ?? { pairs: [], unmatchedA: [], unmatchedB: [] }
+    slices.push(...collectSyntheticSlices(bands, bi, metersToPx, extentForBand, corr))
   }
 
   return slices
@@ -242,6 +224,7 @@ function collectSyntheticSlices(
   bi: number,
   metersToPx: number,
   extentForBand: (i: number) => { y: number; height: number },
+  corr: StackCorrespondence,
 ): SlotSlice[] {
   const above = bands[bi - 1]
   const below = bands[bi + 1]
@@ -249,51 +232,35 @@ function collectSyntheticSlices(
 
   const extent = extentForBand(bi)
   const out: SlotSlice[] = []
-  const belowMatched = new Set<number>()
+  const matchedBelow = new Set<string>()
 
-  for (let si = 0; si < above.segment.slots.length; si++) {
-    const aboveSlot = above.segment.slots[si]!
-    const aboveLeft = above.slotLeftX[si]!
-    const aboveRight = round2(aboveLeft + aboveSlot.widthM * metersToPx)
-
-    let bestIdx = -1
-    let bestScore = Infinity
-    const aboveOrd = ordinalInTurnGroup(above.segment.slots, si)
-    for (let bj = 0; bj < below.segment.slots.length; bj++) {
-      const belowSlot = below.segment.slots[bj]!
-      if (aboveSlot.zone !== belowSlot.zone || aboveSlot.kind !== belowSlot.kind) continue
-      if (aboveSlot.direction !== belowSlot.direction) continue
-      if (turnSignature(aboveSlot) !== turnSignature(belowSlot)) continue
-      if (ordinalInTurnGroup(below.segment.slots, bj) !== aboveOrd) continue
-      const belowLeft = below.slotLeftX[bj]!
-      const score = Math.abs(belowLeft - aboveLeft)
-      if (score < bestScore) {
-        bestScore = score
-        bestIdx = bj
-      }
-    }
-
-    if (bestIdx < 0) continue
-    belowMatched.add(bestIdx)
-    const belowSlot = below.segment.slots[bestIdx]!
-    const belowLeft = below.slotLeftX[bestIdx]!
-    const belowRight = round2(belowLeft + belowSlot.widthM * metersToPx)
-    const leftX = round2((aboveLeft + belowLeft) / 2)
-    const rightX = round2((aboveRight + belowRight) / 2)
+  for (const pair of corr.pairs) {
+    const branchA = pair.branchA ?? 'travel'
+    const branchB = pair.branchB ?? 'travel'
+    const isSiblingA = branchA === 'sibling'
+    const isSiblingB = branchB === 'sibling'
+    const aboveGeom = sliceGeometry(above, pair.indexA, isSiblingA, metersToPx)
+    const belowGeom = sliceGeometry(below, pair.indexB, isSiblingB, metersToPx)
+    if (!aboveGeom || !belowGeom) continue
+    matchedBelow.add(`${branchB}:${pair.indexB}`)
+    const leftX = round2((aboveGeom.leftX + belowGeom.leftX) / 2)
+    const rightX = round2((aboveGeom.rightX + belowGeom.rightX) / 2)
     out.push({
       bandIndex: bi,
-      slotIndex: bestIdx,
-      slot: belowSlot,
-      wayId: below.segment.wayId,
+      slotIndex: pair.indexB,
+      corrIndexA: pair.indexA,
+      corrBranchA: branchA,
+      slot: belowGeom.slot,
+      wayId: belowGeom.wayId,
       leftX,
       rightX,
       centerX: round2((leftX + rightX) / 2),
       y: extent.y,
       height: extent.height,
       dimmed: true,
-      isSibling: false,
+      isSibling: isSiblingB,
       isPlaceholder: false,
-      turnKey: turnSignature(belowSlot),
+      turnKey: turnSignature(belowGeom.slot),
     })
   }
 
@@ -301,118 +268,97 @@ function collectSyntheticSlices(
     .map((s, i) => (s.zone === 'carriageway' ? i : -1))
     .filter((i) => i >= 0)
 
-  // Appearing pockets on the below (narrower→wider going down).
-  for (let bj = 0; bj < below.segment.slots.length; bj++) {
-    if (belowMatched.has(bj)) continue
-    const belowSlot = below.segment.slots[bj]!
-    if (belowSlot.zone !== 'carriageway') continue
-
-    const belowLeft = below.slotLeftX[bj]!
-    const belowRight = round2(belowLeft + belowSlot.widthM * metersToPx)
-    const isRight = bj === cwIdxs[cwIdxs.length - 1]
-    const isLeft = bj === cwIdxs[0]
-
-    if (isRight && belowRight > above.rightKerbX + EPS) {
-      // Appear from hinge: zero-width at top of wedge, full pocket at bottom.
+  for (const u of corr.unmatchedB) {
+    const branch = u.branch ?? 'travel'
+    const key = `${branch}:${u.index}`
+    if (matchedBelow.has(key)) continue
+    const belowGeom = sliceGeometry(below, u.index, branch === 'sibling', metersToPx)
+    if (!belowGeom || belowGeom.slot.zone !== 'carriageway') continue
+    const isRight = !u.branch && u.index === cwIdxs[cwIdxs.length - 1]
+    const isLeft = !u.branch && u.index === cwIdxs[0]
+    if (isRight && belowGeom.rightX > above.rightKerbX + EPS) {
       const hinge = above.rightKerbX
       out.push({
         bandIndex: bi,
-        slotIndex: bj,
-        slot: belowSlot,
-        wayId: below.segment.wayId,
+        slotIndex: u.index,
+        slot: belowGeom.slot,
+        wayId: belowGeom.wayId,
         leftX: hinge,
         rightX: hinge,
         centerX: hinge,
         y: extent.y,
         height: extent.height,
         dimmed: true,
-        isSibling: false,
+        isSibling: branch === 'sibling',
         isPlaceholder: false,
-        turnKey: turnSignature(belowSlot),
+        turnKey: turnSignature(belowGeom.slot),
       })
-    } else if (isLeft && belowLeft < above.leftKerbX - EPS) {
+    } else if (isLeft && belowGeom.leftX < above.leftKerbX - EPS) {
       const hinge = above.leftKerbX
       out.push({
         bandIndex: bi,
-        slotIndex: bj,
-        slot: belowSlot,
-        wayId: below.segment.wayId,
+        slotIndex: u.index,
+        slot: belowGeom.slot,
+        wayId: belowGeom.wayId,
         leftX: hinge,
         rightX: hinge,
         centerX: hinge,
         y: extent.y,
         height: extent.height,
         dimmed: true,
-        isSibling: false,
+        isSibling: branch === 'sibling',
         isPlaceholder: false,
-        turnKey: turnSignature(belowSlot),
+        turnKey: turnSignature(belowGeom.slot),
       })
     }
   }
 
-  // Disappearing pockets on the above (wider→narrower going down) — taper into the continue kerb.
   const aboveCwIdxs = above.segment.slots
     .map((s, i) => (s.zone === 'carriageway' ? i : -1))
     .filter((i) => i >= 0)
-  for (let si = 0; si < above.segment.slots.length; si++) {
-    const aboveSlot = above.segment.slots[si]!
-    if (aboveSlot.zone !== 'carriageway') continue
-    // Already paired with a below slot via turn-aware match?
-    let paired = false
-    for (let bj = 0; bj < below.segment.slots.length; bj++) {
-      const belowSlot = below.segment.slots[bj]!
-      if (aboveSlot.zone !== belowSlot.zone || aboveSlot.kind !== belowSlot.kind) continue
-      if (aboveSlot.direction !== belowSlot.direction) continue
-      if (turnSignature(aboveSlot) !== turnSignature(belowSlot)) continue
-      if (
-        ordinalInTurnGroup(above.segment.slots, si) !== ordinalInTurnGroup(below.segment.slots, bj)
-      ) {
-        continue
-      }
-      paired = true
-      break
-    }
-    if (paired) continue
+  const matchedAbove = new Set(corr.pairs.map((p) => `${p.branchA ?? 'travel'}:${p.indexA}`))
 
-    const aboveLeft = above.slotLeftX[si]!
-    const aboveRight = round2(aboveLeft + aboveSlot.widthM * metersToPx)
-    const isRight = si === aboveCwIdxs[aboveCwIdxs.length - 1]
-    const isLeft = si === aboveCwIdxs[0]
-
-    if (isRight && aboveRight > below.rightKerbX + EPS) {
+  for (const u of corr.unmatchedA) {
+    const branch = u.branch ?? 'travel'
+    const key = `${branch}:${u.index}`
+    if (matchedAbove.has(key)) continue
+    const aboveGeom = sliceGeometry(above, u.index, branch === 'sibling', metersToPx)
+    if (!aboveGeom || aboveGeom.slot.zone !== 'carriageway') continue
+    const isRight = !u.branch && u.index === aboveCwIdxs[aboveCwIdxs.length - 1]
+    const isLeft = !u.branch && u.index === aboveCwIdxs[0]
+    if (isRight && aboveGeom.rightX > below.rightKerbX + EPS) {
       const hinge = below.rightKerbX
-      // Collapse to the continue kerb hinge so the pocket fill covers the full wedge.
       out.push({
         bandIndex: bi,
-        slotIndex: si,
-        slot: aboveSlot,
-        wayId: above.segment.wayId,
+        slotIndex: u.index,
+        slot: aboveGeom.slot,
+        wayId: aboveGeom.wayId,
         leftX: hinge,
         rightX: hinge,
         centerX: hinge,
         y: extent.y,
         height: extent.height,
         dimmed: true,
-        isSibling: false,
+        isSibling: branch === 'sibling',
         isPlaceholder: false,
-        turnKey: turnSignature(aboveSlot),
+        turnKey: turnSignature(aboveGeom.slot),
       })
-    } else if (isLeft && aboveLeft < below.leftKerbX - EPS) {
+    } else if (isLeft && aboveGeom.leftX < below.leftKerbX - EPS) {
       const hinge = below.leftKerbX
       out.push({
         bandIndex: bi,
-        slotIndex: si,
-        slot: aboveSlot,
-        wayId: above.segment.wayId,
+        slotIndex: u.index,
+        slot: aboveGeom.slot,
+        wayId: aboveGeom.wayId,
         leftX: hinge,
         rightX: hinge,
         centerX: hinge,
         y: extent.y,
         height: extent.height,
         dimmed: true,
-        isSibling: false,
+        isSibling: branch === 'sibling',
         isPlaceholder: false,
-        turnKey: turnSignature(aboveSlot),
+        turnKey: turnSignature(aboveGeom.slot),
       })
     }
   }
@@ -476,38 +422,58 @@ function pickBestCandidate(
   )
 }
 
-function canChain(a: SlotSlice, b: SlotSlice, bands: BandGeometry[]): boolean {
+function canChain(
+  a: SlotSlice,
+  b: SlotSlice,
+  bands: BandGeometry[],
+  corrBetweenBands: StackCorrespondence[],
+): boolean {
   if (Math.abs(a.bandIndex - b.bandIndex) !== 1) return false
-  const ba = bands[a.bandIndex]!
-  const bb = bands[b.bandIndex]!
-
   if (a.isSibling !== b.isSibling) return false
-
-  if (a.isSibling) {
-    if (!hasFork(ba) || !hasFork(bb)) return false
-  } else if (hasFork(ba) !== hasFork(bb)) {
-    return false
-  }
-
   if (a.isPlaceholder !== b.isPlaceholder) return false
-  if (a.slot.zone !== b.slot.zone || a.slot.kind !== b.slot.kind) return false
-  if (a.slot.direction !== b.slot.direction) return false
-  if (a.turnKey !== b.turnKey) return false
-
   if (a.isPlaceholder && b.isPlaceholder) return true
 
-  const aSlots = slotsForOrdinal(a, ba, bands)
-  const bSlots = slotsForOrdinal(b, bb, bands)
-  if (ordinalInTurnGroup(aSlots, a.slotIndex) !== ordinalInTurnGroup(bSlots, b.slotIndex)) {
+  const pairIdx = Math.min(a.bandIndex, b.bandIndex)
+  const corr = corrBetweenBands[pairIdx]
+  if (!corr) return false
+
+  const upper = a.bandIndex < b.bandIndex ? a : b
+  const lower = a.bandIndex < b.bandIndex ? b : a
+  const upperBand = bands[upper.bandIndex]!
+  const lowerBand = bands[lower.bandIndex]!
+
+  let indexA: number
+  let indexB: number
+  let branchA = upper.isSibling ? 'sibling' : 'travel'
+  let branchB = lower.isSibling ? 'sibling' : 'travel'
+
+  if (upperBand.segment.synthetic && !lowerBand.segment.synthetic) {
+    indexA = upper.corrIndexA ?? upper.slotIndex
+    indexB = lower.slotIndex
+    branchA = upper.corrBranchA ?? (upper.isSibling ? 'sibling' : 'travel')
+    branchB = lower.isSibling ? 'sibling' : 'travel'
+  } else if (!upperBand.segment.synthetic && lowerBand.segment.synthetic) {
+    indexA = upper.slotIndex
+    indexB = lower.slotIndex
+    branchA = upper.isSibling ? 'sibling' : 'travel'
+    branchB = lower.isSibling ? 'sibling' : 'travel'
+  } else if (!upperBand.segment.synthetic && !lowerBand.segment.synthetic) {
+    indexA = upper.slotIndex
+    indexB = lower.slotIndex
+  } else {
     return false
   }
 
-  return true
+  return slicesCorrespond(corr, indexA, branchA === 'sibling', indexB, branchB === 'sibling')
 }
 
 type Chain = SlotSlice[]
 
-function buildChains(slices: SlotSlice[], bands: BandGeometry[]): Chain[] {
+function buildChains(
+  slices: SlotSlice[],
+  bands: BandGeometry[],
+  corrBetweenBands: StackCorrespondence[],
+): Chain[] {
   const byBand: SlotSlice[][] = bands.map(() => [])
   for (const s of slices) byBand[s.bandIndex]!.push(s)
 
@@ -522,7 +488,9 @@ function buildChains(slices: SlotSlice[], bands: BandGeometry[]): Chain[] {
     used.add(start)
     let tail = start
     for (let bi = 1; bi < bands.length; bi++) {
-      const candidates = byBand[bi]!.filter((c) => !used.has(c) && canChain(tail, c, bands))
+      const candidates = byBand[bi]!.filter(
+        (c) => !used.has(c) && canChain(tail, c, bands, corrBetweenBands),
+      )
       const next = pickBest(tail, candidates)
       if (!next) break
       chain.push(next)
@@ -539,7 +507,9 @@ function buildChains(slices: SlotSlice[], bands: BandGeometry[]): Chain[] {
       used.add(s)
       let head = s
       for (let bj = bi - 1; bj >= 0; bj--) {
-        const candidates = byBand[bj]!.filter((c) => !used.has(c) && canChain(c, head, bands))
+        const candidates = byBand[bj]!.filter(
+          (c) => !used.has(c) && canChain(c, head, bands, corrBetweenBands),
+        )
         const prev = pickBest(head, candidates)
         if (!prev) break
         chain.unshift(prev)
@@ -548,7 +518,9 @@ function buildChains(slices: SlotSlice[], bands: BandGeometry[]): Chain[] {
       }
       let tail = s
       for (let bj = bi + 1; bj < bands.length; bj++) {
-        const candidates = byBand[bj]!.filter((c) => !used.has(c) && canChain(tail, c, bands))
+        const candidates = byBand[bj]!.filter(
+          (c) => !used.has(c) && canChain(tail, c, bands, corrBetweenBands),
+        )
         const next = pickBest(tail, candidates)
         if (!next) break
         chain.push(next)
@@ -732,13 +704,14 @@ function findCorrespondingInBand(
   bandIndex: number,
   allSlices: SlotSlice[],
   bands: BandGeometry[],
+  corrBetweenBands: StackCorrespondence[],
 ): SlotSlice | undefined {
   const candidates = allSlices.filter(
     (s) =>
       s.bandIndex === bandIndex &&
       s.isSibling === slice.isSibling &&
       s.isPlaceholder === slice.isPlaceholder &&
-      canChain(slice, s, bands),
+      canChain(slice, s, bands, corrBetweenBands),
   )
   return pickBestCandidate(slice, candidates, bands)
 }
@@ -749,6 +722,7 @@ export function enrichRibbonTapers(
   bands: BandGeometry[],
   _metersToPx: number,
   allSlices: SlotSlice[],
+  corrBetweenBands: StackCorrespondence[],
 ): void {
   for (const ribbon of ribbons) {
     if (ribbon.bandSlices.length === 0) continue
@@ -788,7 +762,7 @@ export function enrichRibbonTapers(
     // Lane appears at top of chain (prev band had no corresponding slot).
     if (
       head.bandIndex > 0 &&
-      !findCorrespondingInBand(head, head.bandIndex - 1, allSlices, bands) &&
+      !findCorrespondingInBand(head, head.bandIndex - 1, allSlices, bands, corrBetweenBands) &&
       head.slot.zone === 'carriageway'
     ) {
       const prev = bands[head.bandIndex - 1]!
@@ -831,7 +805,7 @@ export function enrichRibbonTapers(
     // Lane disappears at bottom of chain.
     if (
       tail.bandIndex < bands.length - 1 &&
-      !findCorrespondingInBand(tail, tail.bandIndex + 1, allSlices, bands) &&
+      !findCorrespondingInBand(tail, tail.bandIndex + 1, allSlices, bands, corrBetweenBands) &&
       tail.slot.zone === 'carriageway'
     ) {
       const next = bands[tail.bandIndex + 1]!
@@ -929,16 +903,17 @@ export function buildCorridorRibbons(
   bands: BandGeometry[],
   metersToPx: number,
   extentForBand: (i: number) => { y: number; height: number },
+  corrBetweenBands: StackCorrespondence[],
 ): SceneRibbon[] {
   if (bands.length === 0) return []
-  const slices = collectBandSlices(bands, metersToPx, extentForBand)
-  const chains = buildChains(slices, bands)
+  const slices = collectBandSlices(bands, metersToPx, extentForBand, corrBetweenBands)
+  const chains = buildChains(slices, bands, corrBetweenBands)
   const ribbons: SceneRibbon[] = []
   for (const chain of chains) {
     const ribbon = chainToRibbon(chain, bands)
     if (ribbon && ribbon.kind !== 'median') ribbons.push(ribbon)
   }
-  enrichRibbonTapers(ribbons, bands, metersToPx, slices)
+  enrichRibbonTapers(ribbons, bands, metersToPx, slices, corrBetweenBands)
   return ribbons
 }
 

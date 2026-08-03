@@ -1,20 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { buildRoadSpaceSegment } from '@osm-editor-kit/osm-lane-diagram'
 import { laneDiagramFixtures } from '@osm-editor-kit/osm-lane-diagram/fixtures'
-import {
-  normalizeTagsForDirection,
-  swapLeftRightKey,
-  type Segment,
-} from '@osm-editor-kit/osm-way-chain'
+import { mirrorTags, normalizeTagsForDirection, type Segment } from '@osm-editor-kit/osm-way-chain'
 import { orientNeighborForCenter } from '../modes/lanes/domain/orient-neighbor-tags'
 import { preferCloserBearing } from '../modes/lanes/use-lanes-fly-to-way'
 
 function swapAllLeftRight(tags: Record<string, string>): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [key, value] of Object.entries(tags)) {
-    out[/:left|:right/.test(key) ? swapLeftRightKey(key) : key] = value
-  }
-  return out
+  return mirrorTags(tags)
 }
 
 function segment(partial: {
@@ -54,14 +46,22 @@ describe('reversed neighbour orientation', () => {
     const forwardSeg = buildRoadSpaceSegment(forwardTags, { wayId: 1, role: 'current' })
     const orientedSeg = buildRoadSpaceSegment(normalised, { wayId: 2, role: 'prev' })
 
+    const carriagewayLabel = (seg: ReturnType<typeof buildRoadSpaceSegment>) =>
+      seg.slots
+        .filter((s) => s.zone === 'carriageway')
+        .map((s) => `${s.kind}:${s.side ?? ''}:${s.direction}`)
+
     // On-carriageway cycleway:right=lane becomes a cycle slot with direction forward (right edge).
     expect(forwardSeg.slots.map((s) => `${s.kind}:${s.direction}`)).toEqual(
       orientedSeg.slots.map((s) => `${s.kind}:${s.direction}`),
     )
+    expect(carriagewayLabel(forwardSeg)).toEqual(carriagewayLabel(orientedSeg))
     const forwardCycle = forwardSeg.slots.find((s) => s.kind === 'cycle')
     const orientedCycle = orientedSeg.slots.find((s) => s.kind === 'cycle')
     expect(forwardCycle?.direction).toBe('forward')
     expect(orientedCycle?.direction).toBe('forward')
+    expect(forwardCycle?.side).toBe('right')
+    expect(orientedCycle?.side).toBe('right')
   })
 
   test('un-normalised reversed tags would mirror the cycle lane to the left', () => {
@@ -70,6 +70,7 @@ describe('reversed neighbour orientation', () => {
     const cycle = mirrored.slots.find((s) => s.kind === 'cycle')
     // cycleway:left=lane → direction backward (left of LTR stack)
     expect(cycle?.direction).toBe('backward')
+    expect(cycle?.side).toBe('left')
   })
 })
 

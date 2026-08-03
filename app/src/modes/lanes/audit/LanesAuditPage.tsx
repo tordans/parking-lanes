@@ -1,6 +1,7 @@
 import type { RoadSpaceScene, RoadSpaceSegmentRole } from '@osm-editor-kit/osm-lane-diagram'
 import { laneDiagramFixtures, type DiagramFixture } from '@osm-editor-kit/osm-lane-diagram/fixtures'
-import { Link } from '@tanstack/react-router'
+import { Link, Outlet, useMatch } from '@tanstack/react-router'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, type ReactElement, type ReactNode } from 'react'
 import { APP_REPO_URL } from '../../../lib/app-identity'
 import {
@@ -11,55 +12,13 @@ import {
   ROAD_SPACE_SIBLING_SWATCH,
   separatelyMappedNotesEn,
 } from '../components/RoadSpaceDiagram'
+import { adjacentDemos, AUDIT_NAV_GROUPS, demoTitle, type AuditDemoId } from './audit-demos'
 import {
   formatTagLines,
   parseTagLines,
   sceneFromSegmentTags,
   type SegmentTagsInput,
 } from './build-scene'
-
-type FixtureGroupId = 'basic' | 'transitions' | 'islands' | 'bike' | 'width'
-
-const FIXTURE_GROUPS: readonly {
-  id: FixtureGroupId
-  label: string
-  fixtureIds: readonly string[]
-}[] = [
-  {
-    id: 'basic',
-    label: 'Basic',
-    fixtureIds: ['one-lane-each-way', 'two-lane-each-way'],
-  },
-  {
-    id: 'transitions',
-    label: 'Transitions & pockets',
-    fixtureIds: ['right-turn-pocket', 'turn-pocket-then-continue', 'placement-transition'],
-  },
-  {
-    id: 'islands',
-    label: 'Islands & junctions',
-    fixtureIds: ['dual-carriageway-island', 'karl-marx-dual-split', 't-junction', 'cross-junction'],
-  },
-  {
-    id: 'bike',
-    label: 'Bike & sidepaths',
-    fixtureIds: [
-      'mid-road-cycle-lane',
-      'oneway-sidewalks-cycle',
-      'shared-sidepath-segregated',
-      'shared-sidepath-not-segregated',
-      'contraflow-cycling',
-      'no-sidewalk-tagged',
-      'sidewalk-no-and-separate',
-      'reversed-neighbour',
-    ],
-  },
-  {
-    id: 'width',
-    label: 'Width reconciliation',
-    fixtureIds: ['width-vs-width-lanes', 'parking-bike-buffer', 'unmarked-carriageway'],
-  },
-]
 
 const ROLE_ORDER: readonly RoadSpaceSegmentRole[] = ['prev', 'current', 'next']
 
@@ -139,41 +98,6 @@ function SegmentTags({ fixture }: { fixture: DiagramFixture }): ReactElement {
   )
 }
 
-function FixtureArticle({ fixture }: { fixture: DiagramFixture }): ReactElement {
-  const scene = sceneForFixture(fixture)
-  const separateNotes = separatelyMappedNotesEn(scene.separatelyMapped)
-  return (
-    <article
-      id={fixture.id}
-      className="scroll-mt-6 border-t border-zinc-200 pt-8 first:border-t-0 first:pt-0"
-    >
-      <header className="mb-3 flex flex-col gap-1">
-        <h3 className="m-0 text-lg font-semibold text-zinc-900">{fixture.title}</h3>
-        <p className="m-0 text-sm text-zinc-600">{fixture.description}</p>
-      </header>
-      <div className="mb-4 overflow-x-auto rounded-sm border border-zinc-200 bg-white p-3">
-        <RoadSpaceDiagram scene={scene} ariaLabel={ariaLabelForFixture(fixture)} />
-        {separateNotes.length > 0 ? (
-          <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-zinc-500">
-            {separateNotes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        ) : null}
-        {scene.placementIssues && scene.placementIssues.length > 0 ? (
-          <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-amber-800">
-            {scene.placementIssues.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-      <SegmentTags fixture={fixture} />
-      {fixture.note ? <p className="mt-3 mb-0 text-xs text-zinc-500">{fixture.note}</p> : null}
-    </article>
-  )
-}
-
 function Legend(): ReactElement {
   const swatches: { label: string; color: string }[] = [
     { label: 'Motor (carriageway)', color: ROAD_SPACE_KIND_SWATCH.motor },
@@ -185,7 +109,7 @@ function Legend(): ReactElement {
     { label: 'Opposite carriageway', color: ROAD_SPACE_SIBLING_SWATCH },
   ]
   return (
-    <section aria-labelledby="legend-heading" className="mb-12 border-b border-zinc-200 pb-8">
+    <section aria-labelledby="legend-heading" className="mb-8 border-b border-zinc-200 pb-6">
       <h2
         id="legend-heading"
         className="m-0 mb-3 text-sm font-semibold tracking-wide text-zinc-500 uppercase"
@@ -262,6 +186,7 @@ function SandboxSection(): ReactElement {
   const [prevText, setPrevText] = useState('')
   const [currentText, setCurrentText] = useState(DEFAULT_SANDBOX_CURRENT)
   const [nextText, setNextText] = useState('')
+  const [showDebug, setShowDebug] = useState(false)
 
   const segments: SegmentTagsInput[] = []
   const prevTags = parseTagLines(prevText)
@@ -292,23 +217,13 @@ function SandboxSection(): ReactElement {
   const separateNotes = separatelyMappedNotesEn(scene?.separatelyMapped)
 
   return (
-    <section
-      id="sandbox"
-      aria-labelledby="sandbox-heading"
-      className="border-t border-zinc-200 pt-10"
-    >
-      <h2
-        id="sandbox-heading"
-        className="m-0 mb-2 text-xl font-semibold tracking-tight text-zinc-900"
-      >
-        Sandbox
-      </h2>
-      <p className="mt-0 mb-4 max-w-3xl text-sm leading-relaxed text-zinc-600">
+    <div className="flex flex-col gap-4">
+      <p className="m-0 max-w-3xl text-sm leading-relaxed text-zinc-600">
         Type raw <code className="font-mono text-[0.9em]">key=value</code> lines for prev / current
         / next. Tags are assumed already oriented to the current way direction. The diagram updates
         live; open the details block for the layout scene JSON.
       </p>
-      <div className="mb-4 grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {(
           [
             ['prev', prevText, setPrevText, 'Previous (optional)'],
@@ -335,8 +250,21 @@ function SandboxSection(): ReactElement {
         <p className="m-0 text-sm text-amber-800">{error}</p>
       ) : scene ? (
         <>
-          <div className="mb-4 overflow-x-auto rounded-sm border border-zinc-200 bg-white p-3">
-            <RoadSpaceDiagram scene={scene} ariaLabel="Sandbox plan sketch from edited tags" />
+          <label className="mb-2 flex items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={showDebug}
+              onChange={(e) => setShowDebug(e.target.checked)}
+              className="size-4 rounded border-zinc-300"
+            />
+            Show correspondence / offset debug overlay
+          </label>
+          <div className="overflow-x-auto rounded-sm border border-zinc-200 bg-white p-3">
+            <RoadSpaceDiagram
+              scene={scene}
+              ariaLabel="Sandbox plan sketch from edited tags"
+              debug={showDebug}
+            />
             {separateNotes.length > 0 ? (
               <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-zinc-500">
                 {separateNotes.map((note) => (
@@ -353,7 +281,7 @@ function SandboxSection(): ReactElement {
           </details>
         </>
       ) : null}
-    </section>
+    </div>
   )
 }
 
@@ -361,130 +289,252 @@ function Note({ children }: { children: ReactNode }) {
   return <p className="m-0 text-xs text-zinc-500">{children}</p>
 }
 
-export function LanesAuditPage(): ReactElement {
-  const grouped = FIXTURE_GROUPS.map((group) => ({
-    ...group,
-    fixtures: group.fixtureIds.map(fixtureById),
-  }))
+function DemoPrevNext({ demoId }: { demoId: AuditDemoId }): ReactElement {
+  const { prev, next } = adjacentDemos(demoId)
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {prev ? (
+        <Link
+          to="/audit-lanes/$demoId"
+          params={{ demoId: prev }}
+          search={(prevSearch) => prevSearch}
+          className="inline-flex items-center gap-0.5 rounded-sm border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+          title={demoTitle(prev)}
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+          Prev
+        </Link>
+      ) : (
+        <span className="inline-flex items-center gap-0.5 rounded-sm border border-zinc-200 px-2 py-1 text-sm text-zinc-300">
+          <ChevronLeft className="size-4" aria-hidden />
+          Prev
+        </span>
+      )}
+      {next ? (
+        <Link
+          to="/audit-lanes/$demoId"
+          params={{ demoId: next }}
+          search={(prevSearch) => prevSearch}
+          className="inline-flex items-center gap-0.5 rounded-sm border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+          title={demoTitle(next)}
+        >
+          Next
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
+      ) : (
+        <span className="inline-flex items-center gap-0.5 rounded-sm border border-zinc-200 px-2 py-1 text-sm text-zinc-300">
+          Next
+          <ChevronRight className="size-4" aria-hidden />
+        </span>
+      )}
+    </div>
+  )
+}
+
+function SideNav({ activeDemoId }: { activeDemoId: AuditDemoId | null }): ReactElement {
+  return (
+    <nav
+      aria-label="Demos"
+      className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-3 py-4 text-sm"
+    >
+      {AUDIT_NAV_GROUPS.map((group) => (
+        <div key={group.id}>
+          <p className="m-0 mb-1.5 px-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+            {group.label}
+          </p>
+          <ul className="m-0 list-none space-y-0.5 pl-0">
+            {group.demos.map((demo) => {
+              const active = demo.id === activeDemoId
+              return (
+                <li key={demo.id}>
+                  <Link
+                    to="/audit-lanes/$demoId"
+                    params={{ demoId: demo.id }}
+                    search={(prevSearch) => prevSearch}
+                    className={`block rounded-sm px-2 py-1.5 leading-snug ${
+                      active
+                        ? 'bg-zinc-900 font-medium text-white'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {demo.title}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
+      <div>
+        <p className="m-0 mb-1.5 px-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          Tools
+        </p>
+        <ul className="m-0 list-none pl-0">
+          <li>
+            <Link
+              to="/audit-lanes/$demoId"
+              params={{ demoId: 'sandbox' }}
+              search={(prevSearch) => prevSearch}
+              className={`block rounded-sm px-2 py-1.5 leading-snug ${
+                activeDemoId === 'sandbox'
+                  ? 'bg-zinc-900 font-medium text-white'
+                  : 'text-zinc-700 hover:bg-zinc-100'
+              }`}
+              aria-current={activeDemoId === 'sandbox' ? 'page' : undefined}
+            >
+              Sandbox
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  )
+}
+
+/** Layout shell: left demo nav + outlet for the active demo. */
+export function LanesAuditLayout(): ReactElement {
+  const demoMatch = useMatch({ from: '/audit-lanes/$demoId', shouldThrow: false })
+  const activeDemoId = demoMatch?.params.demoId ?? null
 
   return (
-    <div className="h-full overflow-y-auto overscroll-contain bg-zinc-50 text-zinc-900">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <header className="mb-10 flex flex-col gap-4 border-b border-zinc-200 pb-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="m-0 text-sm font-medium tracking-wide text-zinc-500 uppercase">
-                Street Space Editor · Audit
-              </p>
-              <h1 className="mt-1 mb-0 text-2xl font-semibold tracking-tight sm:text-3xl">
-                Lanes — cross-section interpretation
-              </h1>
-              <p className="mt-2 mb-0 max-w-3xl text-sm leading-relaxed text-zinc-600">
-                How this app interprets OSM lane and sidepath tags into a Level-B plan sketch (prev
-                / current / next). OSM way direction points <strong>up</strong> the page
-                (diagram-left = <code className="font-mono text-[0.9em]">*:left</code>
-                ). This is not a measure guide — for width clear-vs-inclusive rules and teaching
-                figures, see the sibling width audit. Reasoning lives in{' '}
-                <a
-                  href={LANE_RENDERING_RESEARCH_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 hover:underline"
-                >
-                  research/lane-rendering
-                </a>{' '}
-                and{' '}
-                <a
-                  href={WIDTH_MEASUREMENTS_RESEARCH_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 hover:underline"
-                >
-                  research/width-measurements
-                </a>
-                .
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-2 text-sm">
-              <Link to="/audit-width" className="text-blue-700 hover:underline">
-                Width — measure rules →
-              </Link>
-              <Link
-                to="/$mode"
-                params={{ mode: 'lanes' }}
-                className="text-blue-700 hover:underline"
-              >
-                ← Open lanes mode
-              </Link>
-            </div>
+    <div className="flex h-full min-h-0 bg-zinc-50 text-zinc-900">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white">
+        <div className="border-b border-zinc-200 px-4 py-3">
+          <p className="m-0 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+            Street Space Editor · Audit
+          </p>
+          <h1 className="mt-1 mb-0 text-base font-semibold tracking-tight text-zinc-900">Lanes</h1>
+          <div className="mt-2 flex flex-col gap-1 text-xs">
+            <Link to="/audit-width" className="text-blue-700 hover:underline">
+              Width — measure rules →
+            </Link>
+            <Link to="/$mode" params={{ mode: 'lanes' }} className="text-blue-700 hover:underline">
+              ← Open lanes mode
+            </Link>
           </div>
-        </header>
-
-        <Legend />
-
-        <nav aria-label="Sections" className="mb-12">
-          <h2 className="m-0 mb-3 text-sm font-semibold tracking-wide text-zinc-500 uppercase">
-            Contents
-          </h2>
-          <ol className="m-0 grid list-decimal gap-x-8 gap-y-4 pl-5 sm:grid-cols-2">
-            {grouped.map((group) => (
-              <li key={group.id} className="min-w-0">
-                <p className="m-0 mb-1 font-medium text-zinc-800">{group.label}</p>
-                <ul className="m-0 list-none space-y-1 pl-0 text-sm">
-                  {group.fixtures.map((fixture) => (
-                    <li key={fixture.id}>
-                      <a href={`#${fixture.id}`} className="text-blue-700 hover:underline">
-                        {fixture.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-            <li className="min-w-0">
-              <p className="m-0 mb-1 font-medium text-zinc-800">Sandbox</p>
-              <ul className="m-0 list-none space-y-1 pl-0 text-sm">
-                <li>
-                  <a href="#sandbox" className="text-blue-700 hover:underline">
-                    Live tag editor
-                  </a>
-                </li>
-              </ul>
-            </li>
-          </ol>
-        </nav>
-
-        <div className="flex flex-col gap-12">
-          {grouped.map((group) => (
-            <section key={group.id} aria-labelledby={`group-${group.id}`}>
-              <h2
-                id={`group-${group.id}`}
-                className="m-0 mb-6 text-xl font-semibold tracking-tight text-zinc-900"
-              >
-                {group.label}
-              </h2>
-              <div className="flex flex-col gap-10">
-                {group.fixtures.map((fixture) => (
-                  <FixtureArticle key={fixture.id} fixture={fixture} />
-                ))}
-              </div>
-            </section>
-          ))}
         </div>
+        <SideNav activeDemoId={activeDemoId} />
+      </aside>
+      <main className="min-w-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  )
+}
 
+/** Single fixture or sandbox demo body (prev/next next to the headline). */
+export function LanesAuditDemo({ demoId }: { demoId: AuditDemoId }): ReactElement {
+  const [showDebug, setShowDebug] = useState(true)
+
+  if (demoId === 'sandbox') {
+    return (
+      <article>
+        <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4">
+          <div className="min-w-0">
+            <h2 className="m-0 text-2xl font-semibold tracking-tight text-zinc-900">Sandbox</h2>
+            <p className="mt-1 mb-0 text-sm text-zinc-600">
+              Live tag editor for plan-sketch experiments.
+            </p>
+          </div>
+          <DemoPrevNext demoId={demoId} />
+        </header>
         <SandboxSection />
-
-        <footer className="mt-12 border-t border-zinc-200 pt-6">
+        <footer className="mt-10 border-t border-zinc-200 pt-4">
           <Note>
             Fixtures live in{' '}
             <code className="font-mono text-[0.9em]">
               @osm-editor-kit/osm-lane-diagram/fixtures
-            </code>{' '}
-            and are shared with package snapshot tests. English only — this is a developer audit
-            page, not mode chrome.
+            </code>
+            . English only — developer audit page, not mode chrome.
           </Note>
         </footer>
+      </article>
+    )
+  }
+
+  const fixture = fixtureById(demoId)
+  const scene = sceneForFixture(fixture)
+  const separateNotes = separatelyMappedNotesEn(scene.separatelyMapped)
+
+  return (
+    <article>
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4">
+        <div className="min-w-0">
+          <h2 className="m-0 text-2xl font-semibold tracking-tight text-zinc-900">
+            {fixture.title}
+          </h2>
+          <p className="mt-1 mb-0 text-sm text-zinc-600">{fixture.description}</p>
+        </div>
+        <DemoPrevNext demoId={demoId} />
+      </header>
+
+      <Legend />
+
+      <label className="mb-2 flex items-center gap-2 text-sm text-zinc-700">
+        <input
+          type="checkbox"
+          checked={showDebug}
+          onChange={(e) => setShowDebug(e.target.checked)}
+          className="size-4 rounded border-zinc-300"
+        />
+        Show correspondence / offset debug overlay
+      </label>
+
+      <div className="mb-4 overflow-x-auto rounded-sm border border-zinc-200 bg-white p-3">
+        <RoadSpaceDiagram
+          scene={scene}
+          ariaLabel={ariaLabelForFixture(fixture)}
+          debug={showDebug}
+        />
+        {separateNotes.length > 0 ? (
+          <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-zinc-500">
+            {separateNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        ) : null}
+        {scene.placementIssues && scene.placementIssues.length > 0 ? (
+          <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-amber-800">
+            {scene.placementIssues.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
-    </div>
+
+      <SegmentTags fixture={fixture} />
+      {fixture.note ? (
+        <p className="mt-4 mb-0 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {fixture.note}
+        </p>
+      ) : null}
+
+      <footer className="mt-10 border-t border-zinc-200 pt-4">
+        <Note>
+          Reasoning:{' '}
+          <a
+            href={LANE_RENDERING_RESEARCH_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-700 hover:underline"
+          >
+            research/lane-rendering
+          </a>{' '}
+          ·{' '}
+          <a
+            href={WIDTH_MEASUREMENTS_RESEARCH_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-700 hover:underline"
+          >
+            research/width-measurements
+          </a>
+          . Share this demo via the URL path.
+        </Note>
+      </footer>
+    </article>
   )
 }

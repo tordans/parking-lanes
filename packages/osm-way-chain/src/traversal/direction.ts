@@ -1,4 +1,5 @@
 import type { Segment } from '../domain/types'
+import { mirrorTags } from './mirror-tags'
 
 const LEFT_RIGHT_RE = /:(left|right)(:|$)/
 
@@ -18,16 +19,7 @@ export function swapLeftRightKey(key: string) {
 
 export function normalizeTagsForDirection(tags: Segment['tags'], reversed: boolean) {
   if (!reversed) return tags
-
-  const normalized: Segment['tags'] = {}
-  for (const [key, value] of Object.entries(tags)) {
-    if (LEFT_RIGHT_RE.test(key)) {
-      normalized[swapLeftRightKey(key)] = value
-    } else {
-      normalized[key] = value
-    }
-  }
-  return normalized
+  return mirrorTags(tags)
 }
 
 export function orientNeighbor(

@@ -162,6 +162,11 @@ export function LanesDiagramPanel() {
                 })}
               </ul>
             ) : null}
+            {scene.unresolvedSibling ? (
+              <p className="m-0 text-[11px] leading-snug text-zinc-500">
+                {m.lanes_unresolved_dual_sibling()}
+              </p>
+            ) : null}
             {scene.placementIssues && scene.placementIssues.length > 0 ? (
               <ul className="m-0 list-none space-y-0.5 pl-0 text-[11px] leading-snug text-amber-800">
                 {scene.placementIssues.map((note) => (

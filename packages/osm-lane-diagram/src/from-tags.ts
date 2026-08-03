@@ -1,4 +1,9 @@
-import { parseWayLanes, type LaneKind, type LaneSlot } from '@osm-editor-kit/osm-lanes'
+import {
+  effectiveTagsForParse,
+  parseWayLanes,
+  type LaneKind,
+  type LaneSlot,
+} from '@osm-editor-kit/osm-lanes'
 import {
   expandSidepaths,
   type SidepathPrefix,
@@ -145,6 +150,7 @@ function makeCycleSlot(
   widthTagged: number | undefined,
   label: string,
   zone: RoadSpaceZone = 'carriageway',
+  side?: 'left' | 'right',
 ): RoadSpaceSlot {
   const resolved = widthForKind('cycle', widthTagged)
   const idDirection = direction === 'none' ? 'forward' : direction
@@ -153,11 +159,54 @@ function makeCycleSlot(
     kind: 'cycle',
     zone,
     direction,
+    side,
     widthM: resolved.widthM,
     widthProvenance: resolved.widthProvenance,
     access: { bicycle: 'designated', vehicle: 'no' },
     label,
   }
+}
+
+function isMotorOneway(tags: Record<string, string>): boolean {
+  const v = tags.oneway?.toLowerCase()
+  return v === 'yes' || v === 'true' || v === '1' || v === '-1' || v === 'reverse'
+}
+
+function isContraflowCycleValue(value: string): boolean {
+  const v = value.toLowerCase()
+  return v === 'opposite_lane' || v === 'opposite_track' || v === 'opposite_share_busway'
+}
+
+function readCyclewayOneway(tags: Record<string, string>, side: SidepathSide): string | undefined {
+  return tags[`cycleway:${side}:oneway`] ?? tags['cycleway:both:oneway']
+}
+
+function deriveCarriagewayCycleDirection(
+  tags: Record<string, string>,
+  side: SidepathSide,
+  cycleValue: string,
+): RoadSpaceDirection {
+  const cycleOneway = readCyclewayOneway(tags, side)?.toLowerCase()
+
+  if (cycleOneway === 'no') return 'both_ways'
+  if (cycleOneway === '-1' || cycleOneway === 'reverse') {
+    return isMotorOneway(tags) ? 'backward' : side === 'left' ? 'backward' : 'forward'
+  }
+  if (cycleOneway === 'yes' || cycleOneway === 'true' || cycleOneway === '1') {
+    return 'forward'
+  }
+
+  if (isContraflowCycleValue(cycleValue)) {
+    return isMotorOneway(tags) ? 'backward' : side === 'left' ? 'backward' : 'forward'
+  }
+
+  if (isMotorOneway(tags)) {
+    const bicycleOneway = tags['oneway:bicycle']?.toLowerCase()
+    if (bicycleOneway === 'no' && side === 'left') return 'backward'
+    return 'forward'
+  }
+
+  return side === 'left' ? 'backward' : 'forward'
 }
 
 /** `cycleway:lanes` (+ directional) pipe when present — LTR positions are authoritative. */
@@ -246,8 +295,16 @@ function expandOnCarriagewayCycleSlots(
     const hasBike = result.some((s) => s.kind === 'cycle')
     if (hasBike && value === 'share_busway') return
 
-    const direction: RoadSpaceDirection = side === 'left' ? 'backward' : 'forward'
-    const slot = makeCycleSlot(wayId, direction, nextIndex++, sideCycleWidth(tags, side), value)
+    const direction = deriveCarriagewayCycleDirection(tags, side, value)
+    const slot = makeCycleSlot(
+      wayId,
+      direction,
+      nextIndex++,
+      sideCycleWidth(tags, side),
+      value,
+      'carriageway',
+      side,
+    )
     if (side === 'left') result.unshift(slot)
     else result.push(slot)
   }
@@ -488,7 +545,9 @@ function orderCarriagewayLtr(slots: RoadSpaceSlot[]): RoadSpaceSlot[] {
 
   for (const slot of slots) {
     if (slot.kind === 'cycle') {
-      if (slot.direction === 'backward') leftCycle.push(slot)
+      if (slot.side === 'left') leftCycle.push(slot)
+      else if (slot.side === 'right') rightCycle.push(slot)
+      else if (slot.direction === 'backward') leftCycle.push(slot)
       else rightCycle.push(slot)
       continue
     }
@@ -565,13 +624,28 @@ function siblingStackWidthM(fork: NonNullable<RoadSpaceSegment['fork']>): number
   if (fork.siblingSlots && fork.siblingSlots.length > 0) {
     return fork.siblingSlots.reduce((sum, s) => sum + s.widthM, 0)
   }
-  return fork.placeholderWidthM != null && fork.placeholderWidthM > 0 ? fork.placeholderWidthM : 0
+  return 0
+}
+
+function gapBetweenCarriagewaysM(
+  perpendicularDistanceM: number | undefined,
+  selectedWidthM: number,
+  siblingWidthM: number,
+): number {
+  if (
+    perpendicularDistanceM != null &&
+    Number.isFinite(perpendicularDistanceM) &&
+    perpendicularDistanceM > 0
+  ) {
+    return Math.max(0, perpendicularDistanceM - selectedWidthM / 2 - siblingWidthM / 2)
+  }
+  return DEFAULT_MEDIAN_GAP_M
 }
 
 function buildDualCarriagewayFork(
   tags: Record<string, string>,
   carriageway: RoadSpaceSlot[],
-  dualSibling?: { wayId: number; slots: RoadSpaceSlot[] },
+  dualSibling?: { wayId: number; slots: RoadSpaceSlot[]; perpendicularDistanceM?: number },
   medianHint: 'verge' | 'crossing' = 'verge',
 ): RoadSpaceSegment['fork'] | undefined {
   if (tags.dual_carriageway?.toLowerCase() !== 'yes') return undefined
@@ -581,8 +655,13 @@ function buildDualCarriagewayFork(
   if (isOnewayTag(tags)) {
     if (dualSibling && dualSibling.slots.length > 0) {
       const siblingSlots = prepareDualSiblingSlots(dualSibling.slots)
+      const siblingWidth = carriagewayWidthM(siblingSlots)
       return {
-        gapM: DEFAULT_MEDIAN_GAP_M,
+        gapM: gapBetweenCarriagewaysM(
+          dualSibling.perpendicularDistanceM,
+          selectedWidth,
+          siblingWidth,
+        ),
         leftSlotIds: siblingSlots.map((s) => s.id),
         rightSlotIds: carriageway.map((s) => s.id),
         dimmedSide: 'left',
@@ -596,7 +675,7 @@ function buildDualCarriagewayFork(
       leftSlotIds: [],
       rightSlotIds: carriageway.map((s) => s.id),
       dimmedSide: 'left',
-      placeholderWidthM: selectedWidth > 0 ? selectedWidth : DEFAULT_WIDTHS_M.motor * 2,
+      unresolvedSibling: true,
       medianHint,
     }
   }
@@ -621,31 +700,37 @@ export function buildRoadSpaceSegment(
     wayId: number
     role: RoadSpaceSegmentRole
     /** Opposite dual-carriageway branch (parallel oneway) when known. */
-    dualSibling?: { wayId: number; tags: Record<string, string> }
+    dualSibling?: {
+      wayId: number
+      tags: Record<string, string>
+      /** Perpendicular centreline distance (m) when resolved geometrically. */
+      perpendicularDistanceM?: number
+    }
     /** Median gap meaning when this way is dual (default verge). */
     medianHint?: 'verge' | 'crossing'
   },
 ): RoadSpaceSegment {
   const { wayId, role, dualSibling, medianHint = 'verge' } = options
+  const effectiveTags = effectiveTagsForParse(tags)
   const model = parseWayLanes(tags)
 
   let carriageway = model.slots.map((slot) => carriagewaySlotFromLane(wayId, slot))
-  const expanded = expandOnCarriagewayCycleSlots(wayId, tags, carriageway)
+  const expanded = expandOnCarriagewayCycleSlots(wayId, effectiveTags, carriageway)
   // Pipe positions are LTR truth; only sided cycle lanes need edge sorting.
   carriageway = expanded.fromPipe ? expanded.slots : orderCarriagewayLtr(expanded.slots)
-  carriageway = applyCarriagewayWidthInference(tags, carriageway)
+  carriageway = applyCarriagewayWidthInference(effectiveTags, carriageway)
 
-  const edges = buildEdgeSlots(wayId, tags)
+  const edges = buildEdgeSlots(wayId, effectiveTags)
   const slots = [...edges.left, ...carriageway, ...edges.right]
-  const separatelyMapped = collectSeparatelyMapped(tags)
+  const separatelyMapped = collectSeparatelyMapped(effectiveTags)
 
   // Explicit placement=* on an expanded pipe stack (cycleway:lanes / extra width:lanes
   // pipes) indexes the full LTR carriageway — so middle_of:2 with motor|cycle|motor
   // lands on the cycle strip. Defaults and motor-only stacks still use driving-lane
   // indices (SRK: lanes=* / lanes:forward|backward), ignoring on-carriageway cycle edges.
-  const explicitPlacement = parsePlacement(tags.placement)
+  const explicitPlacement = parsePlacement(effectiveTags.placement)
   const driveN = drivingLaneCount(carriageway)
-  const placement = resolvePlacement(tags, driveN)
+  const placement = resolvePlacement(effectiveTags, driveN)
   const expandedPipes = carriageway.length > driveN
   const usePipePlacement =
     explicitPlacement != null && explicitPlacement.kind !== 'transition' && expandedPipes
@@ -654,17 +739,29 @@ export function buildRoadSpaceSegment(
     : centrelineOffsetMDriving(carriageway, placement)
   const leftEdgeWidth = edges.left.reduce((sum, s) => sum + s.widthM, 0)
 
-  let siblingForFork: { wayId: number; slots: RoadSpaceSlot[] } | undefined
-  if (dualSibling && isOnewayTag(tags) && tags.dual_carriageway?.toLowerCase() === 'yes') {
+  let siblingForFork:
+    | { wayId: number; slots: RoadSpaceSlot[]; perpendicularDistanceM?: number }
+    | undefined
+  if (
+    dualSibling &&
+    isOnewayTag(effectiveTags) &&
+    effectiveTags.dual_carriageway?.toLowerCase() === 'yes'
+  ) {
     // Build sibling slots without recursing into *its* dual sibling.
     const siblingSeg = buildRoadSpaceSegment(dualSibling.tags, {
       wayId: dualSibling.wayId,
       role,
     })
-    siblingForFork = { wayId: dualSibling.wayId, slots: siblingSeg.slots }
+    siblingForFork = {
+      wayId: dualSibling.wayId,
+      slots: siblingSeg.slots,
+      perpendicularDistanceM: dualSibling.perpendicularDistanceM,
+    }
   }
 
-  const fork = buildDualCarriagewayFork(tags, carriageway, siblingForFork, medianHint)
+  const fork = buildDualCarriagewayFork(effectiveTags, carriageway, siblingForFork, medianHint)
+  const unresolvedSiblingHint =
+    fork?.unresolvedSibling === true && fork.siblingSlots == null ? true : undefined
 
   let centrelineOffset = leftEdgeWidth + carriagewayOffset
   if (fork?.dimmedSide === 'left') {
@@ -678,9 +775,12 @@ export function buildRoadSpaceSegment(
     slots,
     centrelineOffsetM: centrelineOffset,
     placement,
-    ...(tags.placement != null && tags.placement !== '' ? { placementTag: tags.placement } : {}),
+    ...(effectiveTags.placement != null && effectiveTags.placement !== ''
+      ? { placementTag: effectiveTags.placement }
+      : {}),
     laneMarkings: model.laneMarkings !== 'no',
     ...(separatelyMapped.length > 0 ? { separatelyMapped } : {}),
+    ...(unresolvedSiblingHint ? { unresolvedSiblingHint: true } : {}),
     fork,
   }
 }

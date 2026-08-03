@@ -127,7 +127,7 @@ export function insertDualCarriagewaySiblings(
     if (i === chain.centerIndex) centerIndex = segments.length
     segments.push(segment)
 
-    const match = findDualCarriagewaySibling(graph, segment.id, { excludeWayIds: presentIds })
+    const match = findDualCarriagewaySibling(graph, segment.id)
     if (!match) continue
     const raw = loadRawSegment(graph, match.wayId)
     if (!raw || presentIds.has(match.wayId)) continue

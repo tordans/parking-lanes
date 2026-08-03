@@ -17,6 +17,9 @@ export type {
   SceneRibbonBandSlice,
   SceneCarriagewayPlate,
   RoadSpaceScene,
+  RoadSpaceSceneDebug,
+  SceneDebugBandOffset,
+  SceneDebugCorrespondenceLink,
 } from './types'
 
 export {
@@ -52,6 +55,21 @@ export {
   type Placement,
   type PlacementKind,
 } from './placement'
+
+export {
+  matchStacks,
+  matchSegmentStacks,
+  solveChainOffsets,
+  slicesCorrespond,
+  turnSignature,
+  slotStartsM,
+  slotCenterM,
+  seamChangeMagnitude,
+  type StackCorrespondence,
+  type StackPair,
+  type ChainOffsetSolution,
+  type SegmentStack,
+} from './correspondence'
 
 export { layoutRoadSpace } from './layout'
 

@@ -125,6 +125,7 @@
   "lanes_separately_mapped_sidewalk_right": "Rechter Gehweg ist als eigener Way erfasst",
   "lanes_separately_mapped_cycleway_left": "Linker Radweg ist als eigener Way erfasst",
   "lanes_separately_mapped_cycleway_right": "Rechter Radweg ist als eigener Way erfasst",
+  "lanes_unresolved_dual_sibling": "Gegenfahrbahn liegt nicht in den geladenen Karten-Daten",
   "lanes_way_level_title": "Way-Tags",
   "lanes_sidewalk_unknown": "Gehweg unbekannt — keine Rand-Slots, bis sidewalk oder sidewalk:left/right/both getaggt ist.",
   "lanes_presence_left": "links",

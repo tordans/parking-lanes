@@ -6,6 +6,7 @@ import {
   orientNeighbor,
   swapLeftRightKey,
 } from '../traversal/direction'
+import { mirrorTags } from '../traversal/mirror-tags'
 
 function makeSegment(id: number, nodeIds: number[], tags: Record<string, string> = {}): Segment {
   return {
@@ -52,6 +53,48 @@ describe('normalizeTagsForDirection', () => {
     expect(normalized['cycleway:left:surface']).toBe('paving_stones')
     expect(normalized['cycleway:right:surface']).toBe('asphalt')
     expect(normalized.highway).toBe('cycleway')
+  })
+
+  it('swaps forward/backward and reverses lane pipes when reversed', () => {
+    const tags = {
+      highway: 'secondary',
+      'lanes:forward': '2',
+      'lanes:backward': '1',
+      'turn:lanes:forward': 'left|through',
+      'turn:lanes:backward': 'through',
+      oneway: 'yes',
+    }
+    const normalized = normalizeTagsForDirection(tags, true)
+    expect(normalized['lanes:forward']).toBe('1')
+    expect(normalized['lanes:backward']).toBe('2')
+    expect(normalized['turn:lanes:forward']).toBe('through')
+    expect(normalized['turn:lanes:backward']).toBe('through|right')
+    expect(normalized.oneway).toBe('-1')
+  })
+})
+
+describe('mirrorTags', () => {
+  it('is self-inverse', () => {
+    const tags = {
+      highway: 'residential',
+      oneway: 'yes',
+      lanes: '2',
+      'turn:lanes': 'left|through|right',
+      placement: 'left_of:1',
+      sidewalk: 'left',
+      'cycleway:right': 'lane',
+    }
+    expect(mirrorTags(mirrorTags(tags))).toEqual(tags)
+  })
+
+  it('mirrors placement using lane count', () => {
+    const tags = { lanes: '4', placement: 'left_of:2' }
+    expect(mirrorTags(tags).placement).toBe('right_of:3')
+  })
+
+  it('swaps bare side values', () => {
+    expect(mirrorTags({ sidewalk: 'left' }).sidewalk).toBe('right')
+    expect(mirrorTags({ cycleway: 'right' }).cycleway).toBe('left')
   })
 })
 

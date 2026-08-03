@@ -60,12 +60,12 @@ Flat audit pages (no mode chrome) for reviewing interpretation rules and fixture
 **Local (with `bun run dev`):**
 
 - [Width audit](http://localhost:5173/street-space-editor/audit-width) — measure rules and tag relations
-- [Lanes audit](http://localhost:5173/street-space-editor/audit-lanes) — cross-section / plan-sketch interpretation
+- [Lanes audit](http://localhost:5173/street-space-editor/audit-lanes/one-lane-each-way) — cross-section / plan-sketch interpretation (one demo per URL)
 
 **Deployed:**
 
 - https://osmberlin.github.io/street-space-editor/audit-width
-- https://osmberlin.github.io/street-space-editor/audit-lanes
+- https://osmberlin.github.io/street-space-editor/audit-lanes/one-lane-each-way
 
 ## Install git hook
 

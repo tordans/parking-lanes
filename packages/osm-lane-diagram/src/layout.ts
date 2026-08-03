@@ -1,4 +1,10 @@
 import {
+  seamChangeMagnitude,
+  slotStartsM,
+  solveChainOffsets,
+  type StackCorrespondence,
+} from './correspondence'
+import {
   DEFAULT_MEDIAN_GAP_M,
   DEFAULT_METERS_TO_PX,
   SEGMENT_BAND_HEIGHT_PX,
@@ -11,8 +17,11 @@ import { buildCarriagewayPlate, buildCorridorRibbons } from './ribbons'
 import type {
   RoadSpaceChain,
   RoadSpaceScene,
+  RoadSpaceSceneDebug,
   RoadSpaceSegment,
   RoadSpaceSlot,
+  SceneDebugBandOffset,
+  SceneDebugCorrespondenceLink,
   ScenePolyline,
   SceneSegmentBand,
   SceneSlotRect,
@@ -22,6 +31,8 @@ const PADDING_PX = 16
 /** Slight vertical overlap between band rects to avoid hairline gaps from sub-pixel rounding. */
 const SEAM_OVERLAP_PX = 1
 const EPS = 0.01
+/** Soft warning when solved stack offset disagrees with tagged placement (metres). */
+const PLACEMENT_OFFSET_WARN_M = 0.35
 /** Near-equal X positions merge into one separator run (px). */
 const SEPARATOR_X_TOLERANCE_PX = 2
 
@@ -33,6 +44,8 @@ type BandGeometry = {
   segment: RoadSpaceSegment
   y: number
   height: number
+  /** Left edge of the full LTR stack in px. */
+  stackLeftX: number
   /** Left edge x of each real slot (same order as segment.slots). */
   slotLeftX: number[]
   /** Left edge x of each opposite-branch slot (fork.siblingSlots order). */
@@ -52,12 +65,12 @@ type BandGeometry = {
   placeholder?: { x: number; width: number }
 }
 
-/** Width of the dimmed opposite branch: real sibling slots, else mirrored placeholder. */
+/** Width of the dimmed opposite branch (real sibling slots only). */
 function siblingStackWidthM(fork: NonNullable<RoadSpaceSegment['fork']>): number {
   if (fork.siblingSlots && fork.siblingSlots.length > 0) {
     return fork.siblingSlots.reduce((sum, s) => sum + s.widthM, 0)
   }
-  return fork.placeholderWidthM != null && fork.placeholderWidthM > 0 ? fork.placeholderWidthM : 0
+  return 0
 }
 
 function forkGapM(fork: RoadSpaceSegment['fork'] | undefined): number {
@@ -71,47 +84,15 @@ function stackWidthM(slots: RoadSpaceSlot[], fork?: RoadSpaceSegment['fork']): n
   return sum + forkGapM(fork) + siblingStackWidthM(fork)
 }
 
-/**
- * Metric left edge of each slot within the full LTR stack (sibling + gap included).
- */
-function slotStartsM(segment: RoadSpaceSegment): number[] {
-  const { slots, fork } = segment
-  const starts: number[] = []
-  let x = 0
-
-  if (fork?.dimmedSide === 'left' && siblingStackWidthM(fork) > 0) {
-    x = siblingStackWidthM(fork) + forkGapM(fork)
-  }
-
-  const leftSet = new Set(fork?.leftSlotIds ?? [])
-  const rightSet = new Set(fork?.rightSlotIds ?? [])
-  const gapM = forkGapM(fork)
-  let gapInserted = fork?.dimmedSide === 'left' && siblingStackWidthM(fork) > 0
-
-  for (const slot of slots) {
-    if (fork && !gapInserted && leftSet.size > 0 && rightSet.has(slot.id) && starts.length > 0) {
-      const prevSlot = slots[starts.length - 1]!
-      if (leftSet.has(prevSlot.id)) {
-        x += gapM
-        gapInserted = true
-      }
-    }
-    starts.push(x)
-    x += slot.widthM
-  }
-
-  return starts
-}
-
 function buildBandGeometry(
   segment: RoadSpaceSegment,
   y: number,
   height: number,
-  centrelineX: number,
+  stackLeftX: number,
   metersToPx: number,
 ): BandGeometry {
   const starts = slotStartsM(segment)
-  const stackLeftX = round2(centrelineX - segment.centrelineOffsetM * metersToPx)
+  const centrelineX = round2(stackLeftX + segment.centrelineOffsetM * metersToPx)
   const slotLeftX = starts.map((s) => round2(stackLeftX + s * metersToPx))
 
   const fork = segment.fork
@@ -199,7 +180,12 @@ function buildBandGeometry(
     rightKerbX = round2(placeholder.x + placeholder.width)
   }
 
-  // Spreading footprint (placeholder outer) — used for outer-edge runs that must
+  if (fork?.unresolvedSibling && siblingStackWidthM(fork) === 0 && fork.dimmedSide === 'left') {
+    medianLeftX = leftKerbX
+    medianRightX = leftKerbX
+  }
+
+  // Spreading footprint (sibling outer) — used for outer-edge runs that must
   // not be merged across dual ↔ non-dual boundaries.
   let leftSpreadOuterX = leftOuterX
   let rightSpreadOuterX = rightOuterX
@@ -213,6 +199,7 @@ function buildBandGeometry(
     segment,
     y,
     height,
+    stackLeftX: round2(stackLeftX),
     slotLeftX,
     siblingSlotLeftX,
     centrelineX,
@@ -360,36 +347,16 @@ function bandOuterWidth(band: BandGeometry): number {
   return round2(band.rightOuterX - band.leftOuterX)
 }
 
-function carriagewayKerbWidth(band: BandGeometry): number {
-  return round2(band.rightKerbX - band.leftKerbX)
-}
-
-function bandDrivingLaneCount(band: BandGeometry): number {
-  return band.segment.slots.filter(
-    (s) =>
-      s.zone === 'carriageway' &&
-      (s.kind === 'motor' || s.kind === 'bus') &&
-      s.direction !== 'none',
-  ).length
-}
-
-function needsTransitionBand(a: BandGeometry, b: BandGeometry): boolean {
-  if (a.segment.synthetic || b.segment.synthetic) return false
-  if ((a.segment.fork != null) !== (b.segment.fork != null)) return false
-  if (differs(carriagewayKerbWidth(a), carriagewayKerbWidth(b))) return true
-  if (bandDrivingLaneCount(a) !== bandDrivingLaneCount(b)) return true
-  return false
-}
-
 function transitionBandHeightPx(
   a: BandGeometry,
   b: BandGeometry,
   bandHeight: number,
   metersToPx: number,
+  changeM: number,
 ): number {
-  const widthDeltaPx = Math.abs(carriagewayKerbWidth(a) - carriagewayKerbWidth(b))
-  const minFrac = TRANSITION_BAND_HEIGHT_FRAC * 0.85
+  const minFrac = TRANSITION_BAND_HEIGHT_FRAC * 0.08
   const maxFrac = TRANSITION_BAND_HEIGHT_FRAC * 1.15
+  const widthDeltaPx = changeM * metersToPx
   const slopeBoost = widthDeltaPx / (bandHeight * metersToPx * 0.4)
   const frac = Math.min(maxFrac, Math.max(minFrac, minFrac + slopeBoost * 0.12))
   return round2(bandHeight * frac)
@@ -415,6 +382,7 @@ function buildSyntheticTransitionBand(
     segment,
     y: round2(y),
     height: round2(height),
+    stackLeftX: below.stackLeftX,
     slotLeftX: [],
     centrelineX,
     leftOuterX: below.leftOuterX,
@@ -432,24 +400,28 @@ function buildSyntheticTransitionBand(
 function insertTransitionBands(
   bands: BandGeometry[],
   bandHeight: number,
-  centrelineX: number,
+  correspondences: StackCorrespondence[],
   metersToPx: number,
   gap: number,
 ): BandGeometry[] {
   if (bands.length === 0) return bands
   const result: BandGeometry[] = []
   let y = bands[0]!.y
+  let realIndex = 0
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i]!
     if (i > 0) {
       const prev = result[result.length - 1]!
-      if (needsTransitionBand(prev, band)) {
-        const tHeight = transitionBandHeightPx(prev, band, bandHeight, metersToPx)
-        result.push(buildSyntheticTransitionBand(prev, band, y, tHeight, centrelineX))
+      if (!prev.segment.synthetic && !band.segment.synthetic) {
+        const corr = correspondences[realIndex - 1]!
+        const changeM = seamChangeMagnitude(prev.segment, band.segment, corr)
+        const tHeight = transitionBandHeightPx(prev, band, bandHeight, metersToPx, changeM)
+        result.push(buildSyntheticTransitionBand(prev, band, y, tHeight, band.centrelineX))
         y += tHeight + gap
       }
     }
     result.push({ ...band, y: round2(y) })
+    if (!band.segment.synthetic) realIndex++
     y += band.height + gap
   }
   return result
@@ -798,270 +770,168 @@ type MedianPocketSeam = {
   tipX: number
 }
 
-/**
- * Split a non-dual neighbour into backward vs forward carriageway halves
- * (opposing-traffic boundary). Used to park a dual's sibling / travel stacks
- * on the continuing lanes instead of stretching a void across the median.
- */
-function neighborDirectionSplit(
-  band: BandGeometry,
-  metersToPx: number,
-): {
-  leftKerb: number
-  rightKerb: number
-  /** Right edge of the last backward carriageway slot (or mid if none). */
-  backwardRight: number
-  /** Left edge of the first forward/both_ways carriageway slot (or mid if none). */
-  forwardLeft: number
-} {
-  const mid = round2((band.leftKerbX + band.rightKerbX) / 2)
-  let backwardRight = band.leftKerbX
-  let forwardLeft = band.rightKerbX
-  let foundBack = false
-  let foundFwd = false
-
-  for (let i = 0; i < band.segment.slots.length; i++) {
-    const slot = band.segment.slots[i]!
-    if (slot.zone !== 'carriageway') continue
-    const left = band.slotLeftX[i]!
-    const right = round2(left + slot.widthM * metersToPx)
-    if (slot.direction === 'backward') {
-      backwardRight = foundBack ? Math.max(backwardRight, right) : right
-      foundBack = true
-    }
-    if (slot.direction === 'forward' || slot.direction === 'both_ways') {
-      forwardLeft = foundFwd ? Math.min(forwardLeft, left) : left
-      foundFwd = true
+function buildBandCorrespondences(
+  layoutBands: BandGeometry[],
+  segmentCorrespondences: StackCorrespondence[],
+): StackCorrespondence[] {
+  const segForBand: number[] = []
+  let seg = 0
+  for (const band of layoutBands) {
+    if (band.segment.synthetic) segForBand.push(-1)
+    else {
+      segForBand.push(seg)
+      seg++
     }
   }
 
-  if (!foundBack && !foundFwd) {
-    return {
-      leftKerb: band.leftKerbX,
-      rightKerb: band.rightKerbX,
-      backwardRight: mid,
-      forwardLeft: mid,
-    }
-  }
-  if (!foundBack) {
-    return {
-      leftKerb: band.leftKerbX,
-      rightKerb: band.rightKerbX,
-      backwardRight: forwardLeft,
-      forwardLeft,
-    }
-  }
-  if (!foundFwd) {
-    return {
-      leftKerb: band.leftKerbX,
-      rightKerb: band.rightKerbX,
-      backwardRight,
-      forwardLeft: backwardRight,
-    }
-  }
+  const out: StackCorrespondence[] = []
+  for (let i = 0; i < layoutBands.length - 1; i++) {
+    const segA = segForBand[i]!
+    const segB = segForBand[i + 1]!
+    let corrIndex = -1
+    if (segA >= 0 && segB >= 0) corrIndex = segA
+    else if (segA >= 0) corrIndex = segA
+    else if (segB >= 0) corrIndex = segB - 1
 
-  return {
-    leftKerb: band.leftKerbX,
-    rightKerb: band.rightKerbX,
-    backwardRight: round2(backwardRight),
-    forwardLeft: round2(forwardLeft),
+    out.push(
+      corrIndex >= 0
+        ? segmentCorrespondences[corrIndex]!
+        : { pairs: [], unmatchedA: [], unmatchedB: [] },
+    )
   }
+  return out
 }
 
-/**
- * When a dual oneway band meets a non-dual neighbour, left-align the opposite
- * branch to the neighbour's left kerb and right-align travel to the right kerb.
- * The median fills the residual gap (≈0 on a plain bidirectional; ≈left-turn
- * pocket width when one sits between the halves) instead of stretching a void.
- *
- * If this dual also continues into another dual band, keep the tagged median
- * width and only shift the rigid sibling+median+travel block.
- */
-function realignDualBandsToNeighbors(bands: BandGeometry[], metersToPx: number): void {
-  for (let i = 0; i < bands.length; i++) {
-    const dual = bands[i]!
-    const fork = dual.segment.fork
-    if (!fork || !dual.placeholder) continue
-    if (fork.dimmedSide !== 'left' && fork.dimmedSide !== 'right') continue
-
-    const neighbors = [bands[i - 1], bands[i + 1]].filter(
-      (b): b is BandGeometry => b != null && b.segment.fork == null,
-    )
-    if (neighbors.length === 0) continue
-
-    const neighbor = neighbors.reduce((best, n) => {
-      const dualEdge = fork.dimmedSide === 'left' ? dual.rightKerbX : dual.leftKerbX
-      const bestEdge = fork.dimmedSide === 'left' ? best.rightKerbX : best.leftKerbX
-      const nEdge = fork.dimmedSide === 'left' ? n.rightKerbX : n.leftKerbX
-      return Math.abs(nEdge - dualEdge) < Math.abs(bestEdge - dualEdge) ? n : best
-    })
-
-    const travelWidth = round2(dual.rightKerbX - dual.leftKerbX)
-    if (travelWidth <= EPS) continue
-
-    const siblingWidth = dual.placeholder.width
-    const split = neighborDirectionSplit(neighbor, metersToPx)
-    const keepMedianIsland = [bands[i - 1], bands[i + 1]].some(
-      (b) => b != null && b.segment.fork != null,
-    )
-    const gapPx =
-      dual.medianLeftX != null && dual.medianRightX != null
-        ? round2(dual.medianRightX - dual.medianLeftX)
-        : round2(forkGapM(fork) * metersToPx)
-
-    const applyLeftDimmed = (
-      newTravelLeft: number,
-      newTravelRight: number,
-      newSiblingLeft: number,
-      newSiblingRight: number,
-      newMedianLeft: number,
-      newMedianRight: number,
-    ) => {
-      const travelDelta = round2(newTravelLeft - dual.leftKerbX)
-      dual.slotLeftX = dual.slotLeftX.map((x) => round2(x + travelDelta))
-      if (dual.siblingSlotLeftX && fork.siblingSlots && fork.siblingSlots.length > 0) {
-        let sx = newSiblingLeft
-        dual.siblingSlotLeftX = fork.siblingSlots.map((slot) => {
-          const left = round2(sx)
-          sx += slot.widthM * metersToPx
-          return left
-        })
-      }
-      dual.leftKerbX = newTravelLeft
-      dual.rightKerbX = newTravelRight
-      dual.placeholder = {
-        x: newSiblingLeft,
-        width: round2(Math.max(siblingWidth, newSiblingRight - newSiblingLeft)),
-      }
-      dual.medianLeftX = newMedianLeft
-      dual.medianRightX = newMedianRight
-      dual.leftOuterX = newSiblingLeft
-      dual.leftSpreadOuterX = newSiblingLeft
-      dual.rightOuterX = round2(
-        Math.max(
-          newTravelRight,
-          ...dual.segment.slots.map((s, idx) => dual.slotLeftX[idx]! + s.widthM * metersToPx),
-        ),
+function collectSolvedPlacementIssues(
+  segments: RoadSpaceSegment[],
+  layoutBands: BandGeometry[],
+  baseCentrelineX: number,
+  metersToPx: number,
+): string[] {
+  const issues: string[] = []
+  let seg = 0
+  for (const band of layoutBands) {
+    if (band.segment.synthetic) continue
+    const segment = segments[seg]!
+    if (segment.placementTag) {
+      const placementOnlyStackLeft = round2(
+        baseCentrelineX - segment.centrelineOffsetM * metersToPx,
       )
-      dual.rightSpreadOuterX = dual.rightOuterX
-      dual.centrelineX = round2((newTravelLeft + newTravelRight) / 2)
-    }
-
-    const applyRightDimmed = (
-      newTravelLeft: number,
-      newTravelRight: number,
-      newSiblingLeft: number,
-      newSiblingRight: number,
-      newMedianLeft: number,
-      newMedianRight: number,
-    ) => {
-      const travelDelta = round2(newTravelLeft - dual.leftKerbX)
-      dual.slotLeftX = dual.slotLeftX.map((x) => round2(x + travelDelta))
-      if (dual.siblingSlotLeftX && fork.siblingSlots && fork.siblingSlots.length > 0) {
-        let sx = newSiblingLeft
-        dual.siblingSlotLeftX = fork.siblingSlots.map((slot) => {
-          const left = round2(sx)
-          sx += slot.widthM * metersToPx
-          return left
-        })
-      }
-      dual.leftKerbX = newTravelLeft
-      dual.rightKerbX = newTravelRight
-      dual.placeholder = {
-        x: newSiblingLeft,
-        width: round2(Math.max(siblingWidth, newSiblingRight - newSiblingLeft)),
-      }
-      dual.medianLeftX = newMedianLeft
-      dual.medianRightX = newMedianRight
-      dual.leftOuterX = round2(Math.min(newTravelLeft, ...dual.slotLeftX))
-      dual.leftSpreadOuterX = dual.leftOuterX
-      dual.rightOuterX = newSiblingRight
-      dual.rightSpreadOuterX = newSiblingRight
-      dual.centrelineX = round2((newTravelLeft + newTravelRight) / 2)
-    }
-
-    if (fork.dimmedSide === 'left') {
-      if (keepMedianIsland) {
-        const newTravelRight = split.rightKerb
-        const newTravelLeft = round2(newTravelRight - travelWidth)
-        const newMedianRight = newTravelLeft
-        const newMedianLeft = round2(newMedianRight - gapPx)
-        const newSiblingRight = newMedianLeft
-        const newSiblingLeft = round2(newSiblingRight - siblingWidth)
-        applyLeftDimmed(
-          newTravelLeft,
-          newTravelRight,
-          newSiblingLeft,
-          newSiblingRight,
-          newMedianLeft,
-          newMedianRight,
+      const deltaM = Math.abs(band.stackLeftX - placementOnlyStackLeft) / metersToPx
+      if (deltaM > PLACEMENT_OFFSET_WARN_M) {
+        issues.push(
+          `way ${segment.wayId}: solved stack offset differs from tagged placement by ${deltaM.toFixed(2)} m — corridor ribbons follow matched lanes, not the purple guide`,
         )
-        continue
       }
+    }
+    seg++
+  }
+  return issues
+}
 
-      let newTravelRight = split.rightKerb
-      let newTravelLeft = round2(newTravelRight - travelWidth)
-      let newSiblingLeft = split.leftKerb
-      let newSiblingRight = round2(newSiblingLeft + siblingWidth)
-      let newMedianLeft = newSiblingRight
-      let newMedianRight = newTravelLeft
-      if (newMedianRight < newMedianLeft - EPS) {
-        const seam = newTravelLeft
-        newMedianLeft = seam
-        newMedianRight = seam
-        newSiblingRight = seam
-        newSiblingLeft = round2(seam - siblingWidth)
-      }
-      applyLeftDimmed(
-        newTravelLeft,
-        newTravelRight,
-        newSiblingLeft,
-        newSiblingRight,
-        newMedianLeft,
-        newMedianRight,
-      )
-    } else {
-      if (keepMedianIsland) {
-        const newTravelLeft = split.leftKerb
-        const newTravelRight = round2(newTravelLeft + travelWidth)
-        const newMedianLeft = newTravelRight
-        const newMedianRight = round2(newMedianLeft + gapPx)
-        const newSiblingLeft = newMedianRight
-        const newSiblingRight = round2(newSiblingLeft + siblingWidth)
-        applyRightDimmed(
-          newTravelLeft,
-          newTravelRight,
-          newSiblingLeft,
-          newSiblingRight,
-          newMedianLeft,
-          newMedianRight,
-        )
-        continue
-      }
+function slotCenterOnBand(
+  band: BandGeometry,
+  index: number,
+  branch: 'travel' | 'sibling',
+  metersToPx: number,
+): { x: number; y: number } | null {
+  const y = round2(band.y + band.height / 2)
+  if (branch === 'sibling') {
+    const leftX = band.siblingSlotLeftX?.[index]
+    const slot = band.segment.fork?.siblingSlots?.[index]
+    if (leftX == null || !slot) return null
+    return { x: round2(leftX + (slot.widthM * metersToPx) / 2), y }
+  }
+  const leftX = band.slotLeftX[index]
+  const slot = band.segment.slots[index]
+  if (leftX == null || !slot) return null
+  return { x: round2(leftX + (slot.widthM * metersToPx) / 2), y }
+}
 
-      let newTravelLeft = split.leftKerb
-      let newTravelRight = round2(newTravelLeft + travelWidth)
-      let newSiblingRight = split.rightKerb
-      let newSiblingLeft = round2(newSiblingRight - siblingWidth)
-      let newMedianLeft = newTravelRight
-      let newMedianRight = newSiblingLeft
-      if (newMedianRight < newMedianLeft - EPS) {
-        const seam = newTravelRight
-        newMedianLeft = seam
-        newMedianRight = seam
-        newSiblingLeft = seam
-        newSiblingRight = round2(seam + siblingWidth)
-      }
-      applyRightDimmed(
-        newTravelLeft,
-        newTravelRight,
-        newSiblingLeft,
-        newSiblingRight,
-        newMedianLeft,
-        newMedianRight,
-      )
+function buildSceneDebug(
+  segments: RoadSpaceSegment[],
+  layoutBands: BandGeometry[],
+  correspondences: StackCorrespondence[],
+  stackLeftM: number[],
+  anchorIndex: number,
+  baseCentrelineX: number,
+  metersToPx: number,
+): RoadSpaceSceneDebug {
+  const bandIndexBySeg: number[] = []
+  let segIdx = 0
+  for (let bi = 0; bi < layoutBands.length; bi++) {
+    if (!layoutBands[bi]!.segment.synthetic) {
+      bandIndexBySeg[segIdx] = bi
+      segIdx++
     }
   }
+
+  const correspondenceLinks: SceneDebugCorrespondenceLink[] = []
+  for (let si = 0; si < segments.length - 1; si++) {
+    const corr = correspondences[si]
+    if (!corr) continue
+    const bandAbove = layoutBands[bandIndexBySeg[si]!]
+    const bandBelow = layoutBands[bandIndexBySeg[si + 1]!]
+    if (!bandAbove || !bandBelow) continue
+    const yAbove = round2(bandAbove.y + bandAbove.height / 2)
+    const yBelow = round2(bandBelow.y + bandBelow.height / 2)
+
+    for (const pair of corr.pairs) {
+      const branchA = pair.branchA ?? 'travel'
+      const branchB = pair.branchB ?? 'travel'
+      const slotA =
+        branchA === 'sibling'
+          ? segments[si]!.fork?.siblingSlots?.[pair.indexA]
+          : segments[si]!.slots[pair.indexA]
+      const slotB =
+        branchB === 'sibling'
+          ? segments[si + 1]!.fork?.siblingSlots?.[pair.indexB]
+          : segments[si + 1]!.slots[pair.indexB]
+      if (!slotA || !slotB) continue
+      if (slotA.zone !== 'carriageway' || slotB.zone !== 'carriageway') continue
+      const above = slotCenterOnBand(bandAbove, pair.indexA, branchA, metersToPx)
+      const below = slotCenterOnBand(bandBelow, pair.indexB, branchB, metersToPx)
+      if (!above || !below) continue
+      correspondenceLinks.push({
+        segmentPairIndex: si,
+        indexA: pair.indexA,
+        indexB: pair.indexB,
+        branchA,
+        branchB,
+        xAbove: above.x,
+        yAbove,
+        xBelow: below.x,
+        yBelow,
+      })
+    }
+  }
+
+  const bandOffsets: SceneDebugBandOffset[] = []
+  segIdx = 0
+  for (let bi = 0; bi < layoutBands.length; bi++) {
+    const band = layoutBands[bi]!
+    if (band.segment.synthetic) continue
+    const segment = segments[segIdx]!
+    const taggedStackLeftX = segment.placementTag
+      ? round2(baseCentrelineX - segment.centrelineOffsetM * metersToPx)
+      : undefined
+    const placementDeltaM =
+      taggedStackLeftX != null
+        ? round2((band.stackLeftX - taggedStackLeftX) / metersToPx)
+        : undefined
+    bandOffsets.push({
+      bandIndex: bi,
+      wayId: segment.wayId,
+      role: segment.role,
+      stackLeftM: stackLeftM[segIdx] ?? 0,
+      stackLeftX: round2(band.stackLeftX),
+      provenance: segIdx === anchorIndex ? 'anchor' : 'chained',
+      ...(taggedStackLeftX != null ? { taggedStackLeftX, placementDeltaM } : {}),
+    })
+    segIdx++
+  }
+
+  return { correspondenceLinks, bandOffsets }
 }
 
 function emitVerticalPolyline(
@@ -1134,7 +1004,7 @@ function emitMergedVerticalRuns(
 
 /**
  * Layout a prev/current/next (or any ordered) chain into a JSON scene.
- * Segments share one metre scale and align on the OSM centreline.
+ * Matched lane centres drive per-band horizontal offsets; placement centreline is derived.
  */
 export function layoutRoadSpace(
   chain: RoadSpaceChain,
@@ -1157,17 +1027,24 @@ export function layoutRoadSpace(
     }
   }
 
-  const maxLeftOverhang = Math.max(...segments.map((s) => s.centrelineOffsetM * metersToPx))
-  const centrelineX = round2(PADDING_PX + maxLeftOverhang)
+  const { stackLeftM, correspondences, anchorIndex } = solveChainOffsets(segments)
+  const anchor = segments[anchorIndex]!
+  const anchorStackLeftM = stackLeftM[anchorIndex] ?? 0
+  const anchorCentrelineM = anchor.centrelineOffsetM
+  const baseCentrelineX = round2(PADDING_PX + anchorCentrelineM * metersToPx)
+  const anchorStackLeftX = round2(baseCentrelineX - anchorCentrelineM * metersToPx)
 
   const bands: BandGeometry[] = []
   let y = PADDING_PX
-  for (const segment of segments) {
-    bands.push(buildBandGeometry(segment, y, bandHeight, centrelineX, metersToPx))
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i]!
+    const stackLeftX = round2(
+      anchorStackLeftX + ((stackLeftM[i] ?? 0) - anchorStackLeftM) * metersToPx,
+    )
+    bands.push(buildBandGeometry(segment, y, bandHeight, stackLeftX, metersToPx))
     y += bandHeight + gap
   }
-  realignDualBandsToNeighbors(bands, metersToPx)
-  const layoutBands = insertTransitionBands(bands, bandHeight, centrelineX, metersToPx, gap)
+  const layoutBands = insertTransitionBands(bands, bandHeight, correspondences, metersToPx, gap)
 
   // Crop asymmetric centreline overhang so the road stack sits with equal side padding.
   {
@@ -1185,6 +1062,7 @@ export function layoutRoadSpace(
       const dx = round2(PADDING_PX - minX)
       if (Math.abs(dx) > EPS) {
         for (const b of layoutBands) {
+          b.stackLeftX = round2(b.stackLeftX + dx)
           b.slotLeftX = b.slotLeftX.map((x) => round2(x + dx))
           if (b.siblingSlotLeftX) {
             b.siblingSlotLeftX = b.siblingSlotLeftX.map((x) => round2(x + dx))
@@ -1213,7 +1091,13 @@ export function layoutRoadSpace(
   )
   const minLeftX = Math.min(...layoutBands.map((b) => Math.min(b.leftOuterX, b.leftSpreadOuterX)))
   const widthPx = round2(maxRightX - minLeftX + PADDING_PX * 2)
-  const placementGuideX = round2(layoutBands[0]!.centrelineX)
+  const anchorBand =
+    layoutBands.find(
+      (b) =>
+        !b.segment.synthetic && b.segment.wayId === anchor.wayId && b.segment.role === anchor.role,
+    ) ?? layoutBands.find((b) => !b.segment.synthetic)!
+  const placementGuideX = round2(anchorBand?.centrelineX ?? baseCentrelineX)
+  const bandCorrespondences = buildBandCorrespondences(layoutBands, correspondences)
 
   const sceneBands: SceneSegmentBand[] = layoutBands.map((b) => ({
     wayId: b.segment.wayId,
@@ -1234,11 +1118,10 @@ export function layoutRoadSpace(
     const leftSet = new Set(fork?.leftSlotIds ?? [])
     const rightSet = new Set(fork?.rightSlotIds ?? [])
 
-    // Opposite dual branch: real sibling slots, or a gray width-mirrored placeholder.
-    const siblingSlots = fork?.siblingSlots
-    if (siblingSlots && siblingSlots.length > 0 && band.siblingSlotLeftX) {
-      for (let si = 0; si < siblingSlots.length; si++) {
-        const slot = siblingSlots[si]!
+    // Opposite dual branch: real sibling slots when resolved.
+    if (fork?.siblingSlots && band.siblingSlotLeftX) {
+      for (let si = 0; si < fork.siblingSlots.length; si++) {
+        const slot = fork.siblingSlots[si]!
         slotRects.push({
           slotId: slot.id,
           wayId: fork?.siblingWayId ?? band.segment.wayId,
@@ -1256,29 +1139,14 @@ export function layoutRoadSpace(
           dimmed: true,
         })
       }
-    } else if (band.placeholder) {
-      slotRects.push({
-        slotId: `way/${band.segment.wayId}/fork/placeholder`,
-        wayId: band.segment.wayId,
-        role: band.segment.role,
-        kind: 'motor',
-        zone: 'carriageway',
-        direction: 'none',
-        x: band.placeholder.x,
-        y: extent.y,
-        width: band.placeholder.width,
-        height: extent.height,
-        widthProvenance: 'inferred',
-        label: 'sibling',
-        dimmed: true,
-      })
     }
 
-    // Explicit median island rect (non-travel), only on dual bands.
+    // Explicit median island rect (non-travel), only when a gap exists between branches.
     if (
       band.medianLeftX != null &&
       band.medianRightX != null &&
-      band.medianRightX - band.medianLeftX > EPS
+      band.medianRightX - band.medianLeftX > EPS &&
+      !fork?.unresolvedSibling
     ) {
       slotRects.push({
         slotId: `way/${band.segment.wayId}/fork/median`,
@@ -1335,7 +1203,7 @@ export function layoutRoadSpace(
       layoutBands[bandIndex]!.y,
       layoutBands[bandIndex]!.height,
     )
-  const ribbons = buildCorridorRibbons(layoutBands, metersToPx, extentForBand)
+  const ribbons = buildCorridorRibbons(layoutBands, metersToPx, extentForBand, bandCorrespondences)
   const carriagewayPlate = buildCarriagewayPlate(layoutBands, ribbons)
 
   // Ribbons own pavement fills — drop exterior kerb wedges that leave misaligned gray shards.
@@ -1371,23 +1239,31 @@ export function layoutRoadSpace(
     ],
   })
 
-  // Segment-boundary hairlines at real segment interiors (not synthetic wedges).
-  for (let i = 0; i < layoutBands.length - 1; i++) {
-    const a = layoutBands[i]!
-    const b = layoutBands[i + 1]!
-    if (a.segment.synthetic || b.segment.synthetic) continue
-    const yBound = round2(a.y + a.height)
-    const left = Math.min(a.leftOuterX, b.leftOuterX)
-    const right = Math.max(a.rightOuterX, b.rightOuterX)
-    polylines.push({
-      id: `segment-boundary-${i}`,
-      kind: 'segment_boundary',
-      style: 'solid',
-      points: [
-        { x: left, y: yBound },
-        { x: right, y: yBound },
-      ],
-    })
+  // Segment-boundary hairlines at the bottom of each real segment band.
+  {
+    let realIdx = 0
+    const realCount = layoutBands.filter((b) => !b.segment.synthetic).length
+    for (let i = 0; i < layoutBands.length; i++) {
+      const band = layoutBands[i]!
+      if (band.segment.synthetic) continue
+      if (realIdx >= realCount - 1) {
+        realIdx++
+        continue
+      }
+      const yBound = round2(band.y + band.height)
+      const left = band.leftOuterX
+      const right = band.rightOuterX
+      polylines.push({
+        id: `segment-boundary-${realIdx}`,
+        kind: 'segment_boundary',
+        style: 'solid',
+        points: [
+          { x: left, y: yBound },
+          { x: right, y: yBound },
+        ],
+      })
+      realIdx++
+    }
   }
 
   // Continuous travel-kerbs at carriageway boundaries. Broken at dual ↔ non-dual
@@ -1619,7 +1495,20 @@ export function layoutRoadSpace(
     return true
   })
 
-  const placementIssues = collectPlacementIssues(segments)
+  const placementIssues = [
+    ...collectPlacementIssues(segments),
+    ...collectSolvedPlacementIssues(segments, layoutBands, baseCentrelineX, metersToPx),
+  ]
+  const unresolvedSibling = segments.some((s) => s.unresolvedSiblingHint)
+  const debug = buildSceneDebug(
+    segments,
+    layoutBands,
+    correspondences,
+    stackLeftM,
+    anchorIndex,
+    baseCentrelineX,
+    metersToPx,
+  )
 
   return {
     widthPx,
@@ -1632,6 +1521,8 @@ export function layoutRoadSpace(
     slotRects,
     polylines,
     ...(separatelyMapped.length > 0 ? { separatelyMapped } : {}),
+    ...(unresolvedSibling ? { unresolvedSibling: true } : {}),
     ...(placementIssues.length > 0 ? { placementIssues } : {}),
+    debug,
   }
 }

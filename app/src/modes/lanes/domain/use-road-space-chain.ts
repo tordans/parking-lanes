@@ -36,14 +36,17 @@ export type RoadSpaceChainView = {
 function dualSiblingForSegment(
   graph: ParsedOsmData | undefined,
   segment: { id: number; tags: Record<string, string> },
-  excludeWayIds: ReadonlySet<number>,
-): { wayId: number; tags: Record<string, string> } | undefined {
+): { wayId: number; tags: Record<string, string>; perpendicularDistanceM?: number } | undefined {
   if (!graph) return undefined
-  const match = findDualCarriagewaySibling(graph, segment.id, { excludeWayIds })
+  const match = findDualCarriagewaySibling(graph, segment.id)
   if (!match) return undefined
   const tags = graph.ways[match.wayId]?.tags
   if (!tags) return undefined
-  return { wayId: match.wayId, tags: { ...tags } }
+  return {
+    wayId: match.wayId,
+    tags: { ...tags },
+    perpendicularDistanceM: match.distanceM,
+  }
 }
 
 /**
@@ -96,12 +99,6 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
   const orientedBottom =
     bottomNeighbor != null ? orientNeighborForCenter(centerSegment, bottomNeighbor) : null
 
-  const excludeWayIds = new Set(
-    [orientedTop?.id, centerSegment.id, orientedBottom?.id].filter(
-      (id): id is number => id != null,
-    ),
-  )
-
   // Diagram stacks top → bottom: screen-up neighbour, current, screen-down neighbour.
   const segments: RoadSpaceSegment[] = []
   if (orientedTop) {
@@ -109,7 +106,7 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
       buildRoadSpaceSegment(orientedTop.tags, {
         wayId: orientedTop.id,
         role: 'prev',
-        dualSibling: dualSiblingForSegment(graph, orientedTop, excludeWayIds),
+        dualSibling: dualSiblingForSegment(graph, orientedTop),
         medianHint: medianHintForWay(graph, orientedTop.id),
       }),
     )
@@ -117,7 +114,7 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
   const currentBuilt = buildRoadSpaceSegment(centerSegment.tags, {
     wayId: centerSegment.id,
     role: 'current',
-    dualSibling: dualSiblingForSegment(graph, centerSegment, excludeWayIds),
+    dualSibling: dualSiblingForSegment(graph, centerSegment),
     medianHint: medianHintForWay(graph, centerSegment.id),
   })
   segments.push(currentBuilt)
@@ -126,7 +123,7 @@ export function useRoadSpaceChain(): RoadSpaceChainView {
       buildRoadSpaceSegment(orientedBottom.tags, {
         wayId: orientedBottom.id,
         role: 'next',
-        dualSibling: dualSiblingForSegment(graph, orientedBottom, excludeWayIds),
+        dualSibling: dualSiblingForSegment(graph, orientedBottom),
         medianHint: medianHintForWay(graph, orientedBottom.id),
       }),
     )

@@ -35,6 +35,7 @@ export {
   orientNeighbor,
   swapLeftRightKey,
 } from './traversal/direction'
+export { mirrorTags } from './traversal/mirror-tags'
 export {
   type CandidateFilter,
   filterNeighborCandidates,

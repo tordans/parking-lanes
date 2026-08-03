@@ -2,7 +2,7 @@
 
 A conceptual guide for fellow developers. This explains **what we do and why** when turning OSM centreline tags into the lane plan sketch — not formulas, not a code walkthrough.
 
-**Related research:** [lane-rendering methods catalogue](../research/lane-rendering/methods-catalogue.md) (algorithms and alternatives), [width measurements](../research/width-measurements/README.md) (metre semantics). **Living output:** [`/audit-lanes`](../app/src/routes/audit-lanes.tsx) gallery and package fixtures.
+**Related research:** [lane-rendering methods catalogue](../research/lane-rendering/methods-catalogue.md) (algorithms and alternatives), [width measurements](../research/width-measurements/README.md) (metre semantics). **Living output:** [`/audit-lanes/$demoId`](../app/src/routes/audit-lanes/$demoId.tsx) gallery and package fixtures.
 
 ---
 
@@ -232,7 +232,7 @@ The sketch still targets **abstraction level B** (semantic lane stack) from the 
 ## 14. Living examples
 
 - **Fixture gallery:** `@osm-editor-kit/osm-lane-diagram/fixtures` — deterministic scenes for regression and design review.
-- **App audit route:** `/audit-lanes` — browse fixtures and edge cases in the real React SVG consumer.
+- **App audit route:** `/audit-lanes/$demoId` — one fixture or sandbox per shareable URL (left nav + prev/next).
 - **Parity fixtures:** compare TS parse output against muv/osm2lanes expectations where we have captured cases (not exhaustive).
 
 When adding behaviour, prefer a **fixture + audit entry** over ad-hoc screenshots.
