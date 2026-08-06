@@ -41,9 +41,20 @@ export async function ensureImageryUsageRecorded(): Promise<void> {
 }
 
 /** Record the imagery visible during an edit (not on mere layer selection). */
-export function recordEditingImagery(backgroundLayerId = currentBackgroundLayerId) {
+export function recordEditingImagery(
+  backgroundLayerId: string | null = currentBackgroundLayerId,
+  additionalLabels?: string | string[],
+) {
   imageryRecordChain = imageryRecordChain.then(async () => {
     const value = await resolveImageryUsedValue(backgroundLayerId)
     session.record(value)
+    const extras = additionalLabels
+      ? Array.isArray(additionalLabels)
+        ? additionalLabels
+        : [additionalLabels]
+      : []
+    for (const label of extras) {
+      session.record(label)
+    }
   })
 }

@@ -55,7 +55,7 @@ From [Lanes](https://wiki.openstreetmap.org/wiki/Lanes):
 
 When arrows don't match actual lane connections, use [Relation:connectivity](https://wiki.openstreetmap.org/wiki/Relation:connectivity) — **needs verification** for full spec; referenced from Key:turn.
 
-Abandoned `turnlanes` relation proposal — do not use for new mapping.
+Abandoned [`turnlanes` relation proposal](https://wiki.openstreetmap.org/wiki/Proposal:Turn_lanes_(relation)) — do not use for new mapping. The JOSM plugin’s **geometry** (fillets / pocket tapers) is still worth studying: [josm-turnlanes-renderer.md](../../lane-rendering/josm-turnlanes-renderer.md), [josm-turnlanes-core.md](../projects/josm-turnlanes-core.md).
 
 ### Motorway examples
 

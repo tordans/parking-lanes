@@ -1,0 +1,127 @@
+import { z } from 'zod'
+
+export const EDITOR_PHOTO_PROVIDERS = ['mapillary', 'panoramax'] as const
+export type EditorPhotoProvider = (typeof EDITOR_PHOTO_PROVIDERS)[number]
+
+export const DEFAULT_PHOTO_TYPES = ['flat', 'pano'] as const
+export type EditorPhotoType = (typeof DEFAULT_PHOTO_TYPES)[number]
+
+const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const [year, month, day] = value.split('-').map(Number)
+    if (year === undefined || month === undefined || day === undefined) return false
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    )
+  }, 'Invalid calendar date')
+
+export const editorPhotoProviderSchema = z.enum(EDITOR_PHOTO_PROVIDERS)
+export const editorPhotoTypeSchema = z.enum(DEFAULT_PHOTO_TYPES)
+
+export type PhotoSearchSelection = {
+  provider: EditorPhotoProvider
+  photoId: string
+  sequenceId?: string
+}
+
+export type PhotoDateSearch = {
+  from?: string
+  to?: string
+}
+
+export function isEditorPhotoProvider(value: string): value is EditorPhotoProvider {
+  return (EDITOR_PHOTO_PROVIDERS as readonly string[]).includes(value)
+}
+
+export function parseCommaList(raw: unknown): string[] | undefined {
+  if (raw == null || raw === '') return undefined
+  if (Array.isArray(raw)) return raw.map(String)
+  if (typeof raw === 'string') {
+    const parts = raw
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+    return parts.length > 0 ? parts : undefined
+  }
+  return undefined
+}
+
+export function parsePhotoParam(raw: unknown): PhotoSearchSelection | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined
+  const parts = raw.split('/')
+  if (parts.length < 2) return undefined
+  const provider = parts[0]
+  const photoId = parts[1]
+  if (!provider || !photoId || !isEditorPhotoProvider(provider)) return undefined
+  const sequenceId = parts[2]
+  return {
+    provider,
+    photoId,
+    ...(sequenceId ? { sequenceId } : {}),
+  }
+}
+
+export function serializePhotoParam(photo: PhotoSearchSelection | undefined): string | undefined {
+  if (!photo) return undefined
+  if (photo.sequenceId) return `${photo.provider}/${photo.photoId}/${photo.sequenceId}`
+  return `${photo.provider}/${photo.photoId}`
+}
+
+export function parsePhotoDateParam(raw: unknown): PhotoDateSearch | undefined {
+  if (raw == null || raw === '') return undefined
+
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const parsed = z
+      .object({
+        from: isoDateSchema.optional(),
+        to: isoDateSchema.optional(),
+      })
+      .safeParse(raw)
+    if (!parsed.success) return undefined
+    return parsed.data.from || parsed.data.to ? parsed.data : undefined
+  }
+
+  if (typeof raw !== 'string') return undefined
+
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+
+  const [fromRaw, toRaw] = trimmed.split('/')
+  const next: PhotoDateSearch = {}
+
+  if (fromRaw) {
+    const from = isoDateSchema.safeParse(fromRaw)
+    if (!from.success) return undefined
+    next.from = from.data
+  }
+
+  if (toRaw) {
+    const to = isoDateSchema.safeParse(toRaw)
+    if (!to.success) return undefined
+    next.to = to.data
+  }
+
+  return next.from || next.to ? next : undefined
+}
+
+export function serializePhotoDateParam(date: PhotoDateSearch | undefined): string | undefined {
+  if (!date?.from && !date?.to) return undefined
+  return `${date.from ?? ''}/${date.to ?? ''}`
+}
+
+export function isDefaultPhotoTypes(photoTypes: EditorPhotoType[] | undefined): boolean {
+  // Absent from URL / search object means both flat+pano (default).
+  if (!photoTypes || photoTypes.length === 0) return true
+  if (photoTypes.length !== DEFAULT_PHOTO_TYPES.length) return false
+  return DEFAULT_PHOTO_TYPES.every((type) => photoTypes.includes(type))
+}
+
+export const streetImageryUsedLabel: Record<EditorPhotoProvider, string> = {
+  mapillary: 'Mapillary',
+  panoramax: 'Panoramax',
+}

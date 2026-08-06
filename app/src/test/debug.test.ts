@@ -49,6 +49,13 @@ describe('mapSearchSchema', () => {
     ).toEqual({ debug: true })
   })
 
+  test('serializeMapSearch omits default photoTypes when absent', () => {
+    expect(serializeMapSearch({})).toEqual({})
+    expect(serializeMapSearch({ photoTypes: undefined })).toEqual({})
+    expect(serializeMapSearch({ photoTypes: ['flat', 'pano'] })).toEqual({})
+    expect(serializeMapSearch({ photoTypes: ['flat'] })).toEqual({ photoTypes: 'flat' })
+  })
+
   test('serializeMapSearch omits default focus values', () => {
     expect(serializeMapSearch({ focus: { parking: 'all', width: 'all' } })).toEqual({})
     expect(serializeMapSearch({ focus: { parking: 'noSurface' } })).toEqual({

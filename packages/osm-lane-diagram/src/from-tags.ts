@@ -1,5 +1,6 @@
 import {
   effectiveTagsForParse,
+  getDrivingSideFromTags,
   parseWayLanes,
   type LaneKind,
   type LaneSlot,
@@ -181,6 +182,16 @@ function readCyclewayOneway(tags: Record<string, string>, side: SidepathSide): s
   return tags[`cycleway:${side}:oneway`] ?? tags['cycleway:both:oneway']
 }
 
+/**
+ * Travel direction for an on-carriageway cycle slot on `side`.
+ *
+ * `cycleway:*:oneway=yes` means the CW is **oneway**, not “OSM-forward”.
+ * Direction still follows motor traffic on that side (same as cars). See
+ * research/lane-editor-tags/tags/cycleway-oneway.md.
+ *
+ * `oneway=-1` / `reverse` = contraflow relative to the OSM way (backward).
+ * `oneway=no` = both-ways.
+ */
 function deriveCarriagewayCycleDirection(
   tags: Record<string, string>,
   side: SidepathSide,
@@ -190,14 +201,12 @@ function deriveCarriagewayCycleDirection(
 
   if (cycleOneway === 'no') return 'both_ways'
   if (cycleOneway === '-1' || cycleOneway === 'reverse') {
-    return isMotorOneway(tags) ? 'backward' : side === 'left' ? 'backward' : 'forward'
-  }
-  if (cycleOneway === 'yes' || cycleOneway === 'true' || cycleOneway === '1') {
-    return 'forward'
+    return 'backward'
   }
 
+  // `yes` / absent / opposite_* / motor oneway: travel with cars on this side.
   if (isContraflowCycleValue(cycleValue)) {
-    return isMotorOneway(tags) ? 'backward' : side === 'left' ? 'backward' : 'forward'
+    return isMotorOneway(tags) ? 'backward' : withTrafficDirection(tags, side)
   }
 
   if (isMotorOneway(tags)) {
@@ -206,6 +215,18 @@ function deriveCarriagewayCycleDirection(
     return 'forward'
   }
 
+  return withTrafficDirection(tags, side)
+}
+
+/** RHT: left←backward, right←forward. LHT flips. */
+function withTrafficDirection(
+  tags: Record<string, string>,
+  side: SidepathSide,
+): RoadSpaceDirection {
+  const drivingSide = getDrivingSideFromTags(tags)
+  if (drivingSide === 'left') {
+    return side === 'left' ? 'forward' : 'backward'
+  }
   return side === 'left' ? 'backward' : 'forward'
 }
 

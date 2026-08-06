@@ -843,6 +843,15 @@ export function RoadSpaceDiagram({
           const y1 = Math.max(...line.points.map((p) => p.y))
           const midY = (y0 + y1) / 2
           const head = 7
+          const travelRects = scene.slotRects.filter(
+            (r) => r.label !== 'step_fill' && r.kind !== 'median' && !r.dimmed,
+          )
+          const leftEdge =
+            travelRects.length > 0 ? Math.min(...travelRects.map((r) => r.x)) : Math.max(8, x - 40)
+          const rightEdge =
+            travelRects.length > 0
+              ? Math.max(...travelRects.map((r) => r.x + r.width))
+              : Math.min(scene.widthPx - 8, x + 40)
           return (
             <g key={line.id} pointerEvents="none" opacity={0.55}>
               <polyline
@@ -867,6 +876,40 @@ export function RoadSpaceDiagram({
                 strokeLinecap="round"
                 points={`${x},${y0 + 4} ${x},${y1 - 4}`}
               />
+              <text
+                x={x + 8}
+                y={y0 + 12}
+                fontSize={9}
+                fill={COLORS.placement_guide}
+                fontFamily="ui-sans-serif, system-ui, sans-serif"
+                fontWeight={600}
+                opacity={0.95}
+              >
+                way ↓
+              </text>
+              <text
+                x={leftEdge + 4}
+                y={y0 + 12}
+                fontSize={9}
+                fill="#1e40af"
+                fontFamily="ui-sans-serif, system-ui, sans-serif"
+                fontWeight={700}
+                opacity={0.9}
+              >
+                *:left
+              </text>
+              <text
+                x={rightEdge - 4}
+                y={y0 + 12}
+                textAnchor="end"
+                fontSize={9}
+                fill="#9a3412"
+                fontFamily="ui-sans-serif, system-ui, sans-serif"
+                fontWeight={700}
+                opacity={0.9}
+              >
+                *:right
+              </text>
             </g>
           )
         })}

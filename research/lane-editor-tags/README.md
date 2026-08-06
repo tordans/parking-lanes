@@ -29,8 +29,9 @@ Filenames prefixed with `_` are **peripheral** for this research package (adjace
 | [osm-lane-visualizer.md](projects/osm-lane-visualizer.md) | OsmLaneVisualizer | QA tool covering 105+ lane-related keys | **Medium** — tag coverage checklist |
 | [map-machine.md](projects/map-machine.md) | Map Machine | Experimental road-lanes static map renderer | **Medium** — width/placement rendering reference |
 | [id-editor-discussions.md](projects/id-editor-discussions.md) | iD #387 | Editor UX history and open design questions | **Medium** — UX precedent |
+| [kyle-kiwi-id-lanes.md](projects/kyle-kiwi-id-lanes.md) | Kyle Hensel iD Lane Editor + osm-lane-parser | Live sidebar cross-section plugin (read-only); JS parser with 1000+ tag keys | **High** — working iD-side single-way inspector; tag inventory |
 | [josm-lane-features.md](projects/josm-lane-features.md) | JOSM `lane_features` | Older MapCSS lane QA style | **Low** — semantics reference |
-| [josm-turnlanes-core.md](projects/josm-turnlanes-core.md) | JOSM Turn Lanes (core) | Older turn-relations plugin | **Low** — distinct from turnlanes-tagging |
+| [josm-turnlanes-core.md](projects/josm-turnlanes-core.md) | JOSM Turn Lanes (core) | Older turn-relations plugin + junction GUI | **Medium** — schema obsolete; **renderer** is the lesson ([lane-rendering/josm-turnlanes-renderer.md](../lane-rendering/josm-turnlanes-renderer.md)) |
 | [id-pr-3822.md](projects/id-pr-3822.md) | iD PR #3822 | Abandoned map-overlay lane UI | **Low** — historical UX dead end |
 | [abstreet-osm-viewer.md](projects/abstreet-osm-viewer.md) | AB Street osm_viewer | Early web lane viz / road editor | **Reference** — superseded by osm2streets |
 | [berlin-verkehrswende-radwege.md](projects/berlin-verkehrswende-radwege.md) | Berlin Verkehrswende Radwege | DE cycleway tagging examples | **Reference** — fixture source |
@@ -60,6 +61,7 @@ Filenames prefixed with `_` are **peripheral** for this research package (adjace
 | [placement.md](tags/placement.md) | Way offset vs road cross-section (`placement=*`, transitions) |
 | [width-and-surface.md](tags/width-and-surface.md) | Short card: `width`, `width:lanes`, per-lane surface — deep dive in [../width-measurements/](../width-measurements/) |
 | [bicycle-lanes.md](tags/bicycle-lanes.md) | `cycleway:*` roadside vs on-carriageway `bicycle:lanes` / `cycleway:lanes` |
+| [cycleway-oneway.md](tags/cycleway-oneway.md) | `cycleway:*:oneway` — oneway vs travel direction; Karl-Marx dual-split example |
 | [bus-lanes.md](tags/bus-lanes.md) | Bus/PSV count scheme vs `bus:lanes` / `psv:lanes` designation |
 | [markings-and-change.md](tags/markings-and-change.md) | `lane_markings`, `change:lanes`, overtaking, separators |
 | [road-marking.md](tags/road-marking.md) | Approved `road_marking=*` — separate geometries for junction markings, arrows, gores (not every lane line) |
@@ -89,7 +91,7 @@ Collected from **Open questions** sections in project notes:
 - **Straßenraumkarte:** Is `cycleway:lanes` canonical in Neukölln vs unimplemented `bicycle:lanes` / `vehicle:lanes`? Published preprocessed lane dataset URL? Live tile script version?
 - **twpol/osm-tiles:** Live deploy from current `main`? LHT behaviour? Shared test-suite contribution still viable? ([_twpol-osm-tiles.md](projects/_twpol-osm-tiles.md))
 - **BjornRasmussen/Lanes:** Was the plugin ever in the official JOSM plugin manager?
-- **iD / other:** quincylvania lane mockup code open-sourced? ([#387](https://github.com/openstreetmap/iD/issues/387#issuecomment-447620208)); kepta GSoC proposal (2016) Google Doc not fetched
+- **iD / other:** quincylvania lane mockup code open-sourced? ([#387](https://github.com/openstreetmap/iD/issues/387#issuecomment-447620208)); kepta GSoC proposal (2016) Google Doc not fetched; Kyle Lane Editor UI source / write-back / npm publish — see [kyle-kiwi-id-lanes.md](projects/kyle-kiwi-id-lanes.md)
 - **OsmLaneVisualizer:** ~~deprecated `parking:lane`?~~ resolved — **not in current code**; `vehicle:lanes` referenced in `makeAccess` but never loaded ([osm-lane-visualizer.md](projects/osm-lane-visualizer.md))
 - **JOSM Turn Lanes:** Which plugin [#387 (2023)](https://github.com/openstreetmap/iD/issues/387#issuecomment-1569456785) criticizes — [turnlanes-tagging](projects/josm-turnlanes-tagging.md) or [core](projects/josm-turnlanes-core.md)?
 - **Forum:** [Making lanes orthogonal](https://community.openstreetmap.org/t/making-lanes-orthagonal-and-consistent/105033) mentions multiple tools / one “outdated / failed proposal” — exact list needs thread read

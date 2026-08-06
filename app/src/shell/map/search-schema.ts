@@ -10,6 +10,27 @@ import { z } from 'zod'
 import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from '../../i18n/uiLocale'
 import { parseDebugSearch } from '../debug'
 import { hasNonDefaultPrimaryFocus, implicitBoundariesEnabled } from './map-focus-state'
+import {
+  DEFAULT_PHOTO_TYPES,
+  editorPhotoProviderSchema,
+  editorPhotoTypeSchema,
+  isDefaultPhotoTypes,
+  parseCommaList,
+  parsePhotoDateParam,
+  parsePhotoParam,
+  serializePhotoDateParam,
+  serializePhotoParam,
+  type PhotoDateSearch,
+  type PhotoSearchSelection,
+} from './street-imagery-search-params'
+
+export type {
+  EditorPhotoProvider,
+  EditorPhotoType,
+  PhotoDateSearch,
+  PhotoSearchSelection,
+} from './street-imagery-search-params'
+export { DEFAULT_PHOTO_TYPES, EDITOR_PHOTO_PROVIDERS } from './street-imagery-search-params'
 
 export const parkingFocusSchema = z.enum(['all', 'noSurface'])
 export const widthFocusSchema = z.enum(['all', 'car', 'bicycle'])
@@ -155,6 +176,26 @@ export const mapSearchSchema = z.object({
     .string()
     .optional()
     .transform((s): UiLocale | undefined => (isUiLocale(s) ? s : undefined)),
+  /** Enabled street-level photo providers (`mapillary`, `panoramax`); omitted = off. */
+  photos: z
+    .preprocess(parseCommaList, z.array(editorPhotoProviderSchema).optional())
+    .catch(undefined),
+  /** Photo geometry filter; omitted = flat + pano. */
+  photoTypes: z.preprocess(
+    parseCommaList,
+    z
+      .array(editorPhotoTypeSchema)
+      .default([...DEFAULT_PHOTO_TYPES])
+      .catch([...DEFAULT_PHOTO_TYPES]),
+  ),
+  /** Capture-date filter (`from/to` ISO dates, slim `from/to` string in URL). */
+  photoDate: z
+    .preprocess(parsePhotoDateParam, z.custom<PhotoDateSearch>().optional())
+    .catch(undefined),
+  /** Selected photo while the viewer is open (`provider/photoId[/sequenceId]`). */
+  photo: z
+    .preprocess(parsePhotoParam, z.custom<PhotoSearchSelection>().optional())
+    .catch(undefined),
   // OAuth redirect callback — kept so validateSearch does not strip them before exchange.
   code: z.string().optional(),
   state: z.string().optional(),
@@ -192,6 +233,12 @@ export function serializeMapSearch(
     focus: serializeFocusParam(search.focus),
     ways: search.ways && search.ways !== DEFAULT_HIGHWAY_INCLUSION_STYLE ? search.ways : undefined,
     locale: search.locale && search.locale !== DEFAULT_UI_LOCALE ? search.locale : undefined,
+    photos: search.photos && search.photos.length > 0 ? search.photos.join(',') : undefined,
+    photoTypes: isDefaultPhotoTypes(search.photoTypes)
+      ? undefined
+      : (search.photoTypes?.join(',') ?? undefined),
+    photoDate: serializePhotoDateParam(search.photoDate),
+    photo: serializePhotoParam(search.photo),
   }
 }
 

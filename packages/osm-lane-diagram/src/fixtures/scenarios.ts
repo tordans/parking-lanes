@@ -264,6 +264,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
     title: 'Karl-Marx-Straße dual split',
     description:
       'Bidirectional Karl-Marx-Straße (way/37184618) with advisory cycle lanes meeting dual_carriageway oneways (selected way/964589555 + opposite way/213887879, crossing median).',
+    note: 'cycleway:both:oneway=yes → each side oneway with traffic (left←back, right←fwd). See research/lane-editor-tags/tags/cycleway-oneway.md.',
     segments: [
       {
         role: 'prev',
@@ -827,7 +828,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
         },
       },
     ],
-    note: 'Field bug (way/1002238496): top-left arrows are wrong; gaps in the middle are wrong.',
+    note: 'Gaps in the middle still under review. CW direction: cycleway:both:oneway=yes follows cars per side (see cycleway-oneway.md).',
   },
   {
     id: 't-junction',

@@ -247,3 +247,7 @@ Timeline and synthesis of [openstreetmap/iD#387](https://github.com/openstreetma
 - http://streetplan.net/
 - https://zlant.github.io/parking-lanes/
 - https://a-b-street.github.io/osm2streets/lane_editor.html
+
+### Later live sidebar implementation (outside this thread)
+
+- [kyle-kiwi-id-lanes.md](./kyle-kiwi-id-lanes.md) — Kyle Hensel’s iD fork hosts a **Lane Editor** plugin (React cross-section, read-only as of 2026-08) backed by [osm-lane-parser](https://github.com/k-yle/osm-lane-parser). Live: https://kyle.kiwi/iD

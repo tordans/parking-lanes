@@ -221,7 +221,7 @@ describe('from-tags', () => {
     expect(cwLabel(raw)).toEqual(['motor::forward', 'cycle:right:forward'])
   })
 
-  test('oneway cycleway:both:oneway=yes — both sides forward', () => {
+  test('oneway cycleway:both:oneway=yes — with traffic per side (not both OSM-forward)', () => {
     const seg = buildRoadSpaceSegment(
       {
         highway: 'secondary',
@@ -233,9 +233,25 @@ describe('from-tags', () => {
     )
     const cycles = seg.slots.filter((s) => s.kind === 'cycle' && s.zone === 'carriageway')
     expect(cycles).toHaveLength(2)
-    expect(cycles.every((c) => c.direction === 'forward')).toBe(true)
     expect(cycles[0]?.side).toBe('left')
+    expect(cycles[0]?.direction).toBe('backward')
     expect(cycles[1]?.side).toBe('right')
+    expect(cycles[1]?.direction).toBe('forward')
+  })
+
+  test('cycleway:right:oneway=-1 is OSM-backward (contraflow)', () => {
+    const seg = buildRoadSpaceSegment(
+      {
+        highway: 'secondary',
+        lanes: '2',
+        'cycleway:right': 'lane',
+        'cycleway:right:oneway': '-1',
+      },
+      { wayId: 24, role: 'current' },
+    )
+    const cycle = seg.slots.find((s) => s.kind === 'cycle' && s.zone === 'carriageway')
+    expect(cycle?.side).toBe('right')
+    expect(cycle?.direction).toBe('backward')
   })
 
   test('mirror(tags) then double-mirror restores segment stack', () => {
@@ -1011,13 +1027,12 @@ describe('layout continuity', () => {
     const dualRights = dualForwardCycles.map((r) => Math.round((r.x + r.width) * 100) / 100)
     expect(Math.max(...dualRights) - Math.min(...dualRights)).toBeLessThanOrEqual(0.05)
 
-    const biCycles = scene.slotRects.filter(
-      (r) =>
-        r.kind === 'cycle' &&
-        r.zone === 'carriageway' &&
-        (r.wayId === 37184618 || r.wayId === 1002238497),
-    )
-    expect(biCycles.every((r) => r.direction === 'forward')).toBe(true)
+    const biSegs = chain.segments.filter((s) => s.wayId === 37184618 || s.wayId === 1002238497)
+    for (const seg of biSegs) {
+      const cycles = seg.slots.filter((s) => s.kind === 'cycle' && s.zone === 'carriageway')
+      expect(cycles.find((c) => c.side === 'left')?.direction).toBe('backward')
+      expect(cycles.find((c) => c.side === 'right')?.direction).toBe('forward')
+    }
 
     expect(scene.slotRects.find((r) => r.label === 'sibling')).toBeUndefined()
     const opposite = scene.slotRects.filter((r) => r.wayId === 213887879)

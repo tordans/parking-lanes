@@ -400,5 +400,18 @@
   "editor_side_both": "Beide",
   "editor_side_both_sides": "Beide Seiten",
   "editor_side_left_side": "Linke Seite",
-  "editor_side_right_side": "Rechte Seite"
+  "editor_side_right_side": "Rechte Seite",
+  "street_imagery_provider_mapillary": "Mapillary",
+  "street_imagery_provider_panoramax": "Panoramax",
+  "street_imagery_filter_aria": "Straßenbild-Filter",
+  "street_imagery_filter_heading": "Foto-Filter",
+  "street_imagery_filter_flat": "Flache Fotos",
+  "street_imagery_filter_pano": "360°-Panoramen",
+  "street_imagery_filter_date": "Aufnahmedatum",
+  "street_imagery_filter_date_from": "Von",
+  "street_imagery_filter_date_to": "Bis",
+  "street_imagery_panel_title": "Straßenbilder",
+  "street_imagery_add_tag": "Foto-ID am Weg speichern",
+  "street_imagery_add_tag_key": "{key} setzen",
+  "street_imagery_id_precision_caveat": "Mapillary-IDs können in JavaScript an Genauigkeit verlieren; gespeicherten Wert prüfen."
 }

@@ -35,6 +35,7 @@ name=Sandboxstraße`
 
 const LANE_RENDERING_RESEARCH_URL = `${APP_REPO_URL}/blob/main/research/lane-rendering/README.md`
 const WIDTH_MEASUREMENTS_RESEARCH_URL = `${APP_REPO_URL}/blob/main/research/width-measurements/README.md`
+const CYCLEWAY_ONEWAY_RESEARCH_URL = `${APP_REPO_URL}/blob/main/research/lane-editor-tags/tags/cycleway-oneway.md`
 
 function fixtureById(id: string): DiagramFixture {
   const fixture = laneDiagramFixtures.find((f) => f.id === id)
@@ -51,16 +52,170 @@ function ariaLabelForFixture(fixture: DiagramFixture): string {
   return `${fixture.title}: plan sketch for ${roles || 'current'} segment(s)`
 }
 
+type TagSideHint = 'left' | 'right' | 'both' | null
+
+function tagSideHint(key: string): TagSideHint {
+  if (/(^|:)both(:|$)/.test(key) || key === 'both') return 'both'
+  if (/(^|:)left(:|$)/.test(key)) return 'left'
+  if (/(^|:)right(:|$)/.test(key)) return 'right'
+  return null
+}
+
+/**
+ * Geometry key (“Gitternetz”): OSM way as a vertical centreline with forward ↓,
+ * so *:left / *:right in the tag lists match diagram-left / diagram-right.
+ */
+function WayOrientationSchematic({
+  className,
+  compact = false,
+}: {
+  className?: string
+  compact?: boolean
+}): ReactElement {
+  const w = compact ? 88 : 140
+  const h = compact ? 72 : 96
+  const cx = w / 2
+  const top = compact ? 10 : 14
+  const bot = h - (compact ? 10 : 14)
+  const mid = (top + bot) / 2
+  return (
+    <svg
+      className={className}
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      role="img"
+      aria-label="OSM way points down; diagram left is asterisk-left, diagram right is asterisk-right"
+    >
+      <rect x={0.5} y={0.5} width={w - 1} height={h - 1} fill="#fafafa" stroke="#e4e4e7" />
+      {/* Side gutters */}
+      <rect
+        x={4}
+        y={top}
+        width={compact ? 18 : 28}
+        height={bot - top}
+        fill="#dbeafe"
+        opacity={0.55}
+      />
+      <rect
+        x={w - (compact ? 22 : 32)}
+        y={top}
+        width={compact ? 18 : 28}
+        height={bot - top}
+        fill="#ffedd5"
+        opacity={0.7}
+      />
+      {/* Way centreline + forward arrow (↓) */}
+      <line x1={cx} y1={top} x2={cx} y2={bot} stroke="#7c3aed" strokeWidth={2.5} />
+      <polyline
+        fill="none"
+        stroke="#7c3aed"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={`${cx - 5},${bot - 10} ${cx},${bot} ${cx + 5},${bot - 10}`}
+      />
+      <text
+        x={cx}
+        y={mid - 6}
+        textAnchor="middle"
+        className="fill-violet-700"
+        style={{ fontSize: compact ? 7 : 8, fontWeight: 600 }}
+      >
+        way ↓
+      </text>
+      <text
+        x={compact ? 13 : 18}
+        y={mid + 3}
+        textAnchor="middle"
+        className="fill-blue-800"
+        style={{ fontSize: compact ? 8 : 9, fontWeight: 700 }}
+      >
+        L
+      </text>
+      <text
+        x={w - (compact ? 13 : 18)}
+        y={mid + 3}
+        textAnchor="middle"
+        className="fill-orange-800"
+        style={{ fontSize: compact ? 8 : 9, fontWeight: 700 }}
+      >
+        R
+      </text>
+      {!compact ? (
+        <>
+          <text
+            x={18}
+            y={h - 4}
+            textAnchor="middle"
+            className="fill-zinc-500"
+            style={{ fontSize: 7 }}
+          >
+            *:left
+          </text>
+          <text
+            x={w - 18}
+            y={h - 4}
+            textAnchor="middle"
+            className="fill-zinc-500"
+            style={{ fontSize: 7 }}
+          >
+            *:right
+          </text>
+        </>
+      ) : null}
+    </svg>
+  )
+}
+
+function TagSideBadge({ side }: { side: TagSideHint }): ReactElement | null {
+  if (!side) return null
+  const styles =
+    side === 'left'
+      ? 'bg-blue-100 text-blue-900'
+      : side === 'right'
+        ? 'bg-orange-100 text-orange-900'
+        : 'bg-zinc-200 text-zinc-800'
+  const label = side === 'left' ? 'L' : side === 'right' ? 'R' : 'both'
+  return (
+    <span
+      className={`mr-1 inline-flex min-w-7 justify-center rounded-sm px-1 text-[0.65rem] font-semibold tracking-wide uppercase ${styles}`}
+      title={
+        side === 'left'
+          ? '*:left — diagram left (looking along way ↓)'
+          : side === 'right'
+            ? '*:right — diagram right (looking along way ↓)'
+            : '*:both — applies to left and right'
+      }
+    >
+      {label}
+    </span>
+  )
+}
+
 function TagList({ tags }: { tags: Record<string, string> }): ReactElement {
-  const entries = Object.entries(tags).sort(([a], [b]) => a.localeCompare(b))
+  const entries = Object.entries(tags).sort(([a], [b]) => {
+    const sideRank = (k: string) => {
+      const s = tagSideHint(k)
+      if (s === 'left') return 0
+      if (s === 'both') return 1
+      if (s === 'right') return 2
+      return 3
+    }
+    const d = sideRank(a) - sideRank(b)
+    return d !== 0 ? d : a.localeCompare(b)
+  })
   if (entries.length === 0) {
     return <p className="m-0 text-xs text-zinc-500">(no tags)</p>
   }
   return (
     <ul className="m-0 list-none space-y-0.5 pl-0 font-mono text-xs leading-relaxed text-zinc-800">
       {entries.map(([key, value]) => (
-        <li key={key}>
-          {key}={value}
+        <li key={key} className="flex items-baseline gap-0.5">
+          <TagSideBadge side={tagSideHint(key)} />
+          <span>
+            {key}={value}
+          </span>
         </li>
       ))}
     </ul>
@@ -71,30 +226,54 @@ function SegmentTags({ fixture }: { fixture: DiagramFixture }): ReactElement {
   const byRole = new Map(fixture.segments.map((s) => [s.role, s] as const))
   const hasSibling = fixture.segments.some((s) => s.dualSibling != null)
   return (
-    <div
-      className={`grid gap-4 ${hasSibling ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-3'}`}
-    >
-      {ROLE_ORDER.map((role) => {
-        const seg = byRole.get(role)
-        return (
-          <div key={role} className="min-w-0">
-            <p className="m-0 mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-              {ROLE_LABEL[role]}
-              {seg ? ` · way ${seg.wayId}` : ''}
-            </p>
-            {seg ? <TagList tags={seg.tags} /> : <p className="m-0 text-xs text-zinc-400">—</p>}
-            {seg?.dualSibling ? (
-              <div className="mt-3 border-t border-zinc-100 pt-3">
-                <p className="m-0 mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                  Opposite · way {seg.dualSibling.wayId}
+    <section aria-labelledby="segment-tags-heading" className="mt-2">
+      <div className="mb-3 flex flex-wrap items-start gap-4 rounded-sm border border-zinc-200 bg-zinc-50/80 px-3 py-2.5">
+        <WayOrientationSchematic />
+        <div className="min-w-0 flex-1">
+          <h3
+            id="segment-tags-heading"
+            className="m-0 text-sm font-semibold tracking-wide text-zinc-500 uppercase"
+          >
+            Tag lists ↔ geometry
+          </h3>
+          <p className="mt-1 mb-0 max-w-2xl text-sm leading-relaxed text-zinc-600">
+            Same orientation as the lane sketch above: OSM way direction points{' '}
+            <strong className="font-semibold text-zinc-800">down</strong> (violet ↓). Looking along
+            the way, <span className="font-semibold text-blue-800">L / *:left</span> is diagram-left
+            and <span className="font-semibold text-orange-800">R / *:right</span> is diagram-right.
+            Badges on tag lines mark sided keys. (Lane sketch = editor view; this key = map-geometry
+            left/right.)
+          </p>
+        </div>
+      </div>
+      <div
+        className={`grid gap-4 ${hasSibling ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-3'}`}
+      >
+        {ROLE_ORDER.map((role) => {
+          const seg = byRole.get(role)
+          return (
+            <div key={role} className="min-w-0 rounded-sm border border-zinc-100 bg-white p-2">
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <p className="m-0 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  {ROLE_LABEL[role]}
+                  {seg ? ` · way ${seg.wayId}` : ''}
                 </p>
-                <TagList tags={seg.dualSibling.tags} />
+                {seg ? <WayOrientationSchematic compact className="shrink-0" /> : null}
               </div>
-            ) : null}
-          </div>
-        )
-      })}
-    </div>
+              {seg ? <TagList tags={seg.tags} /> : <p className="m-0 text-xs text-zinc-400">—</p>}
+              {seg?.dualSibling ? (
+                <div className="mt-3 border-t border-zinc-100 pt-3">
+                  <p className="m-0 mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                    Opposite · way {seg.dualSibling.wayId}
+                  </p>
+                  <TagList tags={seg.dualSibling.tags} />
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -532,6 +711,20 @@ export function LanesAuditDemo({ demoId }: { demoId: AuditDemoId }): ReactElemen
           >
             research/width-measurements
           </a>
+          {demoId?.startsWith('karl-marx') ? (
+            <>
+              {' '}
+              ·{' '}
+              <a
+                href={CYCLEWAY_ONEWAY_RESEARCH_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-700 hover:underline"
+              >
+                cycleway:*:oneway
+              </a>
+            </>
+          ) : null}
           . Share this demo via the URL path.
         </Note>
       </footer>

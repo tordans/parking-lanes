@@ -31,6 +31,8 @@ import { useMapActions } from './map-store'
 import { MapBackgroundLayerSource } from './MapBackgroundLayerSource'
 import { MapNavigationControls } from './MapNavigationControls'
 import { MapResizeHandler } from './MapResizeHandler'
+import { MapStreetImageryLayers } from './MapStreetImageryLayers'
+import { StreetImageryViewerPanel } from './StreetImageryViewerPanel'
 import { useFlyToWay } from './use-fly-to-way'
 import { useMapCoverageLifecycle } from './use-map-coverage-lifecycle'
 import { useMapPageInteractions } from './use-map-page-interactions'
@@ -217,6 +219,7 @@ function MapPageContent({
                 {/* Above default style, below mode/debug layers (react-map-gl child order). */}
                 <MapBackgroundLayerSource />
                 <AtlasBoundariesSource />
+                <MapStreetImageryLayers />
                 <CoverageDebugMapLayers hoveredGroupId={coverageDebug.hoveredGroupId} />
                 <ModeMapLayers />
                 <WayCutLayers />
@@ -241,8 +244,9 @@ function MapPageContent({
 
           <MapNavigationControls />
 
-          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-10 flex flex-col gap-2 sm:top-2.5">
+          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-20 flex flex-col gap-2 sm:top-2.5">
             <CoverageDebugTooltip info={coverageDebug.coverageHoverInfo} />
+            <StreetImageryViewerPanel />
           </div>
         </div>
       }

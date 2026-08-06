@@ -1,0 +1,297 @@
+import { setStreetImageryConfig, type StreetImageryConfig } from '@osm-editor-kit/street-imagery'
+import {
+  emptyLineCollection,
+  emptyPointCollection,
+  mapFeaturesToFeatureCollection,
+  photosToFeatureCollection,
+  sequencesToFeatureCollection,
+} from '@osm-editor-kit/street-imagery'
+import {
+  buildMapFeatureLayerFilter,
+  buildPhotoLayerFilter,
+  type DateRange,
+  type PhotoTypeFilter,
+} from '@osm-editor-kit/street-imagery'
+import type { Bbox, NormalizedPhoto } from '@osm-editor-kit/street-imagery'
+import {
+  adapterById,
+  featureLayerId,
+  featureSourceId,
+  photoLayerId,
+  photoSourceId,
+  sequenceLayerId,
+  sequenceSourceId,
+  type ProviderId,
+} from '@osm-editor-kit/street-imagery'
+import type { DataDrivenPropertyValueSpecification, ExpressionSpecification } from 'maplibre-gl'
+import { Fragment, useEffect } from 'react'
+import { Layer, Source } from 'react-map-gl/maplibre'
+import {
+  useProviderMapFeatures,
+  useProviderPhotos,
+  useProviderSequences,
+} from './hooks/useProviderData'
+import {
+  resolveSelectedSequence,
+  StreetLevelImagerySelectionOverlay,
+} from './StreetLevelImagerySelectionOverlay'
+import { StreetLevelImageryViewCone } from './StreetLevelImageryViewCone'
+
+export type PhotoFilter = {
+  photoTypes?: PhotoTypeFilter[]
+  date?: DateRange
+}
+
+type ProviderLayerProps = {
+  providerId: ProviderId
+  bbox: Bbox | null
+  zoom: number
+  filter?: PhotoFilter
+  showSequences: boolean
+  photoCircleColor: DataDrivenPropertyValueSpecification<string>
+  mapFeatureCircleColor: DataDrivenPropertyValueSpecification<string>
+}
+
+const CIRCLE_RADIUS: ['interpolate', ['linear'], ['zoom'], ...number[]] = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  10,
+  2,
+  14,
+  4,
+  18,
+  6,
+]
+
+const FEATURE_CIRCLE_RADIUS: ['interpolate', ['linear'], ['zoom'], ...number[]] = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  10,
+  1.5,
+  14,
+  3,
+  18,
+  4,
+]
+
+const PHOTO_SORT_KEY: ExpressionSpecification = ['coalesce', ['get', 'capturedAt'], 0]
+const FEATURE_SORT_KEY: ExpressionSpecification = ['coalesce', ['get', 'lastSeenAt'], 0]
+
+const PhotoProviderLayer = ({
+  providerId,
+  bbox,
+  zoom,
+  filter,
+  showSequences,
+  photoCircleColor,
+}: ProviderLayerProps) => {
+  const adapter = adapterById[providerId]
+  const { data: photos = [] } = useProviderPhotos(providerId, bbox, zoom)
+  const { data: sequences = [] } = useProviderSequences(providerId, bbox, zoom)
+
+  const photoCollection =
+    zoom >= adapter.minZoom ? photosToFeatureCollection(photos) : emptyPointCollection()
+  const sequenceCollection =
+    showSequences && zoom >= (adapter.sequencesMinZoom ?? adapter.minZoom)
+      ? sequencesToFeatureCollection(sequences)
+      : emptyLineCollection()
+
+  const photoFilter = buildPhotoLayerFilter(filter?.photoTypes, filter?.date)
+  const photoSrcId = photoSourceId(providerId)
+
+  return (
+    <>
+      <Source
+        key={photoSrcId}
+        id={photoSrcId}
+        type="geojson"
+        data={photoCollection}
+        promoteId="photoId"
+      />
+      <Layer
+        id={photoLayerId(providerId)}
+        type="circle"
+        source={photoSrcId}
+        filter={photoFilter}
+        layout={{ 'circle-sort-key': PHOTO_SORT_KEY }}
+        paint={{
+          'circle-radius': CIRCLE_RADIUS,
+          'circle-color': photoCircleColor,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff',
+        }}
+      />
+
+      {adapter.fetchSequences && showSequences ? (
+        <>
+          <Source
+            key={sequenceSourceId(providerId)}
+            id={sequenceSourceId(providerId)}
+            type="geojson"
+            data={sequenceCollection}
+          />
+          <Layer
+            id={sequenceLayerId(providerId)}
+            type="line"
+            source={sequenceSourceId(providerId)}
+            paint={{
+              'line-color': adapter.color,
+              'line-width': 2,
+              'line-opacity': 0.35,
+            }}
+          />
+        </>
+      ) : null}
+    </>
+  )
+}
+
+const MapFeatureProviderLayer = ({
+  providerId,
+  bbox,
+  zoom,
+  filter,
+  mapFeatureCircleColor,
+}: ProviderLayerProps) => {
+  const adapter = adapterById[providerId]
+  const { data: features = [] } = useProviderMapFeatures(providerId, bbox, zoom)
+
+  const featureCollection =
+    zoom >= adapter.minZoom ? mapFeaturesToFeatureCollection(features) : emptyPointCollection()
+
+  const featureFilter = buildMapFeatureLayerFilter(filter?.date)
+  const featureSrcId = featureSourceId(providerId)
+
+  return (
+    <>
+      <Source
+        key={featureSrcId}
+        id={featureSrcId}
+        type="geojson"
+        data={featureCollection}
+        promoteId="featureId"
+      />
+      <Layer
+        id={featureLayerId(providerId)}
+        type="circle"
+        source={featureSrcId}
+        filter={featureFilter}
+        layout={{ 'circle-sort-key': FEATURE_SORT_KEY }}
+        paint={{
+          'circle-radius': FEATURE_CIRCLE_RADIUS,
+          'circle-color': mapFeatureCircleColor,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff',
+        }}
+      />
+    </>
+  )
+}
+
+const ProviderLayer = (props: ProviderLayerProps) => {
+  const adapter = adapterById[props.providerId]
+  return adapter.kind === 'mapFeature' ? (
+    <MapFeatureProviderLayer {...props} />
+  ) : (
+    <PhotoProviderLayer {...props} />
+  )
+}
+
+export type StreetLevelImagerySourcesAndLayersProps = {
+  providers: ProviderId[]
+  filter?: PhotoFilter
+  bbox: Bbox | null
+  zoom: number
+  options: {
+    config?: StreetImageryConfig
+    showSequences?: boolean
+    showViewCone?: boolean
+    showSelectionHighlight?: boolean
+    selectedPhoto?: NormalizedPhoto | null
+    selectedSequenceId?: string | null
+    viewerPov?: {
+      bearing?: number | null
+      hfov?: number | null
+      lngLat?: [number, number] | null
+    } | null
+    photoCircleColor: DataDrivenPropertyValueSpecification<string>
+    mapFeatureCircleColor: DataDrivenPropertyValueSpecification<string>
+  }
+}
+
+export const StreetLevelImagerySourcesAndLayers = ({
+  providers,
+  filter,
+  bbox,
+  zoom,
+  options,
+}: StreetLevelImagerySourcesAndLayersProps) => {
+  const {
+    config,
+    showSequences = true,
+    showViewCone = false,
+    showSelectionHighlight = false,
+    selectedPhoto,
+    selectedSequenceId,
+    viewerPov,
+    photoCircleColor,
+    mapFeatureCircleColor,
+  } = options
+
+  useEffect(
+    function applyStreetImageryConfig() {
+      if (config) {
+        setStreetImageryConfig(config)
+      }
+    },
+    [config],
+  )
+
+  const selectedProviderId = selectedPhoto?.providerId ?? null
+  const { data: sequences = [] } = useProviderSequences(
+    selectedProviderId ?? 'mapillary',
+    showSelectionHighlight && selectedProviderId ? bbox : null,
+    zoom,
+  )
+
+  const selectedSequence = resolveSelectedSequence(
+    selectedPhoto,
+    sequences,
+    selectedSequenceId ?? selectedPhoto?.sequenceId,
+  )
+
+  return (
+    <>
+      {providers.map((providerId) => (
+        <Fragment key={providerId}>
+          <ProviderLayer
+            bbox={bbox}
+            filter={filter}
+            mapFeatureCircleColor={mapFeatureCircleColor}
+            photoCircleColor={photoCircleColor}
+            providerId={providerId}
+            showSequences={showSequences}
+            zoom={zoom}
+          />
+        </Fragment>
+      ))}
+
+      {showViewCone && selectedPhoto ? (
+        <StreetLevelImageryViewCone
+          selectedPhoto={selectedPhoto}
+          viewerPov={viewerPov}
+          zoom={zoom}
+        />
+      ) : null}
+
+      {showSelectionHighlight ? (
+        <StreetLevelImagerySelectionOverlay
+          selectedPhoto={selectedPhoto}
+          selectedSequence={selectedSequence}
+        />
+      ) : null}
+    </>
+  )
+}

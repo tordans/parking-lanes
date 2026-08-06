@@ -400,5 +400,18 @@
   "editor_side_both": "Both",
   "editor_side_both_sides": "Both sides",
   "editor_side_left_side": "Left side",
-  "editor_side_right_side": "Right side"
+  "editor_side_right_side": "Right side",
+  "street_imagery_provider_mapillary": "Mapillary",
+  "street_imagery_provider_panoramax": "Panoramax",
+  "street_imagery_filter_aria": "Street imagery filters",
+  "street_imagery_filter_heading": "Photo filters",
+  "street_imagery_filter_flat": "Flat photos",
+  "street_imagery_filter_pano": "360° panoramas",
+  "street_imagery_filter_date": "Capture date",
+  "street_imagery_filter_date_from": "From",
+  "street_imagery_filter_date_to": "To",
+  "street_imagery_panel_title": "Street imagery",
+  "street_imagery_add_tag": "Add photo ID to way",
+  "street_imagery_add_tag_key": "Set {key}",
+  "street_imagery_id_precision_caveat": "Mapillary IDs may lose precision in JavaScript; verify the stored value."
 }

@@ -1,0 +1,24 @@
+{
+  "name": "@osm-editor-kit/street-imagery",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test-run": "bun test src"
+  },
+  "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
+    "pbf": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "bun-types": "^1.2.20",
+    "maplibre-gl": "^5.7.1",
+    "typescript": "^7.0.0",
+    "vite": "^8.0.0"
+  }
+}

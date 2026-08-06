@@ -77,6 +77,7 @@ Regional defaults matter: SRK uses ~3.0 m car / 1.5 m cycle / 2.2 m parking (Ber
 
 | Approach | Mechanism | Trade-off |
 |----------|-----------|-----------|
+| **Fillet + clip (JOSM turnlanes)** | Trim approaches at curb intersections; fill junction with cubic arc fillets; clip dashes against that polygon; pocket lanes via metre width tapers | Needs junction-local model (+ optional length relations historically); looks continuous. Deep dive: [josm-turnlanes-renderer.md](./josm-turnlanes-renderer.md) |
 | **Cut-out** | Don’t draw lane markings inside `area:highway` + `junction=yes` (override with `lane_markings:junction=yes`) | Clean map; no turn-lane continuity through junction |
 | **Thicken–trim–polygon** | Collision of thickened sides → trim roads → clockwise intersection polygon; assume perpendicular meet | Continuous paved area; hard cases (gores, slip lanes, islands) |
 | **Separate marking geometries** | Approved `road_marking=*` for arrows/stop lines/gores not derivable from centreline | Extra mapping; renderer must consume new key |

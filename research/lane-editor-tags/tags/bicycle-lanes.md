@@ -24,8 +24,9 @@ Cycling infrastructure on or beside a road is tagged through **two parallel syst
 | `cycleway:right=lane` | Painted bike lane on right side |
 | `cycleway:right=track` | Separated cycle track (may warrant separate `highway=cycleway` way) |
 | `cycleway:right=shared_lane` | Shared lane marking |
-| `cycleway:right:oneway=-1` | Contraflow on one-way street |
+| `cycleway:right:oneway=-1` | Contraflow relative to the OSM way |
 | `cycleway:both=lane` | Both sides ([Straßenraumkarte](https://strassenraumkarte.osm-berlin.org/posts/2021-12-31-micromap-update) example) |
+| `cycleway:both:oneway=yes` | Both sides **oneway**; travel still follows cars on each side — see [cycleway-oneway.md](cycleway-oneway.md) |
 
 Subkeys: `cycleway:right:width`, `cycleway:right:buffer`, `cycleway:share_busway` (with bus lane).
 

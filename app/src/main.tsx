@@ -8,10 +8,12 @@ import { Toaster } from 'sonner'
 import { createAppQueryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
 import { appRouterSearch } from './shell/map/app-router-search'
+import { initStreetImageryConfig } from './shell/map/street-imagery-config'
 import './styles/tailwind.css'
 import './styles/main.scss'
 
 redirectLegacyMapHash()
+initStreetImageryConfig()
 
 const basepath = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
 

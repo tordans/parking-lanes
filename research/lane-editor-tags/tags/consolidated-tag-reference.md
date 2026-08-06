@@ -2,7 +2,7 @@
 
 Master table for lane-editor research. **Editor priority:** must = core editing; should = common real-world cases; nice = advanced/conditional/experimental.
 
-Projects: **SRK** = Straßenraumkarte, **O2L** = osm2lanes (archived), **O2S** = osm2streets, **MUV** = muv-osm (active lane parser), **OLV** = OsmLaneVisualizer, **MM** = Map Machine (road lanes mode), **JOSM-LF** = JOSM lane_features style, **JOSM-LRA** = JOSM Lane and Road Attributes style.
+Projects: **SRK** = Straßenraumkarte, **O2L** = osm2lanes (archived), **O2S** = osm2streets, **MUV** = muv-osm (active lane parser), **OLV** = OsmLaneVisualizer, **MM** = Map Machine (road lanes mode), **JOSM-LF** = JOSM lane_features style, **JOSM-LRA** = JOSM Lane and Road Attributes style, **OLP** = [k-yle/osm-lane-parser](../projects/kyle-kiwi-id-lanes.md) (Kyle Lane Editor backend).
 
 **Note:** O2S per-way lane parsing delegates to **MUV** since [osm2streets PR #233](https://github.com/a-b-street/osm2streets/pull/233); O2L rows reflect the archived in-repo algorithm.
 

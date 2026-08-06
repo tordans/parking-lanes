@@ -1,3 +1,7 @@
+import {
+  queryStreetImageryFeatures,
+  streetImageryInteractiveLayerIds,
+} from '@osm-editor-kit/street-imagery-react'
 import { useParams, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { MapLayerMouseEvent, MapMouseEvent } from 'react-map-gl/maplibre'
@@ -14,6 +18,8 @@ import type { StreetSpaceModeId } from '../../modes/types'
 import { useWidthModeHandlers } from '../../modes/width/use-width-mode-handlers'
 import { coverageDebugFetchFillLayerId } from './CoverageDebugLayers'
 import { useCoverageDebugHover } from './CoverageDebugOverlay'
+import { isEditorPhotoProvider } from './street-imagery-search-params'
+import { useModeSearchNavigation } from './use-mode-search-navigation'
 import {
   WAY_CUT_MARKERS_HITAREA_LAYER_ID,
   WAY_CUT_PREVIEW_HITAREA_LAYER_ID,
@@ -22,7 +28,8 @@ import {
 import { useIsCutActive } from './way-cut-store'
 
 export function useMapPageInteractions() {
-  const { debug } = useSearch({ from: '/$mode' })
+  const { debug, photos = [] } = useSearch({ from: '/$mode' })
+  const { updateSearch } = useModeSearchNavigation()
   const { mode: modeSlug } = useParams({ from: '/$mode' })
   const resolvedModeId = modeSlug as StreetSpaceModeId
   const mode = useActiveStreetSpaceMode(resolvedModeId)
@@ -45,6 +52,7 @@ export function useMapPageInteractions() {
   const tableHandlers = useTableModeHandlers()
 
   const interactiveLayerIds = [
+    ...streetImageryInteractiveLayerIds(photos),
     ...mode.interactiveLayerIds,
     WAY_CUT_MARKERS_HITAREA_LAYER_ID,
     WAY_CUT_PREVIEW_HITAREA_LAYER_ID,
@@ -137,6 +145,24 @@ export function useMapPageInteractions() {
 
   function handleClick(event: MapLayerMouseEvent) {
     if (isCutActive && handleCutClick(event)) return
+
+    const photoHits = queryStreetImageryFeatures(event).filter((hit) => hit.kind === 'photo')
+    const photoHit = photoHits[0]
+    if (photoHit?.photoId && isEditorPhotoProvider(photoHit.providerId)) {
+      updateSearch(
+        {
+          photo: {
+            provider: photoHit.providerId,
+            photoId: photoHit.photoId,
+            ...(photoHit.sequenceId ? { sequenceId: photoHit.sequenceId } : {}),
+          },
+        },
+        { replace: true },
+      )
+      event.originalEvent.stopPropagation()
+      return
+    }
+
     if (event.features?.length) {
       handleLayerClick(event)
       return
