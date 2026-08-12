@@ -1,14 +1,34 @@
 {
   "name": "@osm-editor-kit/street-imagery-react",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-alpha.0",
+  "description": "React MapLibre layers and photo viewers for street-level imagery providers.",
+  "license": "MIT",
+  "author": "Tobias Jordans",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osmberlin/street-space-editor.git",
+    "directory": "packages/street-imagery-react"
+  },
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery-react",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
+    "build": "tsup && rm -f .tsbuildinfo && tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test-run": "bun test --pass-with-no-tests src"
+    "test-run": "bun test --pass-with-no-tests src",
+    "prepublishOnly": "bun run build && bun ../../scripts/package-exports-for-publish.ts",
+    "postpublish": "bun ../../scripts/package-exports-restore.ts",
+    "prepack": "bun ../../scripts/package-exports-for-publish.ts",
+    "postpack": "bun ../../scripts/package-exports-restore.ts"
   },
   "devDependencies": {
     "@panoramax/web-viewer": "^5",
@@ -22,11 +42,12 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-map-gl": "^8.0.4",
+    "tsup": "^8.5.1",
     "typescript": "^7.0.0",
     "zustand": "^5.0.7"
   },
   "peerDependencies": {
-    "@osm-editor-kit/street-imagery": "*",
+    "@osm-editor-kit/street-imagery": "workspace:*",
     "@panoramax/web-viewer": "^5",
     "@tanstack/react-query": "^5",
     "mapillary-js": "^4",
@@ -35,5 +56,12 @@
     "react-dom": "^19",
     "react-map-gl": "^8",
     "zustand": "^5"
+  },
+  "publishExports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   }
 }

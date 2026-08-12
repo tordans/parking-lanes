@@ -1,15 +1,36 @@
 {
   "name": "@osm-editor-kit/osm-coverage",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-alpha.0",
+  "description": "Incremental OSM coverage fetching for map viewports with TanStack Query session state.",
+  "license": "MIT",
+  "author": "Tobias Jordans",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osmberlin/street-space-editor.git",
+    "directory": "packages/osm-coverage"
+  },
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-coverage",
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./dev-osm-map-fixture": "./src/dev-osm-map-fixture/index.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
+    "build": "tsup && rm -f .tsbuildinfo && tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test-run": "bun test src/test"
+    "test-run": "bun test src/test",
+    "prepublishOnly": "bun run build && bun ../../scripts/package-exports-for-publish.ts",
+    "postpublish": "bun ../../scripts/package-exports-restore.ts",
+    "prepack": "bun ../../scripts/package-exports-for-publish.ts",
+    "postpack": "bun ../../scripts/package-exports-restore.ts"
   },
   "dependencies": {
     "@osm-editor-kit/osm-data": "workspace:*",
@@ -28,9 +49,17 @@
     "@types/react": "^19.1.10",
     "bun-types": "^1.2.20",
     "react": "^19.1.1",
+    "tsup": "^8.5.1",
     "typescript": "^7.0.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
+  },
+  "publishExports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   }
 }

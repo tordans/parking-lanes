@@ -1,0 +1,35 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@osm-editor-kit/street-space-editor": "0.9.0",
+    "@osm-editor-kit/osm-changeset": "0.0.0",
+    "@osm-editor-kit/osm-coverage": "0.0.0",
+    "@osm-editor-kit/osm-data": "0.0.0",
+    "@osm-editor-kit/osm-editor-links": "0.0.0",
+    "@osm-editor-kit/osm-lane-diagram": "0.0.0",
+    "@osm-editor-kit/osm-lanes": "0.0.0",
+    "@osm-editor-kit/osm-map-url": "0.0.0",
+    "@osm-editor-kit/osm-maplibre": "0.0.0",
+    "@osm-editor-kit/osm-oauth": "0.0.0",
+    "@osm-editor-kit/osm-route-snapper": "0.0.0",
+    "@osm-editor-kit/osm-sidepath-tags": "0.0.0",
+    "@osm-editor-kit/osm-surface-quality": "0.0.0",
+    "@osm-editor-kit/osm-tag-syntax": "0.0.0",
+    "@osm-editor-kit/osm-ui": "0.0.0",
+    "@osm-editor-kit/osm-way-chain": "0.0.0",
+    "@osm-editor-kit/osm-way-edit": "0.0.0",
+    "@osm-editor-kit/street-imagery": "0.0.0",
+    "@osm-editor-kit/street-imagery-react": "0.0.0"
+  },
+  "changesets": [
+    "alpha-osm-coverage",
+    "alpha-osm-data",
+    "alpha-osm-map-url",
+    "alpha-osm-maplibre",
+    "alpha-osm-route-snapper",
+    "alpha-osm-way-chain",
+    "alpha-street-imagery-react",
+    "alpha-street-imagery"
+  ]
+}

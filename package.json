@@ -21,14 +21,21 @@
     "check": "bun run ensure-paraglide && bun run --parallel type-check:all lint format test-run:all",
     "check-ci": "bun run ensure-paraglide && bun run --parallel type-check:all lint-check format-check test-run:all",
     "check-pre-push": "bun run ensure-paraglide && bun run --parallel type-check:all lint format test-run:all",
+    "build:packages": "bun run --filter '@osm-editor-kit/osm-data' --filter '@osm-editor-kit/osm-way-chain' --filter '@osm-editor-kit/osm-coverage' --filter '@osm-editor-kit/osm-map-url' --filter '@osm-editor-kit/osm-maplibre' --filter '@osm-editor-kit/osm-route-snapper' --filter '@osm-editor-kit/street-imagery' --filter '@osm-editor-kit/street-imagery-react' build",
+    "packages:check": "bun run scripts/packages-release.ts -- --check",
+    "packages:release": "bun run scripts/packages-release.ts",
+    "version-packages": "changeset version",
     "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
+    "@clack/prompts": "^1.7.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "9.1.7",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.70.0",
-    "oxlint-config-react-hooks-js": "^1.1.4"
+    "oxlint-config-react-hooks-js": "^1.1.4",
+    "picocolors": "^1.1.1",
+    "tsup": "^8.5.1"
   }
 }

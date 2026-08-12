@@ -1,10 +1,16 @@
 # `@osm-editor-kit/street-imagery`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-Provider-agnostic street-level imagery core: ten adapters (Mapillary, Panoramax, KartaView, Mapilio, Bing Streetside, Vegbilder, Google Street View, Apple Look Around, plus Mapillary signs and map features), normalized photo/sequence/map-feature types, bbox and MVT tile fetching, GeoJSON builders, viewfield geometry, date/type filters, and viewer helpers (deep links, click-radius grouping, thumbnails).
+- Talk to many street-photo providers through one adapter API (Mapillary, Panoramax, KartaView, Mapilio, Bing Streetside, Vegbilder, Google Street View, Apple Look Around, …)
+- Normalize photos, sequences, and map features into shared types
+- Fetch by map bbox or MVT tiles
+- Build GeoJSON for map layers (points, sequences, viewfields)
+- Filter by date and photo type (flat / panorama)
+- Helpers for deep links, nearby-photo grouping, and thumbnails
 
 For MapLibre React layers, use `@osm-editor-kit/street-imagery-react`.
 

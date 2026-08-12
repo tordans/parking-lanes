@@ -12,6 +12,14 @@ minimumReleaseAgeExcludes = [
   # Own / just-published packages — remove once past the 5-day age gate.
   "@osm-editor-kit/maplibre-editor-layer-index",
   "@osm-editor-kit/surface-smoothness-data",
+  "@osm-editor-kit/osm-coverage",
+  "@osm-editor-kit/osm-data",
+  "@osm-editor-kit/osm-map-url",
+  "@osm-editor-kit/osm-maplibre",
+  "@osm-editor-kit/osm-route-snapper",
+  "@osm-editor-kit/osm-way-chain",
+  "@osm-editor-kit/street-imagery",
+  "@osm-editor-kit/street-imagery-react",
   "@tilda-geo/bicycle-infrastructure",
 ]
 

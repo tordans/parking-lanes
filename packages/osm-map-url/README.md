@@ -1,10 +1,15 @@
 # `@osm-editor-kit/osm-map-url`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-Parse and serialize compact map and feature query params for OSM editor URLs: `?map=zoom/lat/lng`, `?f=way/id`, legacy `#map=` hash redirects, TanStack Router search helpers, and a `location` cookie for last map view.
+- Read and write `?map=zoom/lat/lng` for the map camera
+- Read and write `?f=way/id` (and sidepath refs) for the selected feature
+- Redirect old `#map=…` hashes to the query-param form
+- Helpers for TanStack Router search params (slash form in the URL bar)
+- Store / restore the last map view in a `location` cookie
 
 ## Usage
 

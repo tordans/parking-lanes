@@ -1,10 +1,15 @@
 # `@osm-editor-kit/osm-maplibre`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-MapLibre helpers for OSM editor maps: a patched OpenFreeMap Positron basemap (null-safe filters, custom overlay anchor), metre-based line width/offset paint expressions, and focus styling for active vs muted layers.
+- Ready-to-use OpenFreeMap Positron basemap style for MapLibre editors
+- Anchor layer id so your overlays stack above the basemap
+- Line width and offset from real-world metres (zoom-aware paint expressions)
+- Focus styling helpers (highlight matching features, mute the rest)
+- Utilities to patch or rebuild OpenFreeMap styles at runtime
 
 ## Usage
 

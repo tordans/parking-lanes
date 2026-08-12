@@ -1,19 +1,20 @@
 {
-  "name": "@osm-editor-kit/street-imagery",
+  "name": "@osm-editor-kit/osm-route-snapper",
   "version": "0.1.0-alpha.0",
-  "description": "Street-level imagery providers, GeoJSON, viewfields, tiles, and viewer helpers (Mapillary, Panoramax, and more).",
+  "description": "Build route-snapper graph bytes and routing-network GeoJSON from parsed OSM coverage (WASM).",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
-    "directory": "packages/street-imagery"
+    "directory": "packages/osm-route-snapper"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-route-snapper",
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "vendor"
   ],
   "exports": {
     ".": "./src/index.ts"
@@ -25,23 +26,28 @@
   "scripts": {
     "build": "tsup && rm -f .tsbuildinfo && tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test-run": "bun test src",
+    "test-run": "bun test src/test",
     "prepublishOnly": "bun run build && bun ../../scripts/package-exports-for-publish.ts",
     "postpublish": "bun ../../scripts/package-exports-restore.ts",
     "prepack": "bun ../../scripts/package-exports-for-publish.ts",
     "postpack": "bun ../../scripts/package-exports-restore.ts"
   },
   "dependencies": {
-    "@mapbox/vector-tile": "^3.0.0",
-    "pbf": "^5.1.0"
+    "@osm-editor-kit/osm-data": "workspace:*"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
+    "@types/react": "^19.1.10",
     "bun-types": "^1.2.20",
-    "maplibre-gl": "^5.7.1",
+    "react": "^19.1.1",
+    "route-snapper": "0.4.9",
     "tsup": "^8.5.1",
-    "typescript": "^7.0.0",
-    "vite": "^8.0.0"
+    "typescript": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.85.5",
+    "react": "^19.0.0",
+    "route-snapper": "^0.4.9"
   },
   "publishExports": {
     ".": {

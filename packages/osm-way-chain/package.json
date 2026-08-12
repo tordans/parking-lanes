@@ -1,14 +1,35 @@
 {
   "name": "@osm-editor-kit/osm-way-chain",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-alpha.0",
+  "description": "Traverse and orient connected OSM highway ways for multi-segment editing sessions.",
+  "license": "MIT",
+  "author": "Tobias Jordans",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osmberlin/street-space-editor.git",
+    "directory": "packages/osm-way-chain"
+  },
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-way-chain",
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
+    "build": "tsup && rm -f .tsbuildinfo && tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test-run": "bun test src/test"
+    "test-run": "bun test src/test",
+    "prepublishOnly": "bun run build && bun ../../scripts/package-exports-for-publish.ts",
+    "postpublish": "bun ../../scripts/package-exports-restore.ts",
+    "prepack": "bun ../../scripts/package-exports-for-publish.ts",
+    "postpack": "bun ../../scripts/package-exports-restore.ts"
   },
   "dependencies": {
     "@osm-editor-kit/osm-data": "workspace:*"
@@ -16,6 +37,14 @@
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
     "bun-types": "^1.2.20",
+    "tsup": "^8.5.1",
     "typescript": "^7.0.0"
+  },
+  "publishExports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   }
 }

@@ -1,14 +1,35 @@
 {
   "name": "@osm-editor-kit/osm-map-url",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0-alpha.0",
+  "description": "Parse and serialize compact map and OSM feature URL search params for TanStack Router apps.",
+  "license": "MIT",
+  "author": "Tobias Jordans",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osmberlin/street-space-editor.git",
+    "directory": "packages/osm-map-url"
+  },
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-map-url",
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
+    "build": "tsup && rm -f .tsbuildinfo && tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test-run": "bun test src/test"
+    "test-run": "bun test src/test",
+    "prepublishOnly": "bun run build && bun ../../scripts/package-exports-for-publish.ts",
+    "postpublish": "bun ../../scripts/package-exports-restore.ts",
+    "prepack": "bun ../../scripts/package-exports-for-publish.ts",
+    "postpack": "bun ../../scripts/package-exports-restore.ts"
   },
   "dependencies": {
     "zod": "^4.0.17"
@@ -16,9 +37,17 @@
   "devDependencies": {
     "@tanstack/react-router": "^1.131.28",
     "bun-types": "^1.2.20",
+    "tsup": "^8.5.1",
     "typescript": "^7.0.0"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.131.28"
+  },
+  "publishExports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   }
 }

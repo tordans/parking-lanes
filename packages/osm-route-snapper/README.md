@@ -1,16 +1,17 @@
 # `@osm-editor-kit/osm-route-snapper`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-Bridge between merged session `ParsedOsmData` (`@osm-editor-kit/osm-data`) and the [route-snapper](https://github.com/a-b-street/route-snapper) routing graph:
+Turn session OSM data (`@osm-editor-kit/osm-data`) into a [route-snapper](https://github.com/a-b-street/route-snapper) graph:
 
-- Build route-snapper **bincode graph bytes** from Overpass/session coverage via vendored `osm-to-route-snapper` WASM
-- Serialize parsed OSM to minimal OSM XML for graph conversion
-- Extract **routing-network GeoJSON** (intersection-split edges) from graph bytes
-- GeoJSON LineStrings for session highway ways and a **coverage graph signature** for cache keys
-- TanStack Query factory that rebuilds the graph when Overpass coverage grows
+- Build graph bytes from coverage (vendored `osm-to-route-snapper` WASM)
+- Export a routing-network GeoJSON (edges split at intersections)
+- Export highway ways as GeoJSON LineStrings
+- Cache key / signature when coverage changes
+- Optional TanStack Query hook that rebuilds the graph as the map downloads more OSM
 
 ## Usage
 

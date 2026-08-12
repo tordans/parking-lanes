@@ -1,12 +1,16 @@
 # `@osm-editor-kit/osm-coverage`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-TanStack Query–backed OSM viewport coverage for map editors: incremental downloads, merged `ParsedOsmData` graphs, coverage polygons, and fetch-history GeoJSON. Includes zoom-aware missing-area detection (`computeMissingFetchRequests`, `unionIntoCoverage`), Overpass URL helpers (`boundsToOverpassBbox`, `buildOverpassInterpreterUrl`, `overpassDeUrl`, `overpassVkUrl`), and an `OsmDataSource` enum for download backends.
-
-The `@osm-editor-kit/osm-coverage/dev-osm-map-fixture` subpath is **editor-dev only** — local OSM Map API fixture handler, bbox filtering, and fixture index loader.
+- Download OSM data for the current map viewport (and only the parts you have not covered yet)
+- Keep a session graph of ways/nodes/relations as the map moves and pans
+- Track covered areas as polygons so refetches skip what you already have
+- Record fetch history as GeoJSON for debugging and UI
+- Build Overpass query URLs for common interpreters
+- Optional editor-dev fixture loader via `@osm-editor-kit/osm-coverage/dev-osm-map-fixture` (not for production apps)
 
 ## Usage
 

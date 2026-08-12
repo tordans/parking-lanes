@@ -7,5 +7,17 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@osm-editor-kit/street-space-editor"]
+  "ignore": [
+    "@osm-editor-kit/street-space-editor",
+    "@osm-editor-kit/osm-changeset",
+    "@osm-editor-kit/osm-editor-links",
+    "@osm-editor-kit/osm-lane-diagram",
+    "@osm-editor-kit/osm-lanes",
+    "@osm-editor-kit/osm-oauth",
+    "@osm-editor-kit/osm-sidepath-tags",
+    "@osm-editor-kit/osm-surface-quality",
+    "@osm-editor-kit/osm-tag-syntax",
+    "@osm-editor-kit/osm-ui",
+    "@osm-editor-kit/osm-way-edit"
+  ]
 }

@@ -1,10 +1,17 @@
 # `@osm-editor-kit/street-imagery-react`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-React MapLibre bindings for street-level imagery: map sources/layers, photo click handling, TanStack Query provider hooks, and lazy Mapillary/Panoramax viewer panels. Data adapters and GeoJSON helpers live in `@osm-editor-kit/street-imagery`.
+React + MapLibre UI on top of `@osm-editor-kit/street-imagery`:
+
+- Map sources and layers for photos, sequences, and viewfields
+- Click handling and interactive layer ids
+- TanStack Query hooks to load provider data for the viewport
+- Lazy Mapillary and Panoramax viewer panels
+- Helpers for selection, thumbnails, and easing the map to a photo
 
 ## Usage
 

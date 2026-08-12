@@ -1,12 +1,16 @@
 # `@osm-editor-kit/osm-way-chain`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-Bidirectional OSM way-chain traversal for lane editors: walk connected highway ways from a center segment, score neighbor candidates (same kind, name, ref), surface ambiguous junctions, and orient geometry plus directional tags when a way is reversed.
-
-Includes `mirrorTags` for flipping digitization direction (left/right, forward/backward, oneway, lane pipes, placement), road-like highway predicates (`public` vs `inclusive` inclusion style, Overpass selectors), and a session adapter over in-memory `ParsedOsmData` from `@osm-editor-kit/osm-data`.
+- Walk connected highway ways left and right from a center segment
+- Rank neighbor candidates (same road kind, name, ref)
+- Flag junctions where more than one neighbor is equally good
+- Flip geometry and directional tags when a way is digitized the “wrong” way
+- Decide which highways count as road-like (for editors and Overpass)
+- Adapter for in-memory session data from `@osm-editor-kit/osm-data`
 
 ## Usage
 

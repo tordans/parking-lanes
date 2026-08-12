@@ -1,10 +1,15 @@
 # `@osm-editor-kit/osm-data`
 
-**Status:** Private in-repo; first npm **alpha** publish wave.
+> [!NOTE]
+> This package is an **alpha** release and still under active development. APIs may change; install with the npm `alpha` dist-tag.
 
 ## What it does
 
-Download OSM JSON from a URL (Overpass or API) and parse it into indexed in-memory stores for ways, relations, tagged nodes, node coordinates, and ways-in-relation lookup. Exports shared TypeScript types and merges multiple fetches with version-aware updates.
+- Fetch OSM JSON from Overpass or the OSM API
+- Parse responses into in-memory indexes (ways, relations, tagged nodes, coordinates)
+- Look up which ways belong to a relation
+- Merge several downloads into one graph, preferring newer element versions
+- Shared TypeScript types for parsed OSM session data
 
 ## Usage
 
