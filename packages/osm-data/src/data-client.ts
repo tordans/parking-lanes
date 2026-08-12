@@ -27,13 +27,15 @@ export function mergeParsedOsm(existing: ParsedOsmData, incoming: ParsedOsmData)
 
   for (const wayId in incoming.ways) {
     const incomingWay = incoming.ways[wayId]!
-    if (merged.ways[wayId]?.version >= incomingWay.version) continue
+    const existingWay = merged.ways[wayId]
+    if (existingWay && existingWay.version >= incomingWay.version) continue
     merged.ways[wayId] = incomingWay
   }
 
   for (const relationId in incoming.relations) {
     const incomingRelation = incoming.relations[relationId]!
-    if (merged.relations[relationId]?.version >= incomingRelation.version) continue
+    const existingRelation = merged.relations[relationId]
+    if (existingRelation && existingRelation.version >= incomingRelation.version) continue
     merged.relations[relationId] = incomingRelation
   }
 

@@ -36,6 +36,7 @@ describe('ensureCoverage', () => {
       graph: emptyParsedOsmData(),
       coverage: boundsToPolygon(viewport),
       fetchHistory: { type: 'FeatureCollection', features: [] },
+      savedAt: '2026-08-12T10:00:00.000Z',
     })
 
     const result = await testApi.ensureCoverage(queryClient, {
@@ -207,6 +208,7 @@ describe('ensureCoverage', () => {
       },
       coverage: null,
       fetchHistory: { type: 'FeatureCollection', features: [] },
+      savedAt: null,
     })
 
     const fetchPromise = api.ensureCoverage(queryClient, {

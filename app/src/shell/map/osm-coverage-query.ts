@@ -1,4 +1,5 @@
-import { createOsmCoverageApi, devOsmMapFixtureMapUrl } from '@osm-editor-kit/osm-coverage'
+import { createOsmCoverageApi } from '@osm-editor-kit/osm-coverage'
+import { devOsmMapFixtureMapUrl } from '@osm-editor-kit/osm-coverage/dev-osm-map-fixture'
 import type { MapBounds, OsmWay } from '@osm-editor-kit/osm-data'
 import { getUrl } from '@osm-editor-kit/osm-editor-links'
 import { useQueryClient } from '@tanstack/react-query'
