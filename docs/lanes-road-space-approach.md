@@ -103,6 +103,7 @@ flowchart TD
 
 - Segments share a **logical centreline** along the sketch; left→right order is stable.
 - **Tapers** blend placement/width when prev/next segments are provided (turn pockets, lane-count changes).
+- **Implied junctions:** when a pure-turn pocket (left/right only — not `through;right`) disappears in its travel direction at a seam, the morphing transition is replaced by a fixed-height full-width cross-street placeholder band. Stacks end square; kerbs and the carriageway plate break instead of crossing. Pockets that *appear* downstream still taper.
 - **Square steps** remain where we lack neighbour data — better than faking smooth geometry.
 - **Continuous ribbons** (current era) replace older per-band rectangles: one filled corridor per lane/sidepath with shared kerb lines, so the sketch reads as a road rather than a stack of boxes.
 
@@ -166,7 +167,7 @@ Getting left/right and forward/backward wrong silently flips the whole sketch. W
 1. **Way direction** is the arrow of travel for the edited way (OSM node order).
 2. **Screen order** is left→right on the sketch.
 3. **Neighbour tags** are flipped into the current way’s direction before parse.
-4. **Forward travel on the diagram draws down the page** (toward the bottom of the SVG). This matches the layout code; treat it as canonical.
+4. **Forward travel on the diagram draws up the page** (toward the top of the SVG) — a true plan view. This matches width mode and map orientation; treat it as canonical.
 
 **Driving side:** assume **right** (DE/EU) unless explicitly tagged. Country-from-map defaults are still TODO.
 

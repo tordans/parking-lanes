@@ -145,6 +145,7 @@ export function LanesDiagramPanel() {
                 highlightedSlotId={highlightedSlotId}
                 className="max-w-full"
                 siblingLabel={m.lanes_diagram_sibling()}
+                junctionLabel={m.lanes_junction_label()}
               />
             </div>
             {separateHints.length > 0 ? (

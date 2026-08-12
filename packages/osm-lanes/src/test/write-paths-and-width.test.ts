@@ -241,6 +241,85 @@ describe('reconcileWidths', () => {
     expect(result.residualM).toBe(0)
   })
 
+  test('parking:*:width without a position tag does not count', () => {
+    const result = reconcileWidths({
+      width: '8',
+      'width:lanes': '3|2',
+      'parking:left:width': '2',
+    })
+    expect(result.parkingM).toBe(0)
+    expect(result.slotSumM).toBe(5)
+    expect(result.residualM).toBe(3)
+  })
+
+  test('fixture parking-both-sides: lane + half_on_kerb both count', () => {
+    const result = reconcileWidths({
+      highway: 'residential',
+      lanes: '2',
+      'lanes:forward': '1',
+      'lanes:backward': '1',
+      width: '10.4',
+      'width:lanes:forward': '3.2',
+      'width:lanes:backward': '3.2',
+      'parking:left': 'lane',
+      'parking:left:orientation': 'parallel',
+      'parking:left:width': '2',
+      'parking:right': 'half_on_kerb',
+      'parking:right:orientation': 'parallel',
+      'parking:right:width': '1.8',
+      sidewalk: 'both',
+    })
+    // 3.2+3.2 lanes + 2+1.8 parking = 10.2; residual 0.2
+    expect(result.slotSumM).toBeCloseTo(6.4, 6)
+    expect(result.parkingM).toBeCloseTo(3.8, 6)
+    expect(result.bufferM).toBe(0)
+    expect(result.residualM).toBeCloseTo(0.2, 6)
+    expect(result.warnings).toEqual([])
+  })
+
+  test('fixture parking-street-side-excluded: street_side metres omitted', () => {
+    const result = reconcileWidths({
+      highway: 'residential',
+      lanes: '2',
+      width: '6.5',
+      'width:lanes': '3.25|3.25',
+      'parking:left': 'street_side',
+      'parking:left:orientation': 'parallel',
+      'parking:left:width': '2.5',
+      'parking:right': 'no',
+      sidewalk: 'both',
+    })
+    expect(result.slotSumM).toBeCloseTo(6.5, 6)
+    expect(result.parkingM).toBe(0)
+    expect(result.bufferM).toBe(0)
+    expect(result.residualM).toBe(0)
+    expect(result.warnings).toEqual([])
+  })
+
+  test('fixture cycle-separation-buffer: nested buffers count; separation ignored', () => {
+    const result = reconcileWidths({
+      highway: 'residential',
+      oneway: 'yes',
+      lanes: '1',
+      width: '6.5',
+      'width:lanes': '3.25|2',
+      'cycleway:right': 'lane',
+      'cycleway:right:width': '2',
+      'cycleway:right:buffer:left': '0.75',
+      'cycleway:right:buffer:right': '0.5',
+      'cycleway:right:separation:left': 'bollard',
+      'cycleway:right:traffic_mode:left': 'motor_vehicle',
+      sidewalk: 'right',
+    })
+    // 3.25+2 lanes + 0.75+0.5 buffers = 6.5; residual 0
+    expect(result.slotSumM).toBeCloseTo(5.25, 6)
+    expect(result.parkingM).toBe(0)
+    expect(result.bufferM).toBeCloseTo(1.25, 6)
+    expect(result.residualM).toBe(0)
+    expect(result.warnings.some((w) => w.code === 'cycleway_width_double_count')).toBe(true)
+    expect(result.warnings.some((w) => w.code === 'sum_exceeds_width')).toBe(false)
+  })
+
   test('lane_markings=no yields zero paint estimate', () => {
     const result = reconcileWidths({
       width: '6',

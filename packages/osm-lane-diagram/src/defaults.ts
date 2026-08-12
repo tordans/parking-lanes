@@ -21,10 +21,31 @@ export const SEGMENT_GAP_PX = 0
 export const DEFAULT_MEDIAN_GAP_M = 3.0
 
 /**
- * Fraction of band height used for width-change tapers (kerbs, outer edges, ribbons).
- * Shared so fills and strokes meet on the same diagonal.
+ * Fraction of band height used for width-change tapers when no synthetic transition
+ * band is present (e.g. dual↔plain pocket wedges). Shared so fills and strokes meet.
  */
 export const TAPER_FRAC = 0.45
 
-/** Height fraction for synthetic transition wedges between width-changing segments. */
+/**
+ * Cap on synthetic transition-band height as a fraction of the main segment band
+ * (width-change seams scale up toward this; aligned seams stay compact).
+ */
 export const TRANSITION_BAND_HEIGHT_FRAC = 0.6
+
+/**
+ * Height of an implied-junction placeholder band as a fraction of the main segment
+ * band (constant — not scaled by width delta).
+ */
+export const JUNCTION_BAND_HEIGHT_FRAC = 0.5
+
+/** Slight vertical overlap at band seams to hide sub-pixel antialiasing gaps. */
+export const SEAM_OVERLAP_PX = 1
+
+/**
+ * Lateral overlap of carriageway/sidepath fills under a shared kerb stroke so
+ * antialiasing along morphing S-curves never flashes page background.
+ */
+export const KERB_FILL_OVERLAP_PX = 1
+
+/** Samples along an S-curve edge crossing a transition band (including endpoints). */
+export const TRANSITION_CURVE_SAMPLES = 10

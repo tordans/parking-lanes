@@ -38,8 +38,9 @@ const KARL_MARX_FIXTURES = [
 function fixtureChain(id: string): RoadSpaceChain {
   const fixture = laneDiagramFixtures.find((f) => f.id === id)
   if (!fixture) throw new Error(`missing fixture ${id}`)
+  // Match audit / orientation contract: next (ahead) on top so forward travel draws up.
   return {
-    segments: fixture.segments.map((seg) =>
+    segments: [...fixture.segments].reverse().map((seg) =>
       buildRoadSpaceSegment(seg.tags, {
         wayId: seg.wayId,
         role: seg.role,
@@ -159,6 +160,7 @@ function assertCarriagewayConnectivity(scene: RoadSpaceScene, chain: RoadSpaceCh
     const corr = correspondences[si]!
     const glueIdx = glueBandIndices[si]
     if (glueIdx == null) continue
+    const glueIsJunction = scene.bands[glueIdx]?.junction === true
 
     for (const pair of corr.pairs) {
       const branchA = pair.branchA ?? 'travel'
@@ -181,6 +183,18 @@ function assertCarriagewayConnectivity(scene: RoadSpaceScene, chain: RoadSpaceCh
           ? chain.segments[si + 1]!.fork?.siblingWayId
           : chain.segments[si + 1]!.wayId
       if (wayA == null || wayB == null) continue
+
+      if (glueIsJunction) {
+        // Junction seams butt-end — matched lanes need not span the glue band.
+        const ribbonA = scene.ribbons.find((r) =>
+          r.bandSlices.some((s) => s.slotId === slotA.id && s.wayId === wayA),
+        )
+        const ribbonB = scene.ribbons.find((r) =>
+          r.bandSlices.some((s) => s.slotId === slotB.id && s.wayId === wayB),
+        )
+        expect(ribbonA != null || ribbonB != null).toBe(true)
+        continue
+      }
 
       const spansA = ribbonSpansSeam(scene, slotA.id, wayA, glueIdx)
       const spansB = ribbonSpansSeam(scene, slotB.id, wayB, glueIdx)
@@ -213,7 +227,7 @@ function assertCarriagewayConnectivity(scene: RoadSpaceScene, chain: RoadSpaceCh
       const singleBand =
         ribbon != null &&
         ribbon.bandSlices.filter((s) => !scene.bands[s.bandIndex]?.synthetic).length === 1
-      expect(ribbon != null || wedge || singleBand).toBe(true)
+      expect(ribbon != null || wedge || singleBand || glueIsJunction).toBe(true)
     }
   }
 }
@@ -227,6 +241,7 @@ function assertNoEmptyGlueCoverage(scene: RoadSpaceScene, chain: RoadSpaceChain)
     const corr = correspondences[si]!
     const glueIdx = glueBandIndices[si]
     if (glueIdx == null) continue
+    if (scene.bands[glueIdx]?.junction) continue
     const glueBand = scene.bands[glueIdx]!
     const cwPairs = corr.pairs.filter((pair) => {
       const slotA = chain.segments[si]!.slots[pair.indexA]

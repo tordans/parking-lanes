@@ -13,10 +13,13 @@ export type SegmentTagsInput = {
   medianHint?: 'verge' | 'crossing'
 }
 
-/** Build a layout scene from oriented prev/current/next tag maps. */
+/**
+ * Build a layout scene from oriented prev/current/next tag maps.
+ * Package layout stacks caller order top→bottom; reverse so next (ahead) is up.
+ */
 export function sceneFromSegmentTags(segments: readonly SegmentTagsInput[]): RoadSpaceScene {
   return layoutRoadSpace({
-    segments: segments.map((seg) =>
+    segments: [...segments].reverse().map((seg) =>
       buildRoadSpaceSegment(seg.tags, {
         wayId: seg.wayId,
         role: seg.role,

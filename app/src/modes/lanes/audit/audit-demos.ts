@@ -46,7 +46,14 @@ const FIXTURE_GROUPS: readonly {
   {
     id: 'width',
     label: 'Width reconciliation',
-    fixtureIds: ['width-vs-width-lanes', 'parking-bike-buffer', 'unmarked-carriageway'],
+    fixtureIds: [
+      'width-vs-width-lanes',
+      'parking-bike-buffer',
+      'parking-both-sides',
+      'parking-street-side-excluded',
+      'cycle-separation-buffer',
+      'unmarked-carriageway',
+    ],
   },
 ]
 

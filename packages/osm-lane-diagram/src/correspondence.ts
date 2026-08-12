@@ -1,6 +1,17 @@
 import { DEFAULT_MEDIAN_GAP_M } from './defaults'
 import type { RoadSpaceSegment, RoadSpaceSlot } from './types'
 
+const TURN_LEFT = new Set(['left', 'sharp_left', 'slight_left'])
+const TURN_RIGHT = new Set(['right', 'sharp_right', 'slight_right'])
+
+function turnTokens(slot: RoadSpaceSlot): string[] {
+  if (!slot.turn) return []
+  return slot.turn
+    .split(';')
+    .map((t) => t.trim())
+    .filter(Boolean)
+}
+
 /** Normalized turn role for correspondence — keeps pockets separate from through lanes. */
 export function turnSignature(slot: RoadSpaceSlot): string {
   if (slot == null) return 'none'
@@ -8,17 +19,58 @@ export function turnSignature(slot: RoadSpaceSlot): string {
     if (slot.direction === 'none') return 'none'
     return 'through'
   }
-  const tokens = slot.turn
-    .split(';')
-    .map((t) => t.trim())
-    .filter(Boolean)
+  const tokens = turnTokens(slot)
   if (tokens.length === 0) return 'through'
-  if (tokens.some((t) => t === 'left' || t === 'sharp_left' || t === 'slight_left')) return 'left'
-  if (tokens.some((t) => t === 'right' || t === 'sharp_right' || t === 'slight_right')) {
-    return 'right'
-  }
+  if (tokens.some((t) => TURN_LEFT.has(t))) return 'left'
+  if (tokens.some((t) => TURN_RIGHT.has(t))) return 'right'
   if (tokens.includes('through') || tokens.includes('none')) return 'through'
   return tokens.slice().sort().join('+')
+}
+
+/**
+ * Pure-turn pocket: left/right variants only — no through, merge, or reverse.
+ * `through;right` is not pure-turn (shared turn+through lane).
+ */
+export function isPureTurnSlot(slot: RoadSpaceSlot): boolean {
+  const tokens = turnTokens(slot)
+  if (tokens.length === 0) return false
+  if (tokens.includes('through') || tokens.includes('none')) return false
+  if (tokens.some((t) => t === 'reverse' || t.startsWith('merge'))) return false
+  return tokens.some((t) => TURN_LEFT.has(t) || TURN_RIGHT.has(t))
+}
+
+function slotFromCorrIndex(
+  segment: RoadSpaceSegment,
+  index: number,
+  branch: StackBranch = 'travel',
+): RoadSpaceSlot | undefined {
+  if (branch === 'sibling') return segment.fork?.siblingSlots?.[index]
+  return segment.slots[index]
+}
+
+/**
+ * Implied junction: a pure-turn carriageway lane disappears in its travel direction.
+ * A = above, B = below; forward travels up (B→A), backward travels down (A→B).
+ * Appearing pockets (unmatched forward in A / unmatched backward in B) stay tapers.
+ */
+export function seamIsImpliedJunction(
+  segA: RoadSpaceSegment,
+  segB: RoadSpaceSegment,
+  corr: StackCorrespondence,
+): boolean {
+  for (const u of corr.unmatchedB) {
+    const slot = slotFromCorrIndex(segB, u.index, u.branch ?? 'travel')
+    if (!slot || slot.zone !== 'carriageway') continue
+    if (slot.direction !== 'forward' && slot.direction !== 'both_ways') continue
+    if (isPureTurnSlot(slot)) return true
+  }
+  for (const u of corr.unmatchedA) {
+    const slot = slotFromCorrIndex(segA, u.index, u.branch ?? 'travel')
+    if (!slot || slot.zone !== 'carriageway') continue
+    if (slot.direction !== 'backward') continue
+    if (isPureTurnSlot(slot)) return true
+  }
+  return false
 }
 
 const EPS = 0.01

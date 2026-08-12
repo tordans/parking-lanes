@@ -20,7 +20,7 @@ Discussion note for how this editor interprets `cycleway:left|right|both:oneway=
 | `*:right` | forward (with way) | **forward** |
 | `*:left` | backward (against way) | **backward** |
 
-So on a normal two-way German street, left CW ↑ and right CW ↓ in our lanes diagram (forward = down the page), matching the adjacent motor lanes.
+So on a normal two-way German street, left CW ↓ and right CW ↑ in our lanes diagram (forward = up the page), matching the adjacent motor lanes.
 
 `oneway=-1` / `reverse` means **contraflow** relative to the OSM way (travel **backward**). `oneway=no` means **both-ways** on that side.
 
@@ -47,7 +47,7 @@ Parent `oneway=-1` / `reverse` is handled by **tag remirror** before parse (`eff
 
 - Derivation: `deriveCarriagewayCycleDirection` in `packages/osm-lane-diagram/src/from-tags.ts`
 - Fixtures: `karl-marx-dual-split`, `karl-marx-bi-to-dual`, `karl-marx-crossing-turns`, …
-- Orientation contract: [docs/lanes-road-space-approach.md](../../../docs/lanes-road-space-approach.md) §9 (diagram forward = down)
+- Orientation contract: [docs/lanes-road-space-approach.md](../../../docs/lanes-road-space-approach.md) §9 (diagram forward = up)
 
 ## Open for discussion
 

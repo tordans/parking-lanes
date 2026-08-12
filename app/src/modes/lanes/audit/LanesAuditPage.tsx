@@ -1,3 +1,4 @@
+import * as m from '@app/paraglide/messages'
 import type { RoadSpaceScene, RoadSpaceSegmentRole } from '@osm-editor-kit/osm-lane-diagram'
 import { laneDiagramFixtures, type DiagramFixture } from '@osm-editor-kit/osm-lane-diagram/fixtures'
 import { Link, Outlet, useMatch } from '@tanstack/react-router'
@@ -52,17 +53,35 @@ function ariaLabelForFixture(fixture: DiagramFixture): string {
   return `${fixture.title}: plan sketch for ${roles || 'current'} segment(s)`
 }
 
-type TagSideHint = 'left' | 'right' | 'both' | null
+type TagSideHint =
+  | 'left'
+  | 'right'
+  | 'both'
+  /** Bidirectional: forward lanes sit on the diagram-right half. */
+  | 'forward'
+  /** Bidirectional: backward lanes sit on the diagram-left half. */
+  | 'backward'
+  /** oneway=yes: forward spans the full carriageway. */
+  | 'forward_oneway'
+  | null
 
-function tagSideHint(key: string): TagSideHint {
+/**
+ * Side (`:left`/`:right`/`:both`) wins over direction (`:forward`/`:backward`) so
+ * keys like `cycleway:right:oneway` stay R.
+ */
+function tagSideHint(key: string, tags: Record<string, string>): TagSideHint {
   if (/(^|:)both(:|$)/.test(key) || key === 'both') return 'both'
   if (/(^|:)left(:|$)/.test(key)) return 'left'
   if (/(^|:)right(:|$)/.test(key)) return 'right'
+  if (/(^|:)forward$/.test(key)) {
+    return tags.oneway?.toLowerCase() === 'yes' ? 'forward_oneway' : 'forward'
+  }
+  if (/(^|:)backward$/.test(key)) return 'backward'
   return null
 }
 
 /**
- * Geometry key (“Gitternetz”): OSM way as a vertical centreline with forward ↓,
+ * Geometry key (“Gitternetz”): OSM way as a vertical centreline with forward ↑,
  * so *:left / *:right in the tag lists match diagram-left / diagram-right.
  */
 function WayOrientationSchematic({
@@ -85,7 +104,7 @@ function WayOrientationSchematic({
       height={h}
       viewBox={`0 0 ${w} ${h}`}
       role="img"
-      aria-label="OSM way points down; diagram left is asterisk-left, diagram right is asterisk-right"
+      aria-label="OSM way points up; diagram left is asterisk-left, diagram right is asterisk-right"
     >
       <rect x={0.5} y={0.5} width={w - 1} height={h - 1} fill="#fafafa" stroke="#e4e4e7" />
       {/* Side gutters */}
@@ -105,7 +124,7 @@ function WayOrientationSchematic({
         fill="#ffedd5"
         opacity={0.7}
       />
-      {/* Way centreline + forward arrow (↓) */}
+      {/* Way centreline + forward arrow (↑) */}
       <line x1={cx} y1={top} x2={cx} y2={bot} stroke="#7c3aed" strokeWidth={2.5} />
       <polyline
         fill="none"
@@ -113,7 +132,7 @@ function WayOrientationSchematic({
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
-        points={`${cx - 5},${bot - 10} ${cx},${bot} ${cx + 5},${bot - 10}`}
+        points={`${cx - 5},${top + 10} ${cx},${top} ${cx + 5},${top + 10}`}
       />
       <text
         x={cx}
@@ -122,7 +141,7 @@ function WayOrientationSchematic({
         className="fill-violet-700"
         style={{ fontSize: compact ? 7 : 8, fontWeight: 600 }}
       >
-        way ↓
+        way ↑
       </text>
       <text
         x={compact ? 13 : 18}
@@ -171,22 +190,41 @@ function WayOrientationSchematic({
 function TagSideBadge({ side }: { side: TagSideHint }): ReactElement | null {
   if (!side) return null
   const styles =
-    side === 'left'
+    side === 'left' || side === 'backward'
       ? 'bg-blue-100 text-blue-900'
-      : side === 'right'
+      : side === 'right' || side === 'forward'
         ? 'bg-orange-100 text-orange-900'
-        : 'bg-zinc-200 text-zinc-800'
-  const label = side === 'left' ? 'L' : side === 'right' ? 'R' : 'both'
+        : side === 'forward_oneway'
+          ? 'bg-violet-100 text-violet-900'
+          : 'bg-zinc-200 text-zinc-800'
+  const label =
+    side === 'left'
+      ? 'L'
+      : side === 'right'
+        ? 'R'
+        : side === 'both'
+          ? 'both'
+          : side === 'forward'
+            ? 'R ↑'
+            : side === 'backward'
+              ? 'L ↓'
+              : '↑'
+  const title =
+    side === 'left'
+      ? '*:left — diagram left (looking along way ↑)'
+      : side === 'right'
+        ? '*:right — diagram right (looking along way ↑)'
+        : side === 'both'
+          ? '*:both — applies to left and right'
+          : side === 'forward'
+            ? '*:forward — forward lanes, right half of the diagram (way points ↑)'
+            : side === 'backward'
+              ? '*:backward — backward lanes, left half of the diagram (way points ↑)'
+              : '*:forward — oneway, spans full width'
   return (
     <span
-      className={`mr-1 inline-flex min-w-7 justify-center rounded-sm px-1 text-[0.65rem] font-semibold tracking-wide uppercase ${styles}`}
-      title={
-        side === 'left'
-          ? '*:left — diagram left (looking along way ↓)'
-          : side === 'right'
-            ? '*:right — diagram right (looking along way ↓)'
-            : '*:both — applies to left and right'
-      }
+      className={`mr-1 inline-flex min-w-7 justify-center rounded-sm px-1 text-[0.65rem] font-semibold tracking-wide ${side === 'left' || side === 'right' || side === 'both' ? 'uppercase' : ''} ${styles}`}
+      title={title}
     >
       {label}
     </span>
@@ -196,10 +234,10 @@ function TagSideBadge({ side }: { side: TagSideHint }): ReactElement | null {
 function TagList({ tags }: { tags: Record<string, string> }): ReactElement {
   const entries = Object.entries(tags).sort(([a], [b]) => {
     const sideRank = (k: string) => {
-      const s = tagSideHint(k)
-      if (s === 'left') return 0
+      const s = tagSideHint(k, tags)
+      if (s === 'left' || s === 'backward') return 0
       if (s === 'both') return 1
-      if (s === 'right') return 2
+      if (s === 'right' || s === 'forward' || s === 'forward_oneway') return 2
       return 3
     }
     const d = sideRank(a) - sideRank(b)
@@ -212,7 +250,7 @@ function TagList({ tags }: { tags: Record<string, string> }): ReactElement {
     <ul className="m-0 list-none space-y-0.5 pl-0 font-mono text-xs leading-relaxed text-zinc-800">
       {entries.map(([key, value]) => (
         <li key={key} className="flex items-baseline gap-0.5">
-          <TagSideBadge side={tagSideHint(key)} />
+          <TagSideBadge side={tagSideHint(key, tags)} />
           <span>
             {key}={value}
           </span>
@@ -237,12 +275,15 @@ function SegmentTags({ fixture }: { fixture: DiagramFixture }): ReactElement {
             Tag lists ↔ geometry
           </h3>
           <p className="mt-1 mb-0 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Same orientation as the lane sketch above: OSM way direction points{' '}
-            <strong className="font-semibold text-zinc-800">down</strong> (violet ↓). Looking along
-            the way, <span className="font-semibold text-blue-800">L / *:left</span> is diagram-left
-            and <span className="font-semibold text-orange-800">R / *:right</span> is diagram-right.
-            Badges on tag lines mark sided keys. (Lane sketch = editor view; this key = map-geometry
-            left/right.)
+            OSM <code className="font-mono text-[0.9em]">*:left</code> /{' '}
+            <code className="font-mono text-[0.9em]">*:right</code> are relative to the way&apos;s
+            forward direction. The way points up the page (violet{' '}
+            <strong className="font-semibold text-zinc-800">↑</strong>); facing up, your left hand
+            is on the diagram&apos;s left — so{' '}
+            <span className="font-semibold text-blue-800">L / *:left</span> is diagram-left and{' '}
+            <span className="font-semibold text-orange-800">R / *:right</span> is diagram-right.
+            This is a plan view, like a map rotated so the way points up. Driving side (Germany vs
+            UK) doesn&apos;t change these tags. Badges on tag lines mark sided keys.
           </p>
         </div>
       </div>
@@ -296,11 +337,11 @@ function Legend(): ReactElement {
         Legend
       </h2>
       <p className="mt-0 mb-3 max-w-3xl text-sm leading-relaxed text-zinc-600">
-        ↓ = OSM way direction points <strong className="font-semibold text-zinc-800">down</strong>{' '}
-        the page, so diagram-left = <code className="font-mono text-[0.9em]">*:left</code> and
+        ↑ = OSM way direction points <strong className="font-semibold text-zinc-800">up</strong> the
+        page, so diagram-left = <code className="font-mono text-[0.9em]">*:left</code> and
         diagram-right = <code className="font-mono text-[0.9em]">*:right</code>. Forward travel
-        draws ↓; backward draws ↑; both-ways is a double-headed vertical glyph. Bands stack prev →
-        current → next top to bottom — that order is travel.
+        draws ↑; backward draws ↓; both-ways is a double-headed vertical glyph. Bands stack next →
+        current → prev top to bottom — ahead is up the page.
       </p>
       <ul className="m-0 mb-3 flex list-none flex-wrap gap-3 pl-0 text-sm text-zinc-700">
         {swatches.map((s) => (
@@ -323,7 +364,16 @@ function Legend(): ReactElement {
         </li>
       </ul>
       <ul className="m-0 list-disc space-y-1 pl-5 text-sm leading-relaxed text-zinc-600">
+        <li>
+          Where turn pockets end, the seam is an implied junction — drawn as a full-width
+          cross-street band instead of a lane morph.
+        </li>
         <li>Previous / next bands are dimmed relative to the current segment.</li>
+        <li>
+          On dual carriageways the opposite branch’s real lanes render dimmed — they belong to a
+          different OSM way. That way’s centreline is the thinner secondary violet guide (with its
+          own way ↑/↓ when orientation is known).
+        </li>
         <li>
           Explicit widths (<code className="font-mono text-[0.9em]">width:lanes</code>,{' '}
           <code className="font-mono text-[0.9em]">*:width</code>) show a dark metre label. When
@@ -348,7 +398,7 @@ function Legend(): ReactElement {
           <code className="font-mono text-[0.9em]">none</code> produce no geometry at all.
         </li>
         <li>
-          Arrows hint travel direction (forward = down); turn glyphs come from{' '}
+          Arrows hint travel direction (forward = up); turn glyphs come from{' '}
           <code className="font-mono text-[0.9em]">turn:lanes</code>.
         </li>
         <li>
@@ -399,8 +449,9 @@ function SandboxSection(): ReactElement {
     <div className="flex flex-col gap-4">
       <p className="m-0 max-w-3xl text-sm leading-relaxed text-zinc-600">
         Type raw <code className="font-mono text-[0.9em]">key=value</code> lines for prev / current
-        / next. Tags are assumed already oriented to the current way direction. The diagram updates
-        live; open the details block for the layout scene JSON.
+        / next. Tags are assumed already oriented to the current way direction. The diagram stacks
+        next (ahead) at the top, then current, then prev — matching way ↑. Open the details block
+        for the layout scene JSON.
       </p>
       <div className="grid gap-4 lg:grid-cols-3">
         {(
@@ -443,6 +494,7 @@ function SandboxSection(): ReactElement {
               scene={scene}
               ariaLabel="Sandbox plan sketch from edited tags"
               debug={showDebug}
+              junctionLabel={m.lanes_junction_label()}
             />
             {separateNotes.length > 0 ? (
               <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-zinc-500">
@@ -667,6 +719,7 @@ export function LanesAuditDemo({ demoId }: { demoId: AuditDemoId }): ReactElemen
           scene={scene}
           ariaLabel={ariaLabelForFixture(fixture)}
           debug={showDebug}
+          junctionLabel={m.lanes_junction_label()}
         />
         {separateNotes.length > 0 ? (
           <ul className="mt-2 mb-0 list-none space-y-0.5 pl-0 text-xs leading-snug text-zinc-500">

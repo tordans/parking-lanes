@@ -103,7 +103,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
     id: 'right-turn-pocket',
     title: 'Right turn pocket',
     description:
-      '2-lane prev/current; next (downstream, bottom) gains through|through|right — pocket ahead on the approach; left kerb fixed (left_of:2).',
+      '2-lane prev/current; next (downstream, top on audit) gains through|through|right — pocket ahead on the approach; left kerb fixed (left_of:2).',
     segments: [
       {
         role: 'prev',
@@ -136,7 +136,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           highway: 'tertiary',
           oneway: 'yes',
           lanes: '3',
-          // Pocket on approach to junction ahead (traffic flows down the page).
+          // Pocket on approach to junction ahead (traffic flows up the page).
           'turn:lanes': 'through|through|right',
           placement: 'left_of:2',
           sidewalk: 'both',
@@ -148,7 +148,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
     id: 'turn-pocket-then-continue',
     title: 'Turn pocket then continue',
     description:
-      '4-lane pocket (left|through|through|right) then 2-lane continue. placement=left_of:3 → left_of:2 names the same through-lane axis (driving lanes only), so the purple guide stays straight.',
+      '4-lane pocket (left|through|through|right) then 2-lane continue. The pocket↔continue seam is an implied junction (pure-turn lanes end at the cross street) — drawn as a full-width placeholder band instead of a lane morph. placement=left_of:3 → left_of:2 names the same through-lane axis (driving lanes only), so the purple guide stays straight.',
     segments: [
       {
         role: 'prev',
@@ -938,7 +938,8 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
   {
     id: 'placement-transition',
     title: 'Placement transition',
-    description: 'placement=transition between unequal stacks.',
+    description:
+      '3→2 forward lanes with no turn:lanes — the dropped leftmost lane is a plain OSM merge (not a turn pocket). placement=middle_of:2 → transition → left_of:2 shifts the centreline axis while the merge seam must S-curve taper (kerb, sidewalk, plate, and lane fill together), not square-cap.',
     segments: [
       {
         role: 'prev',
@@ -1131,7 +1132,7 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
     id: 'parking-bike-buffer',
     title: 'Parking + bike + buffer (Scenario B)',
     description:
-      'width=8, width:lanes=3|2, parking:left:width=2, cycleway:right:buffer:left=1; parking not a matrix column.',
+      'width=8 = width:lanes 3+2 + parking:left=lane 2 m + cycleway:right:buffer:left 1 m (residual 0). Parking/buffer metres are soft-sum parts only — not matrix columns or diagram slots.',
     segments: [
       {
         role: 'current',
@@ -1142,6 +1143,8 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
           lanes: '1',
           width: '8',
           'width:lanes': '3|2',
+          'parking:left': 'lane',
+          'parking:left:orientation': 'parallel',
           'parking:left:width': '2',
           'cycleway:right': 'lane',
           'cycleway:right:width': '2',
@@ -1150,7 +1153,87 @@ export const laneDiagramFixtures: readonly DiagramFixture[] = [
         },
       },
     ],
-    note: 'Parking widths feed soft sum in the form only; not drawn as slots here.',
+    note: 'Needs parking:left=lane (not only parking:left:width) for parkingM to count. Soft sum may warn cycleway_width_double_count when bike metres appear in both width:lanes and cycleway:right:width.',
+  },
+  {
+    id: 'parking-both-sides',
+    title: 'Parking both sides (lane + half_on_kerb)',
+    description:
+      'Bidirectional residential: width:lanes 3.2+3.2 + parking:left=lane 2 m + parking:right=half_on_kerb 1.8 m = 10.2 of width=10.4 (residual 0.2 ≈ paint/gutter). Parking metres are reconciliation parts only — not diagram slots.',
+    segments: [
+      {
+        role: 'current',
+        wayId: 1702,
+        tags: {
+          highway: 'residential',
+          lanes: '2',
+          'lanes:forward': '1',
+          'lanes:backward': '1',
+          width: '10.4',
+          'width:lanes:forward': '3.2',
+          'width:lanes:backward': '3.2',
+          'parking:left': 'lane',
+          'parking:left:orientation': 'parallel',
+          'parking:left:width': '2',
+          'parking:right': 'half_on_kerb',
+          'parking:right:orientation': 'parallel',
+          'parking:right:width': '1.8',
+          sidewalk: 'both',
+        },
+      },
+    ],
+    note: 'half_on_kerb still counts its full parking:*:width in the current soft sum (on-carriageway set). Sketch shows travel lanes + sidewalks only.',
+  },
+  {
+    id: 'parking-street-side-excluded',
+    title: 'Street-side parking excluded from width sum',
+    description:
+      'parking:left=street_side + parking:left:width=2.5 must NOT enter parkingM (off-carriageway with separate/no). Clean reconcile: width:lanes 3.25+3.25 = width=6.5; residual 0 without the 2.5 m.',
+    segments: [
+      {
+        role: 'current',
+        wayId: 1703,
+        tags: {
+          highway: 'residential',
+          lanes: '2',
+          width: '6.5',
+          'width:lanes': '3.25|3.25',
+          'parking:left': 'street_side',
+          'parking:left:orientation': 'parallel',
+          'parking:left:width': '2.5',
+          'parking:right': 'no',
+          sidewalk: 'both',
+        },
+      },
+    ],
+    note: 'Off-carriageway positions street_side / separate / no are excluded from Σ parking even when *:width is tagged. Tag panel still shows the keys.',
+  },
+  {
+    id: 'cycle-separation-buffer',
+    title: 'Protected bike lane: buffer vs separation',
+    description:
+      'Protected cycleway:right=lane: width:lanes 3.25+2 + buffer:left 0.75 + buffer:right 0.5 = 6.5 = width (residual 0). Numeric cycleway:*:buffer* enters the soft sum; separation:left=bollard and traffic_mode:left=motor_vehicle are categorical tag-panel info only (no metres).',
+    segments: [
+      {
+        role: 'current',
+        wayId: 1704,
+        tags: {
+          highway: 'residential',
+          oneway: 'yes',
+          lanes: '1',
+          width: '6.5',
+          'width:lanes': '3.25|2',
+          'cycleway:right': 'lane',
+          'cycleway:right:width': '2',
+          'cycleway:right:buffer:left': '0.75',
+          'cycleway:right:buffer:right': '0.5',
+          'cycleway:right:separation:left': 'bollard',
+          'cycleway:right:traffic_mode:left': 'motor_vehicle',
+          sidewalk: 'right',
+        },
+      },
+    ],
+    note: 'Buffer metres count; separation/traffic_mode do not. Soft sum may warn cycleway_width_double_count (bike in width:lanes and cycleway:right:width). Sketch has no buffer/separation geometry.',
   },
   {
     id: 'unmarked-carriageway',

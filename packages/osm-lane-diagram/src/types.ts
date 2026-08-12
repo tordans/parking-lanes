@@ -101,9 +101,22 @@ export type SceneSlotRect = {
 
 export type ScenePolyline = {
   id: string
-  kind: 'kerb' | 'outer_edge' | 'separator' | 'centreline' | 'placement_guide' | 'segment_boundary'
+  kind:
+    | 'kerb'
+    | 'outer_edge'
+    | 'separator'
+    | 'centreline'
+    | 'placement_guide'
+    /** Secondary violet guide over a dual-carriageway sibling branch. */
+    | 'sibling_placement_guide'
+    | 'segment_boundary'
   style: 'solid' | 'dashed'
   points: Array<{ x: number; y: number }>
+  /**
+   * For `sibling_placement_guide`: OSM forward of the sibling way in scene space
+   * (derived from prepared sibling slot directions after `prepareDualSiblingSlots`).
+   */
+  forward?: 'up' | 'down'
 }
 
 export type SceneSegmentBand = {
@@ -114,6 +127,13 @@ export type SceneSegmentBand = {
   dimmed: boolean
   label?: string
   synthetic?: boolean
+  /** Synthetic placeholder where pure-turn pockets end at an implied junction. */
+  junction?: boolean
+}
+
+export type SceneJunctionBand = {
+  y: number
+  height: number
 }
 
 export type SceneRibbonBandSlice = {
@@ -190,10 +210,16 @@ export type RoadSpaceScene = {
   /** Shared OSM placement centreline X (px) — lanes align left/right of this guide. */
   centrelineX?: number
   bands: SceneSegmentBand[]
+  /** Implied-junction placeholder bands (full-width cross-street gaps). */
+  junctions?: SceneJunctionBand[]
   /** Continuous corridor ribbons — primary fill geometry. */
   ribbons: SceneRibbon[]
-  /** Optional asphalt plate behind carriageway motor/bus ribbons. */
+  /**
+   * Optional asphalt plate(s) behind carriageway motor/bus ribbons.
+   * Split into separate polygons when an implied junction interrupts the corridor.
+   */
   carriagewayPlate?: SceneCarriagewayPlate
+  carriagewayPlates?: SceneCarriagewayPlate[]
   slotRects: SceneSlotRect[]
   polylines: ScenePolyline[]
   /** Union of segment `separatelyMapped` hints (text only; no geometry). */

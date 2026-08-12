@@ -632,7 +632,7 @@ function flipDirection(direction: RoadSpaceSlot['direction']): RoadSpaceSlot['di
 /**
  * Prepare the opposite dual branch for the dimmed side of a fork: mirror LTR so
  * its outer edge faces outward, and flip travel directions to oppose the selected
- * oneway (diagram down = selected forward).
+ * oneway (diagram up = selected forward).
  */
 export function prepareDualSiblingSlots(slots: RoadSpaceSlot[]): RoadSpaceSlot[] {
   return [...slots].reverse().map((slot) => ({

@@ -39,6 +39,8 @@ const COLORS = {
   highlight: '#2563eb', // blue-600
   highlightStroke: '#1d4ed8', // blue-700
   untaggedEdge: '#a1a1aa',
+  /** Fallback default widths (no tagged/inferred width) — darker than edge dashes so readable on sidewalks. */
+  defaultWidthLabel: '#52525b', // zinc-600
   arrow: '#3f3f46',
   turn: '#18181b',
   widthLabel: '#27272a',
@@ -52,7 +54,46 @@ const COLORS = {
   debugAnchor: '#16a34a', // green-600
   debugChained: '#64748b', // slate-500
   debugPlacementDelta: '#d97706', // amber-600
+  debugLabelBg: 'rgb(255 255 255 / 0.8)',
 } as const
+
+/** Monospace debug label with a translucent background for readability on the diagram. */
+function DebugLabel({
+  x,
+  y,
+  fontSize,
+  fill,
+  opacity = 1,
+  children,
+}: {
+  x: number
+  y: number
+  fontSize: number
+  fill: string
+  opacity?: number
+  children: string
+}): ReactElement {
+  const padX = 2
+  const padY = 1.5
+  // ui-monospace ≈ 0.6em; emoji / Δ slightly wider — good enough for audit overlay
+  const approxWidth = Math.max(children.length * fontSize * 0.62, fontSize)
+  const height = fontSize + padY * 2
+  return (
+    <g opacity={opacity}>
+      <rect
+        x={x - padX}
+        y={y - fontSize + padY}
+        width={approxWidth + padX * 2}
+        height={height}
+        rx={2}
+        fill={COLORS.debugLabelBg}
+      />
+      <text x={x} y={y} fontSize={fontSize} fill={fill} fontFamily="ui-monospace, monospace">
+        {children}
+      </text>
+    </g>
+  )
+}
 
 function kindFill(kind: SceneSlotRectKind, tagged: boolean): string {
   if (kind === 'median') return COLORS.median
@@ -84,6 +125,7 @@ function polylineStroke(line: ScenePolyline): string {
     case 'centreline':
       return COLORS.centreline
     case 'placement_guide':
+    case 'sibling_placement_guide':
       return COLORS.placement_guide
     case 'segment_boundary':
       return COLORS.segment_boundary
@@ -104,6 +146,8 @@ function polylineStrokeWidth(line: ScenePolyline): number {
       return 1.25
     case 'placement_guide':
       return 4
+    case 'sibling_placement_guide':
+      return 2.5
     default:
       return 1.5
   }
@@ -119,8 +163,8 @@ function formatWidthLabel(widthM: number): string {
 }
 
 /**
- * OSM way direction points **down** the page (↓). Diagram-left = `*:left`.
- * forward → ↓, backward → ↑, both_ways → ↕.
+ * OSM way direction points **up** the page (↑). Diagram-left = `*:left`.
+ * forward → ↑, backward → ↓, both_ways → ↕.
  */
 function DirectionHint({
   direction,
@@ -168,10 +212,10 @@ function DirectionHint({
     )
   }
 
-  // forward = down-page (↓); backward = up-page (↑)
-  const tipY = direction === 'forward' ? cy + half : cy - half
-  const baseY = direction === 'forward' ? cy - half * 0.35 : cy + half * 0.35
-  const headSign = direction === 'forward' ? -1 : 1
+  // forward = up-page (↑); backward = down-page (↓)
+  const tipY = direction === 'forward' ? cy - half : cy + half
+  const baseY = direction === 'forward' ? cy + half * 0.35 : cy - half * 0.35
+  const headSign = direction === 'forward' ? 1 : -1
   return (
     <g opacity={0.75} pointerEvents="none">
       <polyline
@@ -200,13 +244,13 @@ function turnGlyphFlipTransform(
   cy: number,
 ): string | undefined {
   if (direction !== 'backward') return undefined
-  // Glyphs are drawn for forward=↓; mirror for backward travel (↑ on the page).
-  return `translate(${cx} ${cy}) scale(1 -1) translate(${-cx} ${-cy})`
+  // Glyphs are drawn for forward=↑; 180° keeps left=CCW / right=CW for stem ↓.
+  return `rotate(180 ${cx} ${cy})`
 }
 
 /**
- * Turn glyphs assume OSM forward = **down** the page (stem from top, tip toward bottom).
- * left/right bend toward diagram-left / diagram-right.
+ * Turn glyphs assume OSM forward = **up** the page (stem from bottom, tip toward top).
+ * Left = counterclockwise from stem; right = clockwise (also for backward via 180°).
  */
 function turnGlyphPaths(
   turn: string,
@@ -235,7 +279,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx},${cy - half} ${cx},${cy + half}`}
+          points={`${cx},${cy + half} ${cx},${cy - half}`}
         />,
       )
       elements.push(
@@ -246,13 +290,13 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx - half * 0.45},${cy + half * 0.35} ${cx},${cy + half} ${cx + half * 0.45},${cy + half * 0.35}`}
+          points={`${cx - half * 0.45},${cy - half * 0.35} ${cx},${cy - half} ${cx + half * 0.45},${cy - half * 0.35}`}
         />,
       )
       continue
     }
     if (token === 'left' || token === 'sharp_left' || token === 'slight_left') {
-      // Stem from top → down, then bend diagram-left (driver's left when facing down-page).
+      // Stem from bottom → up, then bend diagram-left (CCW from travel direction).
       const bend = token === 'slight_left' ? 0.55 : 0.85
       elements.push(
         <path
@@ -262,7 +306,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          d={`M ${cx} ${cy - half} L ${cx} ${cy} Q ${cx} ${cy + half * bend} ${cx - half} ${cy + half * bend}`}
+          d={`M ${cx} ${cy + half} L ${cx} ${cy} Q ${cx} ${cy - half * bend} ${cx - half} ${cy - half * bend}`}
         />,
       )
       elements.push(
@@ -273,7 +317,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx - half + half * 0.35},${cy + half * bend - half * 0.35} ${cx - half},${cy + half * bend} ${cx - half + half * 0.35},${cy + half * bend + half * 0.35}`}
+          points={`${cx - half + half * 0.35},${cy - half * bend - half * 0.35} ${cx - half},${cy - half * bend} ${cx - half + half * 0.35},${cy - half * bend + half * 0.35}`}
         />,
       )
       continue
@@ -288,7 +332,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          d={`M ${cx} ${cy - half} L ${cx} ${cy} Q ${cx} ${cy + half * bend} ${cx + half} ${cy + half * bend}`}
+          d={`M ${cx} ${cy + half} L ${cx} ${cy} Q ${cx} ${cy - half * bend} ${cx + half} ${cy - half * bend}`}
         />,
       )
       elements.push(
@@ -299,7 +343,7 @@ function turnGlyphPaths(
           strokeWidth={1.35}
           strokeLinecap="round"
           strokeLinejoin="round"
-          points={`${cx + half - half * 0.35},${cy + half * bend - half * 0.35} ${cx + half},${cy + half * bend} ${cx + half - half * 0.35},${cy + half * bend + half * 0.35}`}
+          points={`${cx + half - half * 0.35},${cy - half * bend - half * 0.35} ${cx + half},${cy - half * bend} ${cx + half - half * 0.35},${cy - half * bend + half * 0.35}`}
         />,
       )
       continue
@@ -315,7 +359,7 @@ function turnGlyphPaths(
           fill={stroke}
           fontFamily="ui-sans-serif, system-ui, sans-serif"
         >
-          {token === 'reverse' ? '↩' : token.startsWith('merge_to_left') ? '↙' : '↘'}
+          {token === 'reverse' ? '↩' : token.startsWith('merge_to_left') ? '↖' : '↗'}
         </text>,
       )
     }
@@ -546,7 +590,7 @@ function SlotRect({
     ? COLORS.widthLabel
     : isInferred
       ? COLORS.calculatedWidthLabel
-      : COLORS.untaggedEdge
+      : COLORS.defaultWidthLabel
   const glyphNudge =
     showWidthLabel && widthM != null && rect.width >= 18 && rect.height >= 14 ? 4 : 0
 
@@ -689,25 +733,12 @@ function DebugOverlay({ scene }: { scene: RoadSpaceScene }): ReactElement | null
               strokeWidth={1.5}
               opacity={0.85}
             />
-            <text
-              x={labelX}
-              y={midY - 3}
-              fontSize={9}
-              fill={provenanceColor}
-              fontFamily="ui-monospace, monospace"
-            >
-              {offset.provenance === 'anchor' ? '⚓' : '⇢'} {offset.stackLeftM.toFixed(2)} m
-            </text>
-            <text
-              x={labelX}
-              y={midY + 9}
-              fontSize={8}
-              fill={provenanceColor}
-              fontFamily="ui-monospace, monospace"
-              opacity={0.85}
-            >
-              way {offset.wayId} · {offset.role}
-            </text>
+            <DebugLabel x={labelX} y={midY - 3} fontSize={9} fill={provenanceColor}>
+              {`${offset.provenance === 'anchor' ? '⚓' : '⇢'} ${offset.stackLeftM.toFixed(2)} m`}
+            </DebugLabel>
+            <DebugLabel x={labelX} y={midY + 9} fontSize={8} fill={provenanceColor} opacity={0.85}>
+              {`way ${offset.wayId} · ${offset.role}`}
+            </DebugLabel>
             {hasPlacementWarn && offset.taggedStackLeftX != null ? (
               <>
                 <line
@@ -720,15 +751,14 @@ function DebugOverlay({ scene }: { scene: RoadSpaceScene }): ReactElement | null
                   strokeDasharray="2 2"
                   opacity={0.9}
                 />
-                <text
+                <DebugLabel
                   x={Math.min(offset.taggedStackLeftX, offset.stackLeftX) + 2}
                   y={midY - 8}
                   fontSize={8}
                   fill={COLORS.debugPlacementDelta}
-                  fontFamily="ui-monospace, monospace"
                 >
-                  Δ{offset.placementDeltaM!.toFixed(2)} m
-                </text>
+                  {`Δ${offset.placementDeltaM!.toFixed(2)} m`}
+                </DebugLabel>
               </>
             ) : null}
           </g>
@@ -751,6 +781,7 @@ export function RoadSpaceDiagram({
   highlightedSlotId,
   className,
   siblingLabel = 'Opposite carriageway',
+  junctionLabel = 'junction',
   debug = false,
 }: {
   scene: RoadSpaceScene
@@ -759,11 +790,14 @@ export function RoadSpaceDiagram({
   className?: string
   /** Label drawn inside `label: 'sibling'` placeholder rects. */
   siblingLabel?: string
+  /** Centred label on implied-junction placeholder bands. */
+  junctionLabel?: string
   /** Audit overlay: correspondence links, solved offsets, placement deltas. */
   debug?: boolean
 }): ReactElement {
   const ribbons = scene.ribbons ?? []
   const ribbonsCoverTravel = ribbons.length > 0
+  const plates = scene.carriagewayPlates ?? (scene.carriagewayPlate ? [scene.carriagewayPlate] : [])
 
   return (
     <svg
@@ -783,15 +817,58 @@ export function RoadSpaceDiagram({
         marginInline: 'auto',
       }}
     >
-      {scene.carriagewayPlate ? (
+      {plates.map((plate, i) => (
         <polygon
-          points={pointsAttr(scene.carriagewayPlate.points)}
+          key={`plate-${i}`}
+          points={pointsAttr(plate.points)}
           fill={COLORS.carriagewayPlate}
           opacity={0.5}
           pointerEvents="none"
           shapeRendering="geometricPrecision"
         />
-      ) : null}
+      ))}
+
+      {(scene.junctions ?? []).map((junction, i) => (
+        <g key={`junction-${i}`} pointerEvents="none">
+          <rect
+            x={0}
+            y={junction.y}
+            width={scene.widthPx}
+            height={junction.height}
+            fill={COLORS.carriagewayPlate}
+            opacity={0.6}
+          />
+          <line
+            x1={0}
+            y1={junction.y}
+            x2={scene.widthPx}
+            y2={junction.y}
+            stroke={COLORS.segment_boundary}
+            strokeWidth={1}
+            strokeDasharray="4 3"
+          />
+          <line
+            x1={0}
+            y1={junction.y + junction.height}
+            x2={scene.widthPx}
+            y2={junction.y + junction.height}
+            stroke={COLORS.segment_boundary}
+            strokeWidth={1}
+            strokeDasharray="4 3"
+          />
+          <text
+            x={scene.widthPx / 2}
+            y={junction.y + junction.height / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={9}
+            fill={COLORS.siblingLabel}
+            fontFamily="ui-sans-serif, system-ui, sans-serif"
+          >
+            {junctionLabel}
+          </text>
+        </g>
+      ))}
 
       {scene.polylines
         .filter((line) => line.kind === 'segment_boundary')
@@ -821,8 +898,45 @@ export function RoadSpaceDiagram({
         />
       ))}
 
+      {/* Wide placement guide under lane markings so dashes/centrelines stay readable. */}
       {scene.polylines
-        .filter((line) => line.kind !== 'segment_boundary' && line.kind !== 'placement_guide')
+        .filter((line) => line.kind === 'placement_guide')
+        .map((line) => (
+          <polyline
+            key={`${line.id}-band`}
+            fill="none"
+            stroke={COLORS.placement_guide}
+            strokeWidth={10}
+            strokeLinecap="round"
+            opacity={0.28}
+            pointerEvents="none"
+            points={pointsAttr(line.points)}
+          />
+        ))}
+
+      {/* Secondary guide over the opposite dual carriageway (narrower / dimmer). */}
+      {scene.polylines
+        .filter((line) => line.kind === 'sibling_placement_guide')
+        .map((line) => (
+          <polyline
+            key={`${line.id}-band`}
+            fill="none"
+            stroke={COLORS.placement_guide}
+            strokeWidth={6}
+            strokeLinecap="round"
+            opacity={0.2}
+            pointerEvents="none"
+            points={pointsAttr(line.points)}
+          />
+        ))}
+
+      {scene.polylines
+        .filter(
+          (line) =>
+            line.kind !== 'segment_boundary' &&
+            line.kind !== 'placement_guide' &&
+            line.kind !== 'sibling_placement_guide',
+        )
         .map((line) => (
           <polyline
             key={line.id}
@@ -830,11 +944,15 @@ export function RoadSpaceDiagram({
             stroke={polylineStroke(line)}
             strokeWidth={polylineStrokeWidth(line)}
             strokeDasharray={line.style === 'dashed' ? '4 3' : undefined}
+            strokeLinecap={line.kind === 'kerb' || line.kind === 'outer_edge' ? 'round' : undefined}
+            strokeLinejoin={
+              line.kind === 'kerb' || line.kind === 'outer_edge' ? 'round' : undefined
+            }
             points={pointsAttr(line.points)}
           />
         ))}
 
-      {/* Placement centreline + way-direction arrow drawn last so they stay visible. */}
+      {/* Way-direction cue + side labels above markings. */}
       {scene.polylines
         .filter((line) => line.kind === 'placement_guide')
         .map((line) => {
@@ -853,28 +971,16 @@ export function RoadSpaceDiagram({
               ? Math.max(...travelRects.map((r) => r.x + r.width))
               : Math.min(scene.widthPx - 8, x + 40)
           return (
-            <g key={line.id} pointerEvents="none" opacity={0.55}>
-              <polyline
-                fill="none"
-                stroke={COLORS.placement_guide}
-                strokeWidth={4}
-                points={pointsAttr(line.points)}
-              />
-              {/* Way direction = down the page (OSM forward). */}
+            <g key={line.id} pointerEvents="none">
+              {/* Way direction = up the page (OSM forward). */}
               <polyline
                 fill="none"
                 stroke={COLORS.placement_guide}
                 strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                points={`${x - head},${midY - head * 0.2} ${x},${midY + head} ${x + head},${midY - head * 0.2}`}
-              />
-              <polyline
-                fill="none"
-                stroke={COLORS.placement_guide}
-                strokeWidth={2}
-                strokeLinecap="round"
-                points={`${x},${y0 + 4} ${x},${y1 - 4}`}
+                opacity={0.55}
+                points={`${x - head},${midY + head * 0.2} ${x},${midY - head} ${x + head},${midY + head * 0.2}`}
               />
               <text
                 x={x + 8}
@@ -883,9 +989,9 @@ export function RoadSpaceDiagram({
                 fill={COLORS.placement_guide}
                 fontFamily="ui-sans-serif, system-ui, sans-serif"
                 fontWeight={600}
-                opacity={0.95}
+                opacity={0.75}
               >
-                way ↓
+                way ↑
               </text>
               <text
                 x={leftEdge + 4}
@@ -910,6 +1016,55 @@ export function RoadSpaceDiagram({
               >
                 *:right
               </text>
+            </g>
+          )
+        })}
+
+      {/* Sibling-way direction cue on the secondary violet guide. */}
+      {scene.polylines
+        .filter((line) => line.kind === 'sibling_placement_guide')
+        .map((line) => {
+          const ys = line.points.map((p) => p.y)
+          const xs = line.points.map((p) => p.x)
+          const x = xs.reduce((a, b) => a + b, 0) / xs.length
+          const y0 = Math.min(...ys)
+          const y1 = Math.max(...ys)
+          const midY = (y0 + y1) / 2
+          const head = 5
+          const arrowPoints =
+            line.forward === 'down'
+              ? `${x - head},${midY - head * 0.2} ${x},${midY + head} ${x + head},${midY - head * 0.2}`
+              : line.forward === 'up'
+                ? `${x - head},${midY + head * 0.2} ${x},${midY - head} ${x + head},${midY + head * 0.2}`
+                : null
+          const label =
+            line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
+          return (
+            <g key={`${line.id}-cue`} pointerEvents="none">
+              {arrowPoints ? (
+                <polyline
+                  fill="none"
+                  stroke={COLORS.placement_guide}
+                  strokeWidth={1.75}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.4}
+                  points={arrowPoints}
+                />
+              ) : null}
+              {label ? (
+                <text
+                  x={x + 6}
+                  y={y0 + 24}
+                  fontSize={8}
+                  fill={COLORS.placement_guide}
+                  fontFamily="ui-sans-serif, system-ui, sans-serif"
+                  fontWeight={600}
+                  opacity={0.55}
+                >
+                  {label}
+                </text>
+              ) : null}
             </g>
           )
         })}

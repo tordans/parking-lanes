@@ -13,6 +13,7 @@ export type {
   SceneSlotRect,
   ScenePolyline,
   SceneSegmentBand,
+  SceneJunctionBand,
   SceneRibbon,
   SceneRibbonBandSlice,
   SceneCarriagewayPlate,
@@ -28,6 +29,8 @@ export {
   SEGMENT_BAND_HEIGHT_PX,
   SEGMENT_GAP_PX,
   DEFAULT_MEDIAN_GAP_M,
+  JUNCTION_BAND_HEIGHT_FRAC,
+  TRANSITION_BAND_HEIGHT_FRAC,
 } from './defaults'
 
 export {
@@ -62,6 +65,8 @@ export {
   solveChainOffsets,
   slicesCorrespond,
   turnSignature,
+  isPureTurnSlot,
+  seamIsImpliedJunction,
   slotStartsM,
   slotCenterM,
   seamChangeMagnitude,

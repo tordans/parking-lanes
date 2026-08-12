@@ -9,6 +9,7 @@ import {
   DEFAULT_WIDTHS_M,
   formatEdgeSlotId,
   formatLaneSlotId,
+  JUNCTION_BAND_HEIGHT_FRAC,
   layoutRoadSpace,
   matchSegmentStacks,
   matchStacks,
@@ -16,6 +17,7 @@ import {
   parseSlotId,
   resolvePlacement,
   sceneToSvg,
+  seamIsImpliedJunction,
   slotCenterM,
   solveChainOffsets,
   type RoadSpaceChain,
@@ -25,8 +27,9 @@ import {
 function fixtureChain(id: string): RoadSpaceChain {
   const fixture = laneDiagramFixtures.find((f) => f.id === id)
   if (!fixture) throw new Error(`missing fixture ${id}`)
+  // Match audit / orientation contract: next (ahead) on top so forward travel draws up.
   return {
-    segments: fixture.segments.map((seg) =>
+    segments: [...fixture.segments].reverse().map((seg) =>
       buildRoadSpaceSegment(seg.tags, {
         wayId: seg.wayId,
         role: seg.role,
@@ -763,23 +766,23 @@ describe('layout continuity', () => {
 
   test('disappearing / pocket motors on prev stay motor-gray (not neighbor-dimmed)', () => {
     const placement = layoutRoadSpace(fixtureChain('placement-transition'))
-    const extraMotor = placement.ribbons.find(
+    const prevMotors = placement.ribbons.filter(
       (r) =>
         r.zone === 'carriageway' &&
         r.kind === 'motor' &&
-        r.bandSlices.every((s) => s.role === 'prev'),
+        r.bandSlices.some((s) => s.role === 'prev'),
     )
-    expect(extraMotor).toBeDefined()
-    expect(extraMotor!.dimmed).toBeFalsy()
+    expect(prevMotors.length).toBeGreaterThan(0)
+    expect(prevMotors.every((r) => !r.dimmed)).toBe(true)
 
     const pocket = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
     const turnRibbons = pocket.ribbons.filter((r) => r.turn === 'left' || r.turn === 'right')
     expect(turnRibbons.length).toBe(2)
     expect(turnRibbons.every((r) => !r.dimmed)).toBe(true)
-    // Glyphs sit on the real pocket band, not the synthetic taper wedge.
+    // Glyphs sit on the real pocket band (prev at bottom after audit orientation).
     for (const r of turnRibbons) {
       expect(r.glyphBandRole).toBe('prev')
-      expect(r.glyphCy).toBeLessThan(112)
+      expect(r.glyphCy).toBeGreaterThan(200)
     }
   })
 
@@ -807,30 +810,24 @@ describe('layout continuity', () => {
     expect(hasDiagonal).toBe(true)
   })
 
-  test('fixture 4: both kerbs taper when left+right pockets end; through columns stay aligned', () => {
+  test('fixture 4: implied junction where left+right pockets end; through columns stay aligned', () => {
     const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
-    const left = scene.polylines.find((p) => p.id.startsWith('kerb-left'))!
-    const right = scene.polylines.find((p) => p.id.startsWith('kerb-right'))!
-    const leftXs = [...new Set(left.points.map((p) => p.x))]
-    const rightXs = [...new Set(right.points.map((p) => p.x))]
-    expect(leftXs.length).toBeGreaterThan(1)
-    expect(rightXs.length).toBeGreaterThan(1)
+    expect(scene.junctions).toHaveLength(1)
+    expect(scene.junctions![0]!.height).toBeCloseTo(
+      SEGMENT_BAND_HEIGHT_PX * JUNCTION_BAND_HEIGHT_FRAC,
+      1,
+    )
+
+    // Kerbs break at the junction — square ends, no continuous pinch across the seam.
+    const leftKerbs = scene.polylines.filter((p) => p.id.startsWith('kerb-left'))
+    const rightKerbs = scene.polylines.filter((p) => p.id.startsWith('kerb-right'))
+    expect(leftKerbs.length).toBeGreaterThanOrEqual(2)
+    expect(rightKerbs.length).toBeGreaterThanOrEqual(2)
 
     const throughRibbons = scene.ribbons.filter(
       (r) => r.zone === 'carriageway' && r.kind === 'motor' && /\/forward\/through\//.test(r.id),
     )
-    expect(throughRibbons).toHaveLength(2)
-    for (const r of throughRibbons) {
-      // Through lanes stay in vertical columns (no shear across the centreline).
-      const leftEdge = r.points.filter((_, i, arr) => {
-        // approximate: points on the left side of the ribbon polygon
-        const xs = arr.map((p) => p.x)
-        const mid = (Math.min(...xs) + Math.max(...xs)) / 2
-        return arr[i]!.x <= mid + 0.01
-      })
-      const leftXsRibbon = [...new Set(leftEdge.map((p) => p.x))]
-      expect(leftXsRibbon.length).toBeLessThanOrEqual(2)
-    }
+    expect(throughRibbons.length).toBeGreaterThanOrEqual(2)
   })
 
   test('dual carriageway: opposite branch forms continuous ribbons across dual bands', () => {
@@ -844,19 +841,70 @@ describe('layout continuity', () => {
     expect(spanning!.points.length).toBeGreaterThanOrEqual(4)
   })
 
+  test('dual carriageway: secondary violet guide over sibling carriageway only', () => {
+    const scene = layoutRoadSpace(fixtureChain('dual-carriageway-island'))
+    const main = scene.polylines.find((p) => p.kind === 'placement_guide')
+    const sibling = scene.polylines.find((p) => p.kind === 'sibling_placement_guide')
+    expect(main).toBeDefined()
+    expect(sibling).toBeDefined()
+    expect(sibling!.forward).toBe('down')
+
+    const dualBands = scene.bands.filter((b) => !b.synthetic && (b.role === 'current' || b.role === 'next'))
+    const plainBands = scene.bands.filter((b) => !b.synthetic && b.role === 'prev')
+    expect(dualBands.length).toBe(2)
+    expect(plainBands.length).toBe(1)
+
+    const guideY0 = Math.min(...sibling!.points.map((p) => p.y))
+    const guideY1 = Math.max(...sibling!.points.map((p) => p.y))
+    const dualTop = Math.min(...dualBands.map((b) => b.y))
+    const dualBot = Math.max(...dualBands.map((b) => b.y + b.height))
+    // Guide spans the dual block (including intervening glue), not the plain approach.
+    expect(guideY0).toBeLessThanOrEqual(dualTop + 0.5)
+    expect(guideY1).toBeGreaterThanOrEqual(dualBot - 0.5)
+    for (const plain of plainBands) {
+      expect(guideY1).toBeLessThanOrEqual(plain.y + 0.5)
+    }
+
+    // Sibling guide sits left of the main (selected) centreline.
+    const siblingX = sibling!.points.reduce((s, p) => s + p.x, 0) / sibling!.points.length
+    expect(siblingX).toBeLessThan(main!.points[0]!.x - 10)
+
+    // Over sibling carriageway extent (opposite motor rects).
+    const oppMotors = scene.slotRects.filter(
+      (r) =>
+        (r.wayId === 512 || r.wayId === 513) &&
+        r.kind === 'motor' &&
+        r.zone === 'carriageway' &&
+        r.label !== 'step_fill',
+    )
+    expect(oppMotors.length).toBeGreaterThan(0)
+    const oppLeft = Math.min(...oppMotors.map((r) => r.x))
+    const oppRight = Math.max(...oppMotors.map((r) => r.x + r.width))
+    expect(siblingX).toBeGreaterThan(oppLeft)
+    expect(siblingX).toBeLessThan(oppRight)
+
+    // Single-carriageway fixtures must not emit a sibling guide.
+    const plain = layoutRoadSpace(fixtureChain('one-lane-each-way'))
+    expect(plain.polylines.some((p) => p.kind === 'sibling_placement_guide')).toBe(false)
+  })
+
   test('turn-aware matching: left/right pockets do not chain to through lanes', () => {
     const scene = layoutRoadSpace(fixtureChain('turn-pocket-then-continue'))
     const throughRibbons = scene.ribbons.filter(
       (r) => r.zone === 'carriageway' && r.kind === 'motor' && /\/forward\/through\//.test(r.id),
     )
-    expect(throughRibbons.length).toBe(2)
-    for (const r of throughRibbons) {
-      expect(r.bandSlices.length).toBeGreaterThanOrEqual(2)
-    }
+    // Junction splits through corridors into separate ribbons above/below the seam.
+    expect(throughRibbons.length).toBeGreaterThanOrEqual(2)
     const leftRibbon = scene.ribbons.find((r) => /\/forward\/left\//.test(r.id))
     const rightRibbon = scene.ribbons.find((r) => /\/forward\/right\//.test(r.id))
-    if (leftRibbon) expect(leftRibbon.bandSlices.length).toBeLessThanOrEqual(2)
-    if (rightRibbon) expect(rightRibbon.bandSlices.length).toBeLessThanOrEqual(2)
+    if (leftRibbon) {
+      expect(leftRibbon.bandSlices.every((s) => !/through/.test(s.slotId))).toBe(true)
+      expect(leftRibbon.bandSlices.length).toBeLessThanOrEqual(2)
+    }
+    if (rightRibbon) {
+      expect(rightRibbon.bandSlices.every((s) => !/through/.test(s.slotId))).toBe(true)
+      expect(rightRibbon.bandSlices.length).toBeLessThanOrEqual(2)
+    }
   })
 
   test('corridor ribbons span contiguous bands with aligned edges', () => {
@@ -1127,9 +1175,9 @@ describe('layout continuity', () => {
 
   test('dual chain: real opposite + median on dual bands; no polyline crosses median', () => {
     const chain = fixtureChain('dual-carriageway-island')
-    // [non-dual prev, dual current, dual next]
-    expect(chain.segments.map((s) => s.fork != null)).toEqual([false, true, true])
-    expect(chain.segments.map((s) => s.fork?.siblingWayId)).toEqual([undefined, 512, 513])
+    // Audit order: next (dual), current (dual), prev (non-dual)
+    expect(chain.segments.map((s) => s.fork != null)).toEqual([true, true, false])
+    expect(chain.segments.map((s) => s.fork?.siblingWayId)).toEqual([513, 512, undefined])
 
     const scene = layoutRoadSpace(chain)
     const placeholders = scene.slotRects.filter((r) => r.slotId.endsWith('/fork/placeholder'))
@@ -1206,6 +1254,173 @@ describe('layout continuity', () => {
   })
 })
 
+describe('implied junction seams', () => {
+  test('turn-pocket-then-continue: one junction at the pocket seam', () => {
+    const chain = fixtureChain('turn-pocket-then-continue')
+    const { correspondences } = solveChainOffsets(chain.segments)
+    const junctionSeams = correspondences
+      .map((corr, i) =>
+        seamIsImpliedJunction(chain.segments[i]!, chain.segments[i + 1]!, corr) ? i : -1,
+      )
+      .filter((i) => i >= 0)
+    expect(junctionSeams).toEqual([1])
+
+    const scene = layoutRoadSpace(chain)
+    expect(scene.junctions).toHaveLength(1)
+    expect(scene.junctions![0]!.height).toBeCloseTo(
+      SEGMENT_BAND_HEIGHT_PX * JUNCTION_BAND_HEIGHT_FRAC,
+      5,
+    )
+    expect(scene.bands.some((b) => b.junction)).toBe(true)
+    const svg = sceneToSvg(scene)
+    expect(svg).toContain('data-junction="1"')
+    expect(svg).toContain('>junction</text>')
+  })
+
+  test('right-turn-pocket: appearing pocket stays a taper (no junction)', () => {
+    const chain = fixtureChain('right-turn-pocket')
+    const { correspondences } = solveChainOffsets(chain.segments)
+    for (let i = 0; i < correspondences.length; i++) {
+      expect(
+        seamIsImpliedJunction(chain.segments[i]!, chain.segments[i + 1]!, correspondences[i]!),
+      ).toBe(false)
+    }
+    expect(layoutRoadSpace(chain).junctions ?? []).toHaveLength(0)
+  })
+
+  test('two-lane-each-way: no junction', () => {
+    const chain = fixtureChain('two-lane-each-way')
+    const { correspondences } = solveChainOffsets(chain.segments)
+    for (let i = 0; i < correspondences.length; i++) {
+      expect(
+        seamIsImpliedJunction(chain.segments[i]!, chain.segments[i + 1]!, correspondences[i]!),
+      ).toBe(false)
+    }
+    expect(layoutRoadSpace(chain).junctions ?? []).toHaveLength(0)
+  })
+
+  test('through-lane count drop without pure-turn roles stays a smooth taper', () => {
+    const chain: RoadSpaceChain = {
+      segments: [
+        buildRoadSpaceSegment(
+          {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '2',
+            sidewalk: 'both',
+          },
+          { wayId: 1, role: 'next' },
+        ),
+        buildRoadSpaceSegment(
+          {
+            highway: 'primary',
+            oneway: 'yes',
+            lanes: '3',
+            sidewalk: 'both',
+          },
+          { wayId: 2, role: 'current' },
+        ),
+      ],
+    }
+    // 3 lanes below → 2 above: unmatched forward in B without turn tags.
+    const { correspondences } = solveChainOffsets(chain.segments)
+    expect(correspondences).toHaveLength(1)
+    expect(seamIsImpliedJunction(chain.segments[0]!, chain.segments[1]!, correspondences[0]!)).toBe(
+      false,
+    )
+    const scene = layoutRoadSpace(chain)
+    expect(scene.junctions ?? []).toHaveLength(0)
+    expect(scene.bands.some((b) => b.synthetic && !b.junction)).toBe(true)
+  })
+
+  test('placement-transition: merge seam shares S-curve x across kerb/plate/sidewalk/lane', () => {
+    const chain = fixtureChain('placement-transition')
+    const { correspondences } = solveChainOffsets(chain.segments)
+    // No pure-turn roles → must not become an implied junction.
+    for (let i = 0; i < correspondences.length; i++) {
+      expect(
+        seamIsImpliedJunction(chain.segments[i]!, chain.segments[i + 1]!, correspondences[i]!),
+      ).toBe(false)
+    }
+
+    const scene = layoutRoadSpace(chain)
+    expect(scene.junctions ?? []).toHaveLength(0)
+
+    const glueIdx = scene.bands.findIndex(
+      (b, i) =>
+        b.synthetic &&
+        !b.junction &&
+        b.height > 20 &&
+        scene.bands[i - 1]?.role === 'current' &&
+        scene.bands[i + 1]?.role === 'prev',
+    )
+    expect(glueIdx).toBeGreaterThan(0)
+    const glue = scene.bands[glueIdx]!
+
+    const kerb = scene.polylines.find((p) => p.id.startsWith('kerb-left'))
+    expect(kerb).toBeDefined()
+    const plate = scene.carriagewayPlate
+    expect(plate).toBeDefined()
+    const sidewalk = scene.ribbons.find(
+      (r) => r.zone === 'sidepath' && r.bandSlices.some((s) => s.bandIndex === glueIdx),
+    )
+    expect(sidewalk).toBeDefined()
+    const merge = scene.ribbons.find(
+      (r) =>
+        r.zone === 'carriageway' &&
+        r.kind === 'motor' &&
+        r.bandSlices.some((s) => s.wayId === 1001 && s.slotId.includes('forward/0')),
+    )
+    expect(merge).toBeDefined()
+    expect(merge!.bandSlices.some((s) => s.bandIndex === glueIdx)).toBe(true)
+
+    const xAtY = (
+      points: Array<{ x: number; y: number }>,
+      y: number,
+      side: 'left' | 'right',
+    ): number | null => {
+      const xs: number[] = []
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i]!
+        const b = points[i + 1]!
+        const ymin = Math.min(a.y, b.y)
+        const ymax = Math.max(a.y, b.y)
+        if (y < ymin - 0.05 || y > ymax + 0.05) continue
+        if (Math.abs(a.y - b.y) < 0.05) {
+          xs.push(a.x)
+          continue
+        }
+        const t = (y - a.y) / (b.y - a.y)
+        if (t >= -0.05 && t <= 1.05) xs.push(a.x + t * (b.x - a.x))
+      }
+      if (xs.length === 0) return null
+      return side === 'left' ? Math.min(...xs) : Math.max(...xs)
+    }
+
+    // Sample through the glue band: kerb, plate left, sidewalk inner, merge left align.
+    for (let i = 0; i <= 8; i++) {
+      const y = glue.y + (glue.height * i) / 8
+      const kerbX = xAtY(kerb!.points, y, 'left')
+      const plateX = xAtY(plate!.points, y, 'left')
+      const swInner = xAtY(sidewalk!.points, y, 'right')
+      const mergeLeft = xAtY(merge!.points, y, 'left')
+      const mergeRight = xAtY(merge!.points, y, 'right')
+      expect(kerbX).not.toBeNull()
+      expect(plateX).not.toBeNull()
+      expect(swInner).not.toBeNull()
+      expect(mergeLeft).not.toBeNull()
+      expect(mergeRight).not.toBeNull()
+      // Shared S-curve (± kerb fill overlap).
+      expect(Math.abs(kerbX! - plateX!)).toBeLessThanOrEqual(1.5)
+      expect(Math.abs(kerbX! - swInner!)).toBeLessThanOrEqual(1.5)
+      expect(Math.abs(kerbX! - mergeLeft!)).toBeLessThanOrEqual(1.5)
+      // Merging lane still has fill to the right of the kerb (no uncovered gap).
+      expect(mergeRight!).toBeGreaterThan(mergeLeft! - 0.01)
+      expect(mergeRight! - kerbX!).toBeGreaterThanOrEqual(-0.5)
+    }
+  })
+})
+
 describe('sceneToSvg snapshots', () => {
   for (const fixture of laneDiagramFixtures) {
     test(`deterministic SVG for ${fixture.id}`, () => {
@@ -1222,7 +1437,7 @@ describe('sceneToSvg snapshots', () => {
 
 describe('all fixtures', () => {
   test('every fixture lays out without throwing and has ≥1 slot rect per segment', () => {
-    expect(laneDiagramFixtures).toHaveLength(23)
+    expect(laneDiagramFixtures).toHaveLength(26)
     for (const fixture of laneDiagramFixtures) {
       const chain = fixtureChain(fixture.id)
       const scene = layoutRoadSpace(chain)

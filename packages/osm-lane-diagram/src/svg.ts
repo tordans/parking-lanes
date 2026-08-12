@@ -68,7 +68,9 @@ function slotFill(rect: SceneSlotRect, highlighted: boolean, ribbonsCoverTravel:
 function polylineStroke(line: ScenePolyline): string {
   if (line.kind === 'kerb') return COLOR_KERB
   if (line.kind === 'outer_edge') return COLOR_OUTER
-  if (line.kind === 'placement_guide') return COLOR_PLACEMENT_GUIDE
+  if (line.kind === 'placement_guide' || line.kind === 'sibling_placement_guide') {
+    return COLOR_PLACEMENT_GUIDE
+  }
   if (line.kind === 'centreline') return COLOR_CENTRELINE
   if (line.kind === 'segment_boundary') return COLOR_BOUNDARY
   return COLOR_SEPARATOR
@@ -76,6 +78,7 @@ function polylineStroke(line: ScenePolyline): string {
 
 function polylineStrokeWidth(line: ScenePolyline): string {
   if (line.kind === 'placement_guide') return '4'
+  if (line.kind === 'sibling_placement_guide') return '2.5'
   if (line.kind === 'segment_boundary') return '1'
   if (line.kind === 'outer_edge') return '1'
   return '1.5'
@@ -102,9 +105,22 @@ export function sceneToSvg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${round2(scene.widthPx)}" height="${round2(scene.heightPx)}" viewBox="0 0 ${round2(scene.widthPx)} ${round2(scene.heightPx)}">`,
   )
 
-  if (scene.carriagewayPlate) {
+  const plates = scene.carriagewayPlates ?? (scene.carriagewayPlate ? [scene.carriagewayPlate] : [])
+  for (const plate of plates) {
     parts.push(
-      `<polygon data-plate="carriageway" points="${pointsAttr(scene.carriagewayPlate.points)}" fill="${COLOR_PLATE}" opacity="0.55"/>`,
+      `<polygon data-plate="carriageway" points="${pointsAttr(plate.points)}" fill="${COLOR_PLATE}" opacity="0.55"/>`,
+    )
+  }
+
+  for (const junction of scene.junctions ?? []) {
+    const y = round2(junction.y)
+    const h = round2(junction.height)
+    const w = round2(scene.widthPx)
+    parts.push(
+      `<rect data-junction="1" x="0" y="${y}" width="${w}" height="${h}" fill="${COLOR_PLATE}" opacity="0.6"/>`,
+      `<line data-junction-edge="top" x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${COLOR_BOUNDARY}" stroke-width="1" stroke-dasharray="4 3"/>`,
+      `<line data-junction-edge="bottom" x1="0" y1="${round2(y + h)}" x2="${w}" y2="${round2(y + h)}" stroke="${COLOR_BOUNDARY}" stroke-width="1" stroke-dasharray="4 3"/>`,
+      `<text data-junction-label="1" x="${round2(w / 2)}" y="${round2(y + h / 2)}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#52525b" font-family="ui-sans-serif, system-ui, sans-serif">junction</text>`,
     )
   }
 
@@ -158,14 +174,24 @@ export function sceneToSvg(
   }
 
   for (const line of scene.polylines) {
-    if (line.kind === 'segment_boundary' || line.kind === 'placement_guide') continue
+    if (
+      line.kind === 'segment_boundary' ||
+      line.kind === 'placement_guide' ||
+      line.kind === 'sibling_placement_guide'
+    ) {
+      continue
+    }
     const dash = line.style === 'dashed' ? ' stroke-dasharray="4 3"' : ''
+    const roundCaps =
+      line.kind === 'kerb' || line.kind === 'outer_edge'
+        ? ' stroke-linecap="round" stroke-linejoin="round"'
+        : ''
     parts.push(
-      `<polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="${polylineStrokeWidth(line)}"${dash} points="${pointsAttr(line.points)}"/>`,
+      `<polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="${polylineStrokeWidth(line)}"${dash}${roundCaps} points="${pointsAttr(line.points)}"/>`,
     )
   }
 
-  // Placement centreline on top with way-direction arrow (OSM forward = down).
+  // Placement centreline on top with way-direction arrow (OSM forward = up).
   for (const line of scene.polylines) {
     if (line.kind !== 'placement_guide') continue
     const x = line.points[0]?.x ?? scene.centrelineX ?? 0
@@ -175,7 +201,36 @@ export function sceneToSvg(
     const midY = (y0 + y1) / 2
     const head = 7
     parts.push(
-      `<g data-placement-guide="1" opacity="0.55"><polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="4" points="${pointsAttr(line.points)}"/><polyline fill="none" stroke="${polylineStroke(line)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${round2(x - head)},${round2(midY - head * 0.2)} ${round2(x)},${round2(midY + head)} ${round2(x + head)},${round2(midY - head * 0.2)}"/></g>`,
+      `<g data-placement-guide="1" opacity="0.55"><polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="4" points="${pointsAttr(line.points)}"/><polyline fill="none" stroke="${polylineStroke(line)}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${round2(x - head)},${round2(midY + head * 0.2)} ${round2(x)},${round2(midY - head)} ${round2(x + head)},${round2(midY + head * 0.2)}"/></g>`,
+    )
+  }
+
+  // Secondary violet guide over the opposite dual carriageway (narrower / dimmer).
+  for (const line of scene.polylines) {
+    if (line.kind !== 'sibling_placement_guide') continue
+    const xs = line.points.map((p) => p.x)
+    const ys = line.points.map((p) => p.y)
+    const x = xs.length > 0 ? xs.reduce((a, b) => a + b, 0) / xs.length : 0
+    const y0 = Math.min(...ys)
+    const y1 = Math.max(...ys)
+    const midY = (y0 + y1) / 2
+    const head = 5
+    const arrow =
+      line.forward === 'down'
+        ? `${round2(x - head)},${round2(midY - head * 0.2)} ${round2(x)},${round2(midY + head)} ${round2(x + head)},${round2(midY - head * 0.2)}`
+        : line.forward === 'up'
+          ? `${round2(x - head)},${round2(midY + head * 0.2)} ${round2(x)},${round2(midY - head)} ${round2(x + head)},${round2(midY + head * 0.2)}`
+          : null
+    const arrowMarkup = arrow
+      ? `<polyline fill="none" stroke="${polylineStroke(line)}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" points="${arrow}"/>`
+      : ''
+    const label =
+      line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
+    const labelMarkup = label
+      ? `<text x="${round2(x + 6)}" y="${round2(y0 + 24)}" font-size="8" fill="${COLOR_PLACEMENT_GUIDE}" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="600" opacity="0.7">${label}</text>`
+      : ''
+    parts.push(
+      `<g data-sibling-placement-guide="1" opacity="0.4"><polyline data-line="${escapeXml(line.id)}" data-kind="${line.kind}" fill="none" stroke="${polylineStroke(line)}" stroke-width="2.5" stroke-linecap="round" points="${pointsAttr(line.points)}"/>${arrowMarkup}${labelMarkup}</g>`,
     )
   }
 

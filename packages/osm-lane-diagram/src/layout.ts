@@ -1,19 +1,23 @@
 import {
   seamChangeMagnitude,
+  seamIsImpliedJunction,
   slotStartsM,
   solveChainOffsets,
   type StackCorrespondence,
 } from './correspondence'
+import { appendMorphingVerticalRun, appendSCurve, bandSeamExtent } from './curve'
 import {
   DEFAULT_MEDIAN_GAP_M,
   DEFAULT_METERS_TO_PX,
+  JUNCTION_BAND_HEIGHT_FRAC,
   SEGMENT_BAND_HEIGHT_PX,
   SEGMENT_GAP_PX,
   TAPER_FRAC,
   TRANSITION_BAND_HEIGHT_FRAC,
+  TRANSITION_CURVE_SAMPLES,
 } from './defaults'
 import { collectPlacementIssues } from './placement'
-import { buildCarriagewayPlate, buildCorridorRibbons } from './ribbons'
+import { buildCarriagewayPlates, buildCorridorRibbons } from './ribbons'
 import type {
   RoadSpaceChain,
   RoadSpaceScene,
@@ -22,22 +26,154 @@ import type {
   RoadSpaceSlot,
   SceneDebugBandOffset,
   SceneDebugCorrespondenceLink,
+  SceneJunctionBand,
   ScenePolyline,
   SceneSegmentBand,
   SceneSlotRect,
 } from './types'
 
 const PADDING_PX = 16
-/** Slight vertical overlap between band rects to avoid hairline gaps from sub-pixel rounding. */
-const SEAM_OVERLAP_PX = 1
 const EPS = 0.01
 /** Soft warning when solved stack offset disagrees with tagged placement (metres). */
 const PLACEMENT_OFFSET_WARN_M = 0.35
 /** Near-equal X positions merge into one separator run (px). */
 const SEPARATOR_X_TOLERANCE_PX = 2
+/** Width-change epsilon (metres) — below this, keep transition bands compact. */
+const TRANSITION_CHANGE_EPS_M = 0.05
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
+}
+
+function bandHasSiblingFork(band: BandGeometry): boolean {
+  return (band.segment.fork?.siblingSlots?.length ?? 0) > 0 && band.siblingSlotLeftX != null
+}
+
+/** Midpoint of the sibling branch carriageway (kerb–kerb, excluding sidepaths). */
+function siblingCarriagewayCentreX(band: BandGeometry, metersToPx: number): number | null {
+  const slots = band.segment.fork?.siblingSlots
+  const lefts = band.siblingSlotLeftX
+  if (!slots || !lefts) return null
+  let left: number | null = null
+  let right: number | null = null
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i]!
+    if (slot.zone !== 'carriageway') continue
+    const lx = lefts[i]
+    if (lx == null) continue
+    const rx = lx + slot.widthM * metersToPx
+    left = left == null ? lx : Math.min(left, lx)
+    right = right == null ? rx : Math.max(right, rx)
+  }
+  if (left == null || right == null) return null
+  return round2((left + right) / 2)
+}
+
+/**
+ * Sibling OSM-forward in scene space from prepared slot directions
+ * (`prepareDualSiblingSlots` flips oneway sibling travel to oppose the selected way).
+ */
+function siblingForwardInScene(
+  siblingSlots: RoadSpaceSlot[] | undefined,
+): 'up' | 'down' | undefined {
+  if (!siblingSlots?.length) return undefined
+  let forward = 0
+  let backward = 0
+  for (const slot of siblingSlots) {
+    if (slot.zone !== 'carriageway') continue
+    if (slot.direction === 'forward') forward++
+    else if (slot.direction === 'backward') backward++
+  }
+  if (forward === 0 && backward === 0) return undefined
+  return backward >= forward ? 'down' : 'up'
+}
+
+/**
+ * Secondary violet guides over dual-carriageway sibling branches. Contiguous runs of
+ * real fork bands (plus intervening synthetic glue) — not plain/merged bands.
+ */
+function buildSiblingPlacementGuides(
+  bands: BandGeometry[],
+  metersToPx: number,
+): ScenePolyline[] {
+  const out: ScenePolyline[] = []
+  let i = 0
+  let guideIndex = 0
+  while (i < bands.length) {
+    if (!bandHasSiblingFork(bands[i]!)) {
+      i++
+      continue
+    }
+    let j = i
+    while (j + 1 < bands.length) {
+      const next = bands[j + 1]!
+      if (bandHasSiblingFork(next)) {
+        j++
+        continue
+      }
+      if (
+        next.segment.synthetic &&
+        j + 2 < bands.length &&
+        bandHasSiblingFork(bands[j + 2]!)
+      ) {
+        j += 2
+        continue
+      }
+      break
+    }
+
+    const points: Array<{ x: number; y: number }> = []
+    let forward: 'up' | 'down' | undefined
+    let lastX: number | null = null
+    for (let k = i; k <= j; k++) {
+      const band = bands[k]!
+      let x = siblingCarriagewayCentreX(band, metersToPx)
+      if (x == null) {
+        // Synthetic glue between duals: reuse neighbouring sibling centreline.
+        for (let t = k - 1; t >= i; t--) {
+          x = siblingCarriagewayCentreX(bands[t]!, metersToPx)
+          if (x != null) break
+        }
+        if (x == null) {
+          for (let t = k + 1; t <= j; t++) {
+            x = siblingCarriagewayCentreX(bands[t]!, metersToPx)
+            if (x != null) break
+          }
+        }
+      }
+      if (x == null) continue
+      if (forward == null) {
+        forward = siblingForwardInScene(band.segment.fork?.siblingSlots)
+      }
+      const y0 = round2(band.y)
+      const y1 = round2(band.y + band.height)
+      if (lastX != null && differs(lastX, x) && points.length > 0) {
+        points.push({ x, y: y0 })
+      } else if (points.length === 0) {
+        points.push({ x, y: y0 })
+      } else if (differs(points[points.length - 1]!.x, x)) {
+        points.push({ x, y: y0 })
+      }
+      points.push({ x, y: y1 })
+      lastX = x
+    }
+
+    if (points.length >= 2) {
+      out.push({
+        id: `sibling-placement-guide-${guideIndex++}`,
+        kind: 'sibling_placement_guide',
+        style: 'solid',
+        points,
+        ...(forward ? { forward } : {}),
+      })
+    }
+    i = j + 1
+  }
+  return out
+}
+
+function differs(a: number, b: number): boolean {
+  return Math.abs(a - b) > EPS
 }
 
 type BandGeometry = {
@@ -63,6 +199,8 @@ type BandGeometry = {
   medianRightX?: number
   /** Opposite-branch footprint (real sibling stack or gray placeholder). */
   placeholder?: { x: number; width: number }
+  /** Synthetic implied-junction placeholder — no lane morph across this band. */
+  junction?: boolean
 }
 
 /** Width of the dimmed opposite branch (real sibling slots only). */
@@ -215,26 +353,13 @@ function buildBandGeometry(
   }
 }
 
-function differs(a: number, b: number): boolean {
-  return Math.abs(a - b) > EPS
-}
-
 function rectVerticalExtent(
   bandIndex: number,
   bandCount: number,
   y: number,
   height: number,
 ): { y: number; height: number } {
-  let top = y
-  let h = height
-  if (bandIndex > 0) {
-    top -= SEAM_OVERLAP_PX / 2
-    h += SEAM_OVERLAP_PX / 2
-  }
-  if (bandIndex < bandCount - 1) {
-    h += SEAM_OVERLAP_PX / 2
-  }
-  return { y: round2(top), height: round2(h) }
+  return bandSeamExtent(bandIndex, bandCount, y, height)
 }
 
 function dedupePoints(points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
@@ -249,9 +374,7 @@ function dedupePoints(points: Array<{ x: number; y: number }>): Array<{ x: numbe
 
 /**
  * One continuous vertical run across contiguous bands.
- * True width changes → diagonal on the wider band (lane merge/split).
- * Pure lateral shifts (same total width, different offset) → square step at the
- * boundary — diagonals on both sides look like a sheared road, not a taper.
+ * Delegates to shared morphing so kerbs match the carriageway plate.
  */
 function appendContinuousVerticalRun(
   points: Array<{ x: number; y: number }>,
@@ -264,65 +387,7 @@ function appendContinuousVerticalRun(
   }>,
   side: 'left' | 'right',
 ): void {
-  if (bandXs.length === 0) return
-
-  const isWider = (a: number, b: number) => (side === 'right' ? a > b + EPS : a < b - EPS)
-  const widthChanged = (a: { width?: number }, b: { width?: number }): boolean => {
-    if (a.width == null || b.width == null) return true
-    return differs(a.width, b.width)
-  }
-
-  for (let i = 0; i < bandXs.length; i++) {
-    const band = bandXs[i]!
-    const topY = round2(band.y)
-    const botY = round2(band.y + band.height)
-    const x = band.x
-    const prev = bandXs[i - 1]
-    const next = bandXs[i + 1]
-
-    if (band.synthetic) {
-      const topX = prev && !prev.synthetic ? prev.x : x
-      const botX = next && !next.synthetic ? next.x : x
-      if (!prev) points.push({ x: topX, y: topY })
-      else if (!prev.synthetic) points.push({ x: prev.x, y: topY })
-      points.push({ x: botX, y: botY })
-      continue
-    }
-
-    if (!prev) {
-      points.push({ x, y: topY })
-    } else if (prev.synthetic) {
-      points.push({ x, y: topY })
-    } else if (differs(prev.x, x)) {
-      if (!widthChanged(prev, band)) {
-        // Pure shift — square step at the shared boundary.
-        points.push({ x: prev.x, y: topY })
-        points.push({ x, y: topY })
-      } else if (isWider(x, prev.x)) {
-        const taperY = round2(band.y + band.height * TAPER_FRAC)
-        points.push({ x: prev.x, y: topY })
-        points.push({ x, y: taperY })
-      } else {
-        points.push({ x, y: topY })
-      }
-    }
-
-    if (!next) {
-      points.push({ x, y: botY })
-    } else if (next.synthetic) {
-      points.push({ x, y: botY })
-    } else if (differs(next.x, x)) {
-      if (!widthChanged(band, next)) {
-        points.push({ x, y: botY })
-      } else if (isWider(x, next.x)) {
-        const taperY = round2(band.y + band.height * (1 - TAPER_FRAC))
-        points.push({ x, y: taperY })
-        points.push({ x: next.x, y: botY })
-      } else {
-        points.push({ x, y: botY })
-      }
-    }
-  }
+  appendMorphingVerticalRun(points, bandXs, side)
 }
 
 /** Leftmost / rightmost travel-or-sidepath slot of a band (excludes placeholder/median). */
@@ -348,18 +413,18 @@ function bandOuterWidth(band: BandGeometry): number {
 }
 
 function transitionBandHeightPx(
-  a: BandGeometry,
-  b: BandGeometry,
+  _a: BandGeometry,
+  _b: BandGeometry,
   bandHeight: number,
   metersToPx: number,
   changeM: number,
 ): number {
-  const minFrac = TRANSITION_BAND_HEIGHT_FRAC * 0.08
-  const maxFrac = TRANSITION_BAND_HEIGHT_FRAC * 1.15
+  const compactPx = round2(bandHeight * TRANSITION_BAND_HEIGHT_FRAC * 0.08)
+  if (changeM < TRANSITION_CHANGE_EPS_M) return compactPx
   const widthDeltaPx = changeM * metersToPx
-  const slopeBoost = widthDeltaPx / (bandHeight * metersToPx * 0.4)
-  const frac = Math.min(maxFrac, Math.max(minFrac, minFrac + slopeBoost * 0.12))
-  return round2(bandHeight * frac)
+  const minPx = 24
+  const maxPx = TRANSITION_BAND_HEIGHT_FRAC * bandHeight
+  return round2(Math.min(maxPx, Math.max(minPx, widthDeltaPx * 0.9)))
 }
 
 function buildSyntheticTransitionBand(
@@ -368,6 +433,7 @@ function buildSyntheticTransitionBand(
   y: number,
   height: number,
   centrelineX: number,
+  junction = false,
 ): BandGeometry {
   const segment: RoadSpaceSegment = {
     wayId: 0,
@@ -394,6 +460,7 @@ function buildSyntheticTransitionBand(
     medianLeftX: below.medianLeftX,
     medianRightX: below.medianRightX,
     placeholder: below.placeholder,
+    ...(junction ? { junction: true } : {}),
   }
 }
 
@@ -414,9 +481,19 @@ function insertTransitionBands(
       const prev = result[result.length - 1]!
       if (!prev.segment.synthetic && !band.segment.synthetic) {
         const corr = correspondences[realIndex - 1]!
-        const changeM = seamChangeMagnitude(prev.segment, band.segment, corr)
-        const tHeight = transitionBandHeightPx(prev, band, bandHeight, metersToPx, changeM)
-        result.push(buildSyntheticTransitionBand(prev, band, y, tHeight, band.centrelineX))
+        const isJunction = seamIsImpliedJunction(prev.segment, band.segment, corr)
+        const tHeight = isJunction
+          ? round2(bandHeight * JUNCTION_BAND_HEIGHT_FRAC)
+          : transitionBandHeightPx(
+              prev,
+              band,
+              bandHeight,
+              metersToPx,
+              seamChangeMagnitude(prev.segment, band.segment, corr),
+            )
+        result.push(
+          buildSyntheticTransitionBand(prev, band, y, tHeight, band.centrelineX, isJunction),
+        )
         y += tHeight + gap
       }
     }
@@ -464,6 +541,7 @@ function reshapeOuterSlotsForTapers(slotRects: SceneSlotRect[], bands: BandGeome
         if (
           prev &&
           !prev.segment.synthetic &&
+          !prev.junction &&
           sameForkPresence(prev, band) &&
           differs(bandOuterWidth(prev), bandW)
         ) {
@@ -476,6 +554,7 @@ function reshapeOuterSlotsForTapers(slotRects: SceneSlotRect[], bands: BandGeome
         if (
           next &&
           !next.segment.synthetic &&
+          !next.junction &&
           sameForkPresence(band, next) &&
           differs(bandW, bandOuterWidth(next))
         ) {
@@ -497,6 +576,7 @@ function reshapeOuterSlotsForTapers(slotRects: SceneSlotRect[], bands: BandGeome
         if (
           prev &&
           !prev.segment.synthetic &&
+          !prev.junction &&
           sameForkPresence(prev, band) &&
           differs(bandOuterWidth(prev), bandW)
         ) {
@@ -509,6 +589,7 @@ function reshapeOuterSlotsForTapers(slotRects: SceneSlotRect[], bands: BandGeome
         if (
           next &&
           !next.segment.synthetic &&
+          !next.junction &&
           sameForkPresence(band, next) &&
           differs(bandW, bandOuterWidth(next))
         ) {
@@ -544,13 +625,27 @@ function reshapeOuterSlotsForTapers(slotRects: SceneSlotRect[], bands: BandGeome
         points.push({ x: round2(innerX), y: topY })
         if (spec.topFrom != null) {
           points.push({ x: round2(clampOuter(spec.topFrom)), y: topY })
-          points.push({ x: round2(fullOuterX), y: topTaperY })
+          appendSCurve(
+            points,
+            clampOuter(spec.topFrom),
+            topY,
+            fullOuterX,
+            topTaperY,
+            TRANSITION_CURVE_SAMPLES,
+          )
         } else {
           points.push({ x: round2(fullOuterX), y: topY })
         }
         if (spec.bottomTo != null) {
           points.push({ x: round2(fullOuterX), y: botTaperY })
-          points.push({ x: round2(clampOuter(spec.bottomTo)), y: botY })
+          appendSCurve(
+            points,
+            fullOuterX,
+            botTaperY,
+            clampOuter(spec.bottomTo),
+            botY,
+            TRANSITION_CURVE_SAMPLES,
+          )
         } else {
           points.push({ x: round2(fullOuterX), y: botY })
         }
@@ -585,11 +680,12 @@ function appendExteriorTaperWedges(slotRects: SceneSlotRect[], bands: BandGeomet
         if (!source) continue
         const topY = round2(b.y)
         const taperY = round2(b.y + b.height * TAPER_FRAC)
-        const points = [
+        const points: Array<{ x: number; y: number }> = [
           { x: round2(aKerb), y: topY },
           { x: round2(bKerb), y: topY },
-          { x: round2(bKerb), y: taperY },
         ]
+        appendSCurve(points, bKerb, topY, bKerb, taperY, 2)
+        appendSCurve(points, bKerb, taperY, aKerb, topY, TRANSITION_CURVE_SAMPLES)
         pushWedge(slotRects, b, source, side, i, points)
         continue
       }
@@ -601,11 +697,9 @@ function appendExteriorTaperWedges(slotRects: SceneSlotRect[], bands: BandGeomet
       // Departing wider — exterior wedge in departing band's bottom taper zone.
       const botY = round2(a.y + a.height)
       const taperY = round2(a.y + a.height * (1 - TAPER_FRAC))
-      const points = [
-        { x: round2(aKerb), y: taperY },
-        { x: round2(aKerb), y: botY },
-        { x: round2(bKerb), y: botY },
-      ]
+      const points: Array<{ x: number; y: number }> = []
+      appendSCurve(points, aKerb, taperY, bKerb, botY, TRANSITION_CURVE_SAMPLES)
+      points.push({ x: round2(aKerb), y: botY })
       pushWedge(slotRects, a, source, side, i, points)
     }
   }
@@ -974,12 +1068,13 @@ function emitMergedVerticalRuns(
   }
 
   const hasFork = (i: number) => bands[i]!.segment.fork != null
+  const isJunction = (i: number) => bands[i]!.junction === true
 
   let runIdx = 0
   for (const x of canonicalXs.sort((a, b) => a - b)) {
     let i = 0
     while (i < bands.length) {
-      if (!rounded[i]!.some((v) => Math.abs(v - x) < SEPARATOR_X_TOLERANCE_PX)) {
+      if (isJunction(i) || !rounded[i]!.some((v) => Math.abs(v - x) < SEPARATOR_X_TOLERANCE_PX)) {
         i++
         continue
       }
@@ -987,6 +1082,7 @@ function emitMergedVerticalRuns(
       i++
       while (
         i < bands.length &&
+        !isJunction(i) &&
         rounded[i]!.some((v) => Math.abs(v - x) < SEPARATOR_X_TOLERANCE_PX)
       ) {
         if (options?.breakOnForkChange && hasFork(i) !== hasFork(i - 1)) break
@@ -1106,7 +1202,12 @@ export function layoutRoadSpace(
     height: round2(b.height),
     dimmed: b.segment.synthetic ? true : b.segment.role !== 'current',
     ...(b.segment.synthetic ? { synthetic: true } : {}),
+    ...(b.junction ? { junction: true } : {}),
   }))
+
+  const junctions: SceneJunctionBand[] = layoutBands
+    .filter((b) => b.junction)
+    .map((b) => ({ y: round2(b.y), height: round2(b.height) }))
 
   const slotRects: SceneSlotRect[] = []
   for (let bandIndex = 0; bandIndex < layoutBands.length; bandIndex++) {
@@ -1204,10 +1305,10 @@ export function layoutRoadSpace(
       layoutBands[bandIndex]!.height,
     )
   const ribbons = buildCorridorRibbons(layoutBands, metersToPx, extentForBand, bandCorrespondences)
-  const carriagewayPlate = buildCarriagewayPlate(layoutBands, ribbons)
+  const carriagewayPlates = buildCarriagewayPlates(layoutBands, ribbons)
 
-  // Ribbons own pavement fills — drop exterior kerb wedges that leave misaligned gray shards.
-  // Keep median-pocket fills (different slotId prefix).
+  // Ribbons + morphing plate own pavement fills across transition bands.
+  // Drop exterior kerb wedges (keep median-pocket fills with a different slotId prefix).
   if (ribbons.length > 0) {
     for (let i = slotRects.length - 1; i >= 0; i--) {
       const r = slotRects[i]!
@@ -1240,6 +1341,7 @@ export function layoutRoadSpace(
   })
 
   // Segment-boundary hairlines at the bottom of each real segment band.
+  // Skipped when the following band is an implied junction (that band draws its own edges).
   {
     let realIdx = 0
     const realCount = layoutBands.filter((b) => !b.segment.synthetic).length
@@ -1247,6 +1349,11 @@ export function layoutRoadSpace(
       const band = layoutBands[i]!
       if (band.segment.synthetic) continue
       if (realIdx >= realCount - 1) {
+        realIdx++
+        continue
+      }
+      const nextBand = layoutBands[i + 1]
+      if (nextBand?.junction) {
         realIdx++
         continue
       }
@@ -1267,14 +1374,21 @@ export function layoutRoadSpace(
   }
 
   // Continuous travel-kerbs at carriageway boundaries. Broken at dual ↔ non-dual
-  // so tapers never diagonal-cross the median / opposite-carriageway placeholder.
+  // and at implied junctions so tapers never cross a cross-street gap.
   {
     const hasFork = (i: number) => layoutBands[i]!.segment.fork != null
+    const isJunction = (i: number) => layoutBands[i]!.junction === true
     let start = 0
     let runIdx = 0
     while (start < layoutBands.length) {
+      if (isJunction(start)) {
+        start++
+        continue
+      }
       let end = start + 1
-      while (end < layoutBands.length && hasFork(end) === hasFork(start)) end++
+      while (end < layoutBands.length && !isJunction(end) && hasFork(end) === hasFork(start)) {
+        end++
+      }
       const slice = layoutBands.slice(start, end)
       emitVerticalPolyline(
         polylines,
@@ -1357,11 +1471,18 @@ export function layoutRoadSpace(
 
     const emitOuterRuns = (side: 'left' | 'right', idPrefix: string) => {
       const hasFork = (i: number) => layoutBands[i]!.segment.fork != null
+      const isJunction = (i: number) => layoutBands[i]!.junction === true
       let start = 0
       let runIdx = 0
       while (start < layoutBands.length) {
+        if (isJunction(start)) {
+          start++
+          continue
+        }
         let end = start + 1
-        while (end < layoutBands.length && hasFork(end) === hasFork(start)) end++
+        while (end < layoutBands.length && !isJunction(end) && hasFork(end) === hasFork(start)) {
+          end++
+        }
         const slice = layoutBands.slice(start, end)
         let subStart = 0
         while (subStart < slice.length) {
@@ -1423,26 +1544,40 @@ export function layoutRoadSpace(
   for (const seam of medianPocketSeams) {
     const { plain, dual, plainIsAbove, pocketLeft, tipX } = seam
     if (plainIsAbove) {
+      const points: Array<{ x: number; y: number }> = [{ x: pocketLeft, y: round2(plain.y) }]
+      appendSCurve(
+        points,
+        pocketLeft,
+        round2(plain.y),
+        tipX,
+        round2(plain.y + plain.height),
+        TRANSITION_CURVE_SAMPLES,
+      )
+      points.push({ x: tipX, y: round2(dual.y + dual.height * TAPER_FRAC) })
       polylines.push({
         id: `kerb-median-pocket-${seam.seamIndex}`,
         kind: 'kerb',
         style: 'solid',
-        points: [
-          { x: pocketLeft, y: round2(plain.y) },
-          { x: tipX, y: round2(plain.y + plain.height) },
-          { x: tipX, y: round2(dual.y + dual.height * TAPER_FRAC) },
-        ],
+        points: dedupePoints(points),
       })
     } else {
+      const points: Array<{ x: number; y: number }> = [
+        { x: tipX, y: round2(dual.y + dual.height * (1 - TAPER_FRAC)) },
+        { x: tipX, y: round2(plain.y) },
+      ]
+      appendSCurve(
+        points,
+        tipX,
+        round2(plain.y),
+        pocketLeft,
+        round2(plain.y + plain.height),
+        TRANSITION_CURVE_SAMPLES,
+      )
       polylines.push({
         id: `kerb-median-pocket-${seam.seamIndex}`,
         kind: 'kerb',
         style: 'solid',
-        points: [
-          { x: tipX, y: round2(dual.y + dual.height * (1 - TAPER_FRAC)) },
-          { x: tipX, y: round2(plain.y) },
-          { x: pocketLeft, y: round2(plain.y + plain.height) },
-        ],
+        points: dedupePoints(points),
       })
     }
   }
@@ -1485,6 +1620,7 @@ export function layoutRoadSpace(
       { x: placementGuideX, y: round2(last.y + last.height) },
     ],
   })
+  polylines.push(...buildSiblingPlacementGuides(layoutBands, metersToPx))
 
   const separatelyMappedRaw = segments.flatMap((s) => s.separatelyMapped ?? [])
   const separatelyMappedSeen = new Set<string>()
@@ -1516,8 +1652,14 @@ export function layoutRoadSpace(
     metersToPx,
     centrelineX: placementGuideX,
     bands: sceneBands,
+    ...(junctions.length > 0 ? { junctions } : {}),
     ribbons,
-    ...(carriagewayPlate ? { carriagewayPlate } : {}),
+    ...(carriagewayPlates.length > 0
+      ? {
+          carriagewayPlate: carriagewayPlates[0],
+          ...(carriagewayPlates.length > 1 ? { carriagewayPlates } : {}),
+        }
+      : {}),
     slotRects,
     polylines,
     ...(separatelyMapped.length > 0 ? { separatelyMapped } : {}),
