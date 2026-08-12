@@ -11,7 +11,7 @@
  *   bun run packages:check
  */
 
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import * as p from '@clack/prompts'
@@ -81,21 +81,30 @@ function parseArgs(argv: string[]) {
   return flags
 }
 
-function run(cmd: string, args: string[], opts?: { cwd?: string; inherit?: boolean }) {
-  const result = spawnSync(cmd, args, {
-    cwd: opts?.cwd ?? ROOT,
-    encoding: 'utf8',
-    stdio: opts?.inherit === false ? 'pipe' : 'inherit',
+/** Async so Clack spinners keep animating (spawnSync freezes the event loop). */
+function runAsync(
+  cmd: string,
+  args: string[],
+  opts?: { cwd?: string },
+): Promise<{ status: number; stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, {
+      cwd: opts?.cwd ?? ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (chunk: Buffer | string) => {
+      stdout += String(chunk)
+    })
+    child.stderr.on('data', (chunk: Buffer | string) => {
+      stderr += String(chunk)
+    })
+    child.on('error', reject)
+    child.on('close', (status) => {
+      resolve({ status: status ?? 1, stdout, stderr })
+    })
   })
-  if (result.status !== 0) {
-    const detail = opts?.inherit === false ? result.stderr || result.stdout : ''
-    throw new Error(`Command failed (${cmd} ${args.join(' ')})${detail ? `\n${detail}` : ''}`)
-  }
-  return result
-}
-
-function runCapture(cmd: string, args: string[], cwd = ROOT) {
-  return spawnSync(cmd, args, { cwd, encoding: 'utf8' })
 }
 
 function readPkg(name: WavePackage): PkgJson {
@@ -127,10 +136,10 @@ function packagesMentionedInPendingChangesets(): Set<string> {
   return mentioned
 }
 
-function npmVersionExists(name: string, version: string): boolean | 'unknown' {
-  const result = runCapture('npm', ['view', `${name}@${version}`, 'version'])
+async function npmVersionExists(name: string, version: string): Promise<boolean | 'unknown'> {
+  const result = await runAsync('npm', ['view', `${name}@${version}`, 'version'])
   if (result.status === 0 && result.stdout.trim() === version) return true
-  const err = `${result.stderr || ''}${result.stdout || ''}`
+  const err = `${result.stderr}${result.stdout}`
   if (err.includes('E404') || err.includes('404')) return false
   if (err.includes('E401') || err.includes('401')) return 'unknown'
   return 'unknown'
@@ -140,7 +149,7 @@ function preModeActive() {
   return existsSync(join(ROOT, '.changeset', 'pre.json'))
 }
 
-function checkGlobal(): Issue[] {
+async function checkGlobal(): Promise<Issue[]> {
   const issues: Issue[] = []
   if (!preModeActive()) {
     issues.push({
@@ -148,7 +157,7 @@ function checkGlobal(): Issue[] {
       fix: 'bunx changeset pre enter alpha',
     })
   }
-  const whoami = runCapture('npm', ['whoami'])
+  const whoami = await runAsync('npm', ['whoami'])
   if (whoami.status !== 0) {
     issues.push({
       message: 'npm auth failed (npm whoami)',
@@ -158,11 +167,11 @@ function checkGlobal(): Issue[] {
   return issues
 }
 
-function checkPackage(
+async function checkPackage(
   name: WavePackage,
   pendingMention: Set<string>,
   opts: { canQueryNpm: boolean },
-): PackageReport {
+): Promise<PackageReport> {
   const dir = DIR_BY_NAME[name]
   const pkg = readPkg(name)
   const version = pkg.version ?? '0.0.0'
@@ -227,7 +236,7 @@ function checkPackage(
   }
 
   if (opts.canQueryNpm) {
-    const onNpm = npmVersionExists(name, version)
+    const onNpm = await npmVersionExists(name, version)
     if (onNpm === true) {
       issues.push({
         message: `${name}@${version} is already on npm`,
@@ -274,12 +283,22 @@ async function main() {
   const flags = parseArgs(process.argv.slice(2))
   p.intro(pc.bgCyan(pc.black(flags.check ? ' packages:check ' : ' packages:release ')))
 
-  const globalIssues = checkGlobal()
+  const s = p.spinner()
+  s.start('Checking npm auth…')
+  const globalIssues = await checkGlobal()
   const canQueryNpm = !globalIssues.some((i) => i.fix.startsWith('npm login'))
   const pendingMention = packagesMentionedInPendingChangesets()
-  const s = p.spinner()
-  s.start(canQueryNpm ? 'Checking wave packages against npm…' : 'Checking wave packages…')
-  const reports = WAVE_PACKAGES.map((name) => checkPackage(name, pendingMention, { canQueryNpm }))
+
+  const reports: PackageReport[] = []
+  for (const [i, name] of WAVE_PACKAGES.entries()) {
+    const short = name.replace('@osm-editor-kit/', '')
+    s.message(
+      canQueryNpm
+        ? `Checking ${short} against npm (${i + 1}/${WAVE_PACKAGES.length})…`
+        : `Checking ${short} (${i + 1}/${WAVE_PACKAGES.length})…`,
+    )
+    reports.push(await checkPackage(name, pendingMention, { canQueryNpm }))
+  }
   s.stop('Checks done')
 
   printReport(globalIssues, reports)
@@ -339,15 +358,23 @@ async function main() {
   }
 
   const pub = p.spinner()
-  for (const r of ready) {
-    pub.start(`Publishing ${r.name}@${r.version}…`)
+  for (const [i, r] of ready.entries()) {
+    const label = `${r.name}@${r.version}`
+    pub.start(`Publishing ${label} (${i + 1}/${ready.length})…`)
     try {
-      run('npm', ['publish', '--access', 'public', '--tag', 'alpha'], {
-        cwd: join(ROOT, DIR_BY_NAME[r.name]),
-      })
-      pub.stop(`${pc.green('Published')} ${r.name}@${r.version}`)
+      const result = await runAsync(
+        'npm',
+        ['publish', '--access', 'public', '--tag', 'alpha'],
+        { cwd: join(ROOT, DIR_BY_NAME[r.name]) },
+      )
+      if (result.status !== 0) {
+        throw new Error(
+          `npm publish failed for ${label}\n${result.stderr || result.stdout}`.trim(),
+        )
+      }
+      pub.stop(`${pc.green('Published')} ${label}`)
     } catch (error) {
-      pub.stop(`${pc.red('Failed')} ${r.name}`)
+      pub.stop(`${pc.red('Failed')} ${label}`)
       throw error
     }
   }
