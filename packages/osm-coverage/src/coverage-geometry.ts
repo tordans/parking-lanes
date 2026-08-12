@@ -91,16 +91,30 @@ export function clampBoundsToViewport(request: MapBounds, viewport: MapBounds): 
   }
 }
 
+/** Lon/lat length of the zoom-aware seam overlap (same magnitude as fetch buffer). */
+export function overlapDeltaAtZoom(
+  viewport: MapBounds,
+  zoom: number,
+  mapSizePx: MapSizePx,
+): { lon: number; lat: number } {
+  const px = bufferPxAtZoom(zoom)
+  return {
+    lon: (px * (viewport.east - viewport.west)) / mapSizePx.width,
+    lat: (px * (viewport.north - viewport.south)) / mapSizePx.height,
+  }
+}
+
+/**
+ * Expand request bounds by the zoom buffer. Intentionally does **not** clamp to the
+ * viewport: overscan past the visible edge is what prevents hairline seams when panning.
+ */
 function prepareFetchBounds(
   request: MapBounds,
   viewport: MapBounds,
   zoom: number,
   mapSizePx: MapSizePx,
 ): MapBounds | null {
-  const buffered = clampBoundsToViewport(
-    bufferBoundsInViewport(request, viewport, zoom, mapSizePx),
-    viewport,
-  )
+  const buffered = bufferBoundsInViewport(request, viewport, zoom, mapSizePx)
   if (!isValidBounds(buffered)) return null
 
   const viewportArea = boundsArea(viewport)
@@ -126,28 +140,34 @@ function stripCandidates(
   viewport: MapBounds,
   coverage: Feature<Polygon | MultiPolygon>,
   missingPart: Feature<Polygon>,
+  zoom: number,
+  mapSizePx: MapSizePx,
 ): MapBounds[] {
   const viewportPoly = boundsToPolygon(viewport)
   const covered = intersect(featureCollection([viewportPoly, coverage]))
   if (!covered) return []
 
   const coveredBbox = polygonToBounds(covered)
+  const { lon, lat } = overlapDeltaAtZoom(viewport, zoom, mapSizePx)
+
+  // Reach back into already-covered territory so adjacent fetches always overlap
+  // before prepareFetchBounds adds outward overscan.
   const candidates: MapBounds[] = [
     {
       west: viewport.west,
       south: viewport.south,
-      east: coveredBbox.west,
+      east: Math.min(viewport.east, coveredBbox.west + lon),
       north: viewport.north,
     },
     {
-      west: coveredBbox.east,
+      west: Math.max(viewport.west, coveredBbox.east - lon),
       south: viewport.south,
       east: viewport.east,
       north: viewport.north,
     },
     {
       west: viewport.west,
-      south: coveredBbox.north,
+      south: Math.max(viewport.south, coveredBbox.north - lat),
       east: viewport.east,
       north: viewport.north,
     },
@@ -155,7 +175,7 @@ function stripCandidates(
       west: viewport.west,
       south: viewport.south,
       east: viewport.east,
-      north: coveredBbox.south,
+      north: Math.min(viewport.north, coveredBbox.south + lat),
     },
   ]
 
@@ -171,16 +191,19 @@ function chooseBoundsForMissingPart(
   viewport: MapBounds,
   coverage: Feature<Polygon | MultiPolygon>,
   missingPart: Feature<Polygon>,
+  zoom: number,
+  mapSizePx: MapSizePx,
 ): MapBounds[] {
   const partArea = area(missingPart)
   const partBbox = polygonToBounds(missingPart)
   const fillRatio = partArea / area(boundsToPolygon(partBbox))
 
   if (fillRatio >= HIGH_FILL_RATIO) {
+    // prepareFetchBounds will expand this for seam overlap + viewport overscan.
     return [partBbox]
   }
 
-  const strips = stripCandidates(viewport, coverage, missingPart)
+  const strips = stripCandidates(viewport, coverage, missingPart, zoom, mapSizePx)
   const stripAreas = strips
     .map((strip) => ({ bounds: strip, area: boundsArea(strip) }))
     .sort((a, b) => b.area - a.area)
@@ -224,7 +247,7 @@ export function computeMissingFetchRequests(
   if (significantParts.length === 0) return []
 
   const rawBounds = significantParts.flatMap((part) =>
-    chooseBoundsForMissingPart(viewport, coverage, part),
+    chooseBoundsForMissingPart(viewport, coverage, part, zoom, mapSizePx),
   )
 
   let requests = rawBounds
@@ -248,6 +271,17 @@ export function computeMissingFetchRequests(
   }
 
   requests = requests.slice(0, MAX_STRIP_REQUESTS)
+
+  // If the capped strip set would still leave a significant hole, fetch the whole viewport.
+  let projected = coverage
+  for (const request of requests) {
+    projected = unionIntoCoverage(projected, request.bounds)
+  }
+  const leftover = missingParts(viewport, projected).reduce((sum, part) => sum + area(part), 0)
+  if (leftover >= MIN_MISSING_AREA_RATIO * viewportArea) {
+    const full = createViewportFetchRequest(viewport, zoom, mapSizePx, 'full')
+    return full ? [full] : []
+  }
 
   return requests.map((request) => ({
     bounds: request.bounds,
