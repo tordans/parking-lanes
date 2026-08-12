@@ -17,11 +17,13 @@ import {
   type TildaInfra,
 } from '@osm-editor-kit/osm-editor-links'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
-import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
 import { compileOverpassWaySelectors } from '@osm-editor-kit/osm-way-chain'
 import axios from 'axios'
 import type { StreetSpaceModeId } from '../../modes/types'
-import { streetSpaceWayPolicy } from './street-space-way-policy'
+import {
+  streetSpaceWayPolicy,
+  type HighwayInclusionStyle,
+} from './street-space-way-policy'
 
 export type MapViewportSnapshot = {
   center: LatLngLiteral

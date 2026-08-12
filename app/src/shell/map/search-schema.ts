@@ -4,8 +4,10 @@ import {
   serializeFeatureParam,
   serializeMapParam,
 } from '@osm-editor-kit/osm-map-url'
-import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
-import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '@osm-editor-kit/osm-way-chain'
+import {
+  DEFAULT_HIGHWAY_INCLUSION_STYLE,
+  type HighwayInclusionStyle,
+} from './street-space-way-policy'
 import { z } from 'zod'
 import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from '../../i18n/uiLocale'
 import { parseDebugSearch } from '../debug'

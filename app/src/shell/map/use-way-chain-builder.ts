@@ -2,7 +2,6 @@ import {
   buildChain,
   createSessionGraphAdapter,
   extendChainAtJunction,
-  isEditableRoadLikeSegment,
   recenterChain,
   type JunctionChoice,
   type Segment,
@@ -10,6 +9,7 @@ import {
 } from '@osm-editor-kit/osm-way-chain'
 import { useEffect } from 'react'
 import { useOsmCoverageQuery } from './osm-coverage-query'
+import { matchesStreetSpaceWaySegment } from './street-space-way-policy'
 import { useHighwayInclusionStyle } from './use-highway-inclusion-style'
 
 type SetChainResult = (chain: SegmentChain | null, pendingJunctions: JunctionChoice[]) => void
@@ -48,7 +48,7 @@ export function useWayChainBuilder({
       let cancelled = false
       const adapter = createSessionGraphAdapter(graph)
       const candidateFilter = (segment: Segment) =>
-        isEditableRoadLikeSegment(segment, inclusionStyle)
+        matchesStreetSpaceWaySegment(segment, inclusionStyle)
 
       void buildChain(adapter, {
         centerWayId,
@@ -76,7 +76,8 @@ export function useWayChainBuilder({
   ) {
     if (!graph) return
     const adapter = createSessionGraphAdapter(graph)
-    const candidateFilter = (segment: Segment) => isEditableRoadLikeSegment(segment, inclusionStyle)
+    const candidateFilter = (segment: Segment) =>
+      matchesStreetSpaceWaySegment(segment, inclusionStyle)
     const result = await extendChainAtJunction(
       adapter,
       currentChain,

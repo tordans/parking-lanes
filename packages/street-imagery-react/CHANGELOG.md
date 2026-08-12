@@ -1,5 +1,13 @@
 # @osm-editor-kit/street-imagery-react
 
+## 0.1.0-alpha.1
+
+### Patch Changes
+
+- 9248f97: Update readme
+- Updated dependencies [9248f97]
+  - @osm-editor-kit/street-imagery@0.1.0-alpha.1
+
 ## 0.1.0-alpha.0
 
 ### Minor Changes

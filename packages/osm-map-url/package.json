@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/osm-map-url",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Parse and serialize compact map and OSM feature URL search params for TanStack Router apps.",
   "license": "MIT",
   "author": "Tobias Jordans",

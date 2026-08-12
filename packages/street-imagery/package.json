@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/street-imagery",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Street-level imagery providers, GeoJSON, viewfields, tiles, and viewer helpers (Mapillary, Panoramax, and more).",
   "license": "MIT",
   "author": "Tobias Jordans",

@@ -1,4 +1,4 @@
-import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
+import type { HighwayInclusionStyle } from './street-space-way-policy'
 import { useSearch } from '@tanstack/react-router'
 import { readHighwayInclusionStyle } from './search-schema'
 

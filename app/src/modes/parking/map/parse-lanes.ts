@@ -1,11 +1,10 @@
 import type { OsmWay } from '@osm-editor-kit/osm-data'
-import {
-  isRoadLikeHighway,
-  matchesHighwayInclusionStyle,
-  ROAD_LIKE_HIGHWAY_BASE_REGEX,
-  type HighwayInclusionStyle,
-} from '@osm-editor-kit/osm-way-chain'
 import { MISSING_DATA_PINK } from '../../../shell/map/missing-data-paint'
+import {
+  matchesStreetSpaceWay,
+  STREET_ROAD_HIGHWAY_REGEX,
+  type HighwayInclusionStyle,
+} from '../../../shell/map/street-space-way-policy'
 import type { ParkingConditions } from '../../../utils/types/conditions'
 import type { Side, StyleMapInterface } from '../../../utils/types/parking'
 import { getColor, getColorByDate } from '../domain/condition-color'
@@ -15,7 +14,7 @@ import { laneStyleByZoom } from '../lane-styles'
 import { parkingSideColors } from '../side-colors'
 import type { ParkingFeature, ParkingFeatureCollection } from './types'
 
-const highwayRegex = ROAD_LIKE_HIGHWAY_BASE_REGEX
+const highwayRegex = STREET_ROAD_HIGHWAY_REGEX
 const majorHighwayRegex = /^motorway|trunk|primary|secondary|tertiary|unclassified|residential/
 
 function wayIsMajor(tags: OsmWay['tags']): boolean | undefined {
@@ -75,8 +74,7 @@ export function parseParkingLaneFeatures(
   zoom: number,
   inclusionStyle: HighwayInclusionStyle,
 ): ParkingFeature[] {
-  if (!isRoadLikeHighway(way.tags)) return []
-  if (!matchesHighwayInclusionStyle(way.tags, inclusionStyle)) return []
+  if (!matchesStreetSpaceWay(way.tags, inclusionStyle)) return []
   const isMajor = wayIsMajor(way.tags)
   if (typeof isMajor !== 'boolean') return []
 

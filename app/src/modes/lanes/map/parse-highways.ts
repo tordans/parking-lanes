@@ -1,10 +1,10 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
-import {
-  isEditableRoadLikeHighway,
-  type HighwayInclusionStyle,
-} from '@osm-editor-kit/osm-way-chain'
 import type { Feature, LineString } from 'geojson'
 import type { MapBounds } from '../../parking/map/types'
+import {
+  matchesStreetSpaceWay,
+  type HighwayInclusionStyle,
+} from '../../../shell/map/street-space-way-policy'
 import {
   isDeemphasizedHighway,
   laneCompleteness,
@@ -63,7 +63,7 @@ export function parseLanesFeaturesFromData(
 
   for (const way of Object.values(data.ways)) {
     const highway = way.tags?.highway
-    if (!highway || !isEditableRoadLikeHighway(way.tags, inclusionStyle)) continue
+    if (!highway || !matchesStreetSpaceWay(way.tags, inclusionStyle)) continue
     if (!wayIntersectsBounds(way, data.nodeCoords, bounds)) continue
 
     const coordinates = wayCoordinates(way, data.nodeCoords)

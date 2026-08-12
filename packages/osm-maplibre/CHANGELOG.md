@@ -1,5 +1,11 @@
 # @osm-editor-kit/osm-maplibre
 
+## 0.1.0-alpha.1
+
+### Patch Changes
+
+- 9248f97: Update readme
+
 ## 0.1.0-alpha.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/osm-data",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Download, parse, and merge OSM API/Overpass responses into an indexed in-memory store.",
   "license": "MIT",
   "author": "Tobias Jordans",

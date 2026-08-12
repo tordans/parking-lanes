@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/osm-route-snapper",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Build route-snapper graph bytes and routing-network GeoJSON from parsed OSM coverage (WASM).",
   "license": "MIT",
   "author": "Tobias Jordans",

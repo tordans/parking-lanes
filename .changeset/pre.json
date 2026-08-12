@@ -23,13 +23,7 @@
     "@osm-editor-kit/street-imagery-react": "0.0.0"
   },
   "changesets": [
-    "alpha-osm-coverage",
-    "alpha-osm-data",
-    "alpha-osm-map-url",
-    "alpha-osm-maplibre",
-    "alpha-osm-route-snapper",
-    "alpha-osm-way-chain",
-    "alpha-street-imagery-react",
-    "alpha-street-imagery"
+    "tough-webs-wash",
+    "way-selection-policy"
   ]
 }

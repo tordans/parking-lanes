@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/street-imagery-react",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "React MapLibre layers and photo viewers for street-level imagery providers.",
   "license": "MIT",
   "author": "Tobias Jordans",

@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/osm-maplibre",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "MapLibre helpers for OSM editors: OpenFreeMap Positron style, overlay anchors, and metre-based paint.",
   "license": "MIT",
   "author": "Tobias Jordans",

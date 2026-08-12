@@ -1,5 +1,5 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
-import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
+import type { HighwayInclusionStyle } from '../../../shell/map/street-space-way-policy'
 import {
   parseParkingAreaFeatures,
   parseParkingPointFeatures,
