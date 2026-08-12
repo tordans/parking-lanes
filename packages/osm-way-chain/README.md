@@ -9,7 +9,7 @@
 - Rank neighbor candidates (same road kind, name, ref)
 - Flag junctions where more than one neighbor is equally good
 - Flip geometry and directional tags when a way is digitized the “wrong” way
-- Decide which highways count as road-like (for editors and Overpass)
+- Compile and match **app-owned** way-selection policies (Overpass + in-memory tags)
 - Adapter for in-memory session data from `@osm-editor-kit/osm-data`
 
 ## Usage
@@ -18,10 +18,20 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   buildChain,
+  buildWaysOverpassQuery,
   createSessionGraphAdapter,
-  isEditableRoadLikeSegment,
-  overpassRoadLikeSelector,
+  matchesOsmWaySelectionSegment,
+  tag,
+  type OsmWaySelectionPolicy,
 } from '@osm-editor-kit/osm-way-chain'
+
+/** App-owned contract — which ways to download / chain. Not package defaults. */
+const wayPolicy: OsmWaySelectionPolicy = {
+  include: [
+    { all: [tag.oneOf('highway', ['residential', 'cycleway', 'path', 'footway', 'steps'])] },
+  ],
+  globalAll: [tag.neq('access', 'private'), tag.neq('access', 'no')],
+}
 
 const graph: ParsedOsmData = /* loaded viewport data */
 const adapter = createSessionGraphAdapter(graph)
@@ -30,14 +40,14 @@ const { chain, pendingJunctions } = await buildChain(adapter, {
   centerWayId: 123456,
   maxPerSide: 5,
   candidateFilter: (candidate, from) =>
-    isEditableRoadLikeSegment(candidate) && isEditableRoadLikeSegment(from),
+    matchesOsmWaySelectionSegment(candidate, wayPolicy) &&
+    matchesOsmWaySelectionSegment(from, wayPolicy),
 })
 
-// chain.segments: predecessors, center, successors (ordered)
-// pendingJunctions: nodes where multiple equally good neighbors need a user pick
-
-// Overpass fragment for lane-mode downloads:
-overpassRoadLikeSelector('public')
+// Overpass download for the same policy:
+buildWaysOverpassQuery(wayPolicy, '52.5,13.4,52.51,13.41')
 ```
 
 Implement `OsmDataAdapter` (`getWay`, `getWaysForNode`) for other data sources. Use `extendChainAtJunction` and `recenterChain` to continue after resolving a junction choice.
+
+Legacy `overpassRoadLikeSelector` / `HighwayInclusionStyle` helpers remain as deprecated shims for street-space-editor.

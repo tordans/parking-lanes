@@ -18,9 +18,10 @@ import {
 } from '@osm-editor-kit/osm-editor-links'
 import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import type { HighwayInclusionStyle } from '@osm-editor-kit/osm-way-chain'
-import { overpassRoadLikeSelector } from '@osm-editor-kit/osm-way-chain'
+import { compileOverpassWaySelectors } from '@osm-editor-kit/osm-way-chain'
 import axios from 'axios'
 import type { StreetSpaceModeId } from '../../modes/types'
+import { streetSpaceWayPolicy } from './street-space-way-policy'
 
 export type MapViewportSnapshot = {
   center: LatLngLiteral
@@ -287,14 +288,14 @@ function getWayWithRelationsOverpassQuery(wayId: number) {
 
 function getHighwaysOverpassQuery(bounds: MapBounds, inclusionStyle: HighwayInclusionStyle) {
   const bbox = [bounds.south, bounds.west, bounds.north, bounds.east].join(',')
-  const tag = overpassRoadLikeSelector(inclusionStyle)
+  const selectors = compileOverpassWaySelectors(streetSpaceWayPolicy(inclusionStyle))
+  const wayUnion = selectors
+    .flatMap((selector) => [`way${selector}(${bbox});`, `>;`, `way${selector}(${bbox});`, `<;`])
+    .join('\n      ')
   return `
     [out:xml];
     (
-      way[${tag}](${bbox});
-      >;
-      way[${tag}](${bbox});
-      <;
+      ${wayUnion}
     );
     out meta;`
 }

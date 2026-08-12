@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  createLegacyStreetRoadWayPolicy,
   isClutterAccessWay,
   isEditableRoadLikeHighway,
   matchesHighwayInclusionStyle,
   overpassRoadLikeSelector,
 } from '../highway-filter'
+import { matchesOsmWaySelection } from '../way-selection-policy'
 
 describe('isClutterAccessWay', () => {
   it('flags private access and low-priority service roads', () => {
@@ -45,5 +47,20 @@ describe('overpassRoadLikeSelector', () => {
   it('adds clutter exclusions for the public default', () => {
     expect(overpassRoadLikeSelector()).toContain('[access!=private]')
     expect(overpassRoadLikeSelector('inclusive')).not.toContain('[access!=private]')
+  })
+
+  it('stays compatible with way[${tag}] wrapping', () => {
+    const tag = overpassRoadLikeSelector('public')
+    expect(tag.startsWith('highway')).toBe(true)
+    expect(`way[${tag}]`).toContain('way[highway')
+  })
+})
+
+describe('createLegacyStreetRoadWayPolicy', () => {
+  it('matches link variants and busway', () => {
+    const policy = createLegacyStreetRoadWayPolicy('public')
+    expect(matchesOsmWaySelection({ highway: 'primary_link' }, policy)).toBe(true)
+    expect(matchesOsmWaySelection({ highway: 'busway' }, policy)).toBe(true)
+    expect(matchesOsmWaySelection({ highway: 'cycleway' }, policy)).toBe(false)
   })
 })

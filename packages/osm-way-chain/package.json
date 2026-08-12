@@ -1,6 +1,6 @@
 {
   "name": "@osm-editor-kit/osm-way-chain",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Traverse and orient connected OSM highway ways for multi-segment editing sessions.",
   "license": "MIT",
   "author": "Tobias Jordans",

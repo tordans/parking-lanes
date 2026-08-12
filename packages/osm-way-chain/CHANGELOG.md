@@ -1,5 +1,20 @@
 # @osm-editor-kit/osm-way-chain
 
+## Unreleased
+
+### Minor Changes
+
+- Add app-owned `OsmWaySelectionPolicy` contract: `tag` helpers, `compileOverpassWaySelectors` / `compileOverpassWaySelector`, `matchesOsmWaySelection`, and `buildWaysOverpassQuery`. Highway inclusion lists are no longer package core — apps pass the policy in.
+- Deprecate hardcoded `overpassRoadLikeSelector` / `HighwayInclusionStyle` / `isRoadLikeHighway` helpers (legacy shims remain for street-space-editor).
+
+## 0.1.0-alpha.1
+
+### Patch Changes
+
+- 9248f97: Update readme
+- Updated dependencies [9248f97]
+  - @osm-editor-kit/osm-data@0.1.0-alpha.1
+
 ## 0.1.0-alpha.0
 
 ### Minor Changes

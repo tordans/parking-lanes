@@ -6,6 +6,7 @@ export type {
   SegmentChain,
 } from './domain/types'
 export {
+  createLegacyStreetRoadWayPolicy,
   DEFAULT_HIGHWAY_INCLUSION_STYLE,
   isClutterAccessWay,
   isEditableRoadLikeHighway,
@@ -18,6 +19,17 @@ export {
   OVERPASS_PUBLIC_ROAD_FILTERS,
   type HighwayInclusionStyle,
 } from './highway-filter'
+export {
+  buildWaysOverpassQuery,
+  compileOverpassWaySelector,
+  compileOverpassWaySelectors,
+  matchesOsmWaySelection,
+  matchesOsmWaySelectionSegment,
+  tag,
+  type OsmTagPredicate,
+  type OsmWayFilterClause,
+  type OsmWaySelectionPolicy,
+} from './way-selection-policy'
 export type { OsmDataAdapter } from './ports/OsmDataAdapter'
 export { createSessionGraphAdapter, osmWayToSegment } from './session-graph-adapter'
 export {

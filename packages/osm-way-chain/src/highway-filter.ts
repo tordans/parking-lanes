@@ -1,46 +1,72 @@
 import type { OsmTags } from '@osm-editor-kit/osm-data'
 import type { Segment } from './domain/types'
+import {
+  compileOverpassWaySelector,
+  matchesOsmWaySelection,
+  tag,
+  type OsmWaySelectionPolicy,
+} from './way-selection-policy'
 
 /**
- * Base highway values used for lane-mode street chain traversal.
- * Link variants (`*_link`) and `highway=busway` are handled separately.
- */
-export const ROAD_LIKE_HIGHWAY_BASE_REGEX =
-  /^motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service/
-
-/**
- * How broadly the editor includes low-priority access roads in the map.
- *
- * - `public` (default): skip private access, driveways, emergency access, and parking aisles
- * - `inclusive`: include those ways (previous editor behavior)
+ * @deprecated App-owned concept. Prefer {@link OsmWaySelectionPolicy} defined in the app.
+ * Kept temporarily for street-space-editor call sites.
  */
 export type HighwayInclusionStyle = 'public' | 'inclusive'
 
+/** @deprecated Prefer app-owned policies. */
 export const DEFAULT_HIGHWAY_INCLUSION_STYLE: HighwayInclusionStyle = 'public'
 
-const CLUTTER_SERVICE_VALUES = new Set(['driveway', 'emergency_access', 'parking_aisle'])
+/**
+ * @deprecated Prefer app-owned {@link OsmWaySelectionPolicy}.
+ * Legacy lane-mode car/road selection (incl. `*_link` and `busway`).
+ */
+export function createLegacyStreetRoadWayPolicy(
+  style: HighwayInclusionStyle = DEFAULT_HIGHWAY_INCLUSION_STYLE,
+): OsmWaySelectionPolicy {
+  const highway = tag.regex(
+    'highway',
+    '^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service)(_link)?$|^busway$',
+  )
 
+  if (style === 'inclusive') {
+    return { include: [{ all: [highway] }] }
+  }
+
+  return {
+    include: [{ all: [highway] }],
+    globalAll: [
+      tag.neq('access', 'private'),
+      tag.noneOf('service', ['emergency_access', 'parking_aisle', 'driveway']),
+    ],
+  }
+}
+
+/** @deprecated Prefer matching against an app policy. */
+export const ROAD_LIKE_HIGHWAY_BASE_REGEX =
+  /^motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service/
+
+/** @deprecated Prefer policy `globalAll`. */
 export const OVERPASS_PUBLIC_ROAD_FILTERS =
   '[service!=emergency_access][service!=parking_aisle][service!=driveway][access!=private]'
 
-/** Overpass selector for road-like ways under the given inclusion style. */
+/**
+ * @deprecated Prefer {@link compileOverpassWaySelector} with an app policy.
+ * Returns the legacy fragment expected by `way[${tag}]` callers (no leading `[`).
+ */
 export function overpassRoadLikeSelector(
   style: HighwayInclusionStyle = DEFAULT_HIGHWAY_INCLUSION_STYLE,
 ): string {
-  const base =
-    'highway~"^motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street"'
-  if (style === 'inclusive') return base
-  return base + OVERPASS_PUBLIC_ROAD_FILTERS
+  return compileOverpassWaySelector(createLegacyStreetRoadWayPolicy(style)).slice(1)
 }
 
-/** Ways that are usually noise in street-space editing (private driveways, etc.). */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelection}. */
 export function isClutterAccessWay(tags: OsmTags): boolean {
   if (tags.access === 'private') return true
   const service = tags.service
-  return service != null && CLUTTER_SERVICE_VALUES.has(service)
+  return service === 'driveway' || service === 'emergency_access' || service === 'parking_aisle'
 }
 
-/** Whether a way should be shown/edited under the chosen inclusion style. */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelection}. */
 export function matchesHighwayInclusionStyle(
   tags: OsmTags,
   style: HighwayInclusionStyle = DEFAULT_HIGHWAY_INCLUSION_STYLE,
@@ -49,30 +75,25 @@ export function matchesHighwayInclusionStyle(
   return !isClutterAccessWay(tags)
 }
 
-/** Whether OSM tags describe a road-like highway suitable for lane-mode chaining. */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelection}. */
 export function isRoadLikeHighway(tags: OsmTags): boolean {
-  const highway = tags.highway
-  if (!highway) return false
-  if (highway === 'busway') return true
-
-  const base = highway.endsWith('_link') ? highway.slice(0, -'_link'.length) : highway
-  return ROAD_LIKE_HIGHWAY_BASE_REGEX.test(base)
+  return matchesOsmWaySelection(tags, createLegacyStreetRoadWayPolicy('inclusive'))
 }
 
-/** Road-like highways that pass the active inclusion style. */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelection}. */
 export function isEditableRoadLikeHighway(
   tags: OsmTags,
   style: HighwayInclusionStyle = DEFAULT_HIGHWAY_INCLUSION_STYLE,
 ): boolean {
-  return isRoadLikeHighway(tags) && matchesHighwayInclusionStyle(tags, style)
+  return matchesOsmWaySelection(tags, createLegacyStreetRoadWayPolicy(style))
 }
 
-/** Segment-level predicate for `buildChain` / `filterNeighborCandidates`. */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelectionSegment}. */
 export function isRoadLikeSegment(segment: Segment): boolean {
   return isRoadLikeHighway(segment.tags)
 }
 
-/** Segment-level predicate that also applies the editor inclusion style. */
+/** @deprecated Prefer app policy + {@link matchesOsmWaySelectionSegment}. */
 export function isEditableRoadLikeSegment(
   segment: Segment,
   style: HighwayInclusionStyle = DEFAULT_HIGHWAY_INCLUSION_STYLE,
