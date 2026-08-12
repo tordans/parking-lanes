@@ -1,10 +1,10 @@
 # Kit package versioning & alpha publish
 
-This monorepo uses [Changesets](https://github.com/changesets/changesets) for versions and a small Clack CLI for **publish checks**.
+This monorepo uses [Changesets](https://github.com/changesets/changesets) for versions. Interactive `bunx changeset` is **not** the happy path — use the scripts below.
 
-**Prepare** (version + build) and **release** (validate + npm publish) are separate on purpose.
+Wave packages always bump **`patch`** while in alpha. npm dist-tag: **`alpha`**.
 
-## Wave packages (first npm alpha)
+## Wave packages
 
 - `@osm-editor-kit/osm-coverage`
 - `@osm-editor-kit/osm-data`
@@ -15,83 +15,70 @@ This monorepo uses [Changesets](https://github.com/changesets/changesets) for ve
 - `@osm-editor-kit/street-imagery`
 - `@osm-editor-kit/street-imagery-react`
 
-Other kit packages stay private for now. Draft notes live in [`docs/changeset-pending-private/`](../docs/changeset-pending-private/). The app is `private` and ignored.
-
-## Should bumps be per package?
-
-**Yes — bump only what changed.** Changesets is designed that way:
-
-| Situation | What to do |
-| --- | --- |
-| One package changed | `bunx changeset` → select **that** package → patch/minor |
-| Several packages ship together (e.g. `street-imagery` + `street-imagery-react`) | One changeset can list **multiple** packages with the same bump + summary |
-| First alpha / many packages at once | Still fine to list several in one changeset — but do not invent bumps for packages with no changes |
-
-The release CLI does **not** ask for bumps or changelog text. That belongs in prepare (`bunx changeset` / `version-packages`).
+Other kit packages stay private. Draft notes: [`docs/changeset-pending-private/`](../docs/changeset-pending-private/). The app is `private` and ignored.
 
 ## Flow
 
 ```mermaid
 flowchart TD
-  work[Land code on main]
-  cs["bunx changeset\nselect packages that changed"]
-  ver["bun run version-packages\nbump versions + CHANGELOGs"]
-  build["bun run build:packages\nwrite dist/"]
-  check["bun run packages:check\nreadiness per package"]
-  ready{Ready packages?}
-  fix[Follow printed fix commands]
-  rel["bun run packages:release\nClack confirm + npm publish alpha"]
-  done[Consumers: bun add pkg@alpha]
+  edit[Edit packages/foo]
+  fw[finish-work check + commit]
+  push1[git push]
+  gate{pre-push: wave pkgs covered?}
+  auto["packages:changeset --auto\nscaffold + cursor-agent"]
+  push2[git push again]
+  rel["packages:release\nversion → build → publish → commit"]
 
-  work --> cs --> ver --> build --> check
-  check --> ready
-  ready -->|no / some blocked| fix --> cs
-  ready -->|yes| rel --> done
+  edit --> fw --> push1 --> gate
+  gate -->|yes| rel
+  gate -->|no| auto --> push2 --> gate
 ```
 
-## Commands
+## Day to day
 
-### Prepare
+1. Land package work with finish-work (user-facing commit messages).
+2. Optionally run `bun run packages:changeset -- --auto` before the first push.
+3. `git push` — pre-push runs `packages:changeset --auto` if wave packages in `@{upstream}..HEAD` lack a pending changeset. If it commits one, **push again**.
 
-```bash
-# 1) Record what changed (interactive; pick packages individually or as a group)
-bunx changeset
+Bypass (rare): `SKIP_PACKAGE_CHANGESET_AUTO=1 git push` or `git push --no-verify`.
 
-# 2) Apply pending changesets → package.json versions + CHANGELOG.md
-bun run version-packages
-
-# 3) Build dist/ for the wave (required before publish)
-bun run build:packages
-
-# One-time (already done for this repo): stay in alpha prerelease mode
-bunx changeset pre enter alpha
-```
-
-### Check / release
+## Ship alphas
 
 ```bash
-# Validate only — prints ready vs skipped + exact fix commands
-bun run packages:check
-
-# Validate, then publish only packages that pass (skips the rest)
-npm login   # if npm whoami fails
 bun run packages:release
-
-# Non-interactive / CI-ish
+# or
 bun run packages:release -- --yes
 bun run packages:release -- --dry-run
+bun run packages:release -- --publish-only   # already versioned + built
+bun run packages:check
 ```
 
 `packages:release` will:
 
-1. Check global preconditions (alpha pre mode, `npm whoami`)
-2. Per wave package: private flag, alpha version, `publishConfig`, `publishExports`, `dist/`, pending changesets, “already on npm?”
-3. **Skip** packages that fail and print a `→` fix command for each issue
-4. Confirm (Clack) and `npm publish --tag alpha` **only** for ready packages
+1. Ensure changeset coverage (`--auto` if needed)
+2. `changeset version` (patch bumps + CHANGELOGs)
+3. `build:packages`
+4. Readiness checks (auth, dist, already-on-npm, …)
+5. Confirm and `npm publish --tag alpha` (TTY for 2FA / EOTP)
+6. Commit version bumps (does not push)
+
+## Changeset commands
+
+```bash
+# Scaffold from commits (patch frontmatter + commit bullets)
+bun run packages:changeset
+
+# Check only (exit 1 if uncovered)
+bun run packages:changeset -- --check
+
+# Scaffold + cursor-agent rewrite + commit (exit 2 → push again)
+bun run packages:changeset -- --auto
+```
+
+Agent uses `composer-2.5` by default (`OSM_CHANGESET_AGENT_MODEL` to override). Requires `cursor-agent` (or `agent`) on PATH and login / `CURSOR_API_KEY`.
 
 ## Install in other apps
 
 ```bash
 bun add @osm-editor-kit/street-imagery@alpha
-# or pin: 0.1.0-alpha.0
 ```

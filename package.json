@@ -22,6 +22,7 @@
     "check-ci": "bun run ensure-paraglide && bun run --parallel type-check:all lint-check format-check test-run:all",
     "check-pre-push": "bun run ensure-paraglide && bun run --parallel type-check:all lint format test-run:all",
     "build:packages": "bun run --filter '@osm-editor-kit/osm-data' --filter '@osm-editor-kit/osm-way-chain' --filter '@osm-editor-kit/osm-coverage' --filter '@osm-editor-kit/osm-map-url' --filter '@osm-editor-kit/osm-maplibre' --filter '@osm-editor-kit/osm-route-snapper' --filter '@osm-editor-kit/street-imagery' --filter '@osm-editor-kit/street-imagery-react' build",
+    "packages:changeset": "bun run scripts/packages-changeset.ts",
     "packages:check": "bun run scripts/packages-release.ts -- --check",
     "packages:release": "bun run scripts/packages-release.ts",
     "version-packages": "changeset version",

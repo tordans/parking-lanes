@@ -1,50 +1,34 @@
 #!/usr/bin/env bun
 /**
- * Publish-ready check + npm publish for first-wave @osm-editor-kit packages.
+ * Version + build + publish for first-wave @osm-editor-kit packages.
  *
- * Prepare steps are separate — see .changeset/README.md.
+ * See .changeset/README.md.
  *
  * Usage:
  *   bun run packages:release
  *   bun run packages:release -- --dry-run
  *   bun run packages:release -- --yes
+ *   bun run packages:release -- --publish-only
  *   bun run packages:check
  */
 
-import { spawn } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { spawn, spawnSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
+import {
+  DIR_BY_NAME,
+  ROOT,
+  WAVE_PACKAGES,
+  type WavePackage,
+  packagesMentionedInPendingChangesets,
+  pendingChangesetFiles,
+  uncoveredWavePackages,
+} from './packages-wave.ts'
 
-const ROOT = join(import.meta.dirname, '..')
 const CHECK_ONLY = process.argv.includes('--check') || process.argv.includes('packages:check')
-// When invoked via `bun run packages:check`, argv may not include --check; detect script name.
 const isCheckScript = process.env.npm_lifecycle_event === 'packages:check'
-
-const WAVE_PACKAGES = [
-  '@osm-editor-kit/osm-coverage',
-  '@osm-editor-kit/osm-data',
-  '@osm-editor-kit/osm-map-url',
-  '@osm-editor-kit/osm-maplibre',
-  '@osm-editor-kit/osm-route-snapper',
-  '@osm-editor-kit/osm-way-chain',
-  '@osm-editor-kit/street-imagery',
-  '@osm-editor-kit/street-imagery-react',
-] as const
-
-type WavePackage = (typeof WAVE_PACKAGES)[number]
-
-const DIR_BY_NAME: Record<WavePackage, string> = {
-  '@osm-editor-kit/osm-coverage': 'packages/osm-coverage',
-  '@osm-editor-kit/osm-data': 'packages/osm-data',
-  '@osm-editor-kit/osm-map-url': 'packages/osm-map-url',
-  '@osm-editor-kit/osm-maplibre': 'packages/osm-maplibre',
-  '@osm-editor-kit/osm-route-snapper': 'packages/osm-route-snapper',
-  '@osm-editor-kit/osm-way-chain': 'packages/osm-way-chain',
-  '@osm-editor-kit/street-imagery': 'packages/street-imagery',
-  '@osm-editor-kit/street-imagery-react': 'packages/street-imagery-react',
-}
 
 type Issue = { message: string; fix: string }
 
@@ -61,17 +45,23 @@ type PkgJson = {
   private?: boolean
   publishConfig?: { access?: string; tag?: string }
   publishExports?: unknown
-  scripts?: { build?: string; prepublishOnly?: string }
 }
 
 function parseArgs(argv: string[]) {
-  const flags = { yes: false, dryRun: false, check: CHECK_ONLY || isCheckScript }
+  const flags = {
+    yes: false,
+    dryRun: false,
+    check: CHECK_ONLY || isCheckScript,
+    publishOnly: false,
+  }
   for (const arg of argv) {
+    if (arg === '--') continue
     if (arg === '--yes' || arg === '-y') flags.yes = true
     else if (arg === '--dry-run') flags.dryRun = true
     else if (arg === '--check') flags.check = true
+    else if (arg === '--publish-only') flags.publishOnly = true
     else if (arg === '--help' || arg === '-h') {
-      console.log(`Usage: bun run packages:release [--check] [--dry-run] [--yes]
+      console.log(`Usage: bun run packages:release [--check] [--dry-run] [--yes] [--publish-only]
        bun run packages:check`)
       process.exit(0)
     } else if (arg.startsWith('-')) {
@@ -81,25 +71,27 @@ function parseArgs(argv: string[]) {
   return flags
 }
 
-/** Async so Clack spinners keep animating (spawnSync freezes the event loop). */
 function runAsync(
   cmd: string,
   args: string[],
-  opts?: { cwd?: string },
+  opts?: { cwd?: string; inherit?: boolean },
 ): Promise<{ status: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    const inherit = opts?.inherit === true
     const child = spawn(cmd, args, {
       cwd: opts?.cwd ?? ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: inherit ? 'inherit' : ['ignore', 'pipe', 'pipe'],
     })
     let stdout = ''
     let stderr = ''
-    child.stdout.on('data', (chunk: Buffer | string) => {
-      stdout += String(chunk)
-    })
-    child.stderr.on('data', (chunk: Buffer | string) => {
-      stderr += String(chunk)
-    })
+    if (!inherit) {
+      child.stdout?.on('data', (chunk: Buffer | string) => {
+        stdout += String(chunk)
+      })
+      child.stderr?.on('data', (chunk: Buffer | string) => {
+        stderr += String(chunk)
+      })
+    }
     child.on('error', reject)
     child.on('close', (status) => {
       resolve({ status: status ?? 1, stdout, stderr })
@@ -107,33 +99,15 @@ function runAsync(
   })
 }
 
+function runInherit(cmd: string, args: string[], cwd = ROOT) {
+  const result = spawnSync(cmd, args, { cwd, stdio: 'inherit', encoding: 'utf8' })
+  if ((result.status ?? 1) !== 0) {
+    throw new Error(`Command failed: ${cmd} ${args.join(' ')}`)
+  }
+}
+
 function readPkg(name: WavePackage): PkgJson {
   return JSON.parse(readFileSync(join(ROOT, DIR_BY_NAME[name], 'package.json'), 'utf8')) as PkgJson
-}
-
-function pendingChangesetFiles() {
-  const prePath = join(ROOT, '.changeset', 'pre.json')
-  const applied = new Set<string>()
-  if (existsSync(prePath)) {
-    const pre = JSON.parse(readFileSync(prePath, 'utf8')) as { changesets?: string[] }
-    for (const id of pre.changesets ?? []) applied.add(id)
-  }
-  return readdirSync(join(ROOT, '.changeset')).filter((name) => {
-    if (!name.endsWith('.md') || name === 'README.md') return false
-    const id = name.replace(/\.md$/, '')
-    return !applied.has(id)
-  })
-}
-
-function packagesMentionedInPendingChangesets(): Set<string> {
-  const mentioned = new Set<string>()
-  for (const file of pendingChangesetFiles()) {
-    const body = readFileSync(join(ROOT, '.changeset', file), 'utf8')
-    for (const name of WAVE_PACKAGES) {
-      if (body.includes(`"${name}"`)) mentioned.add(name)
-    }
-  }
-  return mentioned
 }
 
 async function npmVersionExists(name: string, version: string): Promise<boolean | 'unknown'> {
@@ -170,7 +144,7 @@ async function checkGlobal(): Promise<Issue[]> {
 async function checkPackage(
   name: WavePackage,
   pendingMention: Set<string>,
-  opts: { canQueryNpm: boolean },
+  opts: { canQueryNpm: boolean; requireNoPending: boolean },
 ): Promise<PackageReport> {
   const dir = DIR_BY_NAME[name]
   const pkg = readPkg(name)
@@ -186,7 +160,7 @@ async function checkPackage(
   if (!version.includes('-alpha')) {
     issues.push({
       message: `version "${version}" is not an alpha prerelease`,
-      fix: 'bunx changeset   # select this package, then: bun run version-packages',
+      fix: 'bun run packages:changeset -- --auto   # then: bun run packages:release',
     })
   }
   if (pkg.publishConfig?.tag !== 'alpha') {
@@ -228,10 +202,10 @@ async function checkPackage(
       })
     }
   }
-  if (pendingMention.has(name)) {
+  if (opts.requireNoPending && pendingMention.has(name)) {
     issues.push({
       message: 'has a pending changeset that is not applied yet',
-      fix: 'bun run version-packages   # then commit version + CHANGELOG',
+      fix: 'bun run version-packages   # or: bun run packages:release (applies automatically)',
     })
   }
 
@@ -240,7 +214,7 @@ async function checkPackage(
     if (onNpm === true) {
       issues.push({
         message: `${name}@${version} is already on npm`,
-        fix: 'bunx changeset   # bump this package, then: bun run version-packages && bun run build:packages',
+        fix: 'bun run packages:changeset -- --auto   # then packages:release',
       })
     }
   }
@@ -279,66 +253,88 @@ function printReport(globalIssues: Issue[], reports: PackageReport[]) {
   }
 }
 
-async function main() {
-  const flags = parseArgs(process.argv.slice(2))
-  p.intro(pc.bgCyan(pc.black(flags.check ? ' packages:check ' : ' packages:release ')))
+async function ensureChangesetCoverage() {
+  const uncovered = uncoveredWavePackages()
+  if (uncovered.length === 0) return
 
-  const s = p.spinner()
-  s.start('Checking npm auth…')
+  p.log.warn('Wave packages changed without a pending changeset — running packages:changeset --auto')
+  const result = spawnSync('bun', ['run', 'scripts/packages-changeset.ts', '--', '--auto'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    encoding: 'utf8',
+  })
+  const code = result.status ?? 1
+  if (code === 2) {
+    p.outro(pc.yellow('Changeset was committed. Run git push, then re-run packages:release.'))
+    process.exit(1)
+  }
+  if (code !== 0) {
+    p.outro(pc.red('Could not create changeset coverage. Fix and retry.'))
+    process.exit(1)
+  }
+}
+
+function commitVersionBumps() {
+  const status = spawnSync('git', ['status', '--porcelain', '--', 'packages', '.changeset'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+  if (status.status !== 0) throw new Error('git status failed')
+  if (!status.stdout.trim()) {
+    p.log.info('No version bump files to commit.')
+    return
+  }
+
+  const env = { ...process.env, HUSKY: '0' }
+  const add = spawnSync('git', ['add', '--', 'packages', '.changeset'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env,
+  })
+  if (add.status !== 0) throw new Error(`git add failed:\n${add.stderr || add.stdout}`)
+  const commit = spawnSync(
+    'git',
+    ['commit', '-m', 'Chore: version packages for alpha publish'],
+    { cwd: ROOT, encoding: 'utf8', env },
+  )
+  if (commit.status !== 0) {
+    throw new Error(`git commit failed:\n${commit.stderr || commit.stdout}`)
+  }
+  p.log.success('Committed version bumps + CHANGELOGs')
+}
+
+async function runReadinessChecks(opts: { requireNoPending: boolean }) {
   const globalIssues = await checkGlobal()
   const canQueryNpm = !globalIssues.some((i) => i.fix.startsWith('npm login'))
   const pendingMention = packagesMentionedInPendingChangesets()
 
+  const s = p.spinner()
+  s.start(canQueryNpm ? 'Checking wave packages against npm…' : 'Checking wave packages…')
   const reports: PackageReport[] = []
   for (const [i, name] of WAVE_PACKAGES.entries()) {
     const short = name.replace('@osm-editor-kit/', '')
-    s.message(
-      canQueryNpm
-        ? `Checking ${short} against npm (${i + 1}/${WAVE_PACKAGES.length})…`
-        : `Checking ${short} (${i + 1}/${WAVE_PACKAGES.length})…`,
+    s.message(`Checking ${short} (${i + 1}/${WAVE_PACKAGES.length})…`)
+    reports.push(
+      await checkPackage(name, pendingMention, {
+        canQueryNpm,
+        requireNoPending: opts.requireNoPending,
+      }),
     )
-    reports.push(await checkPackage(name, pendingMention, { canQueryNpm }))
   }
   s.stop('Checks done')
-
   printReport(globalIssues, reports)
+  return { globalIssues, reports }
+}
 
-  const ready = reports.filter((r) => r.ready)
-  if (flags.check) {
-    if (globalIssues.length > 0 || ready.length !== WAVE_PACKAGES.length) {
-      p.outro(pc.yellow('Some packages are not ready — fix with the → commands above.'))
-      process.exit(1)
-    }
-    p.outro(pc.green('All wave packages look ready to publish.'))
-    return
-  }
-
-  if (globalIssues.length > 0) {
-    p.outro(pc.red('Fix global blockers before publishing.'))
-    process.exit(1)
-  }
-
-  if (ready.length === 0) {
-    p.log.info('Prepare flow (when something is missing):')
-    console.log(
-      `  ${pc.cyan('1.')} bunx changeset              ${pc.dim('# pick packages that changed')}`,
-    )
-    console.log(
-      `  ${pc.cyan('2.')} bun run version-packages    ${pc.dim('# apply bumps + CHANGELOGs')}`,
-    )
-    console.log(`  ${pc.cyan('3.')} bun run build:packages      ${pc.dim('# dist/ for the wave')}`)
-    console.log(`  ${pc.cyan('4.')} bun run packages:check      ${pc.dim('# re-check')}`)
-    console.log(
-      `  ${pc.cyan('5.')} bun run packages:release    ${pc.dim('# publish ready packages')}`,
-    )
-    p.outro(pc.yellow('Nothing to publish.'))
-    process.exit(1)
-  }
-
+async function publishReady(ready: PackageReport[], flags: { yes: boolean; dryRun: boolean }) {
   if (flags.dryRun) {
     p.outro(pc.dim(`Dry run — would publish ${ready.length} package(s) to dist-tag alpha.`))
     return
   }
+
+  p.log.info(
+    'npm may ask for 2FA in the browser (EOTP). Complete that in the terminal when prompted.',
+  )
 
   let proceed = flags.yes
   if (!proceed) {
@@ -357,30 +353,87 @@ async function main() {
     return
   }
 
-  const pub = p.spinner()
   for (const [i, r] of ready.entries()) {
     const label = `${r.name}@${r.version}`
-    pub.start(`Publishing ${label} (${i + 1}/${ready.length})…`)
-    try {
-      const result = await runAsync(
-        'npm',
-        ['publish', '--access', 'public', '--tag', 'alpha'],
-        { cwd: join(ROOT, DIR_BY_NAME[r.name]) },
+    p.log.step(`Publishing ${label} (${i + 1}/${ready.length})…`)
+    const result = await runAsync(
+      'npm',
+      ['publish', '--access', 'public', '--tag', 'alpha'],
+      { cwd: join(ROOT, DIR_BY_NAME[r.name]), inherit: true },
+    )
+    if (result.status !== 0) {
+      p.log.error(`Failed ${label}`)
+      p.outro(
+        pc.yellow(
+          'If npm asked for a one-time password: finish browser auth (or npm login), then re-run bun run packages:release — already-published versions are skipped.',
+        ),
       )
-      if (result.status !== 0) {
-        throw new Error(
-          `npm publish failed for ${label}\n${result.stderr || result.stdout}`.trim(),
-        )
-      }
-      pub.stop(`${pc.green('Published')} ${label}`)
-    } catch (error) {
-      pub.stop(`${pc.red('Failed')} ${label}`)
-      throw error
+      process.exit(1)
     }
+    p.log.success(`Published ${label}`)
   }
 
   p.note(ready.map((r) => `bun add ${r.name}@alpha`).join('\n'), 'Install in consumers')
-  p.outro(pc.green('Done. Commit any local version bumps if you have not already.'))
+  p.outro(pc.green('Done. Push the version-bump commit when ready.'))
+}
+
+async function main() {
+  const flags = parseArgs(process.argv.slice(2))
+  p.intro(pc.bgCyan(pc.black(flags.check ? ' packages:check ' : ' packages:release ')))
+
+  if (flags.check) {
+    const { globalIssues, reports } = await runReadinessChecks({ requireNoPending: true })
+    const ready = reports.filter((r) => r.ready)
+    if (globalIssues.length > 0 || ready.length !== WAVE_PACKAGES.length) {
+      p.outro(pc.yellow('Some packages are not ready — fix with the → commands above.'))
+      process.exit(1)
+    }
+    p.outro(pc.green('All wave packages look ready to publish.'))
+    return
+  }
+
+  if (!flags.publishOnly) {
+    await ensureChangesetCoverage()
+
+    const pending = pendingChangesetFiles()
+    if (pending.length === 0) {
+      p.log.info('No pending changesets to apply.')
+    } else {
+      p.log.step(`Applying ${pending.length} pending changeset(s)…`)
+      runInherit('bun', ['run', 'version-packages'])
+      p.log.success('version-packages done')
+    }
+
+    p.log.step('Building wave packages…')
+    runInherit('bun', ['run', 'build:packages'])
+    p.log.success('build:packages done')
+  }
+
+  const { globalIssues, reports } = await runReadinessChecks({ requireNoPending: true })
+  if (globalIssues.length > 0) {
+    p.outro(pc.red('Fix global blockers before publishing.'))
+    process.exit(1)
+  }
+
+  const ready = reports.filter((r) => r.ready)
+  if (ready.length === 0) {
+    p.log.info('Nothing ready to publish (already on npm, or still blocked).')
+    console.log(`  ${pc.cyan('→')} bun run packages:changeset -- --auto`)
+    console.log(`  ${pc.cyan('→')} bun run packages:release`)
+    p.outro(pc.yellow('Nothing to publish.'))
+    process.exit(1)
+  }
+
+  await publishReady(ready, flags)
+
+  if (!flags.dryRun && !flags.publishOnly) {
+    try {
+      commitVersionBumps()
+    } catch (error) {
+      p.log.warn(error instanceof Error ? error.message : String(error))
+      p.log.info('Publish succeeded; commit version bumps manually if needed.')
+    }
+  }
 }
 
 main().catch((error) => {

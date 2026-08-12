@@ -18,6 +18,7 @@ Run in the project root, or in each changed monorepo package (`app/`, `processin
 3. Write the commit message using the format below.
 4. **Default: commit.** Run the commit path below unless the user clearly did not want a commit.
 5. **Draft only when no-commit intent is clear.** Show the message and stop; do not run `git commit`.
+6. **Wave packages:** if the commit (or working tree) touches `packages/<wave>/` for a published kit package, run `bun run packages:changeset -- --check`. If it fails, run `bun run packages:changeset -- --auto` so a pending changeset exists before the user pushes. Pre-push runs the same `--auto` path as a backstop (may require a second `git push`). See [`.changeset/README.md`](../../../.changeset/README.md).
 
 No-commit intent includes: explicit deferral ("don't commit", "draft only", "message only", "what would the commit be"), check/fix-only asks ("run check", "fix lint", "fix CI" with no wrap-up), review or question-only turns, or the user saying they will commit themselves.
 
@@ -44,7 +45,7 @@ Ping https://github.com/org/repo/pull/123
 
 - **Topic:** scope (`Map`, `Auth`, `Processing`, `Dev`, etc.). FMC internal-only changes (deps, CI, tooling) use **`Dev`**.
 - **Desc:** imperative outcome, not filenames.
-- **Body:** bullets of what users/operators see, do, or get after this lands. Include why when the conversation established it. Stay at outcome level; do not list files, symbols, refactors, or diff steps. Bodies feed [user-changelog](../user-changelog/SKILL.md), so they must be readable without the patch.
+- **Body:** bullets of what users/operators see, do, or get after this lands. Include why when the conversation established it. Stay at outcome level; do not list files, symbols, refactors, or diff steps. Bodies feed [user-changelog](../user-changelog/SKILL.md), so they must be readable without the patch. They also feed `packages:changeset` summaries for npm alphas.
 - **Ping:** if user cited a PR/issue, add one `Ping <full-url>` line per item.
 
 Example:
@@ -61,4 +62,4 @@ Internal-only (no user-visible change): maintainer bullets ok; omit user bullets
 
 ## Related
 
-[playwright-skill](../playwright-skill/SKILL.md) | [tech-stack](../tech-stack/SKILL.md) | [review-dependabot](../review-dependabot/SKILL.md) / babysit | [user-changelog](../user-changelog/SKILL.md)
+[playwright-skill](../playwright-skill/SKILL.md) | [tech-stack](../tech-stack/SKILL.md) | [review-dependabot](../review-dependabot/SKILL.md) / babysit | [user-changelog](../user-changelog/SKILL.md) | [`.changeset/README.md`](../../../.changeset/README.md)
