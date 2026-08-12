@@ -1,31 +1,36 @@
 # `@osm-editor-kit/osm-lane-diagram`
 
+**Status:** Private (monorepo-only). Eventual npm alpha planned.
+
+## What it does
+
 Pure TypeScript layout engine: OSM way tags → extended LTR slot stack → JSON scene → SVG string. Conceptual overview: [docs/lanes-road-space-approach.md](../../docs/lanes-road-space-approach.md).
+
+## Usage
 
 ```text
 tags (+ oriented neighbours)
   → buildRoadSpaceSegment()   // parseWayLanes + cycle/sidepath expansion
   → RoadSpaceChain            // prev / current / next
-  → layoutRoadSpace()         // metric offsets, continuous kerbs, tapers, forks
+  → layoutRoadSpace()         // metric offsets, tapers, forks
   → RoadSpaceScene            // JSON-serializable rects + polylines
   → sceneToSvg()              // deterministic SVG string
 ```
 
-## Slot ids
+```ts
+import {
+  buildRoadSpaceSegment,
+  layoutRoadSpace,
+  sceneToSvg,
+} from '@osm-editor-kit/osm-lane-diagram'
 
-| Slot             | Id                                                                          |
-| ---------------- | --------------------------------------------------------------------------- |
-| Carriageway lane | `way/<id>/lane/<forward\|backward\|both_ways>/<index>`                      |
-| Edge / sidepath  | `way/<id>/cycleway\|sidewalk/<left\|right>` (via `formatSidepathFeatureId`) |
+const segment = buildRoadSpaceSegment(/* way tags, neighbours */)
+const scene = layoutRoadSpace({ segments: [chain] })
+const svg = sceneToSvg(scene)
+```
 
-Ids are stable across re-layout so highlights survive edits.
+Fixtures: `import { laneDiagramFixtures } from '@osm-editor-kit/osm-lane-diagram/fixtures'`.
 
-## Boundaries
+Slot ids are stable across re-layout — carriageway lanes (`way/<id>/lane/…`) and edge/sidepath features (`way/<id>/cycleway|sidewalk/<left|right>`).
 
-- **No React / JSX** — the app owns the React SVG consumer.
-- **No I/O** — no OSM fetch, stores, router, or app imports.
-- **Clear widths only** — layout never adds paint/marking millimetres to slot metres; separator strokes are cosmetic.
-
-Width semantics: [research/width-measurements/README.md](../../research/width-measurements/README.md) §2–4. Pipeline context: [research/lane-rendering/methods-catalogue.md](../../research/lane-rendering/methods-catalogue.md).
-
-Fixtures: import `@osm-editor-kit/osm-lane-diagram/fixtures`.
+No React/JSX and no I/O (no OSM fetch, stores, or app imports). Layout uses clear slot widths only; separator strokes are cosmetic.

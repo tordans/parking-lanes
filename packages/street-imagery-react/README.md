@@ -1,13 +1,47 @@
-# @osm-editor-kit/street-imagery-react
+# `@osm-editor-kit/street-imagery-react`
 
-React MapLibre bindings for street-level imagery (Mapillary, Panoramax, …).
+**Status:** Private in-repo; first npm **alpha** publish wave.
 
-## Consuming app setup
+## What it does
 
-Panoramax’s photo-only ESM entry and Vite CSS/PBF shims live in the **app** `vite.config.ts`, not in this package. Copy or adapt from the street-level-imagery overview app:
+React MapLibre bindings for street-level imagery: map sources/layers, photo click handling, TanStack Query provider hooks, and lazy Mapillary/Panoramax viewer panels. Data adapters and GeoJSON helpers live in `@osm-editor-kit/street-imagery`.
 
-- `@panoramax/web-viewer` alias → `…/index_photoviewer.js`
-- `panoramaxConstructableCssPlugin` and `panoramaxPbfDefaultExportPlugin`
-- `optimizeDeps.exclude: ['@panoramax/web-viewer']`
+## Usage
 
-Inject Mapillary credentials at boot via `setStreetImageryConfig(createStreetImageryConfig({ mapillaryToken }))` from `@osm-editor-kit/street-imagery`.
+```tsx
+import {
+  StreetLevelImagerySourcesAndLayers,
+  StreetLevelImageryViewer,
+  useMapViewportBbox,
+  queryStreetImageryFeatures,
+  streetImageryInteractiveLayerIds,
+} from '@osm-editor-kit/street-imagery-react'
+import { createStreetImageryConfig } from '@osm-editor-kit/street-imagery'
+
+const bbox = useMapViewportBbox('main', map)
+
+<StreetLevelImagerySourcesAndLayers
+  providers={['mapillary', 'panoramax']}
+  bbox={bbox}
+  zoom={map.zoom}
+  filter={{ photoTypes: ['flat', 'pano'] }}
+  options={{
+    config: createStreetImageryConfig({ mapillaryToken: '…' }),
+    showSequences: true,
+    showViewfields: true,
+    selectedPhoto,
+    photoCircleColor: '#3b82f6',
+    mapFeatureCircleColor: '#94a3b8',
+  }}
+/>
+
+// interactiveLayerIds={streetImageryInteractiveLayerIds(providers)}
+const hits = queryStreetImageryFeatures(event)
+
+<StreetLevelImageryViewer photo={selectedPhoto} groupPhotos={sequencePhotos}
+  onPhotoSelected={setSelection} onEaseMapToPoint={(lng, lat) => map.easeTo({ center: [lng, lat] })} />
+```
+
+**Mapillary:** `createStreetImageryConfig({ mapillaryToken })` or `setStreetImageryConfig` at boot (`@osm-editor-kit/street-imagery`). **Panoramax + Vite:** see `app/vite.config.ts` for the consuming-app setup.
+
+Also: `useAllProviderPhotos`, `useProviderPhotos` / `useProviderSequences` / `useProviderMapFeatures`, `usePhotoThumbnails`, `resolveSelectedSequence`, `StreetLevelImageryViewCone`, `useViewerBearing` / `useViewerActions`, `MapillaryPanel`, `PanoramaxPanel`.
