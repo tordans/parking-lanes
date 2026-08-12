@@ -82,9 +82,12 @@ export const providerById = Object.fromEntries(
 export const photoLayerId = (providerId: ProviderId) => `photos-${providerId}`
 export const featureLayerId = (providerId: ProviderId) => `features-${providerId}`
 export const sequenceLayerId = (providerId: ProviderId) => `sequences-${providerId}`
+export const viewfieldLayerId = (providerId: ProviderId) => `viewfields-${providerId}`
+export const viewfieldLineLayerId = (providerId: ProviderId) => `viewfields-line-${providerId}`
 export const photoSourceId = (providerId: ProviderId) => `photos-source-${providerId}`
 export const featureSourceId = (providerId: ProviderId) => `features-source-${providerId}`
 export const sequenceSourceId = (providerId: ProviderId) => `sequences-source-${providerId}`
+export const viewfieldSourceId = (providerId: ProviderId) => `viewfields-source-${providerId}`
 
 export const isPhotoProviderId = (providerId: ProviderId): boolean =>
   adapterById[providerId].kind === 'photo'

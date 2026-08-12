@@ -1,4 +1,3 @@
-import 'normalize.css'
 import { redirectLegacyMapHash } from '@osm-editor-kit/osm-map-url'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'

@@ -2,13 +2,16 @@ import { setStreetImageryConfig, type StreetImageryConfig } from '@osm-editor-ki
 import {
   emptyLineCollection,
   emptyPointCollection,
+  emptyPolygonCollection,
   mapFeaturesToFeatureCollection,
   photosToFeatureCollection,
+  photosToViewfieldsFeatureCollection,
   sequencesToFeatureCollection,
 } from '@osm-editor-kit/street-imagery'
 import {
   buildMapFeatureLayerFilter,
   buildPhotoLayerFilter,
+  photoMatchesFilters,
   type DateRange,
   type PhotoTypeFilter,
 } from '@osm-editor-kit/street-imagery'
@@ -21,6 +24,9 @@ import {
   photoSourceId,
   sequenceLayerId,
   sequenceSourceId,
+  viewfieldLayerId,
+  viewfieldLineLayerId,
+  viewfieldSourceId,
   type ProviderId,
 } from '@osm-editor-kit/street-imagery'
 import type { DataDrivenPropertyValueSpecification, ExpressionSpecification } from 'maplibre-gl'
@@ -48,6 +54,7 @@ type ProviderLayerProps = {
   zoom: number
   filter?: PhotoFilter
   showSequences: boolean
+  showViewfields: boolean
   photoCircleColor: DataDrivenPropertyValueSpecification<string>
   mapFeatureCircleColor: DataDrivenPropertyValueSpecification<string>
 }
@@ -85,45 +92,67 @@ const PhotoProviderLayer = ({
   zoom,
   filter,
   showSequences,
+  showViewfields,
   photoCircleColor,
 }: ProviderLayerProps) => {
   const adapter = adapterById[providerId]
   const { data: photos = [] } = useProviderPhotos(providerId, bbox, zoom)
   const { data: sequences = [] } = useProviderSequences(providerId, bbox, zoom)
 
+  const visiblePhotos =
+    zoom >= adapter.minZoom
+      ? photos.filter((photo) => photoMatchesFilters(photo, filter?.photoTypes, filter?.date))
+      : []
+
   const photoCollection =
     zoom >= adapter.minZoom ? photosToFeatureCollection(photos) : emptyPointCollection()
-  const sequenceCollection =
-    showSequences && zoom >= (adapter.sequencesMinZoom ?? adapter.minZoom)
-      ? sequencesToFeatureCollection(sequences)
-      : emptyLineCollection()
+  const viewfieldCollection = showViewfields
+    ? photosToViewfieldsFeatureCollection(visiblePhotos, zoom)
+    : emptyPolygonCollection()
 
   const photoFilter = buildPhotoLayerFilter(filter?.photoTypes, filter?.date)
   const photoSrcId = photoSourceId(providerId)
+  const viewfieldSrcId = viewfieldSourceId(providerId)
+
+  // Enrich sequences missing dates from visible photos in the same sequence (Panoramax, etc.).
+  const sequenceCapturedAtById = new Map<string, number>()
+  for (const photo of visiblePhotos) {
+    if (photo.sequenceId == null || photo.capturedAt == null) continue
+    const prev = sequenceCapturedAtById.get(photo.sequenceId)
+    if (prev == null || photo.capturedAt > prev) {
+      sequenceCapturedAtById.set(photo.sequenceId, photo.capturedAt)
+    }
+  }
+
+  const filteredSequences =
+    showSequences && zoom >= (adapter.sequencesMinZoom ?? adapter.minZoom)
+      ? sequences
+          .map((sequence) => {
+            if (sequence.capturedAt != null) return sequence
+            const fromPhotos = sequenceCapturedAtById.get(sequence.sequenceId)
+            return fromPhotos != null ? { ...sequence, capturedAt: fromPhotos } : sequence
+          })
+          .filter((sequence) => {
+            const asPhoto = {
+              providerId: sequence.providerId,
+              photoId: sequence.sequenceId,
+              sequenceId: sequence.sequenceId,
+              capturedAt: sequence.capturedAt,
+              isPano: sequence.isPano,
+              heading: null,
+              lngLat: [0, 0] as [number, number],
+            }
+            return photoMatchesFilters(asPhoto, filter?.photoTypes, filter?.date)
+          })
+      : []
+
+  const sequenceCollection =
+    filteredSequences.length > 0
+      ? sequencesToFeatureCollection(filteredSequences)
+      : emptyLineCollection()
 
   return (
     <>
-      <Source
-        key={photoSrcId}
-        id={photoSrcId}
-        type="geojson"
-        data={photoCollection}
-        promoteId="photoId"
-      />
-      <Layer
-        id={photoLayerId(providerId)}
-        type="circle"
-        source={photoSrcId}
-        filter={photoFilter}
-        layout={{ 'circle-sort-key': PHOTO_SORT_KEY }}
-        paint={{
-          'circle-radius': CIRCLE_RADIUS,
-          'circle-color': photoCircleColor,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#ffffff',
-        }}
-      />
-
       {adapter.fetchSequences && showSequences ? (
         <>
           <Source
@@ -144,6 +173,57 @@ const PhotoProviderLayer = ({
           />
         </>
       ) : null}
+
+      {showViewfields ? (
+        <>
+          <Source
+            key={viewfieldSrcId}
+            id={viewfieldSrcId}
+            type="geojson"
+            data={viewfieldCollection}
+          />
+          <Layer
+            id={viewfieldLayerId(providerId)}
+            type="fill"
+            source={viewfieldSrcId}
+            paint={{
+              'fill-color': photoCircleColor,
+              'fill-opacity': 0.22,
+            }}
+          />
+          <Layer
+            id={viewfieldLineLayerId(providerId)}
+            type="line"
+            source={viewfieldSrcId}
+            paint={{
+              'line-color': photoCircleColor,
+              'line-width': 1,
+              'line-opacity': 0.45,
+            }}
+          />
+        </>
+      ) : null}
+
+      <Source
+        key={photoSrcId}
+        id={photoSrcId}
+        type="geojson"
+        data={photoCollection}
+        promoteId="photoId"
+      />
+      <Layer
+        id={photoLayerId(providerId)}
+        type="circle"
+        source={photoSrcId}
+        filter={photoFilter}
+        layout={{ 'circle-sort-key': PHOTO_SORT_KEY }}
+        paint={{
+          'circle-radius': CIRCLE_RADIUS,
+          'circle-color': photoCircleColor,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff',
+        }}
+      />
     </>
   )
 }
@@ -207,6 +287,8 @@ export type StreetLevelImagerySourcesAndLayersProps = {
   options: {
     config?: StreetImageryConfig
     showSequences?: boolean
+    /** Always-on heading wedges / 360° disks for every photo. Default true. */
+    showViewfields?: boolean
     showViewCone?: boolean
     showSelectionHighlight?: boolean
     selectedPhoto?: NormalizedPhoto | null
@@ -231,6 +313,7 @@ export const StreetLevelImagerySourcesAndLayers = ({
   const {
     config,
     showSequences = true,
+    showViewfields = true,
     showViewCone = false,
     showSelectionHighlight = false,
     selectedPhoto,
@@ -273,6 +356,7 @@ export const StreetLevelImagerySourcesAndLayers = ({
             photoCircleColor={photoCircleColor}
             providerId={providerId}
             showSequences={showSequences}
+            showViewfields={showViewfields}
             zoom={zoom}
           />
         </Fragment>

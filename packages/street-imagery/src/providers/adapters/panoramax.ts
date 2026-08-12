@@ -76,6 +76,8 @@ export const normalizePanoramaxSequenceFeature = (
   return {
     sequenceId: String(id),
     geometry,
+    capturedAt: parsePanoramaxTimestamp(props.ts ?? props.datetime ?? props.date),
+    isPano: null,
   }
 }
 

@@ -4,21 +4,13 @@ import {
   type PhotoFilter,
 } from '@osm-editor-kit/street-imagery-react'
 import { useSearch } from '@tanstack/react-router'
-import type { ExpressionSpecification } from 'maplibre-gl'
+import { useMemo } from 'react'
 import { MAIN_MAP_ID } from './map-ids'
 import { useMapViewport } from './map-viewport'
+import { photoAgeCircleColorExpression } from './photo-age-style'
+import { resolvePhotoDateFilter } from './photo-date-slider'
 import { getStreetImageryRuntimeConfig } from './street-imagery-config'
 import { useSelectedPhotoForMap } from './use-selected-photo-for-map'
-
-const PHOTO_CIRCLE_COLOR: ExpressionSpecification = [
-  'match',
-  ['get', 'providerId'],
-  'mapillary',
-  '#05CB63',
-  'panoramax',
-  '#7C3AED',
-  '#64748b',
-]
 
 const MAP_FEATURE_CIRCLE_COLOR = '#94a3b8'
 
@@ -27,12 +19,18 @@ export function MapStreetImageryLayers() {
   const map = useMapViewport()
   const bbox = useMapViewportBbox(MAIN_MAP_ID, map)
   const { selectedPhoto, selectedSequenceId, viewerPov } = useSelectedPhotoForMap()
+  // Recompute relative age stops when the map moves / photos toggle (keeps thresholds fresh).
+  const photoCircleColor = useMemo(() => photoAgeCircleColorExpression(), [photos, map.zoom])
+  const dateFilter = useMemo(
+    () => resolvePhotoDateFilter(photoDate, photos.length > 0),
+    [photoDate, photos.length],
+  )
 
   if (photos.length === 0) return null
 
   const filter: PhotoFilter = {
     photoTypes,
-    date: photoDate,
+    date: dateFilter,
   }
 
   return (
@@ -44,12 +42,13 @@ export function MapStreetImageryLayers() {
       options={{
         config: getStreetImageryRuntimeConfig(),
         showSequences: true,
+        showViewfields: true,
         showViewCone: true,
         showSelectionHighlight: true,
         selectedPhoto,
         selectedSequenceId,
         viewerPov,
-        photoCircleColor: PHOTO_CIRCLE_COLOR,
+        photoCircleColor,
         mapFeatureCircleColor: MAP_FEATURE_CIRCLE_COLOR,
       }}
     />

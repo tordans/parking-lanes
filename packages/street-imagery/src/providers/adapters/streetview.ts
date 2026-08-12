@@ -14,7 +14,8 @@ export type StreetViewMetadataResponse = {
 }
 
 export const getGoogleMapsApiKey = (): string | undefined => {
-  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  const env = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env
+  const key = env?.VITE_GOOGLE_MAPS_API_KEY
   return typeof key === 'string' && key.length > 0 ? key : undefined
 }
 

@@ -16,6 +16,7 @@ import { useAddPhotoTagToWay, usePhotoTagButtonLabel } from './use-add-photo-tag
 import { useModeSearchNavigation } from './use-mode-search-navigation'
 import { useSelectedPhotoForMap } from './use-selected-photo-for-map'
 
+/** Floating street-imagery viewer — opens when `?photo=` is set after clicking a map photo. */
 export function StreetImageryViewerPanel() {
   const { photo } = useSearch({ from: '/$mode' })
   const { updateSearch } = useModeSearchNavigation()
@@ -60,8 +61,8 @@ export function StreetImageryViewerPanel() {
   }
 
   return (
-    <div className="flex w-[min(22rem,calc(100vw-5rem))] flex-col overflow-hidden rounded-lg bg-white/95 shadow-xs ring-1 ring-zinc-950/5 backdrop-blur-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-950/5 px-2 py-1.5">
+    <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-2.5 z-30 flex w-[min(28rem,calc(100vw-5.5rem))] flex-col overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-zinc-950/10 sm:bottom-[calc(env(safe-area-inset-bottom)+0.625rem)]">
+      <div className="flex items-center justify-between gap-2 border-b border-zinc-950/5 px-3 py-2">
         <h2 className="text-sm font-semibold text-zinc-900">{m.street_imagery_panel_title()}</h2>
         <button
           type="button"
@@ -72,7 +73,7 @@ export function StreetImageryViewerPanel() {
           <X className="size-4" aria-hidden />
         </button>
       </div>
-      <div className="max-h-[min(24rem,50dvh)] overflow-y-auto p-2">
+      <div className="min-h-64 overflow-hidden p-2 sm:min-h-80">
         <StreetLevelImageryViewer
           photo={selectedPhoto}
           groupPhotos={groupPhotos}

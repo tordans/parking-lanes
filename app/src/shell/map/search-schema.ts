@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from '../../i18n/uiLocale'
 import { parseDebugSearch } from '../debug'
 import { hasNonDefaultPrimaryFocus, implicitBoundariesEnabled } from './map-focus-state'
+import { defaultPhotoFromIso } from './photo-date-slider'
 import {
   DEFAULT_PHOTO_TYPES,
   editorPhotoProviderSchema,
@@ -237,7 +238,20 @@ export function serializeMapSearch(
     photoTypes: isDefaultPhotoTypes(search.photoTypes)
       ? undefined
       : (search.photoTypes?.join(',') ?? undefined),
-    photoDate: serializePhotoDateParam(search.photoDate),
+    photoDate: (() => {
+      if (!search.photoDate) return undefined
+      if (search.photoDate.all) return 'all'
+      // Omit the rolling default (3y) so URLs stay clean when the user never touched the slider.
+      if (
+        search.photoDate.from &&
+        !search.photoDate.to &&
+        search.photoDate.from === defaultPhotoFromIso()
+      ) {
+        return undefined
+      }
+      return serializePhotoDateParam(search.photoDate)
+    })(),
+
     photo: serializePhotoParam(search.photo),
   }
 }

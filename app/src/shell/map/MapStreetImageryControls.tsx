@@ -1,6 +1,8 @@
 import * as m from '@app/paraglide/messages'
+import { useAllProviderPhotos, useMapViewportBbox } from '@osm-editor-kit/street-imagery-react'
 import clsx from 'clsx'
-import { SlidersHorizontal } from 'lucide-react'
+import { Camera, Check } from 'lucide-react'
+import { useMemo } from 'react'
 import {
   Dropdown,
   DropdownButton,
@@ -11,9 +13,18 @@ import {
   DropdownMenu,
   DropdownSection,
 } from '../../components/catalyst/dropdown'
-import { Field, Label } from '../../components/catalyst/fieldset'
-import { Input } from '../../components/catalyst/input'
+import { useUiLocale } from '../../i18n/useUiLocale'
+import { formatPhotoFilterDate } from './format-photo-filter-date'
+import { MAIN_MAP_ID } from './map-ids'
+import { useMapViewport } from './map-viewport'
 import { mapControlButtonClassName } from './mobileMapChrome.const'
+import { PHOTO_AGE_LEGEND, type PhotoAgeBucketId } from './photo-age-style'
+import {
+  fromDateToSliderValue,
+  photoCaptureTimesToSliderTicks,
+  resolvePhotoDateFilter,
+  sliderValueToFromDate,
+} from './photo-date-slider'
 import {
   DEFAULT_PHOTO_TYPES,
   EDITOR_PHOTO_PROVIDERS,
@@ -27,10 +38,38 @@ const PROVIDER_LABEL: Record<EditorPhotoProvider, () => string> = {
   panoramax: () => m.street_imagery_provider_panoramax(),
 }
 
+const AGE_LEGEND_LABEL: Record<PhotoAgeBucketId, () => string> = {
+  current: () => m.street_imagery_legend_age_current(),
+  mid: () => m.street_imagery_legend_age_mid(),
+  old: () => m.street_imagery_legend_age_old(),
+}
+
+/** Single map-control button: provider toggles + photo filters in one dropdown. */
 export function MapStreetImageryControls() {
   const { search, updateSearch } = useModeSearchNavigation()
+  const uiLocale = useUiLocale()
+  const map = useMapViewport()
+  const bbox = useMapViewportBbox(MAIN_MAP_ID, map)
   const enabled = new Set(search.photos ?? [])
-  const photoTypeSet = new Set(search.photoTypes ?? [...DEFAULT_PHOTO_TYPES])
+  const photoTypes = search.photoTypes ?? [...DEFAULT_PHOTO_TYPES]
+  const photoTypeSet = new Set(photoTypes)
+  const anyEnabled = (search.photos?.length ?? 0) > 0
+  // Absent `photoDate` while photos are on → default 3-year freshness window.
+  const fromDate = resolvePhotoDateFilter(search.photoDate, anyEnabled)?.from
+  const sliderValue = fromDateToSliderValue(fromDate)
+
+  // iD: ticks from viewport captures *without* the date filter (type filter still applies).
+  const { photos: viewportPhotosForTicks } = useAllProviderPhotos(
+    search.photos ?? [],
+    anyEnabled ? bbox : null,
+    map.zoom,
+    photoTypes,
+    undefined,
+  )
+  const sliderTicks = useMemo(
+    () => photoCaptureTimesToSliderTicks(viewportPhotosForTicks.map((photo) => photo.capturedAt)),
+    [viewportPhotosForTicks],
+  )
 
   const toggleProvider = (provider: EditorPhotoProvider) => {
     const next = new Set(search.photos ?? [])
@@ -61,90 +100,156 @@ export function MapStreetImageryControls() {
     )
   }
 
-  const updateDate = (part: 'from' | 'to', value: string) => {
-    const next = { ...search.photoDate }
-    if (value) next[part] = value
-    else delete next[part]
+  const updateFromSlider = (raw: string) => {
+    const nextFrom = sliderValueToFromDate(Number.parseFloat(raw))
     updateSearch(
       {
-        photoDate: next.from || next.to ? next : undefined,
+        // iD primary control sets only `from` (“newer than”); `all` is explicit so
+        // omitting `photoDate` can mean the default 3-year window.
+        photoDate: nextFrom ? { from: nextFrom } : { all: true },
       },
       { replace: true },
     )
   }
 
-  const anyEnabled = (search.photos?.length ?? 0) > 0
+  const formattedFrom = fromDate ? formatPhotoFilterDate(fromDate, uiLocale) : null
+  const dateLabel = formattedFrom
+    ? m.street_imagery_filter_date_label({ date: formattedFrom })
+    : m.street_imagery_filter_date_all()
 
   return (
-    <>
-      <div className={mapControlButtonClassName + ' flex flex-col overflow-hidden p-0'}>
-        {EDITOR_PHOTO_PROVIDERS.map((provider, index) => (
-          <button
-            key={provider}
-            type="button"
-            aria-label={PROVIDER_LABEL[provider]()}
-            aria-pressed={enabled.has(provider)}
-            className={clsx(
-              'flex size-10 shrink-0 items-center justify-center border-zinc-950/10',
-              index > 0 && 'border-t',
-              enabled.has(provider)
-                ? 'bg-emerald-600 text-white hover:bg-emerald-500'
-                : 'bg-white text-zinc-700 hover:bg-zinc-100',
-            )}
-            onClick={() => toggleProvider(provider)}
-            title={PROVIDER_LABEL[provider]()}
+    <Dropdown>
+      <DropdownButton
+        as="button"
+        type="button"
+        aria-label={m.street_imagery_control_aria()}
+        aria-pressed={anyEnabled}
+        className={clsx(
+          mapControlButtonClassName,
+          anyEnabled && 'bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700',
+        )}
+        title={m.street_imagery_control_aria()}
+      >
+        <Camera className="size-5" aria-hidden />
+      </DropdownButton>
+      <DropdownMenu anchor={{ to: 'top end', gap: 8, padding: 12 }} className="z-50 w-72">
+        <DropdownSection>
+          <DropdownHeading>{m.street_imagery_providers_heading()}</DropdownHeading>
+          {EDITOR_PHOTO_PROVIDERS.map((provider) => (
+            <DropdownItem key={provider} onClick={() => toggleProvider(provider)}>
+              <Check
+                data-slot="icon"
+                className={enabled.has(provider) ? 'size-4' : 'size-4 opacity-0'}
+                aria-hidden
+              />
+              <DropdownLabel>{PROVIDER_LABEL[provider]()}</DropdownLabel>
+            </DropdownItem>
+          ))}
+        </DropdownSection>
+        <DropdownDivider />
+        <DropdownSection>
+          <DropdownHeading>{m.street_imagery_legend_heading()}</DropdownHeading>
+          <div className="flex flex-col gap-1.5 px-3 py-2" role="list">
+            {PHOTO_AGE_LEGEND.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-2 text-sm text-zinc-950 dark:text-white"
+                role="listitem"
+              >
+                <span
+                  className="size-2.5 shrink-0 rounded-full ring-1 ring-zinc-950/15 dark:ring-white/20"
+                  style={{ backgroundColor: entry.color }}
+                  aria-hidden
+                />
+                <span>{AGE_LEGEND_LABEL[entry.id]()}</span>
+              </div>
+            ))}
+          </div>
+        </DropdownSection>
+        <DropdownDivider />
+        <DropdownSection>
+          <DropdownHeading>{m.street_imagery_filter_heading()}</DropdownHeading>
+          <DropdownItem
+            disabled={!anyEnabled}
+            onClick={() => togglePhotoType('flat', !photoTypeSet.has('flat'))}
           >
-            <span className="text-[10px] font-bold uppercase">{provider.slice(0, 2)}</span>
-          </button>
-        ))}
-      </div>
-
-      <Dropdown>
-        <DropdownButton
-          as="button"
-          type="button"
-          aria-label={m.street_imagery_filter_aria()}
-          className={mapControlButtonClassName}
-          disabled={!anyEnabled}
-        >
-          <SlidersHorizontal className="size-5" aria-hidden />
-        </DropdownButton>
-        <DropdownMenu anchor={{ to: 'top end', gap: 8, padding: 12 }} className="z-50 w-64">
-          <DropdownSection>
-            <DropdownHeading>{m.street_imagery_filter_heading()}</DropdownHeading>
-            <DropdownItem onClick={() => togglePhotoType('flat', !photoTypeSet.has('flat'))}>
-              <DropdownLabel>{m.street_imagery_filter_flat()}</DropdownLabel>
-              <span className="text-xs text-zinc-500">{photoTypeSet.has('flat') ? '✓' : ''}</span>
-            </DropdownItem>
-            <DropdownItem onClick={() => togglePhotoType('pano', !photoTypeSet.has('pano'))}>
-              <DropdownLabel>{m.street_imagery_filter_pano()}</DropdownLabel>
-              <span className="text-xs text-zinc-500">{photoTypeSet.has('pano') ? '✓' : ''}</span>
-            </DropdownItem>
-          </DropdownSection>
-          <DropdownDivider />
-          <DropdownSection>
-            <DropdownHeading>{m.street_imagery_filter_date()}</DropdownHeading>
-            <div className="flex flex-col gap-2 px-3 py-2">
-              <Field>
-                <Label>{m.street_imagery_filter_date_from()}</Label>
-                <Input
-                  type="date"
-                  value={search.photoDate?.from ?? ''}
-                  onChange={(event) => updateDate('from', event.target.value)}
-                />
-              </Field>
-              <Field>
-                <Label>{m.street_imagery_filter_date_to()}</Label>
-                <Input
-                  type="date"
-                  value={search.photoDate?.to ?? ''}
-                  onChange={(event) => updateDate('to', event.target.value)}
-                />
-              </Field>
+            <Check
+              data-slot="icon"
+              className={photoTypeSet.has('flat') ? 'size-4' : 'size-4 opacity-0'}
+              aria-hidden
+            />
+            <DropdownLabel>{m.street_imagery_filter_flat()}</DropdownLabel>
+          </DropdownItem>
+          <DropdownItem
+            disabled={!anyEnabled}
+            onClick={() => togglePhotoType('pano', !photoTypeSet.has('pano'))}
+          >
+            <Check
+              data-slot="icon"
+              className={photoTypeSet.has('pano') ? 'size-4' : 'size-4 opacity-0'}
+              aria-hidden
+            />
+            <DropdownLabel>{m.street_imagery_filter_pano()}</DropdownLabel>
+          </DropdownItem>
+        </DropdownSection>
+        <DropdownDivider />
+        <DropdownSection>
+          <DropdownHeading>{m.street_imagery_filter_date()}</DropdownHeading>
+          <div
+            className="flex flex-col gap-2 px-3 py-2"
+            // Keep the menu open while dragging the range input.
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Fixed two-line layout + tabular date so the slider row doesn’t jump while dragging. */}
+            <div className="min-h-11 text-xs text-zinc-500 dark:text-zinc-300">
+              {formattedFrom ? (
+                <>
+                  <span className="block">{m.street_imagery_filter_date_prefix()}</span>
+                  <span className="mt-0.5 block font-medium tabular-nums tracking-tight text-zinc-700 dark:text-zinc-200">
+                    {formattedFrom}
+                  </span>
+                </>
+              ) : (
+                <span className="block">{m.street_imagery_filter_date_all()}</span>
+              )}
             </div>
-          </DropdownSection>
-        </DropdownMenu>
-      </Dropdown>
-    </>
+            {/* Capture-age tick strip (iD uses <datalist>; we draw marks so they stay visible). */}
+            <div className="relative h-2 w-full" aria-hidden>
+              {sliderTicks
+                .filter((tick) => tick > 0 && tick < 1)
+                .map((tick) => (
+                  <span
+                    key={tick}
+                    className="absolute top-0 h-full w-px -translate-x-1/2 bg-zinc-400 dark:bg-zinc-500"
+                    // RTL track: 0 (today) on the right, 1 (all) on the left — same as the range input.
+                    style={{ left: `${tick * 100}%` }}
+                  />
+                ))}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              list="street-imagery-photo-date-slider"
+              disabled={!anyEnabled}
+              value={sliderValue}
+              aria-label={m.street_imagery_filter_date()}
+              aria-valuetext={dateLabel}
+              // Match iD: LTR UI uses RTL track so “all” sits on the left.
+              className="w-full accent-emerald-600 disabled:opacity-50"
+              style={{ direction: 'rtl' }}
+              onChange={(event) => updateFromSlider(event.target.value)}
+            />
+            <datalist id="street-imagery-photo-date-slider">
+              {sliderTicks.map((tick) => (
+                <option key={tick} value={tick} />
+              ))}
+            </datalist>
+          </div>
+        </DropdownSection>
+      </DropdownMenu>
+    </Dropdown>
   )
 }

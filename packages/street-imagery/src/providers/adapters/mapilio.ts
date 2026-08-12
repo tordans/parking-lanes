@@ -94,6 +94,8 @@ export const normalizeMapilioRoadFeature = (
   return {
     sequenceId: String(sequenceId),
     geometry,
+    capturedAt: parseMapilioCaptureTime(props.capture_time),
+    isPano: parseMapilioResolution(props.resolution),
   }
 }
 

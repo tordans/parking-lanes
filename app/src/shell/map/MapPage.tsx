@@ -244,10 +244,10 @@ function MapPageContent({
 
           <MapNavigationControls />
 
-          <div className="pointer-events-auto absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-20 flex flex-col gap-2 sm:top-2.5">
+          <div className="pointer-events-none absolute top-[calc(env(safe-area-inset-top)+3.5rem)] left-2.5 z-20 sm:top-2.5">
             <CoverageDebugTooltip info={coverageDebug.coverageHoverInfo} />
-            <StreetImageryViewerPanel />
           </div>
+          <StreetImageryViewerPanel />
         </div>
       }
       middle={showLanesThreeColumn ? <LanesDiagramPanel /> : undefined}

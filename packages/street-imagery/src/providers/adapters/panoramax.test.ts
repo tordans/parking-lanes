@@ -76,6 +76,8 @@ describe('normalizePanoramaxSequenceFeature', () => {
     expect(normalizePanoramaxSequenceFeature(feature)).toEqual({
       sequenceId: 'seq-22',
       geometry: feature.geometry,
+      capturedAt: null,
+      isPano: null,
     })
   })
 })

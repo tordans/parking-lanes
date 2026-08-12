@@ -50,6 +50,8 @@ export const sequencesToFeatureCollection = (
     properties: {
       providerId: sequence.providerId,
       sequenceId: sequence.sequenceId,
+      capturedAt: sequence.capturedAt,
+      isPano: sequence.isPano,
     },
   })),
 })

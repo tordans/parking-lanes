@@ -60,6 +60,33 @@ describe('normalizeMapillarySequenceFeature', () => {
     expect(normalizeMapillarySequenceFeature(feature)).toEqual({
       sequenceId: 'sequence-1',
       geometry: feature.geometry,
+      capturedAt: null,
+      isPano: null,
+    })
+  })
+
+  it('maps captured_at and is_pano on sequences', () => {
+    const feature: Feature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [13.4, 52.5],
+          [13.41, 52.51],
+        ],
+      },
+      properties: {
+        id: 'sequence-2',
+        captured_at: 1_700_000_000_000,
+        is_pano: false,
+      },
+    }
+
+    expect(normalizeMapillarySequenceFeature(feature)).toEqual({
+      sequenceId: 'sequence-2',
+      geometry: feature.geometry,
+      capturedAt: 1_700_000_000_000,
+      isPano: false,
     })
   })
 })

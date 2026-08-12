@@ -1,4 +1,9 @@
-import { featureLayerId, photoLayerId, type ProviderId } from '@osm-editor-kit/street-imagery'
+import {
+  featureLayerId,
+  photoLayerId,
+  viewfieldLayerId,
+  type ProviderId,
+} from '@osm-editor-kit/street-imagery'
 import type { MapGeoJSONFeature } from 'maplibre-gl'
 
 export type StreetImageryClickFeature = {
@@ -11,6 +16,7 @@ export type StreetImageryClickFeature = {
 
 export const streetImageryInteractiveLayerIds = (providers: ProviderId[]): string[] => [
   ...providers.map((providerId) => photoLayerId(providerId)),
+  ...providers.map((providerId) => viewfieldLayerId(providerId)),
   ...providers.map((providerId) => featureLayerId(providerId)),
 ]
 
@@ -18,6 +24,10 @@ const parseProviderIdFromLayerId = (layerId: string): ProviderId | null => {
   const photoMatch = layerId.match(/^photos-(.+)$/)
   if (photoMatch) {
     return photoMatch[1] as ProviderId
+  }
+  const viewfieldMatch = layerId.match(/^viewfields-(.+)$/)
+  if (viewfieldMatch) {
+    return viewfieldMatch[1] as ProviderId
   }
   const featureMatch = layerId.match(/^features-(.+)$/)
   if (featureMatch) {
@@ -31,6 +41,7 @@ export const queryStreetImageryFeatures = (event: {
 }): StreetImageryClickFeature[] => {
   const features = event.features ?? []
   const results: StreetImageryClickFeature[] = []
+  const seenPhotoKeys = new Set<string>()
 
   for (const feature of features) {
     const layerId = feature.layer?.id
@@ -45,15 +56,21 @@ export const queryStreetImageryFeatures = (event: {
 
     const props = feature.properties ?? {}
 
-    if (layerId.startsWith('photos-')) {
+    if (layerId.startsWith('photos-') || layerId.startsWith('viewfields-')) {
       const photoId = props.photoId
       if (photoId == null) {
         continue
       }
+      const photoIdStr = String(photoId)
+      const dedupeKey = `${providerId}:${photoIdStr}`
+      if (seenPhotoKeys.has(dedupeKey)) {
+        continue
+      }
+      seenPhotoKeys.add(dedupeKey)
       results.push({
         providerId,
         kind: 'photo',
-        photoId: String(photoId),
+        photoId: photoIdStr,
         sequenceId: props.sequenceId != null ? String(props.sequenceId) : undefined,
       })
       continue

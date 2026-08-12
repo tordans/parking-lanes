@@ -106,6 +106,8 @@ describe('normalizeMapilioRoadFeature', () => {
     expect(normalizeMapilioRoadFeature(feature)).toEqual({
       sequenceId: '201dab82-576b-44dd-a77b-2852eb2809df',
       geometry: feature.geometry,
+      capturedAt: Date.parse('2023-04-24 08:42:45'),
+      isPano: null,
     })
   })
 })

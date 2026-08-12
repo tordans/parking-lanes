@@ -32,6 +32,8 @@ export type PhotoSearchSelection = {
 export type PhotoDateSearch = {
   from?: string
   to?: string
+  /** Explicit “all ages” from the freshness slider (`photoDate=all` in the URL). */
+  all?: boolean
 }
 
 export function isEditorPhotoProvider(value: string): value is EditorPhotoProvider {
@@ -80,16 +82,21 @@ export function parsePhotoDateParam(raw: unknown): PhotoDateSearch | undefined {
       .object({
         from: isoDateSchema.optional(),
         to: isoDateSchema.optional(),
+        all: z.boolean().optional(),
       })
       .safeParse(raw)
     if (!parsed.success) return undefined
-    return parsed.data.from || parsed.data.to ? parsed.data : undefined
+    if (parsed.data.all) return { all: true }
+    return parsed.data.from || parsed.data.to
+      ? { from: parsed.data.from, to: parsed.data.to }
+      : undefined
   }
 
   if (typeof raw !== 'string') return undefined
 
   const trimmed = raw.trim()
   if (!trimmed) return undefined
+  if (trimmed === 'all') return { all: true }
 
   const [fromRaw, toRaw] = trimmed.split('/')
   const next: PhotoDateSearch = {}
@@ -110,7 +117,9 @@ export function parsePhotoDateParam(raw: unknown): PhotoDateSearch | undefined {
 }
 
 export function serializePhotoDateParam(date: PhotoDateSearch | undefined): string | undefined {
-  if (!date?.from && !date?.to) return undefined
+  if (!date) return undefined
+  if (date.all) return 'all'
+  if (!date.from && !date.to) return undefined
   return `${date.from ?? ''}/${date.to ?? ''}`
 }
 

@@ -46,6 +46,8 @@ export const normalizeMapillarySequenceFeature = (
   return {
     sequenceId: String(id),
     geometry,
+    capturedAt: typeof props.captured_at === 'number' ? props.captured_at : null,
+    isPano: typeof props.is_pano === 'boolean' ? props.is_pano : null,
   }
 }
 

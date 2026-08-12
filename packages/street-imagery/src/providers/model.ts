@@ -62,6 +62,10 @@ export type NormalizedSequence = {
   providerId: ProviderId
   sequenceId: string
   geometry: LineString | MultiLineString
+  /** Sequence capture time (ms), when the tile/API provides it (e.g. Mapillary). */
+  capturedAt: number | null
+  /** Whether the sequence is panoramic, when known. */
+  isPano: boolean | null
 }
 
 export type ProviderAdapter = {

@@ -20,6 +20,14 @@ export {
   type PhotoTypeFilter,
 } from './filters/searchFilters'
 export { coneRadiusMeters, viewConeGeoJson } from './map/viewCone'
+export {
+  emptyPolygonCollection,
+  FLAT_VIEWFIELD_FOV_DEG,
+  flatViewfieldTriangle,
+  PANO_VIEWFIELD_FOV_DEG,
+  photosToViewfieldsFeatureCollection,
+  type ViewfieldPhotoProps,
+} from './map/viewfields'
 export * from './providers/model'
 export * from './providers/registry'
 export { fetchMapillaryMvtTiles, mapillaryTileUrl, pointLngLat } from './providers/mapillaryShared'
