@@ -7,17 +7,9 @@
     "declarationMap": false,
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "vite/client"
-    ],
+    "types": ["vite/client"],
     "incremental": false
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.test.tsx",
-    "src/test/**"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"]
 }

@@ -4,10 +4,6 @@ import {
   serializeFeatureParam,
   serializeMapParam,
 } from '@osm-editor-kit/osm-map-url'
-import {
-  DEFAULT_HIGHWAY_INCLUSION_STYLE,
-  type HighwayInclusionStyle,
-} from './street-space-way-policy'
 import { z } from 'zod'
 import { DEFAULT_UI_LOCALE, isUiLocale, type UiLocale } from '../../i18n/uiLocale'
 import { parseDebugSearch } from '../debug'
@@ -26,6 +22,10 @@ import {
   type PhotoDateSearch,
   type PhotoSearchSelection,
 } from './street-imagery-search-params'
+import {
+  DEFAULT_HIGHWAY_INCLUSION_STYLE,
+  type HighwayInclusionStyle,
+} from './street-space-way-policy'
 
 export type {
   EditorPhotoProvider,

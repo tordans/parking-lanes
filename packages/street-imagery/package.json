@@ -2,6 +2,7 @@
   "name": "@osm-editor-kit/street-imagery",
   "version": "0.1.0-alpha.1",
   "description": "Street-level imagery providers, GeoJSON, viewfields, tiles, and viewer helpers (Mapillary, Panoramax, and more).",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
@@ -9,12 +10,11 @@
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
     "directory": "packages/street-imagery"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery",
-  "type": "module",
-  "sideEffects": false,
   "files": [
     "dist"
   ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

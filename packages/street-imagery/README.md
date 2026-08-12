@@ -24,9 +24,7 @@ import {
   setStreetImageryConfig,
 } from '@osm-editor-kit/street-imagery'
 
-setStreetImageryConfig(
-  createStreetImageryConfig({ mapillaryToken: '…' }),
-)
+setStreetImageryConfig(createStreetImageryConfig({ mapillaryToken: '…' }))
 
 const bbox = [13.44, 52.47, 13.45, 52.48] as const // west, south, east, north
 const controller = new AbortController()

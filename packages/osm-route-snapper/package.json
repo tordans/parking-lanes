@@ -2,6 +2,7 @@
   "name": "@osm-editor-kit/osm-route-snapper",
   "version": "0.1.0-alpha.1",
   "description": "Build route-snapper graph bytes and routing-network GeoJSON from parsed OSM coverage (WASM).",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-route-snapper",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
@@ -9,13 +10,12 @@
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
     "directory": "packages/osm-route-snapper"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-route-snapper",
-  "type": "module",
-  "sideEffects": false,
   "files": [
     "dist",
     "vendor"
   ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

@@ -849,7 +849,9 @@ describe('layout continuity', () => {
     expect(sibling).toBeDefined()
     expect(sibling!.forward).toBe('down')
 
-    const dualBands = scene.bands.filter((b) => !b.synthetic && (b.role === 'current' || b.role === 'next'))
+    const dualBands = scene.bands.filter(
+      (b) => !b.synthetic && (b.role === 'current' || b.role === 'next'),
+    )
     const plainBands = scene.bands.filter((b) => !b.synthetic && b.role === 'prev')
     expect(dualBands.length).toBe(2)
     expect(plainBands.length).toBe(1)

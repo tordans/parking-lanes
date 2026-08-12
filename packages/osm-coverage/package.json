@@ -2,6 +2,7 @@
   "name": "@osm-editor-kit/osm-coverage",
   "version": "0.1.0-alpha.2",
   "description": "Incremental OSM coverage fetching for map viewports with TanStack Query session state.",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-coverage",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
@@ -9,12 +10,11 @@
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
     "directory": "packages/osm-coverage"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-coverage",
-  "type": "module",
-  "sideEffects": false,
   "files": [
     "dist"
   ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./dev-osm-map-fixture": "./src/dev-osm-map-fixture/index.ts"

@@ -30,7 +30,7 @@ const client = createOsmOAuthClient(
 )
 
 await client.restoreSession(false) // finish redirect callback if present
-await client.authenticate(false)   // start login when needed
+await client.authenticate(false) // start login when needed
 const user = await client.userInfo()
 const idMap = await client.uploadChanges('MyEditor', '1.0', changesStore, {
   comment: 'Fix lane tags',

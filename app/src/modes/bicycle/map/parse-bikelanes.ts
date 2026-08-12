@@ -10,11 +10,11 @@ import {
   type BikelaneResult,
 } from '@tilda-geo/bicycle-infrastructure'
 import type { Feature, LineString } from 'geojson'
-import type { MapBounds } from '../../parking/map/types'
 import {
   matchesStreetSpaceInclusion,
   type HighwayInclusionStyle,
 } from '../../../shell/map/street-space-way-policy'
+import type { MapBounds } from '../../parking/map/types'
 import { roadWidthFromTags } from '../../width/domain/road-width-from-tags'
 import { isWidthModeLinkWay } from '../../width/domain/width-link-filter'
 

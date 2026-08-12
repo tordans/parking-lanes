@@ -7,7 +7,11 @@ import {
   emptyLineCollection,
   routingNetworkGeoJsonFromBytes,
 } from './routing-network-geojson'
-import { countRoadWays, coverageGraphSignature, parsedOsmWaysToFeatureCollection } from './ways-geojson'
+import {
+  countRoadWays,
+  coverageGraphSignature,
+  parsedOsmWaysToFeatureCollection,
+} from './ways-geojson'
 
 export type RouteSnapperGraphData = {
   graphBytes: Uint8Array | null

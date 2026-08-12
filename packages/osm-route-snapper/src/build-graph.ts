@@ -1,8 +1,8 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
-import { parsedOsmToXml } from './parsed-osm-to-xml'
 import initOsmToRouteSnapper, {
   convert as convertOsmToRouteSnapper,
 } from '../vendor/osm-to-route-snapper/osm_to_route_snapper.js'
+import { parsedOsmToXml } from './parsed-osm-to-xml'
 
 let initPromise: Promise<void> | undefined
 

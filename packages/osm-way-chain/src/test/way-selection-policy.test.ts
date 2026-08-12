@@ -53,9 +53,7 @@ describe('compileOverpassWaySelectors', () => {
     expect(selectors[0]).toContain('[highway~"^(cycleway|')
     expect(selectors[0]).toContain('[access!=private]')
     expect(selectors[0]).toContain('[access!=no]')
-    expect(selectors[1]).toBe(
-      '[highway=footway][footway!=sidewalk][access!=private][access!=no]',
-    )
+    expect(selectors[1]).toBe('[highway=footway][footway!=sidewalk][access!=private][access!=no]')
     expect(selectors[2]).toBe(
       '[highway=footway][footway=sidewalk][bicycle~"^(yes|designated)$"][access!=private][access!=no]',
     )
@@ -76,9 +74,9 @@ describe('matchesOsmWaySelection', () => {
         bikeFootPolicy,
       ),
     ).toBe(true)
-    expect(matchesOsmWaySelection({ highway: 'residential', cycleway: 'lane' }, bikeFootPolicy)).toBe(
-      true,
-    )
+    expect(
+      matchesOsmWaySelection({ highway: 'residential', cycleway: 'lane' }, bikeFootPolicy),
+    ).toBe(true)
 
     expect(
       matchesOsmWaySelection({ highway: 'footway', footway: 'sidewalk' }, bikeFootPolicy),

@@ -20,10 +20,7 @@ import type { OsmFeatureRef } from '@osm-editor-kit/osm-map-url'
 import { compileOverpassWaySelectors } from '@osm-editor-kit/osm-way-chain'
 import axios from 'axios'
 import type { StreetSpaceModeId } from '../../modes/types'
-import {
-  streetSpaceWayPolicy,
-  type HighwayInclusionStyle,
-} from './street-space-way-policy'
+import { streetSpaceWayPolicy, type HighwayInclusionStyle } from './street-space-way-policy'
 
 export type MapViewportSnapshot = {
   center: LatLngLiteral

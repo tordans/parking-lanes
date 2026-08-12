@@ -6,11 +6,11 @@ import {
   type SidepathSide,
 } from '@osm-editor-kit/osm-sidepath-tags'
 import type { Feature, LineString } from 'geojson'
-import type { MapBounds } from '../../parking/map/types'
 import {
   matchesStreetSpaceInclusion,
   type HighwayInclusionStyle,
 } from '../../../shell/map/street-space-way-policy'
+import type { MapBounds } from '../../parking/map/types'
 import {
   roadWidthFromTags,
   type RoadWidthKind,

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { boundsToPolygon } from '@osm-editor-kit/osm-coverage'
 import type { OsmWay } from '@osm-editor-kit/osm-data'
 import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
-import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '../shell/map/street-space-way-policy'
 import type { MapBounds } from '../modes/parking/map/types'
+import { DEFAULT_HIGHWAY_INCLUSION_STYLE } from '../shell/map/street-space-way-policy'
 
 const viewport: MapBounds = {
   south: 52.47,

@@ -92,10 +92,7 @@ function siblingForwardInScene(
  * Secondary violet guides over dual-carriageway sibling branches. Contiguous runs of
  * real fork bands (plus intervening synthetic glue) — not plain/merged bands.
  */
-function buildSiblingPlacementGuides(
-  bands: BandGeometry[],
-  metersToPx: number,
-): ScenePolyline[] {
+function buildSiblingPlacementGuides(bands: BandGeometry[], metersToPx: number): ScenePolyline[] {
   const out: ScenePolyline[] = []
   let i = 0
   let guideIndex = 0
@@ -111,11 +108,7 @@ function buildSiblingPlacementGuides(
         j++
         continue
       }
-      if (
-        next.segment.synthetic &&
-        j + 2 < bands.length &&
-        bandHasSiblingFork(bands[j + 2]!)
-      ) {
+      if (next.segment.synthetic && j + 2 < bands.length && bandHasSiblingFork(bands[j + 2]!)) {
         j += 2
         continue
       }

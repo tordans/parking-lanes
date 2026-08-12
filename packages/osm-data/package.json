@@ -2,6 +2,7 @@
   "name": "@osm-editor-kit/osm-data",
   "version": "0.1.0-alpha.1",
   "description": "Download, parse, and merge OSM API/Overpass responses into an indexed in-memory store.",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-data",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
@@ -9,12 +10,11 @@
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
     "directory": "packages/osm-data"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/osm-data",
-  "type": "module",
-  "sideEffects": false,
   "files": [
     "dist"
   ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

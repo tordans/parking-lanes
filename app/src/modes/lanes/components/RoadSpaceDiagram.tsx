@@ -1037,8 +1037,7 @@ export function RoadSpaceDiagram({
               : line.forward === 'up'
                 ? `${x - head},${midY + head * 0.2} ${x},${midY - head} ${x + head},${midY + head * 0.2}`
                 : null
-          const label =
-            line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
+          const label = line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
           return (
             <g key={`${line.id}-cue`} pointerEvents="none">
               {arrowPoints ? (

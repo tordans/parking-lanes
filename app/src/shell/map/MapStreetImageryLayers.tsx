@@ -19,8 +19,7 @@ export function MapStreetImageryLayers() {
   const map = useMapViewport()
   const bbox = useMapViewportBbox(MAIN_MAP_ID, map)
   const { selectedPhoto, selectedSequenceId, viewerPov } = useSelectedPhotoForMap()
-  // Recompute relative age stops when the map moves / photos toggle (keeps thresholds fresh).
-  const photoCircleColor = useMemo(() => photoAgeCircleColorExpression(), [photos, map.zoom])
+  const photoCircleColor = photoAgeCircleColorExpression()
   const dateFilter = useMemo(
     () => resolvePhotoDateFilter(photoDate, photos.length > 0),
     [photoDate, photos.length],

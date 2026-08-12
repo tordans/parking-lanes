@@ -3,12 +3,12 @@ import { emptyParsedOsmData, type MapBounds } from '@osm-editor-kit/osm-data'
 import { QueryClient } from '@tanstack/react-query'
 import { boundsToPolygon } from '../coverage-geometry'
 import { createOsmCoverageApi } from '../create-osm-coverage-api'
-import { OsmDataSource } from '../osm-data-source'
 import {
   formatCoverageAgeHour,
   type OsmCoveragePersisted,
   type OsmCoverageStorage,
 } from '../osm-coverage-storage'
+import { OsmDataSource } from '../osm-data-source'
 
 const viewport: MapBounds = {
   south: 52.47,

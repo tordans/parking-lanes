@@ -224,8 +224,7 @@ export function sceneToSvg(
     const arrowMarkup = arrow
       ? `<polyline fill="none" stroke="${polylineStroke(line)}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" points="${arrow}"/>`
       : ''
-    const label =
-      line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
+    const label = line.forward === 'down' ? 'way ↓' : line.forward === 'up' ? 'way ↑' : null
     const labelMarkup = label
       ? `<text x="${round2(x + 6)}" y="${round2(y0 + 24)}" font-size="8" fill="${COLOR_PLACEMENT_GUIDE}" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="600" opacity="0.7">${label}</text>`
       : ''

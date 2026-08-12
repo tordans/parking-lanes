@@ -22,8 +22,7 @@ import { createOsmCoverageApi, OsmDataSource } from '@osm-editor-kit/osm-coverag
 const api = createOsmCoverageApi<{ source: OsmDataSource }>({
   getSessionKey: ({ source }) => ['osm', source] as const,
   minZoom: 14,
-  getDownloadUrl: (bounds, { source }) =>
-  /* build Overpass or Map API URL */ '',
+  getDownloadUrl: (bounds, { source }) => /* build Overpass or Map API URL */ '',
   // optional: storage: { load, save, clear }
 })
 

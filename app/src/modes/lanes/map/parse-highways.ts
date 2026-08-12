@@ -1,10 +1,10 @@
 import type { ParsedOsmData } from '@osm-editor-kit/osm-data'
 import type { Feature, LineString } from 'geojson'
-import type { MapBounds } from '../../parking/map/types'
 import {
   matchesStreetSpaceWay,
   type HighwayInclusionStyle,
 } from '../../../shell/map/street-space-way-policy'
+import type { MapBounds } from '../../parking/map/types'
 import {
   isDeemphasizedHighway,
   laneCompleteness,

@@ -35,7 +35,10 @@ redirectLegacyMapHash('#map=16/52.4751/13.4435') // → ?map=16/52.4751/13.4435
 
 // TanStack Router: keep slash form in the URL bar, not JSON objects
 routerSearch.parse('?map=16/52.4751/13.4435&f=way/123')
-routerSearch.stringify({ map: { zoom: 16, lat: 52.4751, lng: 13.4435 }, f: { type: 'way', id: 123 } })
+routerSearch.stringify({
+  map: { zoom: 16, lat: 52.4751, lng: 13.4435 },
+  f: { type: 'way', id: 123 },
+})
 ```
 
 `@tanstack/react-router` is a peer dependency (used by `routerSearch` only).

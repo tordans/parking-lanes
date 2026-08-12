@@ -28,9 +28,7 @@ import {
 
 ```ts
 const graphBytes = await buildRouteSnapperGraphBytes(parsedOsm)
-const routingNetwork = graphBytes
-  ? await routingNetworkGeoJsonFromBytes(graphBytes)
-  : null
+const routingNetwork = graphBytes ? await routingNetworkGeoJsonFromBytes(graphBytes) : null
 ```
 
 **React + TanStack Query** — `createRouteSnapperGraphApi` wires coverage growth to automatic full rebuilds (WASM has no incremental API):

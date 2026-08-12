@@ -1,6 +1,7 @@
 {
   "name": "@osm-editor-kit/street-space-editor",
   "version": "0.9.0",
+  "private": true,
   "description": "Street Space Editor for OpenStreetMap",
   "keywords": [],
   "homepage": "https://osmberlin.github.io/street-space-editor/",
@@ -98,6 +99,5 @@
     "defaults",
     "not ie 11",
     "not op_mini all"
-  ],
-  "private": true
+  ]
 }

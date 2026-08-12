@@ -1,5 +1,5 @@
-import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
 import { describe, expect, test } from 'bun:test'
+import { emptyParsedOsmData } from '@osm-editor-kit/osm-data'
 import {
   countRoadWays,
   coverageGraphSignature,

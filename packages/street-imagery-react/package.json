@@ -2,6 +2,7 @@
   "name": "@osm-editor-kit/street-imagery-react",
   "version": "0.1.0-alpha.1",
   "description": "React MapLibre layers and photo viewers for street-level imagery providers.",
+  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery-react",
   "license": "MIT",
   "author": "Tobias Jordans",
   "repository": {
@@ -9,11 +10,10 @@
     "url": "git+https://github.com/osmberlin/street-space-editor.git",
     "directory": "packages/street-imagery-react"
   },
-  "homepage": "https://github.com/osmberlin/street-space-editor/tree/main/packages/street-imagery-react",
-  "type": "module",
   "files": [
     "dist"
   ],
+  "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
